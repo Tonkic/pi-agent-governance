@@ -41,21 +41,23 @@ AGENTS.md                 Agent 工作规则
 STATE.json                当前总体任务与接手状态
 README.md                 原则、用法和限制
 plugin/
-  main.js                 PI 工具、命令与面板入口
-  core.js                 状态、验证、归档内核
-  git.js                  worktree、提交和集成管理
-  panel.js                面板通道与写入白名单
-  renderer/               HTML / CSS / JS 可视化界面
-  tool.js                 Agent 工具参数定义
+  main.ts / main.js       PI 工具、命令与面板入口（TS 源码 / JS 产物）
+  core.ts / core.js       状态、验证、归档内核
+  git.ts / git.js         worktree、提交和集成管理
+  panel.ts / panel.js     面板通道与写入白名单
+  renderer/               HTML / CSS / TS 源码与 JS 产物
+  tool.ts / tool.js       Agent 工具参数定义
   manifest.json           构建生成的插件清单
   README.md / GIT.md       详细操作说明
   dist/                   可安装的 .piplug
-scripts/                  CLI 与清单构建脚本
-test/                     内核、Git 与面板回归测试
+scripts/                  TS 源码与编译后的 CLI/清单构建脚本
+test/                     TS 源码与编译后的内核、Git、面板回归测试
+types/                    PI 宿主和面板桥接的类型声明
+tsconfig.json             TypeScript 编译与类型检查配置
 changes/archive/          已完成任务的验收记录
 ```
 
-这是无第三方运行时依赖的本地插件，不需要单独启动 Web 服务或数据库。面板通过宿主桥接调用同一内核；Git 本地登记表在 `.git` common directory 中，不在上述源码目录内。
+这是无第三方运行时依赖的本地插件；TypeScript 仅作为开发期编译依赖，不需要单独启动 Web 服务或数据库。面板通过宿主桥接调用同一内核；Git 本地登记表在 `.git` common directory 中，不在上述源码目录内。
 
 ## 人工调整
 
@@ -70,15 +72,17 @@ changes/archive/          已完成任务的验收记录
 
 ## 开发与检查
 
-需要 Node.js 20+，无第三方运行时依赖。
+需要 Node.js 20+。源码使用 TypeScript，构建会在源文件旁生成 PI-Desktop 可加载的 CommonJS `.js` 产物；运行时仍无第三方依赖。
 
 ```powershell
+npm install
+npm run typecheck
 npm run build
 npm test
 '{"action":"status"}' | node scripts/governance.js
 ```
 
-CLI 作用于当前目录；PI 工具作用于宿主当前工作区主根。`plugin/core.js` 是内核，`main.js` 是 PI 适配器，`tool.js` 定义参数。manifest 由 build 生成。打包使用 PI 的 PluginCheck 和 PluginPack。
+CLI 作用于当前目录；PI 工具作用于宿主当前工作区主根。`plugin/core.ts`、`main.ts` 和 `tool.ts` 是源码，编译后的 `.js` 文件才是运行入口；manifest 由 build 生成并继续指向 `main.js`。安装包打包使用 PI 的 PluginCheck 和 PluginPack。
 
 ## 必要限制
 

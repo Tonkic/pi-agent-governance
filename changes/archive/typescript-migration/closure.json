@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "task": "typescript-migration",
+  "status": "ready",
+  "goal": "将 PI-Desktop 插件源码迁移到 TypeScript，并保持构建、测试、CLI 与插件入口兼容后上传当前 GitHub 分支",
+  "criteria": [
+    "plugin 与 renderer 源码迁移到 TypeScript，保留可运行的 JavaScript 编译产物",
+    "npm run build、npm test 和类型检查全部通过",
+    "文档、CI 与 manifest 反映 TypeScript 构建流程",
+    "提交变更并推送到当前 GitHub 远程分支"
+  ],
+  "scope": [
+    "plugin/*.js 与 plugin/renderer/panel.js",
+    "TypeScript 配置、构建脚本、package.json",
+    "相关测试、README、CI 与 manifest"
+  ],
+  "constraints": [
+    "保持 CommonJS 运行时入口和 manifest main.js 兼容",
+    "不修改或合并主分支",
+    "不删除历史安装包或用户已有改动"
+  ],
+  "current": "TypeScript 源码、编译产物、构建脚本、类型声明、文档和 CI 已完成迁移，待最终检查、提交和推送。",
+  "next": [
+    "运行 typecheck、build、governance status 和限定测试",
+    "审查完整 diff 与 Git 状态",
+    "提交当前分支并推送 GitHub",
+    "在提交上复核状态并关闭治理任务"
+  ],
+  "blocked": [],
+  "followUp": null,
+  "change": "changes/active/typescript-migration",
+  "layer": "docs",
+  "verification": {
+    "evidence": "npm run typecheck 通过；npm run build 通过；npm test 通过（36 tests, 36 pass, 0 fail）；npm run governance --silent status 通过。",
+    "diffReview": "已审查 staged diff 和文件清单：插件、CLI、测试源码迁移为 TypeScript，并生成保持 CommonJS/manifest main.js 兼容的 JavaScript 产物；补充 PI 与 pluginBridge 类型声明、构建脚本、文档和 CI 类型检查；未改主分支，未覆盖历史 .piplug。",
+    "intentHash": "de7261dad9b0820d4731ccde7c77fb1df1fecdbfcf5d482828d35c8fe7570319",
+    "fingerprints": {
+      ".github/workflows/test.yml": "e0b7bf021aac683206d1c20880caebc3fc36a248454422e97b243c041cfb44b4",
+      "README.md": "8940a5cb335cc45a2897ad65b3ef34e66700051802af9e1bcf6aa0d2fe10ada9",
+      "package-lock.json": "535a4a3b4f578d53c133b9ffe2d4b4058ade646b4217609ce75cc0ec1e4ab712",
+      "package.json": "a20970b665b2230d90742245a494cb922fc661d46923b6295834a3bfdc7d55fd",
+      "plugin/README.md": "1274ff61a8a6bdffcc0532e773e69210bb88e762ba5bdb95c95d15a5623ff135",
+      "plugin/manifest.json": "da6265af4cc7f2b8d21662692fd286f9c991a4abceffefaeb354e70b92ece546",
+      "plugin/core.js": "ba3ebab0f9a1c146c5c188e9de2b71b99ee0d5cd4c0f98adeb24cf7b2b919b6f",
+      "plugin/core.ts": "33e7af6bcec5608d217265569fc87660be966e383b392913ef346af2782d057e",
+      "plugin/git.js": "922ceadb0f8999e15eebb205ca6e81a3d8b257eaf3f057d0c4a079d335e3bf06",
+      "plugin/git.ts": "8e710e661332bc90249da8e0cb6f1608251ccf32104393fe9377ded7a1e4aa24",
+      "plugin/main.js": "ea94fa91649b421ca4d5235fc2edbcfdc71f7f2be1003e9219e88fce5d2b532a",
+      "plugin/main.ts": "3adf64f0d2fd00ee1913affe8dae8521bcd089295e09f24040c2493981631e6f",
+      "plugin/panel.js": "e59f8cfcd07bdace566e8138f509a7ffbd6e63c3bef88dce2063d7a30afd7005",
+      "plugin/panel.ts": "56d23102271f4a06b1923e55494165bb4030906408f26d9b651ca8d9bd78d4f2",
+      "plugin/renderer/panel.js": "2070940d4415a7e882e32191affe37f9c291c30611e83afa47e3edaa8101b6fd",
+      "plugin/renderer/panel.ts": "8d8997bd106a9e49e6773ee87244f397473ce03ad7ea6bc7014760883847b554",
+      "plugin/tool.js": "32502e0994c9e39225bd854b8e91914c6068fb6740088bca64782e84ed0717a7",
+      "plugin/tool.ts": "ac780be8b78501e79c2873bfc2ae02c4885d8b59d858e5bd7e5343aa9489b182",
+      "scripts/build-manifest.js": "2d660fbbf1bbac42cec9ff9685170318f4625fdf29557e8349072ca90b16ca24",
+      "scripts/build-manifest.ts": "69eb1bec1b8c3818db880f07fcc5b6285c5e53be6c55975d8a6d36dee4ecffb6",
+      "scripts/governance.js": "67d12dda83cea1d32b9193663b73a2e27a8aae7ce4b47e020b23836153b180f8",
+      "scripts/governance.ts": "cdf5dec14a98b0fabbe4164bbf1cad5117488455b4e4fe3cc71630408a55bcac",
+      "test/git.test.js": "a4e2b3f1c6ed6533646e23ba6e071c3978b5ac8c5dbd5032fa279bf9b032b4f2",
+      "test/git.test.ts": "943da8728a994315eaac19d0a25924222b264697146cbb3fd26fcfa51d6bfece",
+      "test/governance.test.js": "62010fba1391bca1440065d0e3d7be971d2dc739da6523ca3ae06159c3d8e62c",
+      "test/governance.test.ts": "00e7660d45e33c85d92c7f3afc6b961970cb5ab278224ad8a47435df24f503b9",
+      "test/panel.test.js": "d12b3100b6a3ff13ef3b72cde796fb293eba3d4a155307b93461d78b7a117d1c",
+      "test/panel.test.ts": "bc2f18898b02bb85eca658e51c3b512bb711ef24e463813bdb52b2bba44eb91d",
+      "tsconfig.json": "6f1f62a95c0e89085aa90a7c9dfc9ad1101234241faa16b86bed7dc7564c9a77",
+      "types/pi.d.ts": "b6401d1124b497b8a348a2437de4024044dee2675e879feac8ec09042095c8a5",
+      "types/plugin-bridge.d.ts": "db4876a1d26c2b8974dd6a1751197b444a6490447bf38445f99ce753e18502c8",
+      "AGENTS.md": "4913ef21970fa753e093f9bbeef0f48651fb45fa28855a88c540b3c76b266274"
+    },
+    "at": "2026-10-02T20:53:36.268Z"
+  },
+  "gate": {
+    "decisions": {},
+    "summary": "已更新 README.md 和 plugin/README.md，说明 TypeScript 源码、CommonJS 编译产物、类型检查和构建命令；同步更新 GitHub CI。旧 .piplug 未覆盖，因为它必须由 PI 的 PluginCheck/PluginPack 重新生成。"
+  }
+}

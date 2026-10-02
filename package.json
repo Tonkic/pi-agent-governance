@@ -4,9 +4,16 @@
   "private": true,
   "description": "Repository-level agent engineering governance for PI-Desktop",
   "scripts": {
-    "build": "node scripts/build-manifest.js",
-    "test": "node --test",
-    "governance": "node scripts/governance.js"
+    "build": "tsc --project tsconfig.json && node scripts/build-manifest.js",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "npm run build && node --test test/git.test.js test/governance.test.js test/panel.test.js",
+    "governance": "npm run build --silent && node scripts/governance.js"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "typescript": "^7.0.2"
+  }
 }

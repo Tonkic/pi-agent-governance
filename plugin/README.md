@@ -2,6 +2,18 @@
 
 为当前仓库保存可接手的任务状态，并在验证后关闭任务。PI 注册名为 `governance`，宿主可能添加命名空间前缀。文件访问使用原生 Node fs；Git 操作通过 execFile 执行。不是全局 Agent 拦截器。
 
+## 源码与构建
+
+插件源码和测试使用 TypeScript；`npm run build` 先执行 TypeScript 编译，再生成 `plugin/manifest.json`。编译产物仍是源文件旁的 CommonJS `.js` 文件，PI-Desktop 的 manifest 入口保持为 `main.js`，面板 HTML 继续加载 `renderer/panel.js`。Node 20 不直接执行 `.ts`，因此修改 `.ts` 后应重新构建。
+
+```powershell
+npm run typecheck
+npm run build
+npm test
+```
+
+TypeScript 是开发依赖，不会进入插件运行时；PluginCheck 和 PluginPack 仍由 PI-Desktop 的插件工具负责生成 `.piplug` 安装包。
+
 Git 分支/worktree、范围检查、提交验证、集成及恢复，见 [Git 协作用法](GIT.md)。写入型委派前先 git_create 分配工作区；插件不自动启动子代理。
 
 ## 可视化面板
