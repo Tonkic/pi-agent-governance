@@ -1,0 +1,243 @@
+{
+  "schemaVersion": 1,
+  "id": "pi.agent-governance",
+  "name": "Agent Governance",
+  "version": "0.1.0",
+  "description": "Repository governance MVP: task lifecycle, progressive context, verification and knowledge gates.",
+  "safetyNotes": "Uses Node filesystem APIs directly, not host-mediated fs permissions. Only the current workspace is used; traversal, symlinks and common credential paths are rejected. Writes STATE.json, new bootstrap documents and changes/. No network or shell execution. Gates apply only to this tool, not other agent tools. Verification evidence is caller-attested, not independently executed. Do not use with untrusted concurrent filesystem writers.",
+  "main": "main.js",
+  "contributes": {
+    "agentTools": [
+      {
+        "name": "governance",
+        "description": "Repository governance. init preserves existing files; status reads STATE.json; start needs id, goal, criteria; progress needs current,next,blocked; context needs layer,files,reason for escalation; verify needs passed,accepted,evidence,diffReview,files; gate needs delta and five decisions; close archives only after gates. route returns advisory model tier. Read plugin README for full workflow. Never claim this tool runs tests or globally intercepts other tools.",
+        "risk": "medium",
+        "schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "action"
+          ],
+          "properties": {
+            "action": {
+              "type": "string",
+              "enum": [
+                "init",
+                "status",
+                "start",
+                "progress",
+                "context",
+                "route",
+                "verify",
+                "gate",
+                "close"
+              ]
+            },
+            "id": {
+              "type": "string"
+            },
+            "goal": {
+              "type": "string"
+            },
+            "criteria": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "current": {
+              "type": "string"
+            },
+            "next": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "blocked": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "layer": {
+              "type": "string",
+              "enum": [
+                "docs",
+                "contract",
+                "notes",
+                "source"
+              ]
+            },
+            "reason": {
+              "type": "string"
+            },
+            "files": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "passed": {
+              "type": "boolean"
+            },
+            "accepted": {
+              "type": "array",
+              "items": {
+                "type": "boolean"
+              }
+            },
+            "evidence": {
+              "type": "string"
+            },
+            "diffReview": {
+              "type": "string"
+            },
+            "delta": {
+              "type": "string"
+            },
+            "features": {
+              "type": "object",
+              "properties": {
+                "files": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "modules": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "research": {
+                  "type": "boolean"
+                },
+                "architecture": {
+                  "type": "boolean"
+                },
+                "interfaceChange": {
+                  "type": "boolean"
+                },
+                "unknownCause": {
+                  "type": "boolean"
+                },
+                "debugging": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "decisions": {
+              "type": "object",
+              "required": [
+                "behavior",
+                "contract",
+                "stableFact",
+                "pitfall",
+                "decision"
+              ],
+              "properties": {
+                "behavior": {
+                  "type": "object",
+                  "required": [
+                    "changed",
+                    "reason"
+                  ],
+                  "properties": {
+                    "changed": {
+                      "type": "boolean"
+                    },
+                    "reason": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "contract": {
+                  "type": "object",
+                  "required": [
+                    "changed",
+                    "reason"
+                  ],
+                  "properties": {
+                    "changed": {
+                      "type": "boolean"
+                    },
+                    "reason": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "stableFact": {
+                  "type": "object",
+                  "required": [
+                    "changed",
+                    "reason"
+                  ],
+                  "properties": {
+                    "changed": {
+                      "type": "boolean"
+                    },
+                    "reason": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "pitfall": {
+                  "type": "object",
+                  "required": [
+                    "changed",
+                    "reason"
+                  ],
+                  "properties": {
+                    "changed": {
+                      "type": "boolean"
+                    },
+                    "reason": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "decision": {
+                  "type": "object",
+                  "required": [
+                    "changed",
+                    "reason"
+                  ],
+                  "properties": {
+                    "changed": {
+                      "type": "boolean"
+                    },
+                    "reason": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "permissions": [
+    "agent.tool.register"
+  ],
+  "engines": {
+    "piDesktop": ">=0.1.0"
+  },
+  "activationEvents": [
+    "onStartup"
+  ]
+}

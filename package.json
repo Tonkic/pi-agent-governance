@@ -1,0 +1,12 @@
+{
+  "name": "pi-agent-governance",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Repository-level agent engineering governance for PI-Desktop",
+  "scripts": {
+    "build": "node scripts/build-manifest.js",
+    "test": "node --test",
+    "governance": "node scripts/governance.js"
+  },
+  "engines": { "node": ">=20" }
+}
