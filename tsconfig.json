@@ -19,5 +19,5 @@
     "test/**/*.ts",
     "types/**/*.d.ts"
   ],
-  "exclude": ["plugin/dist"]
+  "exclude": ["plugin/dist", "plugin/renderer"]
 }

@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "task": "architecture-panel",
+  "status": "ready",
+  "goal": "去除面板 FIELD GUIDE 与顶部宣传文案，改为可交互项目架构图，参考 Kaneo 的紧凑工作区布局与操作组织。",
+  "criteria": [
+    "指定说明和宣传文案已移除，顶部显示准确的插件模块架构图",
+    "架构节点可查看详情，任务与 Git 操作可定位，原有确认与过期保护保持可用",
+    "类型检查、构建、测试及浏览器回归通过，更新安装包"
+  ],
+  "scope": [
+    "plugin/renderer/",
+    "README.md",
+    "test/",
+    "plugin/dist/",
+    "repository state"
+  ],
+  "constraints": [
+    "保留已有未提交前端修改中的功能与其他用户修改",
+    "不提交此前无关改动，不推送或合并主分支",
+    "架构图是插件模块示意，不声称自动扫描任意项目"
+  ],
+  "current": "Architecture panel implemented. Browser regression, typecheck, build and 38 tests passed; PluginCheck and PluginPack passed. Fixed browser CommonJS output via separate renderer build config.",
+  "next": [],
+  "blocked": [],
+  "followUp": null,
+  "change": "changes/active/architecture-panel",
+  "layer": "docs",
+  "verification": {
+    "evidence": "npm run typecheck, npm run build, npm test: 38/38 passed. Browser: six selectable nodes, navigation, dark screenshot, light theme, narrow iframe no horizontal overflow, mocked confirm/cancel and unsaved refresh warning. No real repository writes from browser tests. PluginCheck passed, PluginPack 0.4.0 SHA256 92936e152bf9edd1988c36a875d8c8e8d73ec2dc0800cb48c4548bf24b265c06.",
+    "diffReview": "Reviewed renderer edits, build split, README and regression tests; diff --check passed. Existing relevant UI redesign preserved; unrelated previous archive excluded from commit. No core/Git behavior change.",
+    "intentHash": "856ba4421017a41c7cf55cc84586066244b6e33f4cc237558084ed1c3d49f163",
+    "fingerprints": {
+      "plugin/renderer/index.html": "1e892fe008eb8741681958342c15d29ee64cf665ae73b0df695a172477728f54",
+      "plugin/renderer/panel.css": "a316b0a2d3eb5ccb4c96261b1bf94eebf859d57bf53633539fba5ebf0ad03ceb",
+      "plugin/renderer/panel.ts": "7e5dc5f163959d56e15444ea56fece14fe308336b99373a0b1eabde2fcd5e374",
+      "plugin/renderer/panel.js": "8ad7e5f801f0f8a154c384c5b6bd2219830564e8501e6cb8b46d578f023aaace",
+      "plugin/renderer/tsconfig.json": "f06eb61d8220de67591a54cb534094e8c0413413b286640a4e5435280920807b",
+      "package.json": "d96147be61ee8c5e6508cd6c9791b3798c0d94014cebfc598d42f17278a89a4b",
+      "tsconfig.json": "50d34e0dc6fef01f030103df22e3547ee63aaa0324841d90a1bae76b943c12df",
+      "README.md": "495662ece7c6b00a00896a4389232a588fd82548f51461ab51cc45148a420c0c",
+      "test/panel.test.ts": "aaf9c4fef7d94f006ea31906e932f2bafc19ec4e93a3cf280e5e03816bc0e49b",
+      "test/panel.test.js": "2f236cf50837dac70ddd440af258db14205cdebbc938a494b4526d76e8f4cd65",
+      "plugin/dist/pi.agent-governance-0.4.0.piplug": "c1c9453c007304f9df909777839fe621502219b2e7c9f86e7346f542479dfa18",
+      "AGENTS.md": "4913ef21970fa753e093f9bbeef0f48651fb45fa28855a88c540b3c76b266274"
+    },
+    "at": "2026-10-02T22:57:37.771Z"
+  },
+  "gate": {
+    "decisions": {},
+    "summary": "README documents architecture-node selection and navigation, static module-map limitation, and separate browser/host TypeScript builds."
+  }
+}

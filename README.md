@@ -25,6 +25,7 @@
 2. 在命令面板搜索 **Agent Governance: 打开治理面板**（`governance.open`）。
 3. 没有 STATE 时点击「初始化治理」；待命时填写目标与验收条件创建任务；有活动任务时更新进度、下一步和阻塞项。
 4. 查看目标、范围、验收条件，以及 Git 工作区、分支、修改和验证状态。外部修改后点击「刷新状态」。
+5. 顶部架构图展示本插件的入口、治理内核与存储关系；点击节点查看职责和源码位置，再跳转到任务或 Git 区块。导航可直接定位各区块。此图为插件模块示意，不会自动扫描当前工作区源码。
 
 面板的写入均需确认；页面状态过期或工作区切换时拒绝写入。已有文件不会被初始化覆盖。Git 创建、提交、验证、集成及任务关闭仍交给 Agent，面板不自动运行测试或执行高风险操作。
 
@@ -82,7 +83,7 @@ npm test
 '{"action":"status"}' | node scripts/governance.js
 ```
 
-CLI 作用于当前目录；PI 工具作用于宿主当前工作区主根。`plugin/core.ts`、`main.ts` 和 `tool.ts` 是源码，编译后的 `.js` 文件才是运行入口；manifest 由 build 生成并继续指向 `main.js`。安装包打包使用 PI 的 PluginCheck 和 PluginPack。
+CLI 作用于当前目录；PI 工具作用于宿主当前工作区主根。插件主进程使用根 `tsconfig.json` 编译为 CommonJS；浏览器脚本使用 `plugin/renderer/tsconfig.json` 单独构建，不能依赖 Node 的 require/exports。运行 `npm run build` 会完成两端构建并生成 manifest；入口继续指向 `main.js`。安装包打包使用 PI 的 PluginCheck 和 PluginPack。
 
 ## 必要限制
 

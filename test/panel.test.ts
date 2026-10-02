@@ -60,3 +60,32 @@ test('panel progress invalidates existing verification', async t => {
   await mutate({ action: 'progress', current: 'Continue', next: [], blocked: [] });
   assert.equal((await snapshot()).state.status, 'working'); assert.equal((await snapshot()).state.verification, undefined);
 });
+test('renderer leads with architecture, removes promotional guide and keeps valid controls', async () => {
+  const html = await fs.readFile(path.join(__dirname, '../plugin/renderer/index.html'), 'utf8');
+  const script = await fs.readFile(path.join(__dirname, '../plugin/renderer/panel.js'), 'utf8');
+  assert.doesNotMatch(html, /FIELD GUIDE|怎么使用这个项目|THE REPOSITORY IS THE MEMORY|每一次交接|hero-block|progress-fill/);
+  assert.ok(html.indexOf('id="architecture"') < html.indexOf('id="task-section"'));
+  const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]);
+  assert.equal(ids.length, new Set(ids).size, 'IDs must be unique');
+  for (const match of script.matchAll(/(?:\$|text|list)\('([^']+)'/g)) assert.ok(ids.includes(match[1]), `Missing element ${match[1]}`);
+  for (const match of html.matchAll(/href="#([^"]+)"/g)) assert.ok(ids.includes(match[1]), `Missing navigation target ${match[1]}`);
+  assert.equal([...html.matchAll(/data-module="/g)].length, 6);
+  assert.equal([...html.matchAll(/aria-pressed="true"/g)].length, 1);
+});
+test('browser bundle starts without Node globals and reports static preview', async () => {
+  const vm = require('node:vm');
+  const script = await fs.readFile(path.join(__dirname, '../plugin/renderer/panel.js'), 'utf8');
+  const elements = new Map();
+  const document = {
+    documentElement: { dataset: {} }, querySelectorAll: () => [],
+    getElementById: id => {
+      if (!elements.has(id)) elements.set(id, { textContent: '', classList: { toggle() {} }, addEventListener() {}, replaceChildren() {} });
+      return elements.get(id);
+    }
+  };
+  vm.runInNewContext(script, { document, window: { addEventListener() {} }, location: { hash: '' }, matchMedia: () => ({ matches: false }) });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.match(elements.get('notice-message').textContent, /静态预览/);
+  assert.equal(elements.get('progress-form').hidden, true);
+  assert.equal(document.documentElement.dataset['base'], 'light');
+});
