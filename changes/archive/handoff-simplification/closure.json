@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "task": "handoff-simplification",
+  "status": "ready",
+  "goal": "Simplify repository handoff and synchronize human intent",
+  "criteria": [
+    "Fresh agents can resume an active task or an approved followUp, otherwise wait",
+    "Human intent changes invalidate verification and detected concurrent state edits are preserved",
+    "Minimal initialization, optional context layers and simplified close pass regression tests",
+    "Usage docs, installable 0.2.0 package and repository handoff files are delivered"
+  ],
+  "scope": [
+    "plugin",
+    "tests",
+    "usage docs",
+    "repository handoff"
+  ],
+  "constraints": [
+    "No global hooks or multi-agent orchestration",
+    "Preserve existing project documents"
+  ],
+  "current": "Implementation and 18 regression tests passed; reviewing diff and packaging 0.2.0.",
+  "next": [
+    "Validate and package plugin",
+    "Record verification and close task",
+    "Push changes and confirm CI"
+  ],
+  "blocked": [],
+  "followUp": null,
+  "change": "changes/active/handoff-simplification",
+  "layer": "docs",
+  "verification": {
+    "evidence": "npm run build succeeded; npm test 20/20 passed; PluginCheck passed; PluginPack produced 0.2.0 with SHA256 539ea931f5ff29d0becd2834f3c38d7066d48e4186cbff39c5635513f841fb2e; real PI status/progress calls succeeded.",
+    "diffReview": "Reviewed core, schema, version generation, documentation and regression diff; fixed queued task loss; git diff --check passed. Package checked separately as binary.",
+    "intentHash": "56aadd6c172d7dbb899cf196db6be5a379ffe4cfa662739f7619e2bde2960dd3",
+    "fingerprints": {
+      "AGENTS.md": "f6a2950716af5224853e9a364945d2a9c9e364367253b999194379cce9171e79",
+      "README.md": "2786213a5ed99f6d2639b82d8682760ae47094b8eefe4668097fa646058a184a",
+      "package.json": "c326a7df2a16b4bd117046cd46f381c976c0fab309e531eb4b1f2d51f8c5ef06",
+      "plugin/core.js": "f139944ba7b68bd80ffb0bb3f0e7dd53d3b5b7bbd375abc3bdaf01dfbb8a1132",
+      "plugin/tool.js": "d6f73952b1e72ef26517292e419ccb723589df7acb9d7668ec427b32742dc7d9",
+      "plugin/manifest.json": "70161be3fbd93ace09360a1a08550ca93023c146da875fc02f33c42fd2534fa8",
+      "plugin/README.md": "c2e2dfc6dbc2779dc87f362bfe324aa7a447164a7aa9f80a1a546fdebfbd408f",
+      "scripts/build-manifest.js": "d62e13e9562b1c8d084125e8892555dc7f4829e7790953cffbcfa7dcce0a898c",
+      "test/governance.test.js": "07745e95f2e0aef54bb9afcd2e2c26f126104a1aefa60f5b7c2c11cfce524f55"
+    },
+    "at": "2026-10-02T15:56:51.051Z"
+  },
+  "gate": {
+    "decisions": {},
+    "summary": "Updated README and plugin usage for minimal initialization, approved followUp, human state edits and simplified verification/close. No additional notes needed."
+  }
+}

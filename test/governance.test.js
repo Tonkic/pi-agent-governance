@@ -8,7 +8,8 @@ const { Governance, route } = require('../plugin/core');
 async function fixture(t) {
   const root = await fs.mkdtemp(path.join(process.env.PI_SCRATCH_DIR || os.tmpdir(), 'governance-test-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
-  const g = new Governance(root); await g.run({ action: 'init' }); return g;
+  const g = new Governance(root); await g.run({ action: 'init' });
+  await g.write('docs/overview.md', '# Usage\n'); await g.write('docs/architecture.md', '# Architecture\n'); return g;
 }
 const start = { action: 'start', id: 'feature-a', goal: 'Improve module', criteria: ['Tests pass'] };
 const verify = { action: 'verify', passed: true, accepted: [true], evidence: 'node --test: all passed', diffReview: 'Reviewed project diff', files: ['docs/overview.md'] };
@@ -18,7 +19,7 @@ test('route covers all four levels', () => {
 });
 test('init preserves existing files', async t => {
   const g = await fixture(t); await g.write('AGENTS.md', 'User rules');
-  assert.equal((await g.run({ action: 'init' })).preserved.length, 4);
+  assert.equal((await g.run({ action: 'init' })).preserved.length, 3);
   assert.equal(await g.read('AGENTS.md'), 'User rules');
 });
 test('complete lifecycle archives evidence and resets state', async t => {
@@ -39,9 +40,11 @@ test('failed checks, incomplete acceptance and blockers prevent verification', a
   await g.run({ action: 'progress', current: 'Waiting', next: [], blocked: ['Dependency'] });
   await assert.rejects(g.run(verify), /blockers/);
 });
-test('context escalation requires reason and cannot skip layers', async t => {
+test('context can skip layers when relevant source is needed', async t => {
   const g = await fixture(t); await g.run(start);
-  await assert.rejects(g.run({ action: 'context', layer: 'source', files: ['plugin.js'] }), /one context layer/);
+  await assert.rejects(g.run({ action: 'context', layer: 'source', files: ['plugin.js'] }), /reason/);
+  await g.write('plugin.js', 'module.exports = {};');
+  assert.equal((await g.run({ action: 'context', layer: 'source', reason: 'Implement requested change', files: ['plugin.js'] })).state.layer, 'source');
   await assert.rejects(g.run({ action: 'context', layer: 'contract', files: ['docs/overview.md'] }), /reason/);
   const result = await g.run({ action: 'context', layer: 'contract', reason: 'Need interface details', files: ['docs/overview.md'] });
   assert.ok(result.contents['docs/overview.md']);
@@ -94,4 +97,63 @@ test('PI adapter registers, executes and unregisters', async t => {
   assert.equal((await registered.execute({ action: 'status' })).result.status, 'idle');
   assert.equal((await registered.execute({ action: 'close' })).ok, false);
   await adapter.onUnload(); assert.equal(removed, 'governance');
+});
+test('minimal initialization and task have no empty documentation artifacts', async t => {
+  const root = await fs.mkdtemp(path.join(process.env.PI_SCRATCH_DIR || os.tmpdir(), 'minimal-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const g = new Governance(root); await g.run({ action: 'init' });
+  assert.deepEqual((await fs.readdir(root)).sort(), ['AGENTS.md', 'README.md', 'STATE.json']);
+  assert.match((await g.state()).current, /Waiting/);
+  await g.run(start); assert.deepEqual(await fs.readdir(path.join(root, 'changes/active/feature-a')), []);
+});
+test('simplified close preserves approved followUp for a new agent', async t => {
+  const g = await fixture(t); await g.run(start);
+  const s = await g.state(); s.followUp = { id: 'next-task', goal: 'Approved next change', criteria: ['Done'], scope: ['plugin'], constraints: ['No UI'] };
+  await g.write('STATE.json', JSON.stringify(s));
+  await g.run(verify); await g.run({ action: 'close', knowledge: 'Usage unchanged; no notes needed' });
+  const newcomer = new Governance(g.root);
+  assert.equal((await newcomer.state()).followUp.id, 'next-task');
+  assert.equal((await newcomer.run({ action: 'start' })).task, 'next-task');
+});
+test('human changes invalidate verification and preserve new intent', async t => {
+  const g = await fixture(t); await g.run(start); await g.run(verify);
+  const s = await g.state(); s.goal = 'Human revised goal'; s.criteria = ['Revised acceptance'];
+  await g.write('STATE.json', JSON.stringify(s));
+  assert.equal((await g.run({ action: 'status' })).status, 'working');
+  await assert.rejects(g.run({ action: 'close', knowledge: 'No docs change' }), /gate required/);
+  assert.equal((await g.state()).goal, 'Human revised goal');
+});
+test('README changes invalidate verification without explicit file selection', async t => {
+  const g = await fixture(t); await g.run(start); await g.run(verify);
+  await g.write('README.md', 'New human instructions');
+  await assert.rejects(g.run({ action: 'close', knowledge: 'No docs change' }), /Changed after verification/);
+});
+test('external state edit during operation is not overwritten', async t => {
+  const g = await fixture(t); await g.run(start);
+  await g.locked(async () => {
+    const s = await g.state();
+    await g.write('STATE.json', JSON.stringify({ ...s, goal: 'Human change' }));
+    await assert.rejects(g.save(s), /changed externally/);
+  });
+  assert.equal((await g.state()).goal, 'Human change');
+});
+test('simplified close recovers after interruption with the same summary', async t => {
+  const g = await fixture(t); await g.run(start); await g.run(verify);
+  const request = { action: 'close', knowledge: 'No usage change' }; const save = g.save.bind(g);
+  g.save = async () => { throw Error('simulated crash'); };
+  await assert.rejects(g.run(request), /simulated crash/); g.save = save;
+  assert.equal((await g.run(request)).recovered, true);
+});
+test('starting a different approved task does not discard queued human intent', async t => {
+  const g = await fixture(t); const s = await g.state();
+  s.followUp = { id: 'queued', goal: 'Queued work', criteria: ['Done'] };
+  await g.write('STATE.json', JSON.stringify(s));
+  assert.equal((await g.run(start)).followUp.id, 'queued');
+});
+test('legacy verification without intent fingerprint requires re-verification', async t => {
+  const g = await fixture(t); await g.run(start); await g.run(verify);
+  const s = await g.state(); delete s.verification.intentHash;
+  await g.write('STATE.json', JSON.stringify(s));
+  assert.equal((await g.state()).status, 'working');
+  await assert.rejects(g.run({ action: 'close', knowledge: 'No docs change' }), /gate required/);
 });

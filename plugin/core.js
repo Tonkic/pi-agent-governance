@@ -12,6 +12,18 @@ function route(f = {}) {
   const level = f.research || f.architecture ? 3 : f.interfaceChange || f.unknownCause || f.modules > 1 || f.files > 5 ? 2 : f.files > 1 || f.debugging ? 1 : 0;
   return { complexity: level, modelTier: ['small', 'medium', 'strong', 'strongest'][level], contextLevel: ['docs', 'contract', 'notes', 'source'][level], reviewRequired: level >= 2, advisoryOnly: true };
 }
+const intentHash = s => hash(JSON.stringify([s.task, s.goal, s.criteria, s.scope, s.constraints, s.current, s.next, s.blocked, s.followUp, s.contextFiles]));
+const idle = followUp => ({ version: 1, task: null, status: 'idle', followUp: followUp || null, current: followUp ? 'Approved next task available; start it before working.' : 'Waiting for human direction; do not invent work.' });
+function validateTask(a) {
+  if (!a || !/^[a-z0-9][a-z0-9-]{0,63}$/.test(a.id || '')) throw Error('Invalid task id');
+  requireText(a.goal, 'goal');
+  if (!Array.isArray(a.criteria) || !a.criteria.length) throw Error('Acceptance criteria required');
+  a.criteria.forEach(c => requireText(c, 'criterion'));
+  for (const k of ['scope', 'constraints']) if (a[k] !== undefined) {
+    if (!Array.isArray(a[k])) throw Error(`${k} must be an array`);
+    a[k].forEach(c => requireText(c, k));
+  }
+}
 class Governance {
   constructor(root) { this.root = path.resolve(root); }
   async safe(rel) {
@@ -43,20 +55,34 @@ class Governance {
     const s = JSON.parse(await this.read('STATE.json'));
     if (s.version !== 1 || !['idle', 'working', 'verified', 'ready'].includes(s.status)) throw Error('Invalid STATE schema');
     if (s.task !== null && (!/^[a-z0-9][a-z0-9-]{0,63}$/.test(s.task || '') || s.change !== `changes/active/${s.task}` || !Array.isArray(s.criteria) || !Array.isArray(s.blocked) || !layers.includes(s.layer))) throw Error('Invalid task state');
+    if (s.followUp) validateTask(s.followUp);
+    if (s.task) {
+      validateTask({ ...s, id: s.task });
+      if (s.verification && s.verification.intentHash !== intentHash(s)) {
+        s.status = 'working'; delete s.verification; delete s.gate;
+      }
+    }
     return s;
   }
-  async save(s) { await this.write('STATE.json', JSON.stringify(s, null, 2) + '\n'); return s; }
+  async save(s) {
+    if (this.expected !== undefined && await this.read('STATE.json') !== this.expected) throw Error('STATE changed externally; reload before retrying');
+    await this.write('STATE.json', JSON.stringify(s, null, 2) + '\n');
+    this.expected = await this.read('STATE.json');
+    return s;
+  }
   async locked(fn) {
     const lock = await this.safe('.governance.lock');
     const handle = await fs.open(lock, 'wx').catch(e => { if (e.code === 'EEXIST') throw Error('Governance busy; if a process crashed, inspect then remove .governance.lock'); throw e; });
-    try { return await fn(); } finally { await handle.close(); await fs.unlink(lock); }
+    try {
+      try { this.expected = await this.read('STATE.json'); } catch (e) { if (e.code !== 'ENOENT') throw e; this.expected = undefined; }
+      return await fn();
+    } finally { this.expected = undefined; await handle.close(); await fs.unlink(lock); }
   }
   async init() {
     const templates = {
-      'AGENTS.md': '# Agent workflow\n\nRead STATE.json first. Use governance status before work.\nLoad Docs → Contract → Notes → relevant source only as needed.\nStart a task with acceptance criteria; temporary findings belong in changes/active.\nBefore close: verify, review diff, evaluate knowledge gate, update Docs/Notes, then close.\nDocs describe current facts; Notes preserve reusable lessons. Never archive raw chat as knowledge.\n',
-      'docs/overview.md': '# Overview\n\nDescribe current purpose and usage here.\n',
-      'docs/architecture.md': '# Architecture\n\nDescribe current module boundaries here.\n',
-      'STATE.json': JSON.stringify({ version: 1, task: null, status: 'idle' }, null, 2) + '\n'
+      'AGENTS.md': '# Agent workflow\n\nRead STATE.json and README.md before work. Resume the active task or start its approved followUp; otherwise wait for human direction.\nSTATE is the sole task definition: goal, criteria, scope, constraints, current, next, blocked.\nRead further docs or relevant source only as needed; no mandatory layer traversal.\nRun checks, update necessary usage docs, verify, then close with a knowledge summary.\nDocs contain purpose and usage only. Notes and temporary findings are optional.\nRe-read state before writing; human changes invalidate old verification. Never overwrite new human intent.\n',
+      'README.md': '# Project\n\n## Purpose\nDescribe what this project does.\n\n## Usage\nDescribe how to use it.\n',
+      'STATE.json': JSON.stringify(idle(), null, 2) + '\n'
     };
     const created = [], preserved = [];
     for (const [p, text] of Object.entries(templates)) {
@@ -67,18 +93,13 @@ class Governance {
   async start(a) {
     const s = await this.state();
     if (s.task) throw Error('An active task already exists');
-    if (!/^[a-z0-9][a-z0-9-]{0,63}$/.test(a.id || '')) throw Error('Invalid task id');
-    requireText(a.goal, 'goal');
-    if (!Array.isArray(a.criteria) || !a.criteria.length) throw Error('Acceptance criteria required');
-    a.criteria.forEach(c => requireText(c, 'criterion'));
+    a = a.id ? a : { ...s.followUp, ...a };
+    validateTask(a);
     const base = `changes/active/${a.id}`;
     try { await fs.access(await this.safe(`changes/archive/${a.id}`)); throw Error('Task id already archived'); } catch (e) { if (e.code !== 'ENOENT') throw e; }
     await fs.mkdir(path.dirname(await this.safe(base)), { recursive: true });
     await fs.mkdir(await this.safe(base));
-    await this.write(`${base}/task.md`, `# ${a.id}\n\n## Goal\n${a.goal}\n\n## Acceptance\n${a.criteria.map(c => '- ' + c).join('\n')}\n`);
-    await this.write(`${base}/findings.md`, '# Temporary findings\n');
-    await this.write(`${base}/delta.md`, '# Verified delta\n');
-    return this.save({ version: 1, task: a.id, status: 'working', goal: a.goal, criteria: a.criteria, current: a.goal, next: [], blocked: [], change: base, layer: 'docs', routing: route(a.features) });
+    return this.save({ version: 1, task: a.id, status: 'working', goal: a.goal, criteria: a.criteria, scope: a.scope || [], constraints: a.constraints || [], current: a.goal, next: [], blocked: [], followUp: s.followUp && s.followUp.id !== a.id ? s.followUp : null, change: base, layer: 'docs' });
   }
   async fingerprints(files) {
     if (!Array.isArray(files) || !files.length || files.length > 100) throw Error('Provide 1–100 changed files');
@@ -92,7 +113,7 @@ class Governance {
   }
   async budgets(files) {
     for (const p of files) {
-      const max = p === 'AGENTS.md' ? 60 : p === 'docs/overview.md' ? 100 : p === 'docs/architecture.md' ? 200 : p.startsWith('docs/') ? 100 : null;
+      const max = p === 'AGENTS.md' ? 60 : p === 'README.md' ? 150 : p === 'docs/overview.md' ? 100 : p === 'docs/architecture.md' ? 200 : p.startsWith('docs/') ? 100 : null;
       if (max && (await this.read(p)).trimEnd().split('\n').length > max) throw Error(`${p} exceeds ${max} line budget`);
     }
   }
@@ -104,6 +125,11 @@ class Governance {
       if (a.action === 'init') return this.init();
       if (a.action === 'start') return this.start(a);
       const s = await this.state();
+      if (s.task && a.action === 'close' && s.status === 'verified' && a.knowledge !== undefined) {
+        requireText(a.knowledge, 'knowledge summary');
+        s.gate = { decisions: {}, summary: a.knowledge };
+        s.status = 'ready';
+      }
       if (!s.task) throw Error('No active task');
       if (a.action === 'progress') {
         requireText(a.current, 'current');
@@ -114,24 +140,31 @@ class Governance {
         s.current = a.current; s.status = 'working'; delete s.verification; delete s.gate;
       } else if (a.action === 'context') {
         const index = layers.indexOf(a.layer);
-        if (index < 0 || index > layers.indexOf(s.layer) + 1) throw Error('Escalate one context layer at a time');
-        if (index > layers.indexOf(s.layer)) requireText(a.reason, 'uncertainty reason');
+        if (index < 0) throw Error('Unknown context layer');
+        if (a.layer !== 'docs') requireText(a.reason, 'uncertainty reason');
         if (!Array.isArray(a.files) || !a.files.length || a.files.length > 10) throw Error('Provide 1–10 context files');
         const contents = {};
         let size = 0;
         for (const p of a.files) {
-          if (index < 2 && !(p.startsWith('docs/') || p === 'AGENTS.md')) throw Error('Docs/contracts must come from docs/ or AGENTS.md');
+          if (index < 2 && !(p.startsWith('docs/') || p === 'AGENTS.md' || p === 'README.md')) throw Error('Docs/contracts must come from README.md, docs/ or AGENTS.md');
           if (index === 2 && !p.startsWith('notes/')) throw Error('Notes must come from notes/');
           contents[p] = await this.read(p); size += contents[p].length;
           if (size > 40000) throw Error('Context exceeds 40000 characters; narrow the selection');
         }
-        s.layer = a.layer; await this.save(s); return { state: s, contents };
+        s.layer = a.layer; s.contextFiles = [...new Set([...(s.contextFiles || []), ...a.files])];
+        await this.save(s); return { state: s, contents };
       } else if (a.action === 'verify') {
         requireText(a.evidence, 'verification evidence'); requireText(a.diffReview, 'diff review');
         if (a.passed !== true || !Array.isArray(a.accepted) || s.criteria.some((_, i) => a.accepted[i] !== true) || a.accepted.length !== s.criteria.length) throw Error('All checks and acceptance criteria must pass');
         if (s.blocked.length) throw Error('Resolve blockers first');
         await this.budgets(a.files || []);
-        s.verification = { evidence: a.evidence, diffReview: a.diffReview, fingerprints: await this.fingerprints(a.files), at: new Date().toISOString() };
+        const files = [...new Set([...(a.files || []), ...(s.contextFiles || []).filter(p => p !== 'STATE.json' && !p.startsWith('changes/'))])];
+        for (const p of ['README.md', 'AGENTS.md']) {
+          try { await this.read(p); if (!files.includes(p)) files.push(p); } catch (e) { if (e.code !== 'ENOENT') throw e; }
+        }
+        if (!a.files?.length) throw Error('Provide changed files');
+        await this.budgets(files);
+        s.verification = { evidence: a.evidence, diffReview: a.diffReview, intentHash: intentHash(s), fingerprints: await this.fingerprints(files), at: new Date().toISOString() };
         s.status = 'verified'; delete s.gate;
       } else if (a.action === 'gate') {
         if (s.status !== 'verified') throw Error('Verify before knowledge gate');
@@ -143,7 +176,7 @@ class Governance {
           requireText(d.reason, `${key} reason`);
           if (d.changed) {
             const prefix = ['pitfall', 'decision'].includes(key) ? 'notes/' : 'docs/';
-            if (typeof d.path !== 'string' || !d.path.startsWith(prefix)) throw Error(`${key} requires ${prefix} reference`);
+            if (typeof d.path !== 'string' || !(d.path.startsWith(prefix) || (prefix === 'docs/' && d.path === 'README.md'))) throw Error(`${key} requires ${prefix} or README reference`);
             const content = await this.read(d.path);
             requireText(content, 'knowledge document'); await this.budgets([d.path]);
             decisions[key] = { ...d, fingerprint: hash(content) };
@@ -158,17 +191,18 @@ class Governance {
           const closure = await this.read(`${archived}/closure.json`);
           if (closure !== JSON.stringify(s, null, 2)) throw Error('Archive conflicts with active state');
           try { await fs.access(await this.safe(s.change)); throw Error('Both active and archived task exist; inspect manually'); } catch (e) { if (e.code !== 'ENOENT') throw e; }
-          await this.save({ version: 1, task: null, status: 'idle' });
+          await this.save(idle(s.followUp));
           return { status: 'closed', archive: archived, recovered: true };
         } catch (e) { if (e.code !== 'ENOENT') throw e; }
         for (const [p, h] of Object.entries(s.verification.fingerprints)) if (hash(await this.read(p)) !== h) throw Error(`Changed after verification: ${p}`);
         for (const d of Object.values(s.gate.decisions)) if (d.changed && hash(await this.read(d.path)) !== d.fingerprint) throw Error('Knowledge document changed after gate');
-        if (hash(await this.read(`${s.change}/delta.md`)) !== s.gate.deltaHash) throw Error('Delta changed after gate');
+        if (s.gate.deltaHash && hash(await this.read(`${s.change}/delta.md`)) !== s.gate.deltaHash) throw Error('Delta changed after gate');
         const dest = `changes/archive/${s.task}`;
         await fs.mkdir(path.dirname(await this.safe(dest)), { recursive: true });
+        if (await this.read('STATE.json') !== this.expected) throw Error('STATE changed externally; reload before retrying');
         await this.write(`${s.change}/closure.json`, JSON.stringify(s, null, 2));
         await fs.rename(await this.safe(s.change), await this.safe(dest));
-        await this.save({ version: 1, task: null, status: 'idle' });
+        await this.save(idle(s.followUp));
         return { status: 'closed', archive: dest };
       } else throw Error('Unknown action');
       return this.save(s);

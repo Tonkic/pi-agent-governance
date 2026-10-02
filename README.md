@@ -1,60 +1,44 @@
-# pi-agent-governance
+# PI Agent Governance
 
-Repository-level agent engineering governance for PI-Desktop.
+让新 Agent 从仓库文件接手工作，不依赖聊天记录。PI-Desktop 插件，版本 0.2.0。
 
-基于“Docs 保存当前事实、Notes 保存可复用经验、State 保存当前任务”的治理插件 **v0.1.0 MVP**。零运行时依赖，Node.js 20+。
+## 安装与使用
 
-## 已实现
+在 PI-Desktop 插件页安装 `plugin/dist/pi.agent-governance-0.2.0.piplug`，授权注册 Agent 工具；开发时加载 `plugin/`。
 
-- `init`：初始化 AGENTS.md、STATE.json、Docs，保留现有文件。
-- `start / progress / status`：单活动任务状态机及临时 Change Workspace。
-- `context`：Docs → Contract → Notes → Source 逐层读取，升级必须说明原因；限制文件数量及上下文大小。
-- `route`：规则驱动的 L0–L3 复杂度、模型档位和审查建议。
-- `verify`：要求验收项、测试证据、Diff 审查记录，记录所提交文件的 SHA-256。
-- `gate`：逐项判断行为、接口、稳定事实、踩坑、决策；需要沉淀时必须提供现有 Docs/Notes 引用。
-- `close`：校验门禁和指纹后归档，清空当前状态；支持归档后状态更新中断恢复。
-- 文档行数预算、路径检查、原子文件替换及跨进程互斥锁。
+向 Agent 说：“使用 governance 初始化当前项目，保留已有文件，按 STATE 继续工作。”
 
-## 安装
+新 Agent 先读 `AGENTS.md`、`STATE.json` 和本文件。有活动任务就继续；有已批准的 `followUp` 就启动；都没有则等待人工，不自行增加需求。
 
-在 PI-Desktop 中安装仓库 `plugin/dist/` 下的 `.piplug` 文件；开发时加载 `plugin/` 目录。工具名称为 `governance`，宿主可能添加插件命名空间前缀。此插件没有独立 UI 面板。
+默认流程：`status → start（需要时）→ 开发与检查 → verify → close`。进度变化时使用 `progress`。具体参数见 [工具用法](plugin/README.md)。
 
-安装后向 Agent 说：
+## 人工调整
 
-> 使用 Agent Governance 插件初始化当前项目，保留已有文档。开始开发前读取状态，完成后提交验证证据并执行知识门禁。
+- 新任务或方向调整：编辑 STATE 的目标、验收条件、范围、限制或 `followUp`；也可让 Agent 按你的要求代写。
+- 当前使用方式修正：编辑 README 或相关 Docs；未实现功能仍放在 State，不写成现有能力。
+- Agent 定期同步 `current / next / blocked`，在继续写入前重读状态。
+- Docs 只写用途和用法；必要的输入、限制、命令属于用法。Notes 与临时记录按需创建，不要求每次任务都写。
 
-详细参数和示例见 [插件使用说明](plugin/README.md)。
+STATE 是唯一的当前任务定义。归档中的 closure.json 仅为完成记录，不作为新任务依据。
 
-## 本地开发
+## 开发与检查
+
+需要 Node.js 20+，无第三方运行时依赖。
 
 ```powershell
 npm run build
 npm test
-'{"action":"route","features":{"modules":2}}' | node scripts/governance.js
+'{"action":"status"}' | node scripts/governance.js
 ```
 
-CLI 以**当前工作目录**为目标仓库，从 stdin 接受一个 JSON 对象。`init` 会在该目录创建治理文件，请先确认位置。
+CLI 作用于当前目录；PI 工具作用于宿主当前工作区主根。`plugin/core.js` 是内核，`main.js` 是 PI 适配器，`tool.js` 定义参数。manifest 由 build 生成。打包使用 PI 的 PluginCheck 和 PluginPack。
 
-打包使用 PI-Desktop 的 `PluginCheck` 和 `PluginPack`，不手工生成压缩包。`npm run build` 从 `plugin/tool.js` 生成 manifest，避免运行时工具参数与声明不一致。
+## 必要限制
 
-## 安全与诚实边界
-
-这是工具级工作流门禁，**不是宿主级安全沙箱**：其他工具仍能直接读代码、写文件或结束回复。未实现全局 Finish Hook、自动上下文注入、自动模型切换、多 Agent 调度或 worktree 隔离。
-
-验证与 Diff 审查由调用方提交；插件不执行测试、不运行 Git，也不证明证据真实。指纹只覆盖显式提交的现存文本文件，不能发现遗漏文件、删除文件或未提交的变更。知识门禁检查结构和引用，不判断文档语义是否正确。文档预算仅检查提交验证或门禁引用的文件。
-
-文件操作使用 Node fs，不经宿主 fs 权限网关。范围为宿主返回的当前工作区主根；拒绝路径穿越、子路径符号链接/junction 和常见凭据文件。不得用于有恶意并发文件写入者的目录；不是针对 TOCTOU 或硬链接攻击的安全隔离。无网络访问、无 shell 执行。
-
-STATE 使用 JSON 而非 YAML，以保持零依赖。默认仅一个活动任务。已有 AGENTS.md 不自动追加规则，请人工合并工作流。任务创建中断时可能留下未关联的 active 目录；先检查并保留有用内容，再人工修复。进程崩溃遗留 `.governance.lock` 时，确认无运行中的操作后再移除。
-
-## 目录
-
-- `plugin/core.js`：可独立测试的治理内核。
-- `plugin/main.js`：PI 工具注册适配器。
-- `plugin/tool.js`：工具参数定义。
-- `scripts/`：manifest 生成器及 CLI。
-- `test/`：生命周期、安全路径、门禁、恢复及适配器测试。
-
-## 后续方向（尚未实现）
-
-宿主级生命周期 Hook、可信测试执行器与完整 Git diff 绑定、配置化模型路由、任务取消/恢复、多 Agent ownership 与 worktree 隔离。当前不引入 LangGraph。
+- 单活动任务；工具不会全局拦截其他 Agent 操作，也不会自动唤醒新 Agent。
+- 测试与 Diff 审查必须实际执行后提交证据；插件不运行测试、不检查证据真实性、不自动发现漏报或删除文件。
+- 验证覆盖提交文件、context 读过的文件，以及存在的根 README/AGENTS。其他文档变化需 Agent 自行发现并重新验证。
+- 修改 State 的任务定义、进度或后续任务会使旧验证失效；status 返回有效状态，但不会自动重写人工文件。重新 verify 后落盘。
+- 使用 Node fs，非宿主 fs 权限网关；拒绝越界、子路径符号链接与常见凭据路径。操作锁和写前比较不能防御恶意写入、硬链接或最后瞬间的并发编辑；人工改状态时应暂停正在运行的工具操作。
+- 中断后重试 close，使用相同 knowledge 文本。遇到遗留锁、孤立 active 目录或归档与状态冲突，先检查再人工恢复，不直接覆盖。
+- 旧版 STATE 可读取；旧验证必须重做。init 保留已有文件，不会替你更新旧 AGENTS 规则。旧五类 gate 和 route 仅作为可选兼容工具。
