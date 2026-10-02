@@ -6,7 +6,9 @@ const manifest = {
   schemaVersion: 1, id: 'pi.agent-governance', name: 'Agent Governance', version: require('../package.json').version,
   description: 'Repository handoff and Git collaboration: isolated task worktrees, scoped commits, commit-bound verification and controlled integration.',
   safetyNotes: 'Uses Node fs and execFile(git) directly, outside host filesystem/exec gateways. Git actions create branches/worktrees and commits and merge only registered worker commits into their coordinator. Registry/worktrees live under the Git common directory, which may be outside the opened linked worktree. No push, fetch, reset, stash or automatic main merge. Git hooks, signing, fsmonitor and diff helpers are disabled for plugin commands; trusted Git configuration/attributes are still required (filters or merge drivers may execute). Other tools are not intercepted. Evidence and owner labels are caller-attested. No protection against malicious concurrent writers; inspect stale locks and interrupted operations before recovery.',
-  main: 'main.js', contributes: { agentTools: [tool] }, permissions: ['agent.tool.register'],
-  engines: { piDesktop: '>=0.1.0' }, activationEvents: ['onStartup']
+  main: 'main.js', ui: { panel: 'renderer/index.html', title: 'Agent Governance' },
+  contributes: { agentTools: [tool], commands: [{ id: 'governance.open', title: 'Agent Governance: 打开治理面板', keywords: ['governance', '治理', '任务', 'git'] }] },
+  permissions: ['agent.tool.register', 'ui.panel'],
+  engines: { piDesktop: '>=0.1.0' }, activationEvents: ['onStartup', 'onCommand:governance.open']
 };
 fs.writeFileSync(path.join(__dirname, '../plugin/manifest.json'), JSON.stringify(manifest, null, 2) + '\n');

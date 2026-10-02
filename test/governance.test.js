@@ -89,14 +89,19 @@ test('close recovers archive-before-state crash', async t => {
   assert.equal((await g.state()).task, null);
 });
 test('PI adapter registers, executes and unregisters', async t => {
-  const g = await fixture(t); let registered, removed;
-  global.pi = { workspace: { get: async () => ({ path: g.root }) }, agent: { registerTool: async tool => { registered = tool; }, unregisterTool: async name => { removed = name; } } };
+  const g = await fixture(t); let registered, removed, command, removedCommand, opened;
+  global.pi = { workspace: { get: async () => ({ path: g.root }) }, agent: { registerTool: async tool => { registered = tool; }, unregisterTool: async name => { removed = name; } }, commands: { register: async value => { command = value; }, unregister: async id => { removedCommand = id; } }, ui: { openPanel: async value => { opened = value; } } };
   t.after(() => { delete global.pi; });
   const adapter = require('../plugin/main'); await adapter.onLoad();
   assert.equal(registered.name, 'governance');
   assert.equal((await registered.execute({ action: 'status' })).result.status, 'idle');
   assert.equal((await registered.execute({ action: 'close' })).ok, false);
-  await adapter.onUnload(); assert.equal(removed, 'governance');
+  assert.equal(command.id, 'governance.open'); await command.run(); assert.equal(opened.title, 'Agent Governance');
+  assert.equal((await adapter.onPanelInvoke('governance.snapshot')).result.state.status, 'idle');
+  assert.equal((await adapter.onPanelInvoke('unknown')).ok, false);
+  global.pi.workspace.get = async () => null;
+  assert.equal((await adapter.onPanelInvoke('governance.snapshot')).ok, false);
+  await adapter.onUnload(); assert.equal(removed, 'governance'); assert.equal(removedCommand, 'governance.open');
 });
 test('minimal initialization and task have no empty documentation artifacts', async t => {
   const root = await fs.mkdtemp(path.join(process.env.PI_SCRATCH_DIR || os.tmpdir(), 'minimal-'));

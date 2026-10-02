@@ -1,6 +1,6 @@
 # PI Agent Governance
 
-让新 Agent 从仓库文件接手工作，不依赖聊天记录。PI-Desktop 插件，版本 0.3.0。
+让新 Agent 从仓库文件接手工作，不依赖聊天记录。PI-Desktop 插件，版本 0.4.0。提供 Agent 工具、CLI 和可视化治理面板。
 
 ## 原则
 
@@ -13,11 +13,49 @@
 
 ## 安装与使用
 
-在 PI-Desktop 插件页安装 `plugin/dist/pi.agent-governance-0.3.0.piplug`，授权注册 Agent 工具；开发时加载 `plugin/`。
+在 PI-Desktop 插件页安装 `plugin/dist/pi.agent-governance-0.4.0.piplug`，授权注册 Agent 工具与打开面板；开发时加载 `plugin/`。
 
 向 Agent 说：“使用 governance 初始化当前项目，保留已有文件，按 STATE 继续工作。”
 
 默认流程：`status → start（需要时）→ 开发与检查 → verify → close`。进度变化时使用 `progress`。具体参数见 [工具用法](plugin/README.md)。
+
+### 可视化面板
+
+1. 在 PI-Desktop 打开要管理的项目，安装或重载插件。
+2. 在命令面板搜索 **Agent Governance: 打开治理面板**（`governance.open`）。
+3. 没有 STATE 时点击「初始化治理」；待命时填写目标与验收条件创建任务；有活动任务时更新进度、下一步和阻塞项。
+4. 查看目标、范围、验收条件，以及 Git 工作区、分支、修改和验证状态。外部修改后点击「刷新状态」。
+
+面板的写入均需确认；页面状态过期或工作区切换时拒绝写入。已有文件不会被初始化覆盖。Git 创建、提交、验证、集成及任务关闭仍交给 Agent，面板不自动运行测试或执行高风险操作。
+
+直接打开 `plugin/renderer/index.html` 只能预览界面，不能读写项目。面板不实时轮询；有未保存表单时，第一次刷新提示，第二次刷新丢弃表单并重新读取。
+
+### 典型使用
+
+告诉 Agent：“使用 governance 初始化这个项目。目标是修复搜索功能，范围仅限搜索模块，验收是相关测试通过；先读取状态，有已有任务则先确认如何接续。”之后通过面板查看进度，或让 Agent 用 `status` 汇报。不要把本插件当作自动执行任务的后台服务。
+
+## 项目结构
+
+```text
+AGENTS.md                 Agent 工作规则
+STATE.json                当前总体任务与接手状态
+README.md                 原则、用法和限制
+plugin/
+  main.js                 PI 工具、命令与面板入口
+  core.js                 状态、验证、归档内核
+  git.js                  worktree、提交和集成管理
+  panel.js                面板通道与写入白名单
+  renderer/               HTML / CSS / JS 可视化界面
+  tool.js                 Agent 工具参数定义
+  manifest.json           构建生成的插件清单
+  README.md / GIT.md       详细操作说明
+  dist/                   可安装的 .piplug
+scripts/                  CLI 与清单构建脚本
+test/                     内核、Git 与面板回归测试
+changes/archive/          已完成任务的验收记录
+```
+
+这是无第三方运行时依赖的本地插件，不需要单独启动 Web 服务或数据库。面板通过宿主桥接调用同一内核；Git 本地登记表在 `.git` common directory 中，不在上述源码目录内。
 
 ## 人工调整
 

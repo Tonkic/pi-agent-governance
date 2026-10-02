@@ -123,6 +123,7 @@ class Governance {
     if (a.action === 'route') return route(a.features);
     if (a.action === 'status') return this.state();
     return this.locked(async () => {
+      if (a.expectedState !== undefined && a.expectedState !== hash(JSON.stringify([this.root, this.expected ?? null]))) throw Error('页面状态已过期或工作区已切换，请刷新后重试');
       if (a.action === 'init') return this.init();
       if (a.action === 'start') return this.start(a);
       const s = await this.state();
