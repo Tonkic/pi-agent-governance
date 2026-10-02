@@ -1,6 +1,8 @@
 # Governance 工具用法
 
-为当前仓库保存可接手的任务状态，并在验证后关闭任务。PI 注册名为 `governance`，宿主可能添加命名空间前缀。文件访问使用原生 Node fs，无网络或 shell 执行；不是全局 Agent 拦截器。
+为当前仓库保存可接手的任务状态，并在验证后关闭任务。PI 注册名为 `governance`，宿主可能添加命名空间前缀。文件访问使用原生 Node fs；Git 操作通过 execFile 执行。不是全局 Agent 拦截器。
+
+Git 分支/worktree、范围检查、提交验证、集成及恢复，见 [Git 协作用法](GIT.md)。写入型委派前先 git_create 分配工作区；插件不自动启动子代理。
 
 ## 接手与执行
 

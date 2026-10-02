@@ -2,16 +2,16 @@
   "schemaVersion": 1,
   "id": "pi.agent-governance",
   "name": "Agent Governance",
-  "version": "0.2.0",
-  "description": "Repository handoff: current state, approved next tasks, verification and concise documentation.",
-  "safetyNotes": "Uses Node filesystem APIs directly, not host-mediated fs permissions. Only the current workspace is used; traversal, symlinks and common credential paths are rejected. Writes STATE.json, new bootstrap documents and changes/. No network or shell execution. Gates apply only to this tool, not other agent tools. Verification evidence is caller-attested, not independently executed. Do not use with untrusted concurrent filesystem writers.",
+  "version": "0.3.0",
+  "description": "Repository handoff and Git collaboration: isolated task worktrees, scoped commits, commit-bound verification and controlled integration.",
+  "safetyNotes": "Uses Node fs and execFile(git) directly, outside host filesystem/exec gateways. Git actions create branches/worktrees and commits and merge only registered worker commits into their coordinator. Registry/worktrees live under the Git common directory, which may be outside the opened linked worktree. No push, fetch, reset, stash or automatic main merge. Git hooks, signing, fsmonitor and diff helpers are disabled for plugin commands; trusted Git configuration/attributes are still required (filters or merge drivers may execute). Other tools are not intercepted. Evidence and owner labels are caller-attested. No protection against malicious concurrent writers; inspect stale locks and interrupted operations before recovery.",
   "main": "main.js",
   "contributes": {
     "agentTools": [
       {
         "name": "governance",
-        "description": "Repository handoff: read status and README first. Resume the active task, or start an approved followUp with action=start; otherwise wait. init preserves existing files. Default workflow: start, progress as needed, verify, close with knowledge summary. verify requires passed,accepted,evidence,diffReview,files. Context reads are optional and may skip layers with a reason. Legacy gate and advisory route remain optional. Never claim this tool runs tests or globally intercepts tools.",
-        "risk": "medium",
+        "description": "Repository governance: read status/README and resume approved work. For Git collaboration call git_status first; git_create allocates coordinator/worker branch and worktree before a writing delegate; git_diff supplies review snapshot; git_commit requires expectedDiff; git_verify binds actual test evidence to expectedHead; git_integrate merges a verified worker into its coordinator only. Set delegate cwd explicitly. No auto host spawning, main merge, push, reset or stash. State workflow remains start/progress/verify/close with knowledge summary. Tests and approvals are caller-attested. See plugin README.",
+        "risk": "high",
         "schema": {
           "type": "object",
           "additionalProperties": false,
@@ -30,7 +30,14 @@
                 "route",
                 "verify",
                 "gate",
-                "close"
+                "close",
+                "git_status",
+                "git_create",
+                "git_diff",
+                "git_commit",
+                "git_verify",
+                "git_integrate",
+                "git_recover"
               ]
             },
             "id": {
@@ -44,6 +51,48 @@
               "items": {
                 "type": "string"
               }
+            },
+            "owner": {
+              "type": "string",
+              "description": "Agent/task owner label; not an authenticated identity."
+            },
+            "role": {
+              "type": "string",
+              "enum": [
+                "coordinator",
+                "worker"
+              ]
+            },
+            "parent": {
+              "type": "string",
+              "description": "Coordinator task id for workers."
+            },
+            "allowedPaths": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Exact relative files or directory prefixes ending in /. No globs. Worker scope must fit coordinator scope."
+            },
+            "expectedHead": {
+              "type": "string",
+              "description": "Exact reviewed base/current/target commit SHA."
+            },
+            "expectedDiff": {
+              "type": "string",
+              "description": "snapshot from git_diff; required by git_commit."
+            },
+            "source": {
+              "type": "string",
+              "description": "Worker task id to integrate."
+            },
+            "sourceHead": {
+              "type": "string",
+              "description": "Exact verified worker SHA."
+            },
+            "message": {
+              "type": "string",
+              "description": "Git commit message."
             },
             "scope": {
               "type": "array",

@@ -80,7 +80,7 @@ class Governance {
   }
   async init() {
     const templates = {
-      'AGENTS.md': '# Agent workflow\n\nRead STATE.json and README.md before work. Resume the active task or start its approved followUp; otherwise wait for human direction.\nSTATE is the sole task definition: goal, criteria, scope, constraints, current, next, blocked.\nRead further docs or relevant source only as needed; no mandatory layer traversal.\nRun checks, update necessary usage docs, verify, then close with a knowledge summary.\nDocs contain purpose and usage only. Notes and temporary findings are optional.\nRe-read state before writing; human changes invalidate old verification. Never overwrite new human intent.\n',
+      'AGENTS.md': '# Agent workflow\n\nRead STATE.json and README.md before work. Resume the active task or start its approved followUp; otherwise wait for human direction.\nSTATE is the sole task definition: goal, criteria, scope, constraints, current, next, blocked.\nRead further docs or relevant source only as needed; no mandatory layer traversal.\nRun checks, update necessary usage docs, verify, then close with a knowledge summary.\nDocs contain purpose and usage only. Notes and temporary findings are optional.\nRe-read state before writing; human changes invalidate old verification. Never overwrite new human intent.\nKeep modifications in Git task branches. Use git_status to resume, git_create to allocate a worktree before assigning a writing delegate; explicitly set its working directory and allowed paths. Read-only delegates need no branch.\nReview git_diff, git_commit, then test and git_verify the exact commit. Integrate verified workers into the managed coordinator only; test the combined result again. Main merge/push requires human approval. Never stash/reset user changes automatically.\n',
       'README.md': '# Project\n\n## Purpose\nDescribe what this project does.\n\n## Usage\nDescribe how to use it.\n',
       'STATE.json': JSON.stringify(idle(), null, 2) + '\n'
     };
@@ -119,6 +119,7 @@ class Governance {
   }
   async run(a) {
     if (!a || typeof a !== 'object') throw Error('Arguments required');
+    if (typeof a.action === 'string' && a.action.startsWith('git_')) return new (require('./git').GitGovernance)(this.root).run(a);
     if (a.action === 'route') return route(a.features);
     if (a.action === 'status') return this.state();
     return this.locked(async () => {

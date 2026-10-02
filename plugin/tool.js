@@ -1,13 +1,20 @@
 'use strict';
 module.exports = {
   name: 'governance',
-  description: 'Repository handoff: read status and README first. Resume the active task, or start an approved followUp with action=start; otherwise wait. init preserves existing files. Default workflow: start, progress as needed, verify, close with knowledge summary. verify requires passed,accepted,evidence,diffReview,files. Context reads are optional and may skip layers with a reason. Legacy gate and advisory route remain optional. Never claim this tool runs tests or globally intercepts tools.',
-  risk: 'medium',
+  description: 'Repository governance: read status/README and resume approved work. For Git collaboration call git_status first; git_create allocates coordinator/worker branch and worktree before a writing delegate; git_diff supplies review snapshot; git_commit requires expectedDiff; git_verify binds actual test evidence to expectedHead; git_integrate merges a verified worker into its coordinator only. Set delegate cwd explicitly. No auto host spawning, main merge, push, reset or stash. State workflow remains start/progress/verify/close with knowledge summary. Tests and approvals are caller-attested. See plugin README.',
+  risk: 'high',
   schema: {
     type: 'object', additionalProperties: false, required: ['action'],
     properties: {
-      action: { type: 'string', enum: ['init', 'status', 'start', 'progress', 'context', 'route', 'verify', 'gate', 'close'] },
+      action: { type: 'string', enum: ['init', 'status', 'start', 'progress', 'context', 'route', 'verify', 'gate', 'close', 'git_status', 'git_create', 'git_diff', 'git_commit', 'git_verify', 'git_integrate', 'git_recover'] },
       id: { type: 'string' }, goal: { type: 'string' }, criteria: { type: 'array', items: { type: 'string' } },
+      owner: { type: 'string', description: 'Agent/task owner label; not an authenticated identity.' },
+      role: { type: 'string', enum: ['coordinator', 'worker'] }, parent: { type: 'string', description: 'Coordinator task id for workers.' },
+      allowedPaths: { type: 'array', items: { type: 'string' }, description: 'Exact relative files or directory prefixes ending in /. No globs. Worker scope must fit coordinator scope.' },
+      expectedHead: { type: 'string', description: 'Exact reviewed base/current/target commit SHA.' },
+      expectedDiff: { type: 'string', description: 'snapshot from git_diff; required by git_commit.' },
+      source: { type: 'string', description: 'Worker task id to integrate.' }, sourceHead: { type: 'string', description: 'Exact verified worker SHA.' },
+      message: { type: 'string', description: 'Git commit message.' },
       scope: { type: 'array', items: { type: 'string' } }, constraints: { type: 'array', items: { type: 'string' } },
       knowledge: { type: 'string', description: 'For close: required concise summary of usage documentation updates or why none are needed; notes are optional.' },
       current: { type: 'string' }, next: { type: 'array', items: { type: 'string' } }, blocked: { type: 'array', items: { type: 'string' } },
