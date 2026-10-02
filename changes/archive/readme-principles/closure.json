@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "task": "readme-principles",
+  "status": "ready",
+  "goal": "将项目原则集中写在根 README 开头，保留安装、操作和限制说明，消除重复。",
+  "criteria": [
+    "README 在安装用法之前集中说明现有原则，后文保留必要操作说明且不改变功能承诺"
+  ],
+  "scope": [
+    "README.md",
+    "repository state"
+  ],
+  "constraints": [
+    "仅调整文档，不修改插件功能",
+    "保留在当前开发分支，不合并主分支或推送"
+  ],
+  "current": "将项目原则集中写在根 README 开头，保留安装、操作和限制说明，消除重复。",
+  "next": [],
+  "blocked": [],
+  "followUp": null,
+  "change": "changes/active/readme-principles",
+  "layer": "docs",
+  "verification": {
+    "evidence": "npm.cmd run build passed; npm.cmd test passed 31/31; git -c core.autocrlf=false diff --check passed.",
+    "diffReview": "Reviewed README diff: six existing governance principles now precede installation; duplicate prose removed; installation, commands and limitations retained. No plugin files changed.",
+    "intentHash": "31e0a76a2a883e595838337de626cd3770d4ec235aff1b344951b332cec87062",
+    "fingerprints": {
+      "README.md": "14e3233965c1ad8bce0bc616f5d53ddbf9feecabf6b3c23542fc3e8774007dc8",
+      "AGENTS.md": "4913ef21970fa753e093f9bbeef0f48651fb45fa28855a88c540b3c76b266274"
+    },
+    "at": "2026-10-02T18:56:19.130Z"
+  },
+  "gate": {
+    "decisions": {},
+    "summary": "根 README 新增开头的原则章节，集中现有目标授权、状态接手、人工调整、精简文档、Git 隔离和验证要求；后文去重并保留操作说明。仅根文档调整，无需重打插件安装包。"
+  }
+}

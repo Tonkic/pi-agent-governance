@@ -2,13 +2,20 @@
 
 让新 Agent 从仓库文件接手工作，不依赖聊天记录。PI-Desktop 插件，版本 0.3.0。
 
+## 原则
+
+- **人定目标，Agent 在范围内执行。** 人决定目标、范围和验收条件；没有活动任务或已批准的后续任务时，Agent 等待指令，不自行增加需求。
+- **从仓库接手，不依赖聊天记录。** 新 Agent 先读 AGENTS、STATE 和 README。STATE 是唯一的当前任务定义；归档仅作完成记录，不作为新任务依据。
+- **尊重人工调整，及时同步状态。** 写入前重读状态，不覆盖人的新意图；进度变化同步 `current / next / blocked`。
+- **文档只写用途和用法。** 保留必要输入、限制和命令；不堆积历史、临时计划或重复解释。Notes 按需创建，不强制逐层阅读文档。
+- **修改通过 Git 留痕，写入任务隔离。** 写入型子任务使用独立分支/worktree；只读审查不必分支。不自动 stash/reset 或丢弃用户修改；主分支合并和远端推送须人工授权。
+- **实际检查后才能完成。** 审查差异、运行检查、更新必要用法，再验证和关闭任务；Git 验证绑定具体提交，集成后重新检查。
+
 ## 安装与使用
 
 在 PI-Desktop 插件页安装 `plugin/dist/pi.agent-governance-0.3.0.piplug`，授权注册 Agent 工具；开发时加载 `plugin/`。
 
 向 Agent 说：“使用 governance 初始化当前项目，保留已有文件，按 STATE 继续工作。”
-
-新 Agent 先读 `AGENTS.md`、`STATE.json` 和本文件。有活动任务就继续；有已批准的 `followUp` 就启动；都没有则等待人工，不自行增加需求。
 
 默认流程：`status → start（需要时）→ 开发与检查 → verify → close`。进度变化时使用 `progress`。具体参数见 [工具用法](plugin/README.md)。
 
@@ -16,14 +23,10 @@
 
 - 新任务或方向调整：编辑 STATE 的目标、验收条件、范围、限制或 `followUp`；也可让 Agent 按你的要求代写。
 - 当前使用方式修正：编辑 README 或相关 Docs；未实现功能仍放在 State，不写成现有能力。
-- Agent 定期同步 `current / next / blocked`，在继续写入前重读状态。
-- Docs 只写用途和用法；必要的输入、限制、命令属于用法。Notes 与临时记录按需创建，不要求每次任务都写。
-
-STATE 是唯一的当前任务定义。归档中的 closure.json 仅为完成记录，不作为新任务依据。
 
 ## Git 协作
 
-所有修改通过 Git 留痕。写入型子任务先用 git_create 创建独立分支/worktree，再把返回目录明确交给子代理；只读审查不必分支。用 git_status 接手已有任务。先审查 git_diff，再 git_commit，实际测试后 git_verify，最后 git_integrate 到协调分支并重新检查。主分支合并与远端推送须人工授权；不自动 stash/reset 或清理用户修改。
+用 `git_status` 接手已有任务。写入型子任务先用 `git_create` 创建独立分支/worktree，再把返回目录明确交给子代理。先审查 `git_diff`，再 `git_commit`，实际测试后 `git_verify`，最后 `git_integrate` 到协调分支并重新检查。
 
 支持范围检查、过期验证拒绝、冲突保留与登记恢复。State 管总体目标，Git 本地登记表管工作区任务。使用要求与参数见 [Git 协作](plugin/GIT.md)。
 
