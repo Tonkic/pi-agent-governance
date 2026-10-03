@@ -32,6 +32,10 @@
 
 直接打开 `plugin/renderer/index.html` 只能预览界面，不能读写项目。面板不实时轮询；有未保存表单时，第一次刷新提示，第二次刷新丢弃表单并重新读取。
 
+### 本仓库自用
+
+本仓库直接使用插件维护 `.governance/architecture.json` 和 `.governance/board.json`，两者纳入 Git。打开本仓库后先调用 `status` 与 `project_snapshot` 接续当前任务，不重复初始化；面板点击「刷新状态」查看图与工作项。源码变化后根据 `staleFiles` 重新阅读并更新架构，实际进展通过工作项和 `progress` 同步，不能以卡片完成替代总体 `verify/close`。Git 受管任务登记是本机数据，不随 clone 恢复；需要写入委派时先 `git_status / git_create`，不倒填历史登记。
+
 ### 典型使用
 
 告诉 Agent：“使用 governance 初始化这个项目。目标是修复搜索功能，范围仅限搜索模块，验收是相关测试通过；先读取状态，有已有任务则先确认如何接续。”之后通过面板查看进度，或让 Agent 用 `status` 汇报。不要把本插件当作自动执行任务的后台服务。

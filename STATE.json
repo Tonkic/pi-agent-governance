@@ -22,6 +22,7 @@
     "package.json",
     "package-lock.json",
     ".github/",
+    ".governance/",
     "STATE.json",
     "changes/"
   ],
@@ -30,15 +31,15 @@
     "No main merge, remote push or public release",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "0.5.0 board and dynamic project/workflow UI implemented; one review completed and four concrete defects fixed with regressions. Source commit 6fe2d4d8f71d8ffdaf3d498905d1259137dac41b passed post-commit npm test (46/46) and real-core mock-host browser suite. Final clean npm ci/typecheck/build/test passed. Final package 227566 bytes SHA256 a3767ce9667ca9d217d8ef2625353df41737f3877b81a34f823b5301f07ca5b8. Criteria 1/2/3/4/6/8 supported by evidence; 5 visual inspection and 7 real host installation remain incomplete.",
+  "current": "用户已确认安装插件。本仓库现已通过宿主 governance 工具建立源码架构（8 节点、9 关系、12 文件指纹）和三项真实剩余验收工作项，关联 project-board-release，未伪造历史完成状态。0.5.0 源码与包检查点为 6fe2d4d/81a654c，已有 46 项测试及模拟桥接浏览器通过记录；真实面板交互与目视验收仍待完成。",
   "next": [
-    "Install plugin/dist/pi.agent-governance-0.5.0.piplug using PI-Desktop plugins page and explicit agent.tool.register grant; confirm loaded 0.5.0",
-    "Run isolated real-host board persistence/project graph/workflow smoke and visually inspect changes/active/project-board-release/screenshots",
-    "Only after missing acceptance passes, update evidence then verify and close; no main merge or push"
+    "在本仓库治理面板点击刷新，检查项目架构与三项工作项显示；按 host-smoke 在隔离项目记录真实交互结果",
+    "按 visual-check 目视核对六组截图；按 release-acceptance 汇总八条验收证据",
+    "后续源码写入委派先 git_status/git_create 分配受管工作区；全部验收通过才 verify/close，不推送或合并主分支"
   ],
   "blocked": [
-    "Supported host install/reload UI is not exposed by available tools; package was built but not installed or host-smoke verified. User plugins-page action is needed.",
-    "Six screenshots and automated layout checks passed; visual inspection remains unavailable because browser screenshot calls fail. Screenshot evidence and index page are preserved in changes/active/project-board-release/screenshots."
+    "用户已确认安装，且宿主 governance 工具读写成功；但尚无真实面板交互、加载版本和重载持久化的完整验收结果。",
+    "六组截图生成和自动布局检查已通过，目视检查结果仍缺；此前浏览器截图工具调用失败。"
   ],
   "followUp": null,
   "change": "changes/active/project-board-release",
