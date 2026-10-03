@@ -201,7 +201,10 @@ class ProjectData {
             }
             if (await this.raw(boardFile) !== raws[0] || await this.raw(architectureFile) !== raws[1] || await this.g.read('STATE.json') !== this.g.expected)
                 throw Error('Project changed externally; reload before retrying');
-            await this.g.write(file, JSON.stringify(result, null, 2) + '\n');
+            const serialized = JSON.stringify(result, null, 2) + '\n';
+            if (Buffer.byteLength(serialized, 'utf8') > 1024 * 1024)
+                throw Error('Project data exceeds 1 MiB; shorten descriptions before saving');
+            await this.g.write(file, serialized);
             return result;
         });
     }

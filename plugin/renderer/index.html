@@ -12,6 +12,7 @@
     <span class="nav-brand">G <span>Governance</span></span>
     <span class="nav-label">工作区</span>
     <a href="#architecture">◇ 项目架构</a>
+    <a href="#board-section">▦ 工作项看板</a>
     <a href="#task-section">▤ 当前任务</a>
     <a href="#git-section">⑂ Git 协作</a>
     <span class="nav-note">本地仓库</span>
@@ -36,7 +37,9 @@
   </header>
 
   <section id="architecture" class="panel architecture-panel" aria-labelledby="architecture-title">
-    <div class="section-head"><div><h2 id="architecture-title">项目架构</h2><p class="muted">Agent Governance · 源码模块关系</p></div><span class="badge">6 节点 · 5 关系</span></div>
+    <div class="section-head"><div><h2 id="architecture-title">项目架构</h2><p id="graph-source" class="muted">等待读取当前工作区</p></div><span id="graph-count" class="badge">—</span></div>
+    <div class="graph-modes" role="group" aria-label="图视图"><button id="show-architecture" type="button" aria-pressed="true">项目架构</button><button id="show-workflow" type="button" aria-pressed="false">任务流程</button></div>
+    <p id="graph-empty" role="status">尚未读取项目图。</p>
     <div class="graph-toolbar" aria-label="架构图工具">
       <div class="graph-modes" role="group" aria-label="关系追踪"><button type="button" data-trace="all" aria-pressed="true">全部关系</button><button type="button" data-trace="upstream" aria-pressed="false">上游</button><button type="button" data-trace="downstream" aria-pressed="false">下游</button></div>
       <div class="graph-camera"><button id="graph-out" type="button" aria-label="缩小架构图">−</button><output id="graph-scale" aria-label="缩放比例">100%</output><button id="graph-in" type="button" aria-label="放大架构图">+</button><button id="graph-fit" type="button">适应画布</button></div>
@@ -44,19 +47,12 @@
     <div class="architecture-layout">
       <div id="graph-viewport" class="graph-viewport" tabindex="0" role="group" aria-label="架构画布" aria-describedby="graph-help">
         <div id="graph-stage" class="graph-stage">
-          <div class="graph-group group-entry"><span>入口 / INTERFACES</span></div><div class="graph-group group-core"><span>治理 / GOVERNANCE</span></div><div class="graph-group group-store"><span>存储 / REPOSITORY</span></div>
           <svg id="graph-edges" class="graph-edges" viewBox="0 0 940 440" aria-hidden="true"><defs><marker id="edge-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker></defs></svg>
-          <button type="button" class="architecture-node" data-module="ui" aria-pressed="false"><span class="node-kind">UI</span><strong>可视化面板</strong><code>renderer/ → panel.ts</code></button>
-          <button type="button" class="architecture-node" data-module="agent" aria-pressed="false"><span class="node-kind">AGENT</span><strong>Agent / CLI</strong><code>main.ts · scripts/</code></button>
-          <button type="button" class="architecture-node" data-module="core" aria-pressed="true"><span class="node-kind">CORE</span><strong>任务治理</strong><code>core.ts</code></button>
-          <button type="button" class="architecture-node" data-module="git" aria-pressed="false"><span class="node-kind">GIT</span><strong>Git 协作</strong><code>git.ts</code></button>
-          <button type="button" class="architecture-node" data-module="state" aria-pressed="false"><span class="node-kind">STATE</span><strong>任务与验收记录</strong><code>STATE.json · changes/</code></button>
-          <button type="button" class="architecture-node" data-module="worktree" aria-pressed="false"><span class="node-kind">WORKTREE</span><strong>隔离工作区</strong><code>pi-governance/workspaces/</code></button>
         </div>
       </div>
-      <aside class="module-detail" aria-live="polite"><span class="nav-label">选中模块</span><h3 id="module-title">任务治理</h3><code id="module-path">plugin/core.ts</code><p id="module-description">管理任务状态、验收与归档。写入受操作锁和状态版本检查保护。</p><p id="module-connection" class="muted">接收面板、Agent 和 CLI 请求；Git 动作转交 git.ts。</p><div class="relation-heading">直接关系</div><ul id="module-relations" class="module-relations"></ul><a id="module-jump" href="#task-section">查看当前任务 →</a></aside>
+      <aside class="module-detail" aria-live="polite"><span class="nav-label">选中节点</span><h3 id="module-title">未选择节点</h3><code id="module-path"></code><p id="module-description">架构由 Agent 阅读当前工作区源码后生成。</p><p id="module-connection" class="muted"></p><div class="relation-heading">直接关系</div><ul id="module-relations" class="module-relations"></ul><a id="module-jump" href="#task-section">查看当前任务 →</a></aside>
     </div>
-    <div class="graph-caption"><span id="graph-summary" role="status">全部 5 条模块关系</span><span id="graph-help">拖动空白平移 · Ctrl/⌘ + 滚轮缩放 · 聚焦画布后方向键移动，+/− 缩放，0 适应</span></div>
+    <div class="graph-caption"><span id="graph-summary" role="status">暂无关系</span><span id="graph-help">拖动空白平移 · Ctrl/⌘ + 滚轮缩放 · 聚焦画布后方向键移动，+/− 缩放，0 适应</span></div>
     <div class="workspace-chip"><span>当前工作区</span><code id="workspace">正在连接当前工作区…</code></div>
   </section>
 
@@ -69,6 +65,18 @@
     <div class="metric metric-state"><span class="metric-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/><circle cx="12" cy="12" r="3.5"/></svg></span><span class="metric-label">任务状态</span><strong id="status-metric">—</strong><small>STATE / CURRENT</small></div>
     <div class="metric"><span class="metric-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m5 12 4 4L19 6"/><path d="M5 5h6M5 19h4"/></svg></span><span class="metric-label">验收条件</span><strong id="criteria-count">—</strong><small>ACCEPTANCE GATES</small></div>
     <div class="metric"><span class="metric-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 4.5 7v5c0 4.3 3 7.8 7.5 9 4.5-1.2 7.5-4.7 7.5-9V7L12 3Z"/><path d="M12 8v4M12 15v.1"/></svg></span><span class="metric-label">当前阻塞</span><strong id="blocked-count">—</strong><small>OPEN BLOCKERS</small></div>
+  </section>
+  <section id="board-section" class="panel" aria-labelledby="board-title">
+    <div class="section-head"><div><h2 id="board-title">工作项看板</h2><p class="muted">工作项进度不等于总体任务验收或 Git 验证。</p></div></div>
+    <p id="board-status" role="status">等待读取工作项…</p>
+    <form id="workitem-form" hidden>
+      <label>工作项 ID<input id="workitem-id" required pattern="[a-z0-9][a-z0-9-]{0,63}" maxlength="64"></label>
+      <label>标题<input id="workitem-title" required maxlength="160"></label>
+      <label>描述<textarea id="workitem-description" maxlength="4000"></textarea></label>
+      <label>阻塞（编辑时可用）<input id="workitem-blocker" maxlength="1000" disabled></label>
+      <button type="submit" id="workitem-save">创建工作项</button><button type="button" id="workitem-cancel">清空 / 取消编辑</button>
+    </form>
+    <div id="board-columns" class="board-columns"></div>
   </section>
 
   <section id="task-section" class="dashboard-grid" aria-label="任务与操作">

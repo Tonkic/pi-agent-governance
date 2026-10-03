@@ -1,11 +1,20 @@
 'use strict';
 const $ = (id) => document.getElementById(id);
 let snapshot = null, busy = false, edited = false;
+let projectSnapshot = null, editingItem = null, draggedItem = null;
+const dirtyForms = new Set();
+function discardWarning(submitted) {
+    const names = { 'progress-form': '总体进度', 'start-form': '新任务', 'workitem-form': '工作项' };
+    const drafts = [...dirtyForms].filter(id => id !== submitted).map(id => names[id] || id);
+    return drafts.length ? ` 注意：保存后刷新将丢弃未提交的${drafts.join('、')}草稿。确认即同意丢弃；取消可返回保存草稿。` : '';
+}
+const boardStages = ['todo', 'doing', 'done'];
+const boardLabels = { todo: '待办', doing: '进行中', done: '完成' };
 const labels = { idle: '待命', working: '进行中', verified: '已验证', ready: '待关闭', integrated: '已集成', integrating: '集成中' };
 const text = (id, value) => { $(id).textContent = value ?? ''; };
 const lines = id => $(id).value.split('\n').map(s => s.trim()).filter(Boolean);
 function notify(message, error = false) { text('notice-message', message); $('notice').classList.toggle('error', error); }
-function lock(value) { busy = value; document.querySelectorAll('main button, main input, main textarea').forEach(el => { el.disabled = value; }); }
+function lock(value) { busy = value; document.querySelectorAll('main button, main input, main textarea').forEach(el => { el.disabled = value; }); $('workitem-blocker').disabled = value || !editingItem; }
 async function invoke(channel, payload = {}) {
     if (!window.pluginBridge?.invoke)
         throw Error('当前是静态预览。请在 PI-Desktop 插件面板中打开，才能读取或修改项目。');
@@ -82,6 +91,12 @@ function renderGit(g) {
 }
 async function load() {
     snapshot = null;
+    dirtyForms.clear();
+    projectSnapshot = null;
+    resetWorkitem();
+    $('workitem-form').hidden = true;
+    $('board-columns').replaceChildren();
+    text('board-status', '正在读取工作项…');
     notify('正在读取当前工作区…');
     try {
         render(await invoke('governance.snapshot'));
@@ -102,6 +117,21 @@ async function load() {
     catch (error) {
         text('git-summary', `Git 不可用：${error.message}`);
     }
+    if (snapshot) {
+        try {
+            const data = await invoke('governance.project');
+            if (data.workspace !== snapshot.workspace)
+                throw Error('工作区已切换，请刷新');
+            projectSnapshot = data;
+            renderBoard();
+        }
+        catch (error) {
+            text('board-status', `工作项读取失败：${error.message}`);
+        }
+    }
+    else
+        text('board-status', '连接不可用，无法读取工作项。');
+    renderProjectGraph();
 }
 function confirmWrite(description) {
     const dialog = $('confirm-dialog');
@@ -116,7 +146,7 @@ async function mutate(args, description) {
         return;
     lock(true);
     try {
-        if (!await confirmWrite(description))
+        if (!await confirmWrite(description + discardWarning(args.action === 'progress' ? 'progress-form' : args.action === 'start' ? 'start-form' : undefined)))
             return;
         await invoke('governance.mutate', { args, revision: snapshot.revision, confirmed: true });
         await load();
@@ -145,7 +175,7 @@ $('refresh').addEventListener('click', async () => {
     }
 });
 for (const form of document.querySelectorAll('main form'))
-    form.addEventListener('input', () => { edited = true; });
+    form.addEventListener('input', () => { edited = true; dirtyForms.add(form.id); });
 $('initialize').addEventListener('click', () => mutate({ action: 'init' }, '创建缺失的 STATE.json、AGENTS.md 和 README.md，保留已有文件。'));
 $('start-form').addEventListener('submit', event => {
     event.preventDefault();
@@ -155,26 +185,37 @@ $('progress-form').addEventListener('submit', event => {
     event.preventDefault();
     mutate({ action: 'progress', current: $('edit-current').value.trim(), next: lines('edit-next'), blocked: lines('edit-blocked') }, '保存当前进度、下一步和阻塞项，并使旧验证失效。');
 });
-const modules = {
-    ui: ['可视化面板', 'plugin/renderer/ → plugin/panel.ts', '显示当前任务与 Git 快照。初始化、创建任务和保存进度均需确认。', '通过宿主桥接调用治理内核；不直接运行测试或 Git 写入。', 'task-section'],
-    agent: ['Agent / CLI', 'plugin/main.ts · scripts/governance.ts', 'Agent 工具和命令行共用治理内核，按当前工作区执行明确的操作。', '工具参数由 plugin/tool.ts 定义；没有批准的任务时等待人工。', 'task-section'],
-    core: ['任务治理', 'plugin/core.ts', '管理任务状态、验收与归档。写入受操作锁和状态版本检查保护。', '接收面板、Agent 和 CLI 请求；Git 动作转交 git.ts。', 'task-section'],
-    git: ['Git 协作', 'plugin/git.ts', '为受管任务创建独立分支和 worktree，检查修改范围，绑定提交与验证证据。', '已验证执行任务只集成到受管协调分支；不自动推送或合并主分支。', 'git-section'],
-    state: ['任务与验收记录', 'STATE.json · changes/', 'STATE 保存当前目标、范围、验收、进度和阻塞；changes 保存活动任务与完成归档。', 'README / AGENTS 提供用法和规则；STATE 是当前任务的唯一来源。', 'task-section'],
-    worktree: ['隔离工作区', '<git-common-dir>/pi-governance/', 'tasks.json 登记受管任务；workspaces/ 存放独立工作区。', '登记表仅保存在本地，不随 clone 恢复；Git 面板只读展示这些工作区。', 'git-section']
-};
-document.querySelectorAll('[data-module]').forEach(button => {
-    button.addEventListener('click', () => {
-        const [title, path, description, connection, target] = modules[button.dataset.module];
-        text('module-title', title);
-        text('module-path', path);
-        text('module-description', description);
-        text('module-connection', connection);
-        $('module-jump').href = `#${target}`;
-        text('module-jump', target === 'git-section' ? '查看 Git 协作 →' : '查看当前任务 →');
-        document.querySelectorAll('[data-module]').forEach(node => node.setAttribute('aria-pressed', String(node === button)));
-    });
-});
+let graphView = 'architecture';
+function renderProjectGraph() {
+    let graph = null, message = '';
+    const s = snapshot?.state;
+    if (graphView === 'workflow') {
+        text('architecture-title', '任务流程');
+        text('graph-source', '有效 STATE 快照 · 允许的治理阶段，不代表自动执行或历史阶段已通过');
+        if (!snapshot)
+            message = '状态读取失败，无法展示流程。';
+        else if (!s)
+            message = '尚未初始化治理。';
+        else {
+            const phases = ['idle', 'working', 'verified', 'ready'];
+            graph = { nodes: phases.map(id => ({ id, title: labels[id], current: s.status === id, files: ['STATE.json'], description: id === s.status ? `${s.current || ''}\n阻塞：${(s.blocked || []).join('；') || '无'}\n验证：${s.verification ? '有验证记录；关闭前仍须核对文件指纹' : '无有效验证记录'}\n${s.followUp ? `已批准后续：${s.followUp.id}` : ''}` : ({ idle: '等待人工目标；close 后回到待命。', working: '执行已批准任务；更新进度会使旧验证失效。', verified: '必须实际完成检查后由 Agent 提交验收证据。', ready: '知识说明已完成，等待关闭归档。' })[id] })), edges: [{ from: 'idle', to: 'working', label: 'start' }, { from: 'working', to: 'verified', label: 'verify' }, { from: 'verified', to: 'ready', label: 'gate / close(knowledge)' }, { from: 'ready', to: 'idle', label: 'close / archive' }, { from: 'verified', to: 'working', label: 'progress / 意图变化' }, { from: 'ready', to: 'working', label: 'progress / 意图变化' }] };
+        }
+    }
+    else {
+        text('architecture-title', '项目架构');
+        graph = projectSnapshot?.architecture;
+        message = projectSnapshot?.architectureError ? `架构读取失败：${projectSnapshot.architectureError}` : !projectSnapshot ? '项目图尚未读取或读取失败，请刷新。' : !graph ? '尚无项目架构。请让 Agent 阅读源码后调用 architecture_sources / architecture_set。' : '';
+        text('graph-source', graph ? `${graph.title} · ${graph.source} · 更新于 ${graph.updatedAt}${graph.staleFiles?.length ? ` · 源码已变化：${graph.staleFiles.join('、')}` : ''}` : '仅展示当前工作区持久化架构，不使用插件模块图替代。');
+    }
+    text('graph-empty', message);
+    $('graph-empty').hidden = !message;
+    text('graph-count', `${graph?.nodes?.length || 0} 节点 · ${graph?.edges?.length || 0} 关系`);
+    $('show-architecture').setAttribute('aria-pressed', String(graphView === 'architecture'));
+    $('show-workflow').setAttribute('aria-pressed', String(graphView === 'workflow'));
+    window.dispatchEvent(new CustomEvent('project-graph', { detail: graph }));
+}
+$('show-architecture').addEventListener('click', () => { graphView = 'architecture'; renderProjectGraph(); });
+$('show-workflow').addEventListener('click', () => { graphView = 'workflow'; renderProjectGraph(); });
 function highlightNavigation() {
     const target = location.hash || '#architecture';
     document.querySelectorAll('.workspace-nav a').forEach(link => {
@@ -190,5 +231,133 @@ const appearance = (value = {}) => { document.documentElement.dataset.base = val
 appearance();
 window.pluginBridge?.on?.('appearance:changed', appearance);
 window.pluginBridge?.invoke('app.getAppearance').then(appearance).catch(() => { });
+function resetWorkitem() {
+    dirtyForms.delete('workitem-form');
+    editingItem = null;
+    $('workitem-form').reset();
+    $('workitem-id').readOnly = false;
+    $('workitem-blocker').disabled = true;
+    text('workitem-save', '创建工作项');
+}
+async function writeWorkitem(args) {
+    if (busy || !snapshot || !projectSnapshot)
+        return;
+    const revision = projectSnapshot.revision;
+    lock(true);
+    try {
+        if (!await confirmWrite(`保存工作项 ${args.id}${args.stage ? ` → ${boardLabels[args.stage]}` : ''}。不会验证或关闭总体任务，也不会执行 Git 集成。` + discardWarning(args.action === 'board_move' ? undefined : 'workitem-form')))
+            return;
+        await invoke('governance.workitem', { args, revision, confirmed: true });
+        resetWorkitem();
+        await load();
+        if (projectSnapshot)
+            notify('工作项已保存并重新读取。');
+    }
+    catch (error) {
+        notify(`工作项未确认保存：${error.message}。请刷新后核对；未自动重试。`, true);
+    }
+    finally {
+        lock(false);
+    }
+}
+function moveWorkitem(id, stage, position) { return writeWorkitem({ action: 'board_move', id, stage, position }); }
+function renderBoard() {
+    const data = projectSnapshot;
+    $('board-columns').replaceChildren();
+    if (data.boardError) {
+        text('board-status', `工作项数据错误：${data.boardError}`);
+        return;
+    }
+    $('workitem-form').hidden = !snapshot?.state;
+    text('board-status', `${data.board.items.length} 个工作项 · ${data.board.updatedAt || '尚未创建'} · 拖动卡片排序，或使用卡片上的移动按钮。`);
+    for (const stage of boardStages) {
+        const column = document.createElement('section');
+        column.className = 'board-column';
+        column.dataset.stage = stage;
+        const items = data.board.items.filter(item => item.stage === stage);
+        const heading = document.createElement('h3');
+        heading.textContent = `${boardLabels[stage]} · ${items.length}`;
+        column.append(heading);
+        column.addEventListener('dragover', event => { if (draggedItem && !busy) {
+            event.preventDefault();
+            column.classList.add('drop-target');
+        } });
+        column.addEventListener('dragleave', event => { if (!column.contains(event.relatedTarget))
+            column.classList.remove('drop-target'); });
+        column.addEventListener('drop', event => {
+            event.preventDefault();
+            column.classList.remove('drop-target');
+            const id = draggedItem;
+            draggedItem = null;
+            if (!id || busy)
+                return;
+            const others = items.filter(item => item.id !== id);
+            const target = event.target.closest('[data-workitem]');
+            if (target?.dataset.workitem === id)
+                return;
+            const index = target ? others.findIndex(item => item.id === target.dataset.workitem) : -1;
+            void moveWorkitem(id, stage, index < 0 ? others.length : index);
+        });
+        items.forEach((item, index) => {
+            const card = document.createElement('article');
+            card.className = 'workitem';
+            card.dataset.workitem = item.id;
+            card.draggable = true;
+            card.addEventListener('dragstart', event => { if (busy) {
+                event.preventDefault();
+                return;
+            } draggedItem = item.id; event.dataTransfer.setData('text/plain', item.id); event.dataTransfer.effectAllowed = 'move'; card.classList.add('dragging'); });
+            card.addEventListener('dragend', () => { draggedItem = null; card.classList.remove('dragging'); document.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target')); });
+            for (const [tag, value] of [['h4', item.title], ['p', item.description], ['small', `总体任务：${item.taskId || '无'} · Git：${item.gitTaskId || '无'}`], ['p', item.blocker ? `阻塞：${item.blocker}` : '']]) {
+                const el = document.createElement(tag);
+                el.textContent = value;
+                card.append(el);
+            }
+            const controls = document.createElement('div');
+            controls.className = 'workitem-controls';
+            const button = (label, action) => { const el = document.createElement('button'); el.type = 'button'; el.textContent = label; el.setAttribute('aria-label', `${item.title}：${label}`); el.addEventListener('click', action); controls.append(el); };
+            button('编辑', async () => {
+                if (busy)
+                    return;
+                lock(true);
+                try {
+                    if (dirtyForms.has('workitem-form') && !await confirmWrite('切换编辑对象将丢弃当前未保存的工作项草稿。确认丢弃并编辑所选卡片？'))
+                        return;
+                    resetWorkitem();
+                    editingItem = item.id;
+                    $('workitem-id').value = item.id;
+                    $('workitem-id').readOnly = true;
+                    for (const key of ['title', 'description', 'blocker'])
+                        $(`workitem-${key}`).value = item[key];
+                    text('workitem-save', '保存修改');
+                }
+                finally {
+                    lock(false);
+                    $('workitem-title').focus();
+                }
+            });
+            if (index > 0)
+                button('上移', () => moveWorkitem(item.id, stage, index - 1));
+            if (index < items.length - 1)
+                button('下移', () => moveWorkitem(item.id, stage, index + 1));
+            for (const target of boardStages.filter(s => Math.abs(boardStages.indexOf(s) - boardStages.indexOf(stage)) === 1))
+                button(`移至${boardLabels[target]}`, () => moveWorkitem(item.id, target, data.board.items.filter(i => i.stage === target).length));
+            card.append(controls);
+            column.append(card);
+        });
+        if (!items.length) {
+            const empty = document.createElement('p');
+            empty.className = 'muted';
+            empty.textContent = '暂无工作项，可拖入相邻列的卡片。';
+            column.append(empty);
+        }
+        $('board-columns').append(column);
+    }
+}
+$('workitem-cancel').addEventListener('click', resetWorkitem);
+$('workitem-form').addEventListener('submit', event => {
+    event.preventDefault();
+    void writeWorkitem({ action: editingItem ? 'board_update' : 'board_create', id: editingItem || $('workitem-id').value.trim(), title: $('workitem-title').value.trim(), description: $('workitem-description').value, ...(editingItem ? { blocker: $('workitem-blocker').value } : {}) });
+});
 lock(true);
 load().finally(() => lock(false));

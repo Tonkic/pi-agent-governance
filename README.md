@@ -1,6 +1,6 @@
 # PI Agent Governance
 
-让新 Agent 从仓库文件接手工作，不依赖聊天记录。PI-Desktop 插件，版本 0.4.0。提供 Agent 工具、CLI 和可视化治理面板。
+让新 Agent 从仓库文件接手工作，不依赖聊天记录。PI-Desktop 插件，版本 0.5.0。提供 Agent 工具、CLI 和可视化治理面板。
 
 ## 原则
 
@@ -13,7 +13,7 @@
 
 ## 安装与使用
 
-在 PI-Desktop 插件页安装 `plugin/dist/pi.agent-governance-0.4.0.piplug`，授权注册 Agent 工具与打开面板；开发时加载 `plugin/`。
+在 PI-Desktop 插件页安装 `plugin/dist/pi.agent-governance-0.5.0.piplug`，授权注册 Agent 工具与打开面板；开发时加载 `plugin/`。升级前保留旧安装包并备份项目 `.governance/`，回退时使用原安装入口重装旧包；旧版不会显示新增项目数据，不要删除这些数据。
 
 向 Agent 说：“使用 governance 初始化当前项目，保留已有文件，按 STATE 继续工作。”
 
@@ -25,8 +25,8 @@
 2. 在命令面板搜索 **Agent Governance: 打开治理面板**（`governance.open`）。
 3. 没有 STATE 时点击「初始化治理」；待命时填写目标与验收条件创建任务；有活动任务时更新进度、下一步和阻塞项。
 4. 查看目标、范围、验收条件，以及 Git 工作区、分支、修改和验证状态。外部修改后点击「刷新状态」。
-5. 顶部架构图展示本插件的入口、治理内核与存储关系。点击节点查看职责、源码位置与直接关系；点击关系列表可跳转相邻节点。「上游 / 下游」高亮选中节点可达的模块，「全部关系」恢复全图。这是源码模块示意，不会自动扫描当前工作区或提供运行时监控。
-6. 拖动画布空白平移；用 +/− 按钮或 Ctrl/⌘ + 滚轮缩放，「适应画布」恢复全图。键盘聚焦画布后可用方向键平移、+/− 缩放、0 适应；Tab 可逐个访问节点。外围导航仍可定位任务与 Git 区块。
+5. 工作项看板支持创建、编辑、拖动排序及相邻列迁移，也可用卡片按钮和键盘操作。工作项完成不代表总体任务验收通过；有阻塞时不能完成。项目架构由 Agent 阅读源码后通过 `architecture_sources / architecture_set` 保存，显示来源、更新时间和失效文件；无数据或损坏时明确提示，不替换成插件模块图。「任务流程」依据有效 STATE 显示当前阶段与允许的转换，不代表自动执行或历史阶段已通过。详见 [项目数据用法](plugin/PROJECT.md)。
+6. 点击图节点查看职责、源码与直接关系；关系列表可跳转相邻节点，上游/下游按钮追踪关系。拖动画布空白平移；用 +/− 或 Ctrl/⌘ + 滚轮缩放，「适应画布」恢复全图。聚焦画布后方向键平移、+/− 缩放、0 适应；Tab 访问节点。这不是运行时监控。
 
 面板的写入均需确认；页面状态过期或工作区切换时拒绝写入。已有文件不会被初始化覆盖。Git 创建、提交、验证、集成及任务关闭仍交给 Agent，面板不自动运行测试或执行高风险操作。
 
@@ -77,7 +77,7 @@ changes/archive/          已完成任务的验收记录
 需要 Node.js 20+。源码使用 TypeScript，构建会在源文件旁生成 PI-Desktop 可加载的 CommonJS `.js` 产物；运行时仍无第三方依赖。
 
 ```powershell
-npm install
+npm ci
 npm run typecheck
 npm run build
 npm test
@@ -85,6 +85,8 @@ npm test
 ```
 
 CLI 作用于当前目录；PI 工具作用于宿主当前工作区主根。插件主进程使用根 `tsconfig.json` 编译为 CommonJS；浏览器脚本使用 `plugin/renderer/tsconfig.json` 单独构建，不能依赖 Node 的 require/exports。运行 `npm run build` 会完成两端构建并生成 manifest；入口继续指向 `main.js`。安装包打包使用 PI 的 PluginCheck 和 PluginPack。
+
+可选浏览器测试：准备可解析的 Playwright（或用 `NODE_PATH` 指向其 node_modules），用 `PI_BROWSER` 指定 Chromium/Edge 路径，再运行 `npm run test:browser`。它在临时项目中连接真实内核、模拟宿主桥接，生成 390/768/1280 × light/dark 六张截图到 `PI_SCRATCH_DIR/project-board-screenshots`（未设置时使用系统临时目录）；不替代真实宿主安装验收。
 
 ## 必要限制
 

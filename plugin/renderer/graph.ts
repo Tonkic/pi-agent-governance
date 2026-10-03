@@ -2,22 +2,17 @@
 (() => {
   const get = (id: string) => document.getElementById(id);
   const viewport = get('graph-viewport'), stage = get('graph-stage');
-  const nodes = [...document.querySelectorAll<HTMLButtonElement>('[data-module]')];
+  let nodes: HTMLButtonElement[] = [];
   const svg = get('graph-edges');
   const ns = 'http://www.w3.org/2000/svg';
-  let selected = 'core', mode: GraphTrace = 'all';
+  let selected = '', mode: GraphTrace = 'all';
   let view = graphFit(viewport.clientWidth, viewport.clientHeight);
   let dragging: { id: number, x: number, y: number } = null;
-  const edgeElements = graphEdges.map(edge => {
-    const group = document.createElementNS(ns, 'g'); group.classList.add('graph-edge');
-    const path = document.createElementNS(ns, 'path'); path.setAttribute('d', edge.path); path.setAttribute('marker-end', 'url(#edge-arrow)');
-    const label = document.createElementNS(ns, 'text'); label.setAttribute('x', String(edge.x)); label.setAttribute('y', String(edge.y)); label.textContent = edge.label;
-    group.append(path, label); svg.append(group); return group;
-  });
+  let edgeElements: SVGGElement[] = [];
   function paintView() {
     // Keep at least part of the graph reachable, even after a long drag.
-    view.x = Math.max(40 - 940 * view.scale, Math.min(viewport.clientWidth - 40, view.x));
-    view.y = Math.max(40 - 440 * view.scale, Math.min(viewport.clientHeight - 40, view.y));
+    view.x = Math.max(40 - graphSize.width * view.scale, Math.min(viewport.clientWidth - 40, view.x));
+    view.y = Math.max(40 - graphSize.height * view.scale, Math.min(viewport.clientHeight - 40, view.y));
     stage.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.scale})`;
     get('graph-scale').textContent = `${Math.round(view.scale * 100)}%`;
   }
@@ -35,7 +30,12 @@
     });
     document.querySelectorAll<HTMLButtonElement>('[data-trace]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.trace === mode)));
     const direction = mode === 'upstream' ? '上游' : '下游';
-    get('graph-summary').textContent = mode === 'all' ? '全部 5 条模块关系 · 非运行时监控' : `${graphNodes[selected].title} · ${direction} ${reach.nodes.size - 1} 个模块 / ${reach.links.size} 条关系`;
+    get('graph-summary').textContent = mode === 'all' ? `全部 ${graphEdges.length} 条关系 · 非运行时监控` : `${graphNodes[selected]?.title || '未选择节点'} · ${direction} ${Math.max(0, reach.nodes.size - 1)} 个节点 / ${reach.links.size} 条关系`;
+    const detail = graphNodes[selected];
+    get('module-title').textContent = detail?.title || '未选择节点';
+    get('module-path').textContent = (detail?.files || []).join(' · ');
+    get('module-description').textContent = detail?.description || '架构由 Agent 阅读当前工作区源码后生成。';
+    get('module-connection').textContent = detail?.current ? '当前有效阶段' : '';
     const relations = graphEdges.filter(edge => edge.from === selected || edge.to === selected).map(edge => {
       const li = document.createElement('li'), button = document.createElement('button');
       const target = edge.from === selected ? edge.to : edge.from;
@@ -45,6 +45,23 @@
     });
     get('module-relations').replaceChildren(...relations);
   }
+  function rebuild(data) {
+    setGraphData(data); selected = data?.nodes?.find(node => node.current)?.id || data?.nodes?.[0]?.id || '';
+    nodes.forEach(node => node.remove()); edgeElements.forEach(edge => edge.remove());
+    stage.style.width = `${graphSize.width}px`; stage.style.height = `${graphSize.height}px`;
+    svg.setAttribute('viewBox', `0 0 ${graphSize.width} ${graphSize.height}`);
+    svg.style.width = `${graphSize.width}px`; svg.style.height = `${graphSize.height}px`;
+    edgeElements = graphEdges.map(edge => {
+      const group = document.createElementNS(ns, 'g'); group.classList.add('graph-edge');
+      const path = document.createElementNS(ns, 'path'); path.setAttribute('d', edge.path); path.setAttribute('marker-end', 'url(#edge-arrow)');
+      const label = document.createElementNS(ns, 'text'); label.setAttribute('x', String(edge.x)); label.setAttribute('y', String(edge.y)); label.textContent = edge.label;
+      group.append(path, label); svg.append(group); return group;
+    });
+    nodes = Object.entries(graphNodes).map(([id, data]) => {
+      const button = document.createElement('button'); button.type = 'button'; button.className = 'architecture-node'; button.dataset.module = id;
+      for (const [tag, value] of [['span', data.current ? '当前阶段' : id], ['strong', data.title], ['code', (data.files || []).join(' · ')]]) { const el = document.createElement(tag); el.textContent = value; button.append(el); }
+      stage.append(button); return button;
+    });
   nodes.forEach(node => {
     const data = graphNodes[node.dataset.module];
     node.style.left = `${data.x}px`; node.style.top = `${data.y}px`;
@@ -57,6 +74,9 @@
       }
     });
   });
+    paintTrace(); fit();
+  }
+  window.addEventListener('project-graph', (event: CustomEvent) => rebuild(event.detail));
   document.querySelectorAll<HTMLButtonElement>('[data-trace]').forEach(button => button.addEventListener('click', () => { mode = button.dataset.trace as GraphTrace; paintTrace(); }));
   get('graph-in').addEventListener('click', () => zoom(1.2));
   get('graph-out').addEventListener('click', () => zoom(1 / 1.2));
@@ -97,5 +117,5 @@
     event.preventDefault();
   });
   new ResizeObserver(fit).observe(viewport);
-  paintTrace(); paintView();
+  rebuild(null);
 })();

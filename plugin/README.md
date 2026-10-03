@@ -4,7 +4,7 @@
 
 ## 源码与构建
 
-插件源码和测试使用 TypeScript；`npm run build` 先执行 TypeScript 编译，再生成 `plugin/manifest.json`。编译产物仍是源文件旁的 CommonJS `.js` 文件，PI-Desktop 的 manifest 入口保持为 `main.js`，面板 HTML 继续加载 `renderer/panel.js`。Node 20 不直接执行 `.ts`，因此修改 `.ts` 后应重新构建。
+插件源码和测试使用 TypeScript；`npm ci` 安装开发依赖后，`npm run build` 分别编译主进程（CommonJS）和浏览器脚本（独立配置，无 require/exports），再生成 `plugin/manifest.json`。产物为源码旁的 `.js`，PI-Desktop 入口保持 `main.js`。Node 20 不直接执行 `.ts`，修改后须重新构建。
 
 ```powershell
 npm run typecheck
@@ -21,6 +21,8 @@ Git 分支/worktree、范围检查、提交验证、集成及恢复，见 [Git �
 在 PI-Desktop 命令面板搜索「Agent Governance: 打开治理面板」（governance.open），作用于宿主当前工作区主根。需要 ui.panel 权限；Agent 工具另需 agent.tool.register 授权。
 
 面板展示目标、验收条件、范围、进度、阻塞，以及 Git 工作区、分支和验证有效性。未初始化时可创建缺失入口文件；待命时可创建任务；有活动任务时可更新进度。所有写入需确认，状态过期或项目切换时拒绝写入，保存进度使旧验证失效。测试、任务关闭和 Git 写入仍使用工具流程。
+
+工作项看板和源码支撑的项目架构见 [项目数据用法](PROJECT.md)。面板可创建/编辑工作项、拖动或用按钮排序及迁移；总体治理流程图只展示有效状态及允许路径，不自动执行验收。
 
 点击刷新同步外部修改；未保存表单需再次点击刷新才会丢弃。Git 不可用不妨碍任务状态操作。直接打开 renderer/index.html 为静态预览，不能操作项目。确认、owner 和测试证据仍是调用方声明，不是身份认证或安全沙箱。
 

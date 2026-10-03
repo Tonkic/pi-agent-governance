@@ -100,3 +100,21 @@ test('invalid graph and unsafe source paths reject; corrupt persisted data is no
     assert.ok(result.boardError);
     await assert.rejects(mutate({ action: 'board_create', id: 'one', title: 'One' }));
 });
+test('oversized UTF-8 board write is rejected without corrupting saved data', async (t) => {
+    const { root, snapshot, mutate } = await fixture(t);
+    let rejected = false;
+    for (let i = 0; i < 100; i++) {
+        const before = await snapshot();
+        try {
+            await mutate({ action: 'board_create', id: `large-${i}`, title: 'Large', description: '中'.repeat(4000) });
+        }
+        catch (error) {
+            assert.match(error.message, /exceeds 1 MiB/);
+            rejected = true;
+            assert.deepEqual((await snapshot()).board, before.board);
+            assert.ok((await fs.stat(path.join(root, '.governance/board.json'))).size <= 1024 * 1024);
+            break;
+        }
+    }
+    assert.equal(rejected, true);
+});

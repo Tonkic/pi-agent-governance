@@ -78,8 +78,9 @@ test('renderer leads with architecture, removes promotional guide and keeps vali
         assert.ok(ids.includes(match[1]), `Missing element ${match[1]}`);
     for (const match of html.matchAll(/href="#([^"]+)"/g))
         assert.ok(ids.includes(match[1]), `Missing navigation target ${match[1]}`);
-    assert.equal([...html.matchAll(/data-module="/g)].length, 6);
-    assert.equal([...html.matchAll(/data-module="[^"]+" aria-pressed="true"/g)].length, 1);
+    assert.equal([...html.matchAll(/data-module="/g)].length, 0, 'No fixed plugin graph may masquerade as project data');
+    for (const id of ['show-architecture', 'show-workflow', 'board-columns', 'workitem-form'])
+        assert.ok(ids.includes(id));
     for (const file of ['graph-model.js', 'graph.js', 'panel.js'])
         assert.ok(html.includes(`src="${file}"`));
     const graphScript = await fs.readFile(path.join(__dirname, '../plugin/renderer/graph.js'), 'utf8');
@@ -94,11 +95,13 @@ test('browser bundle starts without Node globals and reports static preview', as
         documentElement: { dataset: {} }, querySelectorAll: () => [],
         getElementById: id => {
             if (!elements.has(id))
-                elements.set(id, { textContent: '', classList: { toggle() { } }, addEventListener() { }, replaceChildren() { } });
+                elements.set(id, { textContent: '', classList: { toggle() { } }, reset() { }, setAttribute() { }, addEventListener() { }, replaceChildren() { } });
             return elements.get(id);
         }
     };
-    vm.runInNewContext(script, { document, window: { addEventListener() { } }, location: { hash: '' }, matchMedia: () => ({ matches: false }) });
+    vm.runInNewContext(script, { document, window: { addEventListener() { }, dispatchEvent() { } }, CustomEvent: class {
+            constructor(...args) { }
+        }, location: { hash: '' }, matchMedia: () => ({ matches: false }) });
     await new Promise(resolve => setImmediate(resolve));
     assert.match(elements.get('notice-message').textContent, /静态预览/);
     assert.equal(elements.get('progress-form').hidden, true);
@@ -106,10 +109,13 @@ test('browser bundle starts without Node globals and reports static preview', as
 });
 async function graphModel() {
     const script = await fs.readFile(path.join(__dirname, '../plugin/renderer/graph-model.js'), 'utf8');
-    return require('node:vm').runInNewContext(script + ';({graphNodes, graphEdges, graphReach, graphFit, graphZoom})');
+    return require('node:vm').runInNewContext(script + ';({get graphNodes(){return graphNodes}, get graphEdges(){return graphEdges}, setGraphData, graphReach, graphFit, graphZoom})');
 }
 test('architecture traces authored direction, terminals and cycles', async () => {
-    const { graphNodes, graphEdges, graphReach } = await graphModel();
+    const model = await graphModel();
+    assert.equal(Object.keys(model.graphNodes).length, 0);
+    model.setGraphData({ nodes: ['ui', 'agent', 'core', 'git', 'state', 'worktree'].map(id => ({ id, title: id })), edges: [{ from: 'ui', to: 'core' }, { from: 'agent', to: 'core' }, { from: 'core', to: 'git' }, { from: 'core', to: 'state' }, { from: 'git', to: 'worktree' }] });
+    const { graphNodes, graphEdges, graphReach } = model;
     for (const edge of graphEdges) {
         assert.ok(graphNodes[edge.from]);
         assert.ok(graphNodes[edge.to]);
@@ -134,5 +140,5 @@ test('architecture camera fits narrow and wide screens, zoom anchors stay fixed'
     assert.equal((100 - zoom.x) / zoom.scale, (100 - view.x) / view.scale);
     assert.equal((100 - zoom.y) / zoom.scale, (100 - view.y) / view.scale);
     assert.equal(graphZoom(view, 100, 100, 100).scale, 2);
-    assert.equal(graphZoom(view, .001, 100, 100).scale, .2);
+    assert.equal(graphZoom(view, .001, 100, 100).scale, .05);
 });

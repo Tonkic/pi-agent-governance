@@ -1,20 +1,20 @@
 'use strict';
-// Authored module relationships, not runtime telemetry or an automatic repository scan.
-const graphNodes = {
-  ui: { title: '可视化面板', x: 50, y: 100 },
-  agent: { title: 'Agent / CLI', x: 50, y: 290 },
-  core: { title: '任务治理', x: 365, y: 100 },
-  git: { title: 'Git 协作', x: 365, y: 290 },
-  state: { title: '任务与验收记录', x: 680, y: 100 },
-  worktree: { title: '隔离工作区', x: 680, y: 290 }
-};
-const graphEdges = [
-  { from: 'ui', to: 'core', label: '桥接调用', path: 'M260 148 H365', x: 312, y: 134 },
-  { from: 'agent', to: 'core', label: '工具调用', path: 'M260 338 C310 338 310 148 365 148', x: 306, y: 252 },
-  { from: 'core', to: 'git', label: 'git_* 委派', path: 'M470 196 V290', x: 511, y: 250 },
-  { from: 'core', to: 'state', label: '读写 / 归档', path: 'M575 148 H680', x: 627, y: 134 },
-  { from: 'git', to: 'worktree', label: '隔离 / 集成', path: 'M575 338 H680', x: 627, y: 324 }
-];
+// Populated only from the current workspace snapshot, never a plugin fallback.
+let graphNodes: Record<string, any> = {};
+let graphEdges: any[] = [];
+let graphSize = { width: 940, height: 440 };
+function setGraphData(data) {
+  graphNodes = {}; graphEdges = [];
+  const nodes = data?.nodes || [];
+  const columns = Math.max(1, Math.min(4, Math.ceil(Math.sqrt(nodes.length))));
+  nodes.forEach((node, i) => { graphNodes[node.id] = { ...node, x: 40 + (i % columns) * 310, y: 50 + Math.floor(i / columns) * 180 }; });
+  graphSize = { width: Math.max(320, columns * 310), height: Math.max(230, Math.ceil(nodes.length / columns) * 180 + 50) };
+  graphEdges = (data?.edges || []).map(edge => {
+    const a = graphNodes[edge.from], b = graphNodes[edge.to];
+    const x1 = a.x + 105, y1 = a.y + 96, x2 = b.x + 105, y2 = b.y;
+    return { ...edge, path: `M${x1} ${y1} C${x1} ${(y1+y2)/2} ${x2} ${(y1+y2)/2} ${x2} ${y2}`, x: (x1+x2)/2, y: (y1+y2)/2 - 8 };
+  });
+}
 type GraphTrace = 'all' | 'upstream' | 'downstream';
 function graphReach(selected: string, direction: GraphTrace, edges = graphEdges) {
   const nodes = new Set([selected]), links = new Set<number>();
@@ -32,12 +32,12 @@ function graphReach(selected: string, direction: GraphTrace, edges = graphEdges)
   }
   return { nodes, links };
 }
-function graphFit(width: number, height: number) {
-  const scale = Math.max(.2, Math.min(1.25, (width - 24) / 940, (height - 24) / 440));
-  return { scale, x: (width - 940 * scale) / 2, y: (height - 440 * scale) / 2 };
+function graphFit(width: number, height: number, bounds = graphSize) {
+  const scale = Math.max(.05, Math.min(1.25, (width - 24) / bounds.width, (height - 24) / bounds.height));
+  return { scale, x: (width - bounds.width * scale) / 2, y: (height - bounds.height * scale) / 2 };
 }
 function graphZoom(view: {scale: number, x: number, y: number}, factor: number, x: number, y: number) {
-  const scale = Math.max(.2, Math.min(2, view.scale * factor));
+  const scale = Math.max(.05, Math.min(2, view.scale * factor));
   const ratio = scale / view.scale;
   return { scale, x: x - (x - view.x) * ratio, y: y - (y - view.y) * ratio };
 }
