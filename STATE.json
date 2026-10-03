@@ -30,15 +30,15 @@
     "No main merge, remote push or public release",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "Backend project data API implemented with panel confirmation whitelist and documented source fingerprints; typecheck/build and 45 tests passed. Overall delivery incomplete; renderer remains unchanged.",
+  "current": "0.5.0 board and dynamic project/workflow UI implemented; one review completed and four concrete defects fixed with regressions. Source commit 6fe2d4d8f71d8ffdaf3d498905d1259137dac41b passed post-commit npm test (46/46) and real-core mock-host browser suite. Final clean npm ci/typecheck/build/test passed. Final package 227566 bytes SHA256 a3767ce9667ca9d217d8ef2625353df41737f3877b81a34f823b5301f07ca5b8. Criteria 1/2/3/4/6/8 supported by evidence; 5 visual inspection and 7 real host installation remain incomplete.",
   "next": [
-    "Implement persistent drag/keyboard board and dynamic current-project architecture/workflow renderer",
-    "Run responsive/theme browser matrix, clean-copy build/test, update CI/version/docs and package",
-    "Use supported host installation/reload and verify new version in isolated real workspace; finish reviewed release commits and acceptance"
+    "Install plugin/dist/pi.agent-governance-0.5.0.piplug using PI-Desktop plugins page and explicit agent.tool.register grant; confirm loaded 0.5.0",
+    "Run isolated real-host board persistence/project graph/workflow smoke and visually inspect changes/active/project-board-release/screenshots",
+    "Only after missing acceptance passes, update evidence then verify and close; no main merge or push"
   ],
   "blocked": [
-    "Acceptance 7 cannot currently be verified: available tools expose scaffold/check/pack and work-panel browser only; no supported install/upgrade/reload or host UI control entry found. Target.getTargets is denied by browser CDP allowlist. Do not bypass host permissions.",
-    "Acceptance 5 screenshot capture failed: plugin pi.browser did not answer call. Six visual screenshots remain unverified."
+    "Supported host install/reload UI is not exposed by available tools; package was built but not installed or host-smoke verified. User plugins-page action is needed.",
+    "Six screenshots and automated layout checks passed; visual inspection remains unavailable because browser screenshot calls fail. Screenshot evidence and index page are preserved in changes/active/project-board-release/screenshots."
   ],
   "followUp": null,
   "change": "changes/active/project-board-release",

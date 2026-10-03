@@ -16,6 +16,8 @@
 - 390/768/1280 × light/dark 六张截图已生成且页面无横向溢出。文件见 `screenshots/`；没有声称逐张目视复核通过。
 - `git diff --check` 通过。CI 补入 npm ci 和完整生成物差异检查；本轮未推送，所以没有远端 Windows/Linux CI 运行证据。
 - PluginCheck/PluginPack 通过；需显式授权 agent.tool.register。包内 25 个文件、无压缩 ZIP，已检查清单，不含测试临时目录/node_modules/凭据文件。
+- 源码提交 `6fe2d4d8f71d8ffdaf3d498905d1259137dac41b` 后实际运行 npm test（含 build）46/46 通过，并再次运行 test/browser.cjs 通过。生成物无新差异；任务状态与包/证据另作记录提交。
+- 当前分支没有受管 Git 任务登记，git_diff 返回 Unknown managed task；使用原生 Git 审查并显式提交文件。未声称受管 git_verify 或总体 verify/close 已完成。
 
 ## 安装包
 
@@ -35,7 +37,7 @@
 | 5 浏览器与六张视觉截图 | 未完全满足 | 交互、尺寸断言、截图生成通过；目视复核尚缺 |
 | 6 干净构建与版本化打包 | 满足（本地） | 干净 npm ci/typecheck/build/test，包校验；远端 CI 未运行 |
 | 7 真实本机安装与宿主冒烟 | 未满足 | 当前工具没有插件页安装/重载入口，未确认实际加载版本 |
-| 8 审查提交与提交后测试 | 待提交后记录 | 已审查；后续记录精确提交及实测结果 |
+| 8 审查提交与提交后测试 | 满足（源码检查点） | `6fe2d4d8f71d8ffdaf3d498905d1259137dac41b` 提交后 npm test 46/46 与浏览器回归通过 |
 
 ## 真实阻塞与接续
 
