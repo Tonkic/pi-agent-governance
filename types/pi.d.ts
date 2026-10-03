@@ -18,6 +18,7 @@ interface PiCommandRegistration {
 }
 
 declare var pi: {
+  app?: { getLocale(): Promise<string> };
   workspace: {
     get(): Promise<PiWorkspace>;
   };

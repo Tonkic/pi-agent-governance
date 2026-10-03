@@ -1,3 +1,9 @@
+# Agent Governance / Agent 项目治理
+
+Community plugin ID: `io.github.tonkic.agent-governance`. Repository handoff, a safe project board, source-backed architecture, and isolated Git collaboration. The panel supports English and Simplified Chinese. See [installation, migration, credentials and publishing](PUBLISHING.md) before replacing an older `pi.agent-governance` installation. Disable the old instance first; preserve STATE and `.governance/` data.
+
+社区版本的安装、旧 ID 迁移、密钥保存和发布用法见 [发布说明](PUBLISHING.md)。安装新 ID 前停用旧实例并保留项目数据。
+
 # Governance 工具用法
 
 为当前仓库保存可接手的任务状态，并在验证后关闭任务。PI 注册名为 `governance`，宿主可能添加命名空间前缀。文件访问使用原生 Node fs；Git 操作通过 execFile 执行。不是全局 Agent 拦截器。

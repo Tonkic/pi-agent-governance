@@ -30,13 +30,13 @@
             edge.classList.toggle('graph-highlight', reach.links.has(i) && (mode !== 'all' || direct));
         });
         document.querySelectorAll('[data-trace]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.trace === mode)));
-        const direction = mode === 'upstream' ? '上游' : '下游';
-        get('graph-summary').textContent = mode === 'all' ? `全部 ${graphEdges.length} 条关系 · 非运行时监控` : `${graphNodes[selected]?.title || '未选择节点'} · ${direction} ${Math.max(0, reach.nodes.size - 1)} 个节点 / ${reach.links.size} 条关系`;
+        const direction = mode === 'upstream' ? t('upstream') : t('downstream');
+        get('graph-summary').textContent = mode === 'all' ? t('allRelations', graphEdges.length) : t('traceSummary', graphNodes[selected]?.title || t('unselected'), direction, Math.max(0, reach.nodes.size - 1), reach.links.size);
         const detail = graphNodes[selected];
-        get('module-title').textContent = detail?.title || '未选择节点';
+        get('module-title').textContent = detail?.title || t('unselected');
         get('module-path').textContent = (detail?.files || []).join(' · ');
-        get('module-description').textContent = detail?.description || '架构由 Agent 阅读当前工作区源码后生成。';
-        get('module-connection').textContent = detail?.current ? '当前有效阶段' : '';
+        get('module-description').textContent = detail?.description || t('generated');
+        get('module-connection').textContent = detail?.current ? t('currentPhase') : '';
         const relations = graphEdges.filter(edge => edge.from === selected || edge.to === selected).map(edge => {
             const li = document.createElement('li'), button = document.createElement('button');
             const target = edge.from === selected ? edge.to : edge.from;
@@ -78,7 +78,7 @@
             button.className = 'architecture-node';
             button.dataset.module = id;
             button.title = data.description || data.title;
-            for (const [tag, value] of [['span', data.current ? '当前阶段' : `模块 ${String(Object.keys(graphNodes).indexOf(id) + 1).padStart(2, '0')}`], ['strong', data.title], ['small', data.description || '查看职责与关系']]) {
+            for (const [tag, value] of [['span', data.current ? t('phase') : t('module', String(Object.keys(graphNodes).indexOf(id) + 1).padStart(2, '0'))], ['strong', data.title], ['small', data.description || t('viewRelations')]]) {
                 const el = document.createElement(tag);
                 el.textContent = value;
                 button.append(el);
@@ -167,5 +167,5 @@
         event.preventDefault();
     });
     new ResizeObserver(fit).observe(viewport);
-    rebuild(null);
+    localeReady.then(() => rebuild(null));
 })();

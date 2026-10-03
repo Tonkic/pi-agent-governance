@@ -28,6 +28,7 @@ const { panelInvoke } = require('../plugin/panel');
     const errors = []; page.on('pageerror', e => errors.push(e.message));
     await page.exposeFunction('hostInvoke', async (channel, payload) => {
       if (channel === 'app.getAppearance') return { base: 'light' };
+      if (channel === 'app.getLocale') return 'zh-CN';
       try { return { ok: true, result: await panelInvoke(root, channel, payload) }; }
       catch (e) { return { ok: false, error: e.message }; }
     });
@@ -150,6 +151,42 @@ const { panelInvoke } = require('../plugin/panel');
     await fs.writeFile(path.join(root, '.governance/architecture.json'), '{bad'); await refresh();
     assert.match(await page.locator('#graph-empty').textContent(), /架构读取失败/);
     assert.deepEqual(errors, []);
+    // English host locale wins over the browser locale; user-owned text stays verbatim.
+    root = roots[0];
+    const english = await browser.newPage({ locale: 'zh-CN', viewport: { width: 1280, height: 1000 } });
+    english.on('pageerror', e => errors.push(e.message));
+    await english.exposeFunction('hostInvoke', async (channel, payload) => {
+      if (channel === 'app.getLocale') return 'en-US';
+      if (channel === 'app.getAppearance') return { base: 'light' };
+      try { return { ok: true, result: await panelInvoke(root, channel, payload) }; }
+      catch (e) { return { ok: false, error: e.message }; }
+    });
+    await english.addInitScript(() => { window.pluginBridge = { invoke: (...args) => window.hostInvoke(...args), on: () => {} }; });
+    await english.goto(pathToFileURL(path.resolve('plugin/renderer/index.html')).href);
+    await english.waitForFunction(() => !document.querySelector('#refresh').disabled);
+    assert.equal(await english.locator('html').getAttribute('lang'), 'en');
+    assert.equal(await english.locator('#show-workflow').textContent(), 'Task workflow');
+    await english.locator('#workitem-id').fill('english');
+    const originalText = '<b>工作项 {0}</b> & user data';
+    await english.locator('#workitem-title').fill(originalText);
+    await english.locator('#workitem-save').click();
+    assert.match(await english.locator('#confirm-description').textContent(), /does not verify or close/);
+    await english.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await english.waitForFunction(() => !document.querySelector('#refresh').disabled);
+    assert.equal(await english.locator('#workitem-title').inputValue(), originalText);
+    await english.locator('#workitem-save').click();
+    await english.getByRole('button', { name: 'Confirm write', exact: true }).click();
+    await english.waitForFunction(() => !document.querySelector('#refresh').disabled);
+    assert.equal(await english.locator('[data-workitem="english"] h4').textContent(), originalText);
+    assert.equal(await english.locator('[data-workitem="english"] h4 b').count(), 0);
+    assert.equal((await snapshot()).board.items.find(item => item.id === 'english').title, originalText);
+    for (const width of [390, 768, 1280]) for (const theme of ['light', 'dark']) {
+      await english.setViewportSize({ width, height: 1000 });
+      await english.evaluate(theme => { document.documentElement.dataset.base = theme; }, theme);
+      assert.ok(await english.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `English overflow ${width}/${theme}`);
+      await english.screenshot({ path: path.join(output, `en-${width}-${theme}.png`), fullPage: true });
+    }
+    await english.close(); assert.deepEqual(errors, []);
     console.log(`PASS browser board, graph, workflow, stale/switch guards; six screenshots: ${output}`);
   } finally {
     await browser.close();

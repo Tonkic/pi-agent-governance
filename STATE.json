@@ -24,18 +24,19 @@
     ".github/",
     ".governance/",
     "STATE.json",
+    ".gitignore",
     "changes/"
   ],
   "constraints": [
     "Preserve unrelated .pi and redesign archive",
-    "No main merge, remote push or public release",
+    "User authorized release-source push to non-main branch and plugin-center submission after checks; no main merge, force push or secret upload",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "架构清晰度代码改造完成：0.5.1 依赖分层、精简节点、折叠来源与独立失效警告；本仓库核心图为 4 模块、4 关系。提交前类型检查、47 项测试、模拟桥接浏览器与六组布局截图通过，PluginCheck/Pack 通过。证据见 changes/active/project-board-release/architecture-clarity.md。",
+  "current": "用户已明确授权：完成社区 ID／双语修正并检查后，将发布所需源码推送非 main 分支，再提交插件中心审核。密钥仅存本地忽略目录。0.6.0 社区 ID 与界面双语已实现；类型检查、48 项回归和中英浏览器交互通过。命令标题双语对象不被安装器接受，已改为兼容字符串并保留运行时本地化，待重新验证打包。总体真实宿主和目视验收仍待完成。",
   "next": [
-    "通过正常插件入口升级 0.5.1，重开真实宿主面板并完成 host-smoke",
-    "目视核对 clarity-screenshots 六组截图并记录 visual-check",
-    "汇总真实证据再 verify/close；不推送或合并主分支"
+    "完成安装器、国际化、干净构建与包内容检查，审查并提交发布源码",
+    "只推送发布所需非 main 分支，使用准确提交作为 sourceRef 提交插件中心并核实审核状态",
+    "保存不含密钥的发布证据；总体任务真实宿主与目视验收完成前不关闭"
   ],
   "blocked": [
     "新版真实宿主加载与交互尚未验收；旧版不显示图问题未在模拟桥接复现。",

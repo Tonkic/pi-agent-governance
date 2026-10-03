@@ -77,7 +77,7 @@ test('renderer leads with architecture, removes promotional guide and keeps vali
 });
 test('browser bundle starts without Node globals and reports static preview', async () => {
   const vm = require('node:vm');
-  const script = await fs.readFile(path.join(__dirname, '../plugin/renderer/panel.js'), 'utf8');
+  const script = await fs.readFile(path.join(__dirname, '../plugin/renderer/i18n.js'), 'utf8') + '\n' + await fs.readFile(path.join(__dirname, '../plugin/renderer/panel.js'), 'utf8');
   const elements = new Map();
   const document = {
     documentElement: { dataset: {} }, querySelectorAll: () => [],
@@ -86,7 +86,7 @@ test('browser bundle starts without Node globals and reports static preview', as
       return elements.get(id);
     }
   };
-  vm.runInNewContext(script, { document, window: { addEventListener() {}, dispatchEvent() {} }, CustomEvent: class { constructor(...args) {} }, location: { hash: '' }, matchMedia: () => ({ matches: false }) });
+  vm.runInNewContext(script, { document, navigator: { language: 'zh-CN' }, window: { addEventListener() {}, dispatchEvent() {} }, CustomEvent: class { constructor(...args) {} }, location: { hash: '' }, matchMedia: () => ({ matches: false }) });
   await new Promise(resolve => setImmediate(resolve));
   assert.match(elements.get('notice-message').textContent, /静态预览/);
   assert.equal(elements.get('progress-form').hidden, true);
@@ -144,4 +144,46 @@ test('dependency layout ranks chains, collapses cycles and separates disconnecte
   const first = JSON.stringify(model.graphNodes);
   model.setGraphData(data); assert.equal(JSON.stringify(model.graphNodes), first);
   model.setGraphData({ nodes: [], edges: [] }); assert.equal(Object.keys(model.graphNodes).length, 0);
+});
+test('bilingual copy has equal keys and placeholders, valid DOM keys, and preserves interpolated user text', async () => {
+  const vm = require('node:vm');
+  const script = await fs.readFile(path.join(__dirname, '../plugin/renderer/i18n.js'), 'utf8');
+  const html = await fs.readFile(path.join(__dirname, '../plugin/renderer/index.html'), 'utf8');
+  for (const [hostLocale, browserLocale, expected] of [['en-US', 'zh-CN', 'en'], ['zh-CN', 'en-US', 'zh-CN'], [null, 'zh-CN', 'zh-CN'], ['fr-FR', 'zh-CN', 'en']]) {
+    const document = { documentElement: {}, querySelectorAll: () => [] };
+    const context = vm.createContext({ document, navigator: { language: browserLocale }, window: { pluginBridge: { invoke: async () => { if (hostLocale === null) throw Error('Unavailable'); return hostLocale; } } } });
+    const api = vm.runInContext(script + ';({copy, t, ready: localeReady})', context);
+    await api.ready;
+    assert.equal(document.documentElement['lang'], expected);
+    assert.deepEqual(Object.keys(api.copy.en).sort(), Object.keys(api.copy['zh-CN']).sort());
+    for (const key of Object.keys(api.copy.en)) {
+      const placeholders = value => [...value.matchAll(/\{\d+\}/g)].map(m => m[0]).sort();
+      assert.deepEqual(placeholders(api.copy.en[key]), placeholders(api.copy['zh-CN'][key]), key);
+    }
+    for (const match of html.matchAll(/data-i18n(?:-aria-label|-placeholder)?="([^"]+)"/g)) assert.ok(api.copy.en[match[1]], match[1]);
+    const userText = '<img src=x onerror=alert(1)> 工作项 {1}';
+    assert.ok(api.t('blocker', userText).includes(userText), 'user text is not recursively translated or interpolated');
+    assert.equal(api.t('cancel'), expected === 'en' ? 'Cancel' : '取消');
+  }
+  assert.doesNotMatch(script, /innerHTML/);
+});
+test('community manifest and publisher keep credentials and old packages out of submission', async () => {
+  const manifest = JSON.parse(await fs.readFile(path.join(__dirname, '../plugin/manifest.json'), 'utf8'));
+  assert.equal(manifest.id, 'io.github.tonkic.agent-governance');
+  for (const locale of ['en', 'zh-CN']) {
+    for (const key of ['name', 'description', 'safetyNotes']) assert.ok(manifest.i18n[locale][key].trim());
+    assert.ok(manifest.ui.title[locale].trim());
+  }
+  assert.equal(typeof manifest.contributes.commands[0].title, 'string', 'installer requires a plain command title');
+  const publisher = require('../scripts/plugin-center.cjs');
+  assert.throws(() => publisher.buildPayload('main', 'Notes'), /full reviewed commit/);
+  assert.equal(new Set(publisher.files).size, publisher.files.length);
+  for (const file of publisher.files) {
+    assert.doesNotMatch(file, /(?:^|\/)(?:\.\.|\.secrets|dist)(?:\/|$)|\.token$/);
+    assert.ok((await fs.stat(path.join(__dirname, '../plugin', file))).isFile());
+  }
+  const script = await fs.readFile(path.join(__dirname, '../scripts/plugin-center.cjs'), 'utf8');
+  assert.match(script, /redirect: 'error'/);
+  assert.match(script, /--submit/);
+  assert.doesNotMatch(script, /console\.(?:log|error)\(token\)/);
 });
