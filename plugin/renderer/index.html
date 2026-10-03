@@ -36,27 +36,27 @@
   </header>
 
   <section id="architecture" class="panel architecture-panel" aria-labelledby="architecture-title">
-    <div class="section-head"><div><h2 id="architecture-title">项目架构</h2><p class="muted">Agent Governance · 插件模块关系</p></div><span class="badge">模块视图</span></div>
+    <div class="section-head"><div><h2 id="architecture-title">项目架构</h2><p class="muted">Agent Governance · 源码模块关系</p></div><span class="badge">6 节点 · 5 关系</span></div>
+    <div class="graph-toolbar" aria-label="架构图工具">
+      <div class="graph-modes" role="group" aria-label="关系追踪"><button type="button" data-trace="all" aria-pressed="true">全部关系</button><button type="button" data-trace="upstream" aria-pressed="false">上游</button><button type="button" data-trace="downstream" aria-pressed="false">下游</button></div>
+      <div class="graph-camera"><button id="graph-out" type="button" aria-label="缩小架构图">−</button><output id="graph-scale" aria-label="缩放比例">100%</output><button id="graph-in" type="button" aria-label="放大架构图">+</button><button id="graph-fit" type="button">适应画布</button></div>
+    </div>
     <div class="architecture-layout">
-      <div class="architecture-map" aria-label="调用方向：入口到治理内核，再到仓库数据">
-        <div class="architecture-column"><h3>01 · 操作入口</h3>
-          <button type="button" class="architecture-node" data-module="ui" aria-pressed="false"><strong>可视化面板</strong><code>renderer/ → panel.ts</code><small>查看状态 · 确认写入</small></button>
-          <button type="button" class="architecture-node" data-module="agent" aria-pressed="false"><strong>Agent / CLI</strong><code>main.ts · scripts/</code><small>任务执行 · 工具调用</small></button>
-        </div>
-        <span class="architecture-arrow" aria-hidden="true">→</span>
-        <div class="architecture-column"><h3>02 · 治理内核</h3>
-          <button type="button" class="architecture-node" data-module="core" aria-pressed="true"><strong>任务治理</strong><code>core.ts</code><small>状态 → 验证 → 归档</small></button>
-          <span class="module-link">git_* ↓ 委派</span>
-          <button type="button" class="architecture-node" data-module="git" aria-pressed="false"><strong>Git 协作</strong><code>git.ts</code><small>隔离 → 提交 → 集成</small></button>
-        </div>
-        <span class="architecture-arrow" aria-hidden="true">→</span>
-        <div class="architecture-column"><h3>03 · 仓库存储</h3>
-          <button type="button" class="architecture-node" data-module="state" aria-pressed="false"><strong>任务与验收记录</strong><code>STATE.json · changes/</code><small>目标 · 边界 · 验证证据</small></button>
-          <button type="button" class="architecture-node" data-module="worktree" aria-pressed="false"><strong>隔离工作区</strong><code>Git common directory</code><small>登记表 · 分支 · worktree</small></button>
+      <div id="graph-viewport" class="graph-viewport" tabindex="0" role="group" aria-label="架构画布" aria-describedby="graph-help">
+        <div id="graph-stage" class="graph-stage">
+          <div class="graph-group group-entry"><span>入口 / INTERFACES</span></div><div class="graph-group group-core"><span>治理 / GOVERNANCE</span></div><div class="graph-group group-store"><span>存储 / REPOSITORY</span></div>
+          <svg id="graph-edges" class="graph-edges" viewBox="0 0 940 440" aria-hidden="true"><defs><marker id="edge-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker></defs></svg>
+          <button type="button" class="architecture-node" data-module="ui" aria-pressed="false"><span class="node-kind">UI</span><strong>可视化面板</strong><code>renderer/ → panel.ts</code></button>
+          <button type="button" class="architecture-node" data-module="agent" aria-pressed="false"><span class="node-kind">AGENT</span><strong>Agent / CLI</strong><code>main.ts · scripts/</code></button>
+          <button type="button" class="architecture-node" data-module="core" aria-pressed="true"><span class="node-kind">CORE</span><strong>任务治理</strong><code>core.ts</code></button>
+          <button type="button" class="architecture-node" data-module="git" aria-pressed="false"><span class="node-kind">GIT</span><strong>Git 协作</strong><code>git.ts</code></button>
+          <button type="button" class="architecture-node" data-module="state" aria-pressed="false"><span class="node-kind">STATE</span><strong>任务与验收记录</strong><code>STATE.json · changes/</code></button>
+          <button type="button" class="architecture-node" data-module="worktree" aria-pressed="false"><span class="node-kind">WORKTREE</span><strong>隔离工作区</strong><code>pi-governance/workspaces/</code></button>
         </div>
       </div>
-      <aside class="module-detail" aria-live="polite"><span class="nav-label">模块详情</span><h3 id="module-title">任务治理</h3><code id="module-path">plugin/core.ts</code><p id="module-description">管理任务状态、验收与归档。写入受操作锁和状态版本检查保护。</p><p id="module-connection" class="muted">接收面板、Agent 和 CLI 请求；Git 动作转交 git.ts。</p><a id="module-jump" href="#task-section">查看当前任务 →</a></aside>
+      <aside class="module-detail" aria-live="polite"><span class="nav-label">选中模块</span><h3 id="module-title">任务治理</h3><code id="module-path">plugin/core.ts</code><p id="module-description">管理任务状态、验收与归档。写入受操作锁和状态版本检查保护。</p><p id="module-connection" class="muted">接收面板、Agent 和 CLI 请求；Git 动作转交 git.ts。</p><div class="relation-heading">直接关系</div><ul id="module-relations" class="module-relations"></ul><a id="module-jump" href="#task-section">查看当前任务 →</a></aside>
     </div>
+    <div class="graph-caption"><span id="graph-summary" role="status">全部 5 条模块关系</span><span id="graph-help">拖动空白平移 · Ctrl/⌘ + 滚轮缩放 · 聚焦画布后方向键移动，+/− 缩放，0 适应</span></div>
     <div class="workspace-chip"><span>当前工作区</span><code id="workspace">正在连接当前工作区…</code></div>
   </section>
 
@@ -130,5 +130,5 @@
   <footer><span>Agent Governance</span><span id="updated"></span></footer>
 </main>
 <dialog id="confirm-dialog"><form method="dialog"><div class="dialog-mark" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3 4.5 7.2v9.6L12 21l7.5-4.2V7.2L12 3Z"/><path d="M12 8v4M12 16v.1"/></svg></div><p class="eyebrow">WRITE CONFIRMATION</p><h2>确认写入当前项目？</h2><p id="confirm-description"></p><p id="confirm-workspace" class="path"></p><div class="actions"><button value="cancel">取消</button><button value="confirm" class="primary">确认写入</button></div></form></dialog>
-<script src="panel.js"></script>
+<script src="graph-model.js"></script><script src="graph.js"></script><script src="panel.js"></script>
 </body></html>

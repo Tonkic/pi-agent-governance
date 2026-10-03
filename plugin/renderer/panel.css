@@ -37,17 +37,37 @@ p { margin: 8px 0 12px; overflow-wrap: anywhere; white-space: pre-wrap; }
 .section-head { margin-bottom: 18px; }
 .section-head .muted { font-size: 11px; margin: 3px 0 0; }
 .badge, .secure-badge { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 5px; padding: 2px 7px; font-size: 11px; color: var(--muted); overflow-wrap: anywhere; max-width: 60%; }
-.architecture-layout { display: grid; grid-template-columns: minmax(0, 1fr) 210px; gap: 20px; }
-.architecture-map { display: grid; grid-template-columns: minmax(0, 1fr) 18px minmax(0, 1fr) 18px minmax(0, 1fr); gap: 8px; align-items: center; border-radius: 6px; padding: 18px 12px; background: var(--subtle); border: 1px solid var(--line); }
-.architecture-column { align-self: start; min-width: 0; }
-.architecture-column h3 { font-size: 11px; color: var(--muted); margin: 0 0 13px; font-weight: 500; }
-button.architecture-node { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; text-align: left; width: 100%; padding: 12px; margin-bottom: 10px; min-height: 94px; }
-.architecture-node strong { font-size: 12px; font-weight: 600; }
+.architecture-layout { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 20px; }
+.graph-toolbar, .graph-modes, .graph-camera { display: flex; align-items: center; gap: 4px; }
+.graph-toolbar { justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.graph-modes { padding: 3px; border: 1px solid var(--line); border-radius: 6px; background: var(--subtle); }
+.graph-modes button { border-color: transparent; background: transparent; min-height: 28px; padding: 4px 10px; }
+.graph-modes button[aria-pressed="true"] { background: var(--selected); color: var(--accent); border-color: var(--line); }
+.graph-camera output { min-width: 45px; text-align: center; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.graph-viewport { position: relative; min-width: 0; height: 430px; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: radial-gradient(circle, var(--line) 1px, transparent 1px) 0 0 / 18px 18px var(--subtle); cursor: grab; touch-action: none; }
+.graph-viewport.is-panning { cursor: grabbing; user-select: none; }
+.graph-viewport:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.graph-stage { position: absolute; width: 940px; height: 440px; transform-origin: 0 0; }
+.graph-group { position: absolute; top: 44px; width: 250px; height: 364px; border: 1px dashed var(--line); border-radius: 12px; background: color-mix(in srgb, var(--surface) 60%, transparent); pointer-events: none; }
+.graph-group span { position: absolute; left: 18px; top: 15px; font-size: 10px; letter-spacing: .1em; color: var(--muted); }
+.group-entry { left: 30px; } .group-core { left: 345px; } .group-store { left: 660px; }
+.graph-edges { position: absolute; inset: 0; width: 940px; height: 440px; pointer-events: none; overflow: visible; }
+.graph-edge path { fill: none; stroke: var(--muted); stroke-width: 1.5; }
+.graph-edge text { font-size: 10px; text-anchor: middle; fill: var(--muted); paint-order: stroke; stroke: var(--subtle); stroke-width: 5px; stroke-linejoin: round; }
+.graph-highlight path { stroke: var(--accent); stroke-width: 2.5; }
+.graph-highlight text { fill: var(--accent); }
+.graph-dimmed { opacity: .24; }
+button.architecture-node { position: absolute; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; text-align: left; width: 210px; height: 96px; padding: 14px 16px; background: var(--surface); border-radius: 8px; box-shadow: 0 2px 5px #00000008; border-left: 3px solid var(--accent); }
+.architecture-node strong { font-size: 14px; font-weight: 600; }
 .architecture-node code { font-size: 10px; color: var(--muted); white-space: normal; }
-.architecture-node small { font-size: 10px; }
-.architecture-node[aria-pressed="true"] { border-color: var(--accent); background: var(--selected); }
-.architecture-arrow { color: var(--muted); font-size: 20px; }
-.module-link { display: block; margin: -4px 0 6px; font-size: 10px; color: var(--muted); text-align: center; }
+.architecture-node .node-kind { font-size: 9px; letter-spacing: .1em; color: var(--accent); }
+.architecture-node[aria-pressed="true"] { border-color: var(--accent); background: var(--selected); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent); }
+.architecture-node:focus-visible { opacity: 1; }
+.graph-caption { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 10px; color: var(--muted); padding-top: 12px; }
+#graph-summary { color: var(--accent); }
+.relation-heading { color: var(--muted); font-size: 10px; border-top: 1px solid var(--line); padding-top: 12px; margin-top: 15px; }
+.module-relations { list-style: none; padding: 0; margin: 6px 0 14px; }
+.module-relations button { font-size: 11px; width: 100%; text-align: left; justify-content: flex-start; padding: 5px 0; border: 0; background: transparent; }
 .module-detail { border-left: 1px solid var(--line); padding-left: 18px; min-width: 0; }
 .module-detail h3 { margin: 9px 0; }
 .module-detail p { font-size: 12px; }
@@ -114,9 +134,7 @@ section[id] { scroll-margin-top: calc(var(--pi-plugin-titlebar-height, 0px) + 12
 @media (max-width:900px) { .app-shell { padding: 0 20px; } .workspace-nav { position: static; flex-direction: row; width: auto; padding: 10px 0; background: transparent; border: 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; } .nav-brand, .workspace-nav .nav-label, .nav-note { display: none; } .workspace-nav a { padding: 7px 10px; } }
 @media (max-width:650px) {
   .app-shell { padding: 0 12px; } .panel { padding: 15px; } .dashboard-grid { grid-template-columns: 1fr; }
-  .architecture-map { grid-template-columns: 1fr; padding: 14px; gap: 4px; } .architecture-arrow { text-align: center; transform: rotate(90deg); }
-  .architecture-column { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .architecture-column h3 { grid-column: 1 / -1; margin-bottom: 3px; }
-  .module-link { display: none; } button.architecture-node { margin-bottom: 0; min-height: 105px; padding: 9px; }
+  .graph-viewport { height: 300px; } .graph-toolbar { align-items: flex-start; } .graph-caption { line-height: 1.8; }
   .metric { padding: 10px 7px; flex-wrap: wrap; gap: 5px; } .metric-icon { display: none; } .metric strong { font-size: 15px; }
   .workspace-chip { display: block; } .workspace-chip code { display: block; margin-top: 5px; }
   .form-row, .detail-columns { grid-template-columns: 1fr; gap: 0; } .git-summary-row { align-items: flex-start; } .git-legend { display: none; }

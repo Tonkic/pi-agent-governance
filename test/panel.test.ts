@@ -70,7 +70,10 @@ test('renderer leads with architecture, removes promotional guide and keeps vali
   for (const match of script.matchAll(/(?:\$|text|list)\('([^']+)'/g)) assert.ok(ids.includes(match[1]), `Missing element ${match[1]}`);
   for (const match of html.matchAll(/href="#([^"]+)"/g)) assert.ok(ids.includes(match[1]), `Missing navigation target ${match[1]}`);
   assert.equal([...html.matchAll(/data-module="/g)].length, 6);
-  assert.equal([...html.matchAll(/aria-pressed="true"/g)].length, 1);
+  assert.equal([...html.matchAll(/data-module="[^"]+" aria-pressed="true"/g)].length, 1);
+  for (const file of ['graph-model.js', 'graph.js', 'panel.js']) assert.ok(html.includes(`src="${file}"`));
+  const graphScript = await fs.readFile(path.join(__dirname, '../plugin/renderer/graph.js'), 'utf8');
+  for (const match of graphScript.matchAll(/get\('([^']+)'/g)) assert.ok(ids.includes(match[1]), `Missing graph control ${match[1]}`);
 });
 test('browser bundle starts without Node globals and reports static preview', async () => {
   const vm = require('node:vm');
@@ -88,4 +91,33 @@ test('browser bundle starts without Node globals and reports static preview', as
   assert.match(elements.get('notice-message').textContent, /静态预览/);
   assert.equal(elements.get('progress-form').hidden, true);
   assert.equal(document.documentElement.dataset['base'], 'light');
+});
+async function graphModel() {
+  const script = await fs.readFile(path.join(__dirname, '../plugin/renderer/graph-model.js'), 'utf8');
+  return require('node:vm').runInNewContext(script + ';({graphNodes, graphEdges, graphReach, graphFit, graphZoom})');
+}
+test('architecture traces authored direction, terminals and cycles', async () => {
+  const { graphNodes, graphEdges, graphReach } = await graphModel();
+  for (const edge of graphEdges) { assert.ok(graphNodes[edge.from]); assert.ok(graphNodes[edge.to]); }
+  const sorted = values => Array.from(values).sort();
+  assert.deepEqual(sorted(graphReach('core', 'upstream').nodes), ['agent', 'core', 'ui']);
+  assert.deepEqual(sorted(graphReach('core', 'downstream').nodes), ['core', 'git', 'state', 'worktree']);
+  assert.equal(graphReach('worktree', 'downstream').links.size, 0);
+  assert.equal(graphReach('core', 'all').links.size, 5);
+  assert.equal(graphReach('worktree', 'upstream').nodes.has('state'), false);
+  const cycle = [{ from: 'a', to: 'b' }, { from: 'b', to: 'a' }];
+  assert.equal(graphReach('a', 'downstream', cycle).links.size, 2);
+});
+test('architecture camera fits narrow and wide screens, zoom anchors stay fixed', async () => {
+  const { graphFit, graphZoom } = await graphModel();
+  for (const width of [270, 390, 760, 1200]) {
+    const v = graphFit(width, 430);
+    assert.ok(v.x >= 0 && v.y >= 0);
+    assert.ok(940 * v.scale <= width && 440 * v.scale <= 430);
+  }
+  const view = { scale: 1, x: 10, y: 20 }, zoom = graphZoom(view, 1.2, 100, 100);
+  assert.equal((100 - zoom.x) / zoom.scale, (100 - view.x) / view.scale);
+  assert.equal((100 - zoom.y) / zoom.scale, (100 - view.y) / view.scale);
+  assert.equal(graphZoom(view, 100, 100, 100).scale, 2);
+  assert.equal(graphZoom(view, .001, 100, 100).scale, .2);
 });

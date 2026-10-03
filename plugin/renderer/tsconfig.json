@@ -6,6 +6,6 @@
     "moduleDetection": "legacy",
     "types": []
   },
-  "include": ["panel.ts", "../../types/**/*.d.ts"],
+  "include": ["*.ts", "../../types/**/*.d.ts"],
   "exclude": []
 }
