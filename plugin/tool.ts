@@ -6,7 +6,16 @@ module.exports = {
   schema: {
     type: 'object', additionalProperties: false, required: ['action'],
     properties: {
-      action: { type: 'string', enum: ['init', 'status', 'start', 'progress', 'context', 'route', 'verify', 'gate', 'close', 'git_status', 'git_create', 'git_diff', 'git_commit', 'git_verify', 'git_integrate', 'git_recover'] },
+      action: { type: 'string', enum: ['init', 'status', 'start', 'progress', 'context', 'route', 'verify', 'gate', 'close', 'git_status', 'git_create', 'git_diff', 'git_commit', 'git_verify', 'git_integrate', 'git_recover', 'project_snapshot', 'architecture_sources', 'architecture_set', 'board_create', 'board_update', 'board_move'] },
+      expectedRevision: { type: 'string', description: 'Revision from project_snapshot; binds workspace, STATE and project data.' },
+      title: { type: 'string' }, description: { type: 'string' }, blocker: { type: 'string' }, gitTaskId: { type: 'string' },
+      stage: { type: 'string', enum: ['todo', 'doing', 'done'] }, position: { type: 'integer', minimum: 0 },
+      graph: { type: 'object', required: ['title', 'source', 'nodes', 'edges', 'fingerprints'], properties: {
+        title: { type: 'string' }, source: { type: 'string', description: 'Describe the inspected sources and analysis limits.' },
+        nodes: { type: 'array', items: { type: 'object', required: ['id', 'title', 'description', 'files'], properties: { id: { type: 'string' }, title: { type: 'string' }, description: { type: 'string' }, files: { type: 'array', items: { type: 'string' } } } } },
+        edges: { type: 'array', items: { type: 'object', required: ['from', 'to', 'label'], properties: { from: { type: 'string' }, to: { type: 'string' }, label: { type: 'string' } } } },
+        fingerprints: { type: 'object', additionalProperties: { type: 'string' }, description: 'Exact hashes returned by architecture_sources for all referenced files.' }
+      } },
       id: { type: 'string' }, goal: { type: 'string' }, criteria: { type: 'array', items: { type: 'string' } },
       owner: { type: 'string', description: 'Agent/task owner label; not an authenticated identity.' },
       role: { type: 'string', enum: ['coordinator', 'worker'] }, parent: { type: 'string', description: 'Coordinator task id for workers.' },

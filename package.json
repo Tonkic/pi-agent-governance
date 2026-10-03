@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc --project tsconfig.json && tsc --project plugin/renderer/tsconfig.json && node scripts/build-manifest.js",
     "typecheck": "tsc --project tsconfig.json --noEmit && tsc --project plugin/renderer/tsconfig.json --noEmit",
-    "test": "npm run build && node --test test/git.test.js test/governance.test.js test/panel.test.js",
+    "test": "npm run build && node --test test/git.test.js test/governance.test.js test/panel.test.js test/project.test.js",
     "governance": "npm run build --silent && node scripts/governance.js"
   },
   "engines": {

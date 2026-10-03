@@ -13,6 +13,16 @@ async function panelInvoke(root: string, channel: string, payload: any = {}) {
     });
   }
   if (channel === 'governance.git') return { ...await g.run({ action: 'git_status' }), workspace: g.root };
+  if (channel === 'governance.project') return g.run({ action: 'project_snapshot' });
+  if (channel === 'governance.workitem') {
+    if (payload.confirmed !== true) throw Error('请先确认写入');
+    const input = payload.args || {};
+    const allowed = { board_create: ['id', 'title', 'description', 'gitTaskId'], board_update: ['id', 'title', 'description', 'blocker'], board_move: ['id', 'stage', 'position'] };
+    if (!Object.hasOwn(allowed, input.action)) throw Error('Panel action not allowed');
+    const args = { action: input.action, expectedRevision: payload.revision };
+    for (const key of allowed[input.action]) if (input[key] !== undefined) args[key] = input[key];
+    return g.run(args);
+  }
   if (channel !== 'governance.mutate') throw Error('Unsupported panel channel');
   if (payload.confirmed !== true) throw Error('请先确认写入');
   if (typeof payload.revision !== 'string' || !/^[a-f0-9]{64}$/.test(payload.revision)) throw Error('请先刷新状态');

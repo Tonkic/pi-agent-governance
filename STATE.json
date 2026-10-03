@@ -1,7 +1,46 @@
 {
   "version": 1,
-  "task": null,
-  "status": "idle",
+  "task": "project-board-release",
+  "status": "working",
+  "goal": "Implement approved project board, source-backed project architecture and real workflow diagrams; validate release and install locally. Contract: .pi/goal/完成项目任务看板-项目架构图与发布验证-并安装到本机-pi-desktop-20261003-1402.md",
+  "criteria": [
+    "Persistent safe work-item board with drag and keyboard controls",
+    "Workspace architecture data with validated source references and isolation",
+    "Dynamic architecture and effective governance workflow views",
+    "Core and Git safety regressions pass",
+    "Browser interaction and six responsive/theme screenshots pass",
+    "Clean dependency install/build/test and versioned plugin package pass",
+    "Local supported installation and real host smoke pass",
+    "Reviewed committed code, post-commit tests and truthful evidence"
+  ],
+  "scope": [
+    "plugin/",
+    "test/",
+    "scripts/",
+    "types/",
+    "README.md",
+    "package.json",
+    "package-lock.json",
+    ".github/",
+    "STATE.json",
+    "changes/"
+  ],
+  "constraints": [
+    "Preserve unrelated .pi and redesign archive",
+    "No main merge, remote push or public release",
+    "No bypassing host permissions, test evidence, confirmation or Git safeguards"
+  ],
+  "current": "Backend project data API implemented with panel confirmation whitelist and documented source fingerprints; typecheck/build and 45 tests passed. Overall delivery incomplete; renderer remains unchanged.",
+  "next": [
+    "Implement persistent drag/keyboard board and dynamic current-project architecture/workflow renderer",
+    "Run responsive/theme browser matrix, clean-copy build/test, update CI/version/docs and package",
+    "Use supported host installation/reload and verify new version in isolated real workspace; finish reviewed release commits and acceptance"
+  ],
+  "blocked": [
+    "Acceptance 7 cannot currently be verified: available tools expose scaffold/check/pack and work-panel browser only; no supported install/upgrade/reload or host UI control entry found. Target.getTargets is denied by browser CDP allowlist. Do not bypass host permissions.",
+    "Acceptance 5 screenshot capture failed: plugin pi.browser did not answer call. Six visual screenshots remain unverified."
+  ],
   "followUp": null,
-  "current": "Waiting for human direction; do not invent work."
+  "change": "changes/active/project-board-release",
+  "layer": "docs"
 }

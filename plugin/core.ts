@@ -122,6 +122,7 @@ class Governance {
   async run(a) {
     if (!a || typeof a !== 'object') throw Error('Arguments required');
     if (typeof a.action === 'string' && a.action.startsWith('git_')) return new (require('./git').GitGovernance)(this.root).run(a);
+    if (['project_snapshot', 'architecture_sources', 'architecture_set', 'board_create', 'board_update', 'board_move'].includes(a.action)) return new (require('./project').ProjectData)(this).run(a);
     if (a.action === 'route') return route(a.features);
     if (a.action === 'status') return this.state();
     return this.locked(async () => {
