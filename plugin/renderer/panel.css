@@ -48,19 +48,20 @@ p { margin: 8px 0 12px; overflow-wrap: anywhere; white-space: pre-wrap; }
 .graph-viewport.is-panning { cursor: grabbing; user-select: none; }
 .graph-viewport:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .graph-stage { position: absolute; width: 940px; height: 440px; transform-origin: 0 0; }
-.graph-group { position: absolute; top: 44px; width: 250px; height: 364px; border: 1px dashed var(--line); border-radius: 12px; background: color-mix(in srgb, var(--surface) 60%, transparent); pointer-events: none; }
-.graph-group span { position: absolute; left: 18px; top: 15px; font-size: 10px; letter-spacing: .1em; color: var(--muted); }
-.group-entry { left: 30px; } .group-core { left: 345px; } .group-store { left: 660px; }
 .graph-edges { position: absolute; inset: 0; width: 940px; height: 440px; pointer-events: none; overflow: visible; }
-.graph-edge path { fill: none; stroke: var(--muted); stroke-width: 1.5; }
-.graph-edge text { font-size: 10px; text-anchor: middle; fill: var(--muted); paint-order: stroke; stroke: var(--subtle); stroke-width: 5px; stroke-linejoin: round; }
-.graph-highlight path { stroke: var(--accent); stroke-width: 2.5; }
-.graph-highlight text { fill: var(--accent); }
+.graph-edge path { fill: none; stroke: var(--muted); stroke-width: 1.3; opacity: .45; }
+.graph-edge text { visibility: hidden; font-size: 11px; text-anchor: middle; fill: var(--muted); paint-order: stroke; stroke: var(--subtle); stroke-width: 5px; stroke-linejoin: round; }
+.graph-highlight path { stroke: var(--accent); stroke-width: 2; opacity: 1; }
+.graph-highlight text { fill: var(--accent); visibility: visible; }
 .graph-dimmed { opacity: .24; }
-button.architecture-node { position: absolute; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; text-align: left; width: 210px; height: 96px; padding: 14px 16px; background: var(--surface); border-radius: 8px; box-shadow: 0 2px 5px #00000008; border-left: 3px solid var(--accent); }
-.architecture-node strong { font-size: 14px; font-weight: 600; }
-.architecture-node code { font-size: 10px; color: var(--muted); white-space: normal; }
-.architecture-node .node-kind { font-size: 9px; letter-spacing: .1em; color: var(--accent); }
+button.architecture-node { position: absolute; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 6px; text-align: left; width: 210px; height: 96px; padding: 14px 16px; background: var(--surface); border-radius: 12px; box-shadow: 0 3px 12px #00000008; }
+.architecture-node strong { font-size: 15px; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.architecture-node small { font-size: 11px; color: var(--muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.architecture-node > span { font-size: 9px; letter-spacing: .08em; color: var(--accent); }
+.graph-provenance { margin: 8px 0 14px; font-size: 11px; color: var(--muted); overflow-wrap: anywhere; }
+.graph-provenance summary { cursor: pointer; width: fit-content; padding: 4px 0; }
+.graph-provenance summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.graph-warning { color: var(--error); font-size: 12px; overflow-wrap: anywhere; }
 .architecture-node[aria-pressed="true"] { border-color: var(--accent); background: var(--selected); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent); }
 .architecture-node:focus-visible { opacity: 1; }
 .graph-caption { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 10px; color: var(--muted); padding-top: 12px; }

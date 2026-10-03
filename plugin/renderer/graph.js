@@ -26,7 +26,8 @@
         });
         edgeElements.forEach((edge, i) => {
             edge.classList.toggle('graph-dimmed', !reach.links.has(i));
-            edge.classList.toggle('graph-highlight', reach.links.has(i) && mode !== 'all');
+            const direct = graphEdges[i].from === selected || graphEdges[i].to === selected;
+            edge.classList.toggle('graph-highlight', reach.links.has(i) && (mode !== 'all' || direct));
         });
         document.querySelectorAll('[data-trace]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.trace === mode)));
         const direction = mode === 'upstream' ? '上游' : '下游';
@@ -76,7 +77,8 @@
             button.type = 'button';
             button.className = 'architecture-node';
             button.dataset.module = id;
-            for (const [tag, value] of [['span', data.current ? '当前阶段' : id], ['strong', data.title], ['code', (data.files || []).join(' · ')]]) {
+            button.title = data.description || data.title;
+            for (const [tag, value] of [['span', data.current ? '当前阶段' : `模块 ${String(Object.keys(graphNodes).indexOf(id) + 1).padStart(2, '0')}`], ['strong', data.title], ['small', data.description || '查看职责与关系']]) {
                 const el = document.createElement(tag);
                 el.textContent = value;
                 button.append(el);

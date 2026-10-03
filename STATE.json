@@ -31,15 +31,15 @@
     "No main merge, remote push or public release",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "用户已确认安装插件。本仓库现已通过宿主 governance 工具建立源码架构（8 节点、9 关系、12 文件指纹）和三项真实剩余验收工作项，关联 project-board-release，未伪造历史完成状态。0.5.0 源码与包检查点为 6fe2d4d/81a654c，已有 46 项测试及模拟桥接浏览器通过记录；真实面板交互与目视验收仍待完成。",
+  "current": "架构清晰度代码改造完成：0.5.1 依赖分层、精简节点、折叠来源与独立失效警告；本仓库核心图为 4 模块、4 关系。提交前类型检查、47 项测试、模拟桥接浏览器与六组布局截图通过，PluginCheck/Pack 通过。证据见 changes/active/project-board-release/architecture-clarity.md。",
   "next": [
-    "在本仓库治理面板点击刷新，检查项目架构与三项工作项显示；按 host-smoke 在隔离项目记录真实交互结果",
-    "按 visual-check 目视核对六组截图；按 release-acceptance 汇总八条验收证据",
-    "后续源码写入委派先 git_status/git_create 分配受管工作区；全部验收通过才 verify/close，不推送或合并主分支"
+    "通过正常插件入口升级 0.5.1，重开真实宿主面板并完成 host-smoke",
+    "目视核对 clarity-screenshots 六组截图并记录 visual-check",
+    "汇总真实证据再 verify/close；不推送或合并主分支"
   ],
   "blocked": [
-    "用户已确认安装，且宿主 governance 工具读写成功；但尚无真实面板交互、加载版本和重载持久化的完整验收结果。",
-    "六组截图生成和自动布局检查已通过，目视检查结果仍缺；此前浏览器截图工具调用失败。"
+    "新版真实宿主加载与交互尚未验收；旧版不显示图问题未在模拟桥接复现。",
+    "六组截图已生成且无横向溢出，目视验收尚未完成。"
   ],
   "followUp": null,
   "change": "changes/active/project-board-release",

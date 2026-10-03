@@ -142,3 +142,29 @@ test('architecture camera fits narrow and wide screens, zoom anchors stay fixed'
     assert.equal(graphZoom(view, 100, 100, 100).scale, 2);
     assert.equal(graphZoom(view, .001, 100, 100).scale, .05);
 });
+test('dependency layout ranks chains, collapses cycles and separates disconnected modules', async () => {
+    const model = await graphModel();
+    const data = { nodes: ['a', 'b', 'c', 'd', 'alone'].map(id => ({ id })), edges: [
+            { from: 'a', to: 'b' }, { from: 'b', to: 'c' }, { from: 'c', to: 'b' },
+            { from: 'c', to: 'd' }, { from: 'a', to: 'd' }, { from: 'alone', to: 'alone' }
+        ] };
+    model.setGraphData(data);
+    const n = model.graphNodes;
+    assert.ok(n.a.y < n.b.y);
+    assert.equal(n.b.y, n.c.y);
+    assert.ok(n.c.y < n.d.y);
+    const nodes = Object.values(n);
+    for (let i = 0; i < nodes.length; i++)
+        for (let j = i + 1; j < nodes.length; j++) {
+            assert.ok(Math.abs(nodes[i].x - nodes[j].x) >= 210 || Math.abs(nodes[i].y - nodes[j].y) >= 96);
+        }
+    for (const edge of model.graphEdges)
+        assert.ok(!/NaN|undefined/.test(edge.path));
+    assert.notEqual(model.graphEdges[1].path, model.graphEdges[2].path);
+    assert.match(model.graphEdges[4].path, /H/); // Long dependency bypasses intermediate rows.
+    const first = JSON.stringify(model.graphNodes);
+    model.setGraphData(data);
+    assert.equal(JSON.stringify(model.graphNodes), first);
+    model.setGraphData({ nodes: [], edges: [] });
+    assert.equal(Object.keys(model.graphNodes).length, 0);
+});

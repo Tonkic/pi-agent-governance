@@ -37,7 +37,9 @@
   </header>
 
   <section id="architecture" class="panel architecture-panel" aria-labelledby="architecture-title">
-    <div class="section-head"><div><h2 id="architecture-title">项目架构</h2><p id="graph-source" class="muted">等待读取当前工作区</p></div><span id="graph-count" class="badge">—</span></div>
+    <div class="section-head"><div><h2 id="architecture-title">项目架构</h2><p id="graph-overview" class="muted">等待读取当前工作区</p></div><span id="graph-count" class="badge">—</span></div>
+    <p id="graph-warning" class="graph-warning" role="status" hidden></p>
+    <details class="graph-provenance"><summary>来源与分析范围</summary><p id="graph-source" class="muted">等待读取当前工作区</p></details>
     <div class="graph-modes" role="group" aria-label="图视图"><button id="show-architecture" type="button" aria-pressed="true">项目架构</button><button id="show-workflow" type="button" aria-pressed="false">任务流程</button></div>
     <p id="graph-empty" role="status">尚未读取项目图。</p>
     <div class="graph-toolbar" aria-label="架构图工具">
@@ -50,7 +52,7 @@
           <svg id="graph-edges" class="graph-edges" viewBox="0 0 940 440" aria-hidden="true"><defs><marker id="edge-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker></defs></svg>
         </div>
       </div>
-      <aside class="module-detail" aria-live="polite"><span class="nav-label">选中节点</span><h3 id="module-title">未选择节点</h3><code id="module-path"></code><p id="module-description">架构由 Agent 阅读当前工作区源码后生成。</p><p id="module-connection" class="muted"></p><div class="relation-heading">直接关系</div><ul id="module-relations" class="module-relations"></ul><a id="module-jump" href="#task-section">查看当前任务 →</a></aside>
+      <aside class="module-detail" aria-live="polite"><span class="nav-label">选中节点</span><h3 id="module-title">未选择节点</h3><p id="module-description">架构由 Agent 阅读当前工作区源码后生成。</p><p id="module-connection" class="muted"></p><div class="relation-heading">直接关系</div><ul id="module-relations" class="module-relations"></ul><details class="graph-provenance"><summary>源码文件</summary><code id="module-path"></code></details><a id="module-jump" href="#task-section">查看当前任务 →</a></aside>
     </div>
     <div class="graph-caption"><span id="graph-summary" role="status">暂无关系</span><span id="graph-help">拖动空白平移 · Ctrl/⌘ + 滚轮缩放 · 聚焦画布后方向键移动，+/− 缩放，0 适应</span></div>
     <div class="workspace-chip"><span>当前工作区</span><code id="workspace">正在连接当前工作区…</code></div>

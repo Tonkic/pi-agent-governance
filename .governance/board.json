@@ -27,7 +27,16 @@
       "stage": "todo",
       "taskId": "project-board-release",
       "gitTaskId": null
+    },
+    {
+      "id": "architecture-clarity",
+      "title": "精简核心架构与依赖可视化",
+      "description": "按文档提炼核心逻辑；实现依赖分层、简洁节点和折叠来源。保留真实依赖、键盘操作及来源校验；浏览器回归后交付新版。",
+      "blocker": "",
+      "stage": "done",
+      "taskId": "project-board-release",
+      "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-03T12:21:17.649Z"
+  "updatedAt": "2026-10-03T14:53:53.922Z"
 }

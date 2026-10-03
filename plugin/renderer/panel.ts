@@ -114,9 +114,11 @@ let graphView = 'architecture';
 function renderProjectGraph() {
   let graph = null, message = '';
   const s = snapshot?.state;
+  text('graph-warning', ''); $('graph-warning').hidden = true;
   if (graphView === 'workflow') {
     text('architecture-title', '任务流程');
     text('graph-source', '有效 STATE 快照 · 允许的治理阶段，不代表自动执行或历史阶段已通过');
+    text('graph-overview', '治理阶段与允许的转换 · 非执行历史');
     if (!snapshot) message = '状态读取失败，无法展示流程。';
     else if (!s) message = '尚未初始化治理。';
     else {
@@ -128,6 +130,10 @@ function renderProjectGraph() {
     graph = projectSnapshot?.architecture;
     message = projectSnapshot?.architectureError ? `架构读取失败：${projectSnapshot.architectureError}` : !projectSnapshot ? '项目图尚未读取或读取失败，请刷新。' : !graph ? '尚无项目架构。请让 Agent 阅读源码后调用 architecture_sources / architecture_set。' : '';
     text('graph-source', graph ? `${graph.title} · ${graph.source} · 更新于 ${graph.updatedAt}${graph.staleFiles?.length ? ` · 源码已变化：${graph.staleFiles.join('、')}` : ''}` : '仅展示当前工作区持久化架构，不使用插件模块图替代。');
+    text('graph-overview', graph?.title || '当前项目的核心模块与依赖');
+    const stale = graph?.staleFiles || [];
+    text('graph-warning', stale.length ? `源码已变化，请重新分析：${stale.join('、')}` : '');
+    $('graph-warning').hidden = !stale.length;
   }
   text('graph-empty', message); $('graph-empty').hidden = !message;
   text('graph-count', `${graph?.nodes?.length || 0} 节点 · ${graph?.edges?.length || 0} 关系`);

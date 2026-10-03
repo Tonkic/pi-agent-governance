@@ -1,137 +1,78 @@
 {
   "version": 1,
-  "title": "PI Agent Governance · 本仓库源码架构",
-  "source": "核对 12 个文件：宿主入口、工具 schema、面板桥接与渲染器、治理内核、项目数据、Git、CLI、清单构建和 package.json。边表示已核实的调用、事件或构建依赖；不是完整自动扫描、运行时监控或验收通过证明。",
+  "title": "核心逻辑 · 目标、知识与执行",
+  "source": "依据 README 原则和 PROJECT 用法划分四个职责，核对 panel/core/project/git 及图渲染源码。边表示代码委派或注入对象回调；保留 core 与 project 循环依赖。省略宿主注册、CLI、构建等外围设施；并非完整调用图或运行时监控。",
   "nodes": [
     {
-      "id": "host",
-      "title": "PI 宿主入口与工具定义",
-      "description": "注册 governance 工具及 governance.open 命令；每次请求获取宿主当前工作区，转交治理内核或面板桥接。tool.ts 定义动作与参数。",
+      "id": "interaction",
+      "title": "交互确认",
+      "description": "呈现项目状态，确认后提交受限操作。面板与桥接合为一个职责边界；版本校验拒绝过期或跨工作区写入。",
       "files": [
-        "plugin/main.ts",
-        "plugin/tool.ts"
-      ]
-    },
-    {
-      "id": "cli",
-      "title": "命令行入口",
-      "description": "从标准输入读取 JSON，以 process.cwd() 作为工作区调用 Governance.run；输出结果或错误。",
-      "files": [
-        "scripts/governance.ts"
-      ]
-    },
-    {
-      "id": "ui",
-      "title": "看板与动态图渲染器",
-      "description": "通过 pluginBridge 获取状态、Git 和项目快照；确认后写入工作项或进度。project-graph 事件驱动图节点/关系，graph-model 提供布局、追踪与缩放。无固定插件图兜底。",
-      "files": [
+        "plugin/panel.ts",
         "plugin/renderer/panel.ts",
         "plugin/renderer/graph.ts",
         "plugin/renderer/graph-model.ts"
       ]
     },
     {
-      "id": "bridge",
-      "title": "面板通道与写入白名单",
-      "description": "治理快照绑定工作区和状态版本；工作项通道仅允许创建、更新、移动，治理通道仅允许初始化、启动和进度。拒绝未确认、过期和跨工作区写入。",
+      "id": "governance",
+      "title": "任务治理",
+      "description": "以人工目标约束执行、验证与归档。STATE 是总体任务唯一来源；提供锁和安全文件操作，分派项目数据及协作动作。",
       "files": [
-        "plugin/panel.ts"
+        "plugin/core.ts",
+        "README.md"
       ]
     },
     {
-      "id": "core",
-      "title": "总体任务治理内核",
-      "description": "STATE 是总体任务来源；管理路径限制、锁、状态转换、证据指纹及 changes 归档。将 git_* 委派到 GitGovernance，将项目数据动作委派到 ProjectData。",
+      "id": "knowledge",
+      "title": "项目知识",
+      "description": "保存工作项和有源码依据的架构。维护版本、来源指纹与迁移约束；卡片完成不等于总体验收。",
       "files": [
-        "plugin/core.ts"
+        "plugin/project.ts",
+        "plugin/PROJECT.md"
       ]
     },
     {
-      "id": "project",
-      "title": "工作项与源码架构数据",
-      "description": "持久化 .governance/board.json 和 architecture.json；版本绑定工作区、STATE 和项目数据。检查相邻列、阻塞、来源指纹与 1 MiB 写入限制；工作项完成不修改总体验收。复用内核的锁和文件操作。",
-      "files": [
-        "plugin/project.ts"
-      ]
-    },
-    {
-      "id": "git",
-      "title": "受管 Git 协作",
-      "description": "使用 execFile 执行 Git；登记表与独立 worktree 位于 Git common directory。约束范围、审查快照、提交验证和执行分支到协调分支的集成；不自动推送、stash/reset 或合并主分支。",
+      "id": "execution",
+      "title": "隔离协作",
+      "description": "隔离修改范围，将审查和验证绑定提交。使用 Git worktree 登记执行任务，只将已验证工作集成到协调分支。",
       "files": [
         "plugin/git.ts"
-      ]
-    },
-    {
-      "id": "build",
-      "title": "构建与插件清单",
-      "description": "package.json 分别编译主进程和渲染器；build-manifest 从工具 schema 与包版本生成 manifest。npm test 构建后运行内核、Git、面板、项目数据测试。",
-      "files": [
-        "scripts/build-manifest.ts",
-        "package.json"
       ]
     }
   ],
   "edges": [
     {
-      "from": "host",
-      "to": "core",
-      "label": "Agent 工具执行 Governance.run"
+      "from": "interaction",
+      "to": "governance",
+      "label": "确认后调用"
     },
     {
-      "from": "host",
-      "to": "bridge",
-      "label": "onPanelInvoke 转发"
+      "from": "governance",
+      "to": "knowledge",
+      "label": "委派项目动作"
     },
     {
-      "from": "cli",
-      "to": "core",
-      "label": "标准输入 JSON 调用"
+      "from": "knowledge",
+      "to": "governance",
+      "label": "复用锁与状态"
     },
     {
-      "from": "ui",
-      "to": "bridge",
-      "label": "宿主桥接通道请求"
-    },
-    {
-      "from": "bridge",
-      "to": "core",
-      "label": "快照、白名单动作与版本校验"
-    },
-    {
-      "from": "core",
-      "to": "project",
-      "label": "委派项目数据动作"
-    },
-    {
-      "from": "project",
-      "to": "core",
-      "label": "复用锁、路径、文件与 STATE"
-    },
-    {
-      "from": "core",
-      "to": "git",
-      "label": "委派 git_* 动作"
-    },
-    {
-      "from": "build",
-      "to": "host",
-      "label": "读取 tool schema 生成插件清单"
+      "from": "governance",
+      "to": "execution",
+      "label": "委派协作动作"
     }
   ],
   "fingerprints": {
-    "plugin/main.ts": "3adf64f0d2fd00ee1913affe8dae8521bcd089295e09f24040c2493981631e6f",
-    "plugin/tool.ts": "f41ad23ff3f61db264a2527bc1ed1cff5cdb05da1618bc76a51ea10a2c8c26f2",
-    "scripts/governance.ts": "cdf5dec14a98b0fabbe4164bbf1cad5117488455b4e4fe3cc71630408a55bcac",
-    "plugin/renderer/panel.ts": "1e1afb836e0aa66983807d603cbca7909da226888ecc9b18586b2c266694475e",
-    "plugin/renderer/graph.ts": "408c3e10426e30a6530b2a49bdb5e28fc0dda97df5d6caabb9b97013dade5976",
-    "plugin/renderer/graph-model.ts": "07d5604c808c141044e023b4a78d75e37fa1365728cdaeacaec461ef50981ade",
     "plugin/panel.ts": "324cd3f9fdf00d4b97ddeb2f68d4ab6f3e73137eb33b50523099b5d49b003d52",
+    "plugin/renderer/panel.ts": "9397a13a1f1e17639d607896a0970f222041a2f432401ce322617258b21428ab",
+    "plugin/renderer/graph.ts": "d58c8003e8caa9f9ac73768df72bc4378d20bc27e9013c81ee4289eba843dc44",
+    "plugin/renderer/graph-model.ts": "d49c21a002ef0284723e6c3106011c3c14c0377f4599dd72e0135267b4783899",
     "plugin/core.ts": "8c66389fa33f067b5c2f0703f5bb568a7e133cce4762b74aa9c0be764b71f6fd",
+    "README.md": "2d584c7ea0cc486fe4226e97c20927203d5ab5994aba341e746e400d0a62e531",
     "plugin/project.ts": "bda294b6e62258f6c196eb238f8bf5567a355a7a4affb6f94b2504867ae684aa",
-    "plugin/git.ts": "8e710e661332bc90249da8e0cb6f1608251ccf32104393fe9377ded7a1e4aa24",
-    "scripts/build-manifest.ts": "69eb1bec1b8c3818db880f07fcc5b6285c5e53be6c55975d8a6d36dee4ecffb6",
-    "package.json": "31448df0e0a8774aff17e1ccee2a07396f30e4cd7bfdf837162c634b90e9ccd6"
+    "plugin/PROJECT.md": "70c5cb7a45161e31b507467fa732f51570dac4af343bf1d063ef4f11df2f57e8",
+    "plugin/git.ts": "8e710e661332bc90249da8e0cb6f1608251ccf32104393fe9377ded7a1e4aa24"
   },
-  "updatedAt": "2026-10-03T12:18:21.551Z"
+  "updatedAt": "2026-10-03T14:49:11.296Z"
 }
