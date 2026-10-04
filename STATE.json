@@ -30,9 +30,10 @@
   "constraints": [
     "Preserve unrelated .pi and redesign archive",
     "User authorized release-source push to non-main branch and plugin-center submission after checks; no main merge, force push or secret upload",
+    "Standing authorization: automatically push a dedicated non-main release branch and submit plugin-center versions only when stable major or minor increases over latest published stable version, after all release checks; patches remain local. New permissions or policy changes require fresh approval. No force push, superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "本地0.6.1性能子任务完成，代码提交ef8ecaf；提交后49项测试及中英文浏览器回归再次通过，typecheck/build/PluginPack通过。300ms模拟Git延迟下看板显示330.7→25.7ms，全部刷新约333ms；保持串行与写入禁用。100次刷新堆约2.62MiB、DOM/监听器稳定，无持续泄漏或内存下降证据。最新可用RAM5.91GiB，PI全宿主工作集1254.9MiB（非插件归属），未发现Node/无头浏览器残留。未结束进程、安装、推送或发布；记录见performance-0.6.1.md。总体任务仍待真实宿主和目视验收。",
+  "current": "主/次版本自动发布流程已实现并验证，持续授权见constraints与AGENTS。release:auto按插件中心最新稳定版判断，检查证据/权限/源码与包绑定，专用分支推送，持久化提交记录防止不明结果重投；补丁跳过。typecheck、build、58测试及中英文浏览器回归通过。实际查询0.6.0基线，0.6.1在plan与auto均跳过，未推送、提交版本或安装；主/次版本路径仅离线测试，不发布测试版本。证据见automatic-release.md；总体真实宿主/目视阻塞保留。",
   "next": [
     "总体真实宿主加载、交互与目视验收仍待完成；0.6.1未安装/发布"
   ],

@@ -6,8 +6,9 @@
   "scripts": {
     "build": "tsc --project tsconfig.json && tsc --project plugin/renderer/tsconfig.json && node scripts/build-manifest.js",
     "typecheck": "tsc --project tsconfig.json --noEmit && tsc --project plugin/renderer/tsconfig.json --noEmit",
-    "test": "npm run build && node --test test/git.test.js test/governance.test.js test/panel.test.js test/project.test.js",
+    "test": "npm run build && node --test test/git.test.js test/governance.test.js test/panel.test.js test/project.test.js test/release.test.cjs",
     "test:browser": "npm run build && node test/browser.cjs",
+    "release:auto": "node scripts/release-auto.cjs",
     "governance": "npm run build --silent && node scripts/governance.js"
   },
   "engines": {
