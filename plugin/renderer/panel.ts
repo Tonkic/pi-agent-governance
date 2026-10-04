@@ -70,8 +70,6 @@ async function load() {
   try { render(await invoke('governance.snapshot')); text('updated', t('updated', new Date().toLocaleTimeString(locale))); notify(t('synced')); }
   catch (error) { notify(error.message, true); for (const id of ['uninitialized', 'start-form', 'progress-form']) $(id).hidden = true; text('workspace', t('disconnected')); }
   text('git-summary', t('gitLoading')); $('git-tasks').replaceChildren();
-  try { renderGit(await invoke('governance.git')); }
-  catch (error) { text('git-summary', t('gitError', error.message)); }
   if (snapshot) {
     try {
       const data: any = await invoke('governance.project');
@@ -80,6 +78,10 @@ async function load() {
     } catch (error) { text('board-status', t('boardReadError', error.message)); }
   } else text('board-status', t('boardDisconnected'));
   renderProjectGraph();
+  // Project content is useful before slow Git commands settle. Keep new controls locked.
+  if (busy) lock(true);
+  try { renderGit(await invoke('governance.git')); }
+  catch (error) { text('git-summary', t('gitError', error.message)); }
 }
 function confirmWrite(description) {
   const dialog = $('confirm-dialog'); text('confirm-description', description); text('confirm-workspace', snapshot?.workspace || '');

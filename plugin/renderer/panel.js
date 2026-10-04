@@ -111,12 +111,6 @@ async function load() {
     }
     text('git-summary', t('gitLoading'));
     $('git-tasks').replaceChildren();
-    try {
-        renderGit(await invoke('governance.git'));
-    }
-    catch (error) {
-        text('git-summary', t('gitError', error.message));
-    }
     if (snapshot) {
         try {
             const data = await invoke('governance.project');
@@ -132,6 +126,15 @@ async function load() {
     else
         text('board-status', t('boardDisconnected'));
     renderProjectGraph();
+    // Project content is useful before slow Git commands settle. Keep new controls locked.
+    if (busy)
+        lock(true);
+    try {
+        renderGit(await invoke('governance.git'));
+    }
+    catch (error) {
+        text('git-summary', t('gitError', error.message));
+    }
 }
 function confirmWrite(description) {
     const dialog = $('confirm-dialog');

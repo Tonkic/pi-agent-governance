@@ -26,9 +26,11 @@ const { panelInvoke } = require('../plugin/panel');
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
     const errors = []; page.on('pageerror', e => errors.push(e.message));
+    let holdGit = false, releaseGit;
     await page.exposeFunction('hostInvoke', async (channel, payload) => {
       if (channel === 'app.getAppearance') return { base: 'light' };
       if (channel === 'app.getLocale') return 'zh-CN';
+      if (channel === 'governance.git' && holdGit) await new Promise(resolve => { releaseGit = resolve; });
       try { return { ok: true, result: await panelInvoke(root, channel, payload) }; }
       catch (e) { return { ok: false, error: e.message }; }
     });
@@ -125,6 +127,17 @@ const { panelInvoke } = require('../plugin/panel');
     const original = await transform(); await page.locator('#graph-in').click(); assert.notEqual(await transform(), original);
     await page.locator('#graph-viewport').focus(); await page.keyboard.press('ArrowRight'); await page.keyboard.press('0');
     await page.locator('[data-trace="all"]').click();
+    // A pending Git overview must not postpone independent project content.
+    holdGit = true;
+    try {
+      await page.locator('#refresh').click();
+      await page.waitForFunction(() => document.querySelectorAll('[data-workitem]').length === 2 && document.querySelectorAll('.architecture-node').length === 2, null, { timeout: 2000 });
+      assert.equal(await page.locator('#refresh').isDisabled(), true, 'Keep writes locked until the whole refresh settles');
+      assert.equal(await page.locator('#workitem-save').isDisabled(), true);
+      assert.equal(await page.locator('[data-workitem] button:enabled').count(), 0, 'New card controls must remain locked');
+      await page.waitForFunction(() => document.querySelector('#git-summary').textContent.includes('正在读取'));
+    } finally { holdGit = false; releaseGit?.(); }
+    await settled();
     for (const width of [390, 768, 1280]) for (const theme of ['light', 'dark']) {
       await page.setViewportSize({ width, height: 1000 });
       await page.evaluate(theme => { document.documentElement.dataset.base = theme; }, theme);

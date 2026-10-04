@@ -1,6 +1,6 @@
 # PI Agent Governance
 
-让新 Agent 从仓库文件接手工作，不依赖聊天记录。PI-Desktop 插件，版本 0.6.0，社区 ID 为 `io.github.tonkic.agent-governance`。提供 Agent 工具、CLI 和中英文可视化治理面板。
+让新 Agent 从仓库文件接手工作，不依赖聊天记录。PI-Desktop 插件，本地版本 0.6.1，社区 ID 为 `io.github.tonkic.agent-governance`。提供 Agent 工具、CLI 和中英文可视化治理面板。
 
 ## 原则
 
@@ -13,7 +13,7 @@
 
 ## 安装与使用
 
-在 PI-Desktop 插件页安装 `plugin/dist/io.github.tonkic.agent-governance-0.6.0.piplug`，授权注册 Agent 工具与打开面板；开发时加载 `plugin/`。旧 ID `pi.agent-governance` 不会自动升级为新 ID：先备份项目的 STATE 与 `.governance/`，停用旧实例以避免工具/命令重名，再首次安装并授权新插件。无需迁移或删除项目数据。保留旧安装包；回退时停用新实例并重装旧包。
+在 PI-Desktop 插件页安装 `plugin/dist/io.github.tonkic.agent-governance-0.6.1.piplug`（本地包；社区已发布版本仍为 0.6.0），授权注册 Agent 工具与打开面板；开发时加载 `plugin/`。旧 ID `pi.agent-governance` 不会自动升级为新 ID：先备份项目的 STATE 与 `.governance/`，停用旧实例以避免工具/命令重名，再首次安装并授权新插件。无需迁移或删除项目数据。保留旧安装包；回退时停用新实例并重装旧包。
 
 界面启动时使用宿主语言，无法读取时回退到浏览器语言（中文用 zh-CN，其他用英文）；切换语言后重新打开面板。用户目标、工作项、架构说明以及底层诊断原文不翻译。插件中心审核发布后，可使用宿主插件页的检查更新与自动更新选项；仅针对相同 ID 的更高版本，新增权限仍需确认。插件不自行下载替换自身，也不绕过宿主安装确认。上传与源码发布用法见 [发布说明](plugin/PUBLISHING.md)。
 
@@ -34,6 +34,7 @@
 面板的写入均需确认；页面状态过期或工作区切换时拒绝写入。已有文件不会被初始化覆盖。Git 创建、提交、验证、集成及任务关闭仍交给 Agent，面板不自动运行测试或执行高风险操作。
 
 直接打开 `plugin/renderer/index.html` 只能预览界面，不能读写项目。面板不实时轮询；有未保存表单时，第一次刷新提示，第二次刷新丢弃表单并重新读取。
+刷新时先展示任务看板和项目图，再读取 Git 概览；全部读取结束前保持写入控件禁用。插件不使用后台轮询或长期快照缓存。
 
 ### 本仓库自用
 

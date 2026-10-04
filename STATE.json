@@ -32,11 +32,10 @@
     "User authorized release-source push to non-main branch and plugin-center submission after checks; no main merge, force push or secret upload",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "0.6.0 社区插件 io.github.tonkic.agent-governance 已上传并发布：plugin_status 与公开 catalog 均为 published，sourceRef 为 9e5eda26ce30ff687e7a993c755cf2565c8b34e0，源码推送仅到 release/plugin-center-0.6.0，未改 main。干净安装/类型检查/构建/49 项回归、中英浏览器交互、国际化门禁及 PluginCheck/Pack 通过；公开包下载校验与源码对比通过。密钥留在本地忽略目录，跟踪文件、335 个 Git 对象及本地/公开包扫描均未含密钥。总体真实宿主与目视验收仍待完成，不关闭总体任务。",
+  "current": "本地0.6.1性能优化已实现：项目先于Git展示，保持串行读取与刷新期间控件禁用。慢Git回归先红后绿；typecheck/build、49测试、中英文浏览器检查及PluginPack通过。300ms模拟Git延迟下看板显示330.7→25.7ms，全量完成约333ms；100次刷新堆约2.62MiB、DOM/监听器稳定，无持续泄漏或内存下降证据。最新采样可用RAM5.91GiB，PI全宿主工作集1254.9MiB（非插件归属），无Node/无头浏览器残留。未结束进程、安装、推送或发布；证据见performance-0.6.1.md。正在本地提交并做提交后检查。",
   "next": [
-    "安装新 ID 前停用旧 pi.agent-governance 实例，保留 STATE 和 .governance 数据，再完成新版本真实宿主烟测",
-    "完成中英文响应式截图目视验收，核对工具注册、架构图、工作项和写入确认",
-    "汇总总体合同全部验收后再 verify/close；密钥已在聊天中暴露，建议用户撤销并替换本地令牌"
+    "完成本地提交后测试并汇报性能子任务",
+    "总体真实宿主加载、交互与目视验收仍待完成；0.6.1未安装/发布"
   ],
   "blocked": [
     "新版真实宿主加载与交互尚未验收；旧版不显示图问题未在模拟桥接复现。",
