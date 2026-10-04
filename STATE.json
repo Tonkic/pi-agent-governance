@@ -32,9 +32,8 @@
     "User authorized release-source push to non-main branch and plugin-center submission after checks; no main merge, force push or secret upload",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "本地0.6.1性能优化已实现：项目先于Git展示，保持串行读取与刷新期间控件禁用。慢Git回归先红后绿；typecheck/build、49测试、中英文浏览器检查及PluginPack通过。300ms模拟Git延迟下看板显示330.7→25.7ms，全量完成约333ms；100次刷新堆约2.62MiB、DOM/监听器稳定，无持续泄漏或内存下降证据。最新采样可用RAM5.91GiB，PI全宿主工作集1254.9MiB（非插件归属），无Node/无头浏览器残留。未结束进程、安装、推送或发布；证据见performance-0.6.1.md。正在本地提交并做提交后检查。",
+  "current": "本地0.6.1性能子任务完成，代码提交ef8ecaf；提交后49项测试及中英文浏览器回归再次通过，typecheck/build/PluginPack通过。300ms模拟Git延迟下看板显示330.7→25.7ms，全部刷新约333ms；保持串行与写入禁用。100次刷新堆约2.62MiB、DOM/监听器稳定，无持续泄漏或内存下降证据。最新可用RAM5.91GiB，PI全宿主工作集1254.9MiB（非插件归属），未发现Node/无头浏览器残留。未结束进程、安装、推送或发布；记录见performance-0.6.1.md。总体任务仍待真实宿主和目视验收。",
   "next": [
-    "完成本地提交后测试并汇报性能子任务",
     "总体真实宿主加载、交互与目视验收仍待完成；0.6.1未安装/发布"
   ],
   "blocked": [

@@ -39,3 +39,5 @@ No process terminated. Windows parent absence alone is not evidence of a zombie.
 PluginPack includes validation: 28 files, 277025 bytes, SHA256 `bebb786706005b802ed09913c4b8862ef7810cac0d70d71181666fafc8523dc3`.
 
 `plugin/dist/io.github.tonkic.agent-governance-0.6.1.piplug`; only warning: explicit grant needed for agent.tool.register. Older packages preserved. Not installed, pushed or published; community release remains 0.6.0. Managed Git registry has no tasks, so a scoped native local commit is used without claiming managed git_verify. Overall real-host and human visual acceptance remain outstanding.
+
+Post-commit verification: source/package commit `ef8ecaf91dedb72c8544e48bf9704d0e35ae4739`; `npm test` rebuilt and passed 49/49, and `node test/browser.cjs` passed again. Log: session scratch `perf-postcommit-tests.log`. Unrelated untracked `.pi/` and redesign archive were preserved.
