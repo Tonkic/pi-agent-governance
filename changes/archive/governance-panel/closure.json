@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "task": "governance-panel",
+  "status": "ready",
+  "goal": "为治理插件提供简洁的可视化面板，展示任务和 Git 状态，支持初始化、创建任务与更新进度，并说明用法和项目结构。",
+  "criteria": [
+    "PI 面板能展示真实任务状态及 Git 工作区，并处理空状态和错误",
+    "初始化、创建任务、更新进度调用现有内核，写入前确认并拒绝过期页面覆盖",
+    "更新用法和项目结构说明，测试构建通过并提供安装包"
+  ],
+  "scope": [
+    "plugin",
+    "test",
+    "scripts/build-manifest.js",
+    "package.json",
+    "README.md",
+    "repository state"
+  ],
+  "constraints": [
+    "不增加自动提交、合并或推送按钮",
+    "不自动推送或合并主分支",
+    "保留现有治理约束与用户修改"
+  ],
+  "current": "已实现可视化面板、状态版本保护和文档；36 项测试及 Edge 真实内核交互检查通过；0.4.0 安装包已生成。",
+  "next": [
+    "归档验收并提交开发分支；不推送、不合并主分支"
+  ],
+  "blocked": [],
+  "followUp": null,
+  "change": "changes/active/governance-panel",
+  "layer": "docs",
+  "verification": {
+    "evidence": "npm.cmd run build passed; npm.cmd test passed 36/36. Headless local Edge with Playwright and real panelInvoke on temporary repositories passed init/cancel/start/progress/Git card/stale-write refusal, 1100px and 390px overflow assertions, dark-theme render, zero browser errors. Static BrowserPreview correctly disables project writes without bridge; host viewport was 0x0 so layout checked in Edge instead. PI adapter registration/panel channel tests passed; actual installed-panel opening not exercised. PluginCheck passed; PluginPack created 0.4.0 (76497 bytes, SHA256 cfe861b5d55f7902cd13ae87e8504bc9ba2a98befc804fb3ac3d7b8ae98ca9cb). git diff --check passed.",
+    "diffReview": "Reviewed core one-line lock-scoped revision check, panel write allowlist, host command/bridge, renderer text-only rendering and confirmation, manifest permissions, tests and usage docs. All panel writes reuse existing core; no Git write buttons or automatic tests/merge/push. Template references moved out of workspace. Real Edge test found and fixed HTML pattern compatibility; rerun passed.",
+    "intentHash": "dc23f51d9a28a57c3ff14d481b14533078e81a4894a1493365d9e7e09d3b95db",
+    "fingerprints": {
+      "README.md": "4ca9feb4fc6d7bed1cd5b87e06287ca83b835162b436f2bd10103305ef1933c9",
+      "package.json": "fda0f0b64651c7eda22b0f0bea1575e4bc5a2dd9053da9e401a17169b56f6b89",
+      "plugin/README.md": "2b095d0f95bc1118f6b4f8a74a6802ad2394580f1542d436163c971cc597fca8",
+      "plugin/main.js": "3adf64f0d2fd00ee1913affe8dae8521bcd089295e09f24040c2493981631e6f",
+      "plugin/core.js": "3cf277c5972bbc86a3fbf51c62b2519dd62abb67aaa59c83c89cf075580cd42e",
+      "plugin/panel.js": "1db595cb395843e3e633c854d6786d4ed17c9c5fe879be3f9f02e42c9e3b6014",
+      "plugin/renderer/index.html": "efd417a45e8a744a36a3463a2468dd8c82a347c35e67c27639180cb376905b3e",
+      "plugin/renderer/panel.css": "0ef57b053377e1af3a8cb6973e0c27ed4fff08e11a04f865cbbd94c766ac2734",
+      "plugin/renderer/panel.js": "555b9c323f39c0d657a6791a2439cea9b689d2481e49018ebc59e3e229c31341",
+      "plugin/manifest.json": "da6265af4cc7f2b8d21662692fd286f9c991a4abceffefaeb354e70b92ece546",
+      "scripts/build-manifest.js": "69eb1bec1b8c3818db880f07fcc5b6285c5e53be6c55975d8a6d36dee4ecffb6",
+      "test/governance.test.js": "00e7660d45e33c85d92c7f3afc6b961970cb5ab278224ad8a47435df24f503b9",
+      "test/panel.test.js": "8e7e980132f0b59be78d77ba5d923adaa27ceeb3ed139d59d8e4422d3f3c54ab",
+      "AGENTS.md": "4913ef21970fa753e093f9bbeef0f48651fb45fa28855a88c540b3c76b266274"
+    },
+    "at": "2026-10-02T20:03:15.862Z"
+  },
+  "gate": {
+    "decisions": {},
+    "summary": "README 增加面板入口、典型用法和项目结构；插件内 README 说明面板操作、版本保护、权限和静态预览限制。0.4.0 安装包包含 UI；无需独立 Web 服务或数据库。"
+  }
+}

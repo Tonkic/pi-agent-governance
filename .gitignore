@@ -1,3 +1,6 @@
 node_modules/
 .governance.lock
 *.tmp
+
+# Local publishing credentials; never commit or package.
+/.secrets/

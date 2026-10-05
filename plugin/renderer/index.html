@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="pi-plugin-chrome" content="v2">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'">
+<title data-i18n="app"></title><link rel="stylesheet" href="panel.css">
+</head>
+<body>
+<main class="app-shell">
+  <nav class="workspace-nav" data-i18n-aria-label="navigation">
+    <span class="nav-brand">G <span data-i18n="brand"></span></span>
+    <span class="nav-label" data-i18n="workspace"></span>
+    <a href="#architecture" data-i18n="navArchitecture"></a>
+    <a href="#board-section" data-i18n="navBoard"></a>
+    <a href="#task-section" data-i18n="navTask"></a>
+    <a href="#git-section" data-i18n="navGit"></a>
+    <span class="nav-note" data-i18n="local"></span>
+  </nav>
+  <header class="topbar">
+    <div class="brand-lockup">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3 4.5 7.2v9.6L12 21l7.5-4.2V7.2L12 3Z"/><path d="m4.8 7.4 7.2 4.1 7.2-4.1M12 11.5V21"/><circle cx="12" cy="7" r="1.4" fill="currentColor" stroke="none"/></svg>
+      </span>
+      <div>
+        <p class="eyebrow" data-i18n="overview"></p>
+        <h1 data-i18n="heading"></h1>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <span id="status" class="badge">—</span>
+      <button id="refresh" class="icon-button" type="button" data-i18n-aria-label="refreshState">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 11a8.1 8.1 0 0 0-14.8-4L3 9"/><path d="M3 4v5h5M4 13a8.1 8.1 0 0 0 14.8 4L21 15"/><path d="M21 20v-5h-5"/></svg>
+        <span data-i18n="refresh"></span>
+      </button>
+    </div>
+  </header>
+
+  <section id="architecture" class="panel architecture-panel" aria-labelledby="architecture-title">
+    <div class="section-head"><div><h2 id="architecture-title" data-i18n="architecture"></h2><p id="graph-overview" class="muted" data-i18n="waiting"></p></div><span id="graph-count" class="badge">—</span></div>
+    <p id="graph-warning" class="graph-warning" role="status" hidden></p>
+    <details class="graph-provenance"><summary data-i18n="provenance"></summary><p id="graph-source" class="muted" data-i18n="waiting"></p></details>
+    <div class="graph-modes" role="group" data-i18n-aria-label="graphView"><button id="show-architecture" type="button" aria-pressed="true" data-i18n="architecture"></button><button id="show-workflow" type="button" aria-pressed="false" data-i18n="workflow"></button></div>
+    <p id="graph-empty" role="status" data-i18n="graphUnread"></p>
+    <div class="graph-toolbar" data-i18n-aria-label="graphTools">
+      <div class="graph-modes" role="group" data-i18n-aria-label="trace"><button type="button" data-trace="all" aria-pressed="true" data-i18n="all"></button><button type="button" data-trace="upstream" aria-pressed="false" data-i18n="upstream"></button><button type="button" data-trace="downstream" aria-pressed="false" data-i18n="downstream"></button></div>
+      <div class="graph-camera"><button id="graph-out" type="button" data-i18n-aria-label="zoomOut">−</button><output id="graph-scale" data-i18n-aria-label="zoom">100%</output><button id="graph-in" type="button" data-i18n-aria-label="zoomIn">+</button><button id="graph-fit" type="button" data-i18n="fit"></button></div>
+    </div>
+    <div class="architecture-layout">
+      <div id="graph-viewport" class="graph-viewport" tabindex="0" role="group" data-i18n-aria-label="canvas" aria-describedby="graph-help">
+        <div id="graph-stage" class="graph-stage">
+          <svg id="graph-edges" class="graph-edges" viewBox="0 0 940 440" aria-hidden="true"><defs><marker id="edge-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker></defs></svg>
+        </div>
+      </div>
+      <aside class="module-detail" aria-live="polite"><span class="nav-label" data-i18n="selected"></span><h3 id="module-title" data-i18n="unselected"></h3><p id="module-description" data-i18n="generated"></p><p id="module-connection" class="muted"></p><div class="relation-heading" data-i18n="direct"></div><ul id="module-relations" class="module-relations"></ul><details class="graph-provenance"><summary data-i18n="sources"></summary><code id="module-path"></code></details><a id="module-jump" href="#task-section" data-i18n="viewTask"></a></aside>
+    </div>
+    <div class="graph-caption"><span id="graph-summary" role="status" data-i18n="noRelations"></span><span id="graph-help" data-i18n="graphHelp"></span></div>
+    <div class="workspace-chip"><span data-i18n="currentWorkspace"></span><code id="workspace" data-i18n="connecting"></code></div>
+  </section>
+
+  <div id="notice" class="notice" role="status" aria-live="polite">
+    <span class="notice-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.2v.1"/></svg></span>
+    <span id="notice-message" data-i18n="reading"></span>
+  </div>
+
+  <section class="metrics" data-i18n-aria-label="metrics">
+    <div class="metric metric-state"><span class="metric-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/><circle cx="12" cy="12" r="3.5"/></svg></span><span class="metric-label" data-i18n="taskStatus"></span><strong id="status-metric">—</strong><small data-i18n="stateCaption"></small></div>
+    <div class="metric"><span class="metric-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m5 12 4 4L19 6"/><path d="M5 5h6M5 19h4"/></svg></span><span class="metric-label" data-i18n="acceptance"></span><strong id="criteria-count">—</strong><small data-i18n="acceptanceCaption"></small></div>
+    <div class="metric"><span class="metric-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 4.5 7v5c0 4.3 3 7.8 7.5 9 4.5-1.2 7.5-4.7 7.5-9V7L12 3Z"/><path d="M12 8v4M12 15v.1"/></svg></span><span class="metric-label" data-i18n="blockers"></span><strong id="blocked-count">—</strong><small data-i18n="blockersCaption"></small></div>
+  </section>
+  <section id="board-section" class="panel" aria-labelledby="board-title">
+    <div class="section-head"><div><h2 id="board-title" data-i18n="board"></h2><p class="muted" data-i18n="boardHint"></p></div></div>
+    <p id="board-status" role="status" data-i18n="boardWaiting"></p>
+    <form id="workitem-form" hidden>
+      <label><span data-i18n="itemId"></span><input id="workitem-id" required pattern="[a-z0-9][a-z0-9-]{0,63}" maxlength="64"></label>
+      <label><span data-i18n="title"></span><input id="workitem-title" required maxlength="160"></label>
+      <label><span data-i18n="description"></span><textarea id="workitem-description" maxlength="4000"></textarea></label>
+      <label><span data-i18n="editBlocker"></span><input id="workitem-blocker" maxlength="1000" disabled></label>
+      <button type="submit" id="workitem-save" data-i18n="createItem"></button><button type="button" id="workitem-cancel" data-i18n="cancelEdit"></button>
+    </form>
+    <div id="board-columns" class="board-columns"></div>
+  </section>
+
+  <section id="task-section" class="dashboard-grid" data-i18n-aria-label="taskActions">
+    <article class="panel task-panel">
+      <div class="section-head">
+        <div><p class="eyebrow" data-i18n="activeThread"></p><h2 data-i18n="currentTask"></h2></div>
+        <span id="task-id" class="badge">STATE</span>
+      </div>
+      <div class="task-intro">
+        <span class="task-number">01</span>
+        <div><p class="label-caps" data-i18n="intent"></p><h3 id="goal" data-i18n="handoff"></h3></div>
+      </div>
+      <p id="current" class="task-current" data-i18n="realData"></p>
+      <div class="detail-block">
+        <div class="detail-heading"><span class="section-index">A</span><h4 data-i18n="acceptance"></h4><span id="criteria-state" class="detail-count">—</span></div>
+        <ul id="criteria" class="clean-list"><li data-i18n="waitingRead"></li></ul>
+      </div>
+      <details class="detail-block collapsed-detail">
+        <summary><span class="section-index">B</span><span data-i18n="scopeConstraints"></span><svg class="icon chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"/></svg></summary>
+        <div class="detail-columns"><div><h4 data-i18n="scope"></h4><ul id="scope" class="clean-list"></ul></div><div><h4 data-i18n="constraints"></h4><ul id="constraints" class="clean-list"></ul></div></div>
+      </details>
+      <div id="followup" class="hint" hidden></div>
+    </article>
+
+    <article class="panel action-panel">
+      <div class="section-head">
+        <div><p class="eyebrow" data-i18n="controls"></p><h2 id="editor-title" data-i18n="actions"></h2></div>
+        <span class="secure-badge"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> <span data-i18n="confirmationRequired"></span></span>
+      </div>
+      <div id="uninitialized" class="empty-action" hidden><div class="empty-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3 4.5 7.2v9.6L12 21l7.5-4.2V7.2L12 3Z"/><path d="M12 8v8M8 12h8"/></svg></div><p data-i18n="initHint"></p><button id="initialize" class="primary" type="button"><span data-i18n="initialize"></span><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+      <form id="start-form" hidden>
+        <div class="form-intro"><span class="form-step">01</span><div><h3 data-i18n="newTask"></h3><p data-i18n="newTaskHint"></p></div></div>
+        <label><span data-i18n="taskId"></span><input id="new-id" required pattern="[a-z0-9]([a-z0-9]|-){0,63}" maxlength="64" data-i18n-placeholder="exampleId"></label>
+        <label><span data-i18n="goal"></span><textarea id="new-goal" required maxlength="20000" rows="2" data-i18n-placeholder="goalPlaceholder"></textarea></label>
+        <label><span data-i18n="acceptance"></span> <small data-i18n="perLine"></small><textarea id="new-criteria" required maxlength="20000" rows="3" data-i18n-placeholder="acceptancePlaceholder"></textarea></label>
+        <div class="form-row"><label><span data-i18n="scope"></span> <small data-i18n="perLine"></small><textarea id="new-scope" maxlength="20000" rows="2" data-i18n-placeholder="scopePlaceholder"></textarea></label><label><span data-i18n="constraints"></span> <small data-i18n="optional"></small><textarea id="new-constraints" maxlength="20000" rows="2"></textarea></label></div>
+        <button class="primary action-submit" type="submit"><span data-i18n="createTask"></span><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      </form>
+      <form id="progress-form" hidden>
+        <div class="form-intro"><span class="form-step">02</span><div><h3 data-i18n="recordProgress"></h3><p data-i18n="progressHint"></p></div></div>
+        <label><span data-i18n="progress"></span><textarea id="edit-current" required maxlength="20000" rows="3"></textarea></label>
+        <label><span data-i18n="next"></span> <small data-i18n="perLine"></small><textarea id="edit-next" maxlength="20000" rows="3" data-i18n-placeholder="nextPlaceholder"></textarea></label>
+        <label><span data-i18n="blocked"></span> <small data-i18n="noBlockers"></small><textarea id="edit-blocked" maxlength="20000" rows="2" data-i18n-placeholder="blockerPlaceholder"></textarea></label>
+        <p class="hint"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.2v.1"/></svg><span data-i18n="verificationHint"></span></p>
+        <button class="primary action-submit" type="submit"><span data-i18n="saveProgress"></span><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 7 9 17l-4-4"/></svg></button>
+      </form>
+    </article>
+  </section>
+
+  <section id="git-section" class="panel git-panel">
+    <div class="section-head">
+      <div><p class="eyebrow" data-i18n="isolated"></p><h2 data-i18n="git"></h2></div>
+      <span class="badge"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m8 8 4-4 4 4-4 4-4-4ZM8 16l4-4 4 4-4 4-4-4Z"/><path d="M12 8v4"/></svg> <span data-i18n="readonly"></span></span>
+    </div>
+    <div class="git-summary-row"><p id="git-summary" class="muted" data-i18n="gitLoading"></p><span class="git-legend" data-i18n="manualRefresh"></span></div>
+    <div id="git-tasks" class="git-tasks"></div>
+  </section>
+
+  <footer><span data-i18n="app"></span><span id="updated"></span></footer>
+</main>
+<dialog id="confirm-dialog"><form method="dialog"><div class="dialog-mark" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3 4.5 7.2v9.6L12 21l7.5-4.2V7.2L12 3Z"/><path d="M12 8v4M12 16v.1"/></svg></div><p class="eyebrow" data-i18n="writeConfirmation"></p><h2 data-i18n="confirmTitle"></h2><p id="confirm-description"></p><p id="confirm-workspace" class="path"></p><div class="actions"><button value="cancel" data-i18n="cancel"></button><button value="confirm" class="primary" data-i18n="confirm"></button></div></form></dialog>
+<script src="i18n.js"></script><script src="graph-model.js"></script><script src="graph.js"></script><script src="panel.js"></script>
+</body></html>

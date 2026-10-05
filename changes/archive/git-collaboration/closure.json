@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "task": "git-collaboration",
+  "status": "ready",
+  "goal": "Implement Git-backed agent collaboration with isolated task worktrees, scoped commits, commit-bound verification and controlled integration.",
+  "criteria": [
+    "Managed writing tasks receive independent branches and worktrees; existing changes are preserved",
+    "Out-of-scope changes and stale verification block commit or integration; conflicts are preserved for resolution",
+    "Git cooperation principles, usage, regression tests and installable plugin are delivered"
+  ],
+  "scope": [
+    "plugin",
+    "tests",
+    "usage docs",
+    "repository state"
+  ],
+  "constraints": [
+    "No automatic push, force operations or merge to main",
+    "No claims of global interception or automatic host subagent launch",
+    "Preserve unrelated changes; operate on feat/git-collaboration"
+  ],
+  "current": "Git collaboration implemented; build and 31 tests passed, diff reviewed, PluginCheck passed and 0.3.0 package created. Finalizing local feature-branch commit.",
+  "next": [
+    "Close verified State task and commit feat/git-collaboration; no main merge or push"
+  ],
+  "blocked": [],
+  "followUp": null,
+  "change": "changes/active/git-collaboration",
+  "layer": "docs",
+  "verification": {
+    "evidence": "npm.cmd run build succeeded; npm.cmd test passed 31/31 (11 real-Git regression tests). git diff --check passed. Host git_status smoke passed. PluginCheck passed with only explicit agent.tool.register grant warning. PluginPack created plugin/dist/pi.agent-governance-0.3.0.piplug, 56070 bytes, SHA256 2b8375700d032ca0c32bf9b12d2a2418db72fede870e8a164256324bbee1457d.",
+    "diffReview": "Directly inspected new Git implementation/tests/docs and tracked diff: isolated worktrees, scope checks, stale snapshots/verification, non-destructive conflicts/recovery; added equal-content merge and pending-revert patch regressions. No independent reviewer result available. Bootstrap change remains on feat/git-collaboration; no main merge or push.",
+    "intentHash": "fb7eaa23d4fca53d39bd929fbe51d291972e8d8babdc75e0647daf329601d054",
+    "fingerprints": {
+      "AGENTS.md": "4913ef21970fa753e093f9bbeef0f48651fb45fa28855a88c540b3c76b266274",
+      "README.md": "0c12a4f951bb883c563ebccad0c5a910066a3eb37421a93e5df4cec925f11400",
+      "package.json": "9dcdcfde21f4afda8cf39fd0775911766f6f652792e7fdafbb45c1ac560baada",
+      "plugin/README.md": "d951c00003a8c7b8df6b578a269d15510fa3678f6fe7d7fe8cd4d209946980bb",
+      "plugin/GIT.md": "ae41ba5d49f633901fc58ede97f8c6dae67b435cb17dc8185172dab9448729e5",
+      "plugin/git.js": "ed293dfd157685275fffdeab7710d8642350070e2ba3bc61521222c2515f26c9",
+      "plugin/core.js": "fe18f91430deec06493fc1c643edf368e284bebfe9ead3e10cd714075261615b",
+      "plugin/tool.js": "ac780be8b78501e79c2873bfc2ae02c4885d8b59d858e5bd7e5343aa9489b182",
+      "plugin/manifest.json": "d293ddb9aaff62ad0f0aa27fa7eee8e98245cb4137ef06478bdbeeeae11b3715",
+      "scripts/build-manifest.js": "da8156bee735dfed0a16c64dac7a2e629a1713c8fb5ff12a256621d0c7c963c6",
+      "test/git.test.js": "943da8728a994315eaac19d0a25924222b264697146cbb3fd26fcfa51d6bfece"
+    },
+    "at": "2026-10-02T17:57:37.600Z"
+  },
+  "gate": {
+    "decisions": {},
+    "summary": "Updated README and plugin/GIT.md with Git requirements, isolated worktree assignment, exact scopes, diff/commit/test/verify/integrate usage, conflict recovery and native Git security limits. Updated AGENTS and generated bootstrap rules. No migration skill or automatic host delegation added."
+  }
+}

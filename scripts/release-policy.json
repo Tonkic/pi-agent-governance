@@ -1,0 +1,11 @@
+{
+  "enabled": true,
+  "rule": "stable-major-or-minor",
+  "pluginId": "io.github.tonkic.agent-governance",
+  "repository": "Tonkic/pi-agent-governance",
+  "branchPrefix": "release/plugin-center-",
+  "sourceBranchPrefix": "release/source-",
+  "syncPatches": true,
+  "allowPermissionChanges": false,
+  "allowSupersede": false
+}

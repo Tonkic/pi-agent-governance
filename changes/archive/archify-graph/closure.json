@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "task": "archify-graph",
+  "status": "ready",
+  "goal": "Refine the architecture diagram using Archify as reference: directed graph canvas, pan/zoom, node details and upstream/downstream exploration.",
+  "criteria": [
+    "Diagram uses explicit source-backed directed connections rather than column arrows",
+    "Pan, zoom, fit, selection and upstream/downstream controls work with keyboard alternatives",
+    "Build, tests, browser checks and plugin packaging pass"
+  ],
+  "scope": [
+    "plugin/renderer/",
+    "test/",
+    "README.md",
+    "plugin/dist/"
+  ],
+  "constraints": [
+    "Preserve task/Git operations and unrelated existing archive",
+    "No remote push or main merge",
+    "Graph describes this plugin, not automatically scanned arbitrary repositories"
+  ],
+  "current": "Implemented Archify-inspired directed canvas with 6 nodes, 5 edges, pan/zoom/fit, upstream/downstream tracing and relation navigation. Build/typecheck and 40 tests pass; browser interaction assertions pass; packaged. Screenshot tool unavailable.",
+  "next": [],
+  "blocked": [],
+  "followUp": null,
+  "change": "changes/active/archify-graph",
+  "layer": "docs",
+  "verification": {
+    "evidence": "npm run typecheck, npm run build, npm test: 40 passed. Browser assertions: 5 edges, upstream/downstream counts, terminal zero reach, relation navigation, zoom/fit, keyboard pan/reset, real CDP mouse drag and release, ordinary wheel preserved, Ctrl-wheel zoom, narrow iframe no overflow and all nodes fitted. Light theme computed styles checked. Screenshot tool failed; no screenshot-based visual approval claimed. PluginCheck and PluginPack passed (22 files).",
+    "diffReview": "Reviewed graph model/controller, HTML/CSS, build inclusion, tests and README. Connections checked against core/panel/main/git sources. No task/Git operation logic modified. diff --check passed. Existing unrelated archive preserved.",
+    "intentHash": "236ea6f3a70f1772a5455cbbc56d84c11d357cb39e1326479cd4709f510d45b5",
+    "fingerprints": {
+      "README.md": "4dd7508a0c26caeee43dc9204d83ad3ee3b29f2f4e7950315aa97d607ab9b7a4",
+      "plugin/renderer/index.html": "846e8a0815551e849559fbb9e6822a359345cd9455fc6648dc601143ed84e6d7",
+      "plugin/renderer/panel.css": "baafe9afd718c98cbbedbfbaa798aca86ecd751876a1a53c9bf08ce2c8eac9de",
+      "plugin/renderer/graph-model.ts": "f29f896d5e448f4457019d706e54f7ad611e08a36d37ac8ab3cc34a64fda3005",
+      "plugin/renderer/graph-model.js": "6d8773420ba632839165deba70820ad6a79dfa01fc4f414dd36ba56ef813617f",
+      "plugin/renderer/graph.ts": "8f9a9630cdf0e631c7058e9013a59c4fe05df24c258d12ad79e15652d71b395c",
+      "plugin/renderer/graph.js": "70581d43ff0c913306bed53d57e66d3e83ecbb685e52d953547332f7aff83637",
+      "plugin/renderer/tsconfig.json": "74148980cca3da1f8d7d836f7ed54f114b7655dacc682252ba7abeb90d651d1d",
+      "test/panel.test.ts": "7fb2e746d978434443787e7d2dabf8fb33d8e1e2db7d87b4fb53b4d5ca586bb9",
+      "test/panel.test.js": "e93cb23a04864c93866e6627bc63dc68c15e015cd8a84ae39e0a6f0601962d51",
+      "plugin/dist/pi.agent-governance-0.4.0.piplug": "3b9ff3f56d952cbcb3e23a3bdde17ade9b3b3c9ba696a3923e0a44c808bce107",
+      "AGENTS.md": "4913ef21970fa753e093f9bbeef0f48651fb45fa28855a88c540b3c76b266274"
+    },
+    "at": "2026-10-03T00:48:53.375Z"
+  },
+  "gate": {
+    "decisions": {},
+    "summary": "README documents graph relation exploration, pointer and keyboard camera controls, and authored-map/runtime-monitoring boundaries."
+  }
+}
