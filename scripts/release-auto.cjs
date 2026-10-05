@@ -81,10 +81,13 @@ function git(...args) {
   return execFileSync('git', args, { cwd: root, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
 }
 function readCommit(ref, file) { return git('show', `${ref}:${file}`); }
+function untrackedGuard(raw) {
+  const extra = raw.split('\0').filter(Boolean);
+  if (extra.some(file => !file.startsWith('.pi/') && !file.startsWith('changes/archive/redesign-governance-panel/'))) fail('Unexpected untracked files; inspect before release');
+}
 function clean(sourceRef) {
   if (git('rev-parse', 'HEAD').trim() !== sourceRef || git('status', '--porcelain', '--untracked-files=no').trim()) fail('HEAD changed or tracked worktree is dirty');
-  const extra = git('ls-files', '--others', '--exclude-standard').trim().split('\n').filter(Boolean);
-  if (extra.some(file => !file.startsWith('.pi/') && !file.startsWith('changes/archive/redesign-governance-panel/'))) fail('Unexpected untracked files; inspect before release');
+  untrackedGuard(git('ls-files', '-z', '--others', '--exclude-standard'));
 }
 function secretScan(sourceRef) {
   const token = fs.readFileSync(path.join(root, '.secrets/plugin-center.token'), 'utf8').trim();
@@ -178,7 +181,7 @@ async function main() {
     return result;
   } finally { fs.rmdirSync(lock); }
 }
-module.exports = { stable, compare, decision, validatePolicy, permissionGuard, receiptGuard, execute, executeSourceSync };
+module.exports = { stable, compare, decision, validatePolicy, permissionGuard, receiptGuard, execute, executeSourceSync, untrackedGuard };
 if (require.main === module) main().catch(error => {
   // Do not print arbitrary subprocess output/remote payloads or credentials.
   console.error(error.code || error.status ? 'Release blocked by local command/IO failure; inspect checks and remote status. No mutation retry.' : String(error.message).replace(/pi_pat_[A-Za-z0-9_-]+/g, '[REDACTED]'));

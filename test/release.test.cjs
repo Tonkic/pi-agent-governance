@@ -94,3 +94,10 @@ test('small delivery failed checks prevent push and push failure never retries',
   assert.throws(() => validatePolicy({ ...policy, sourceBranchPrefix: 'main' }), /approval/);
   assert.throws(() => validatePolicy({ ...policy, syncPatches: false }), /approval/);
 });
+test('NUL-separated Chinese and newline paths preserve exact untracked boundaries', () => {
+  const { untrackedGuard } = require('../scripts/release-auto.cjs');
+  untrackedGuard('.pi/goal/中文任务.md\0changes/archive/redesign-governance-panel/closure.json\0');
+  untrackedGuard('.pi/goal/中文\n任务.md\0');
+  assert.throws(() => untrackedGuard('.pi/goal/中文.md\0unexpected.txt\0'), /Unexpected/);
+  assert.throws(() => untrackedGuard('unexpected\n.pi/goal/中文.md\0'), /Unexpected/);
+});
