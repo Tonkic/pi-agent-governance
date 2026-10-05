@@ -29,11 +29,11 @@
   ],
   "constraints": [
     "Preserve unrelated .pi and redesign archive",
-    "User authorized release-source push to non-main branch and plugin-center submission after checks; no main merge, force push or secret upload",
-    "Standing authorization: every approved small update must be committed, tested and pushed to a dedicated non-main GitHub source branch; stable major/minor increases over latest published stable version additionally submit plugin-center after all release checks. Patches do not publish to marketplace. New permissions or policy changes require fresh approval. No main merge, force push, superseding pending releases, unattended install or mutation retries.",
+    "User authorizes completed updates to merge into main after review/tests, retest the integrated commit, normally push main and delete only fully merged temporary branches. Preserve release provenance and unfinished branches; do not bypass branch protection, force push or discard user data.",
+    "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "小更新GitHub同步已实施并实测成功：06990844d11e0e5ef9636989be3ee70e15e7aed0已推送专用release/source-0.6.1-完整SHA分支且远端SHA一致，包含此前本地性能优化和自动发布源码。release:auto提交后重复typecheck/build、61项测试和中英文浏览器回归并扫描可达历史凭据后推送；市场不发布，main/旧发布分支不变。首次检查发现Git中文路径转义误判，已改NUL解析并回归。真实治理工具status/git_status/progress与架构API已使用；git_create因既有无关未跟踪目录dirty拒绝，保留文件，未冒称受管git_verify。正在同步完成记录。",
+  "current": "用户已授权完成更新合并main并清理已合并临时分支。准备将已测试源码及交付规则集成main，集成后重测并普通推送；删除前核对远端main祖先关系与worktree/登记。仍保留发布来源分支和未完成总体验收；不冒称窗口拖动修复或受管git_verify通过。",
   "next": [
     "真实宿主交互、外层窗口拖动与目视验收仍待完成"
   ],
