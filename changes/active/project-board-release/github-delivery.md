@@ -1,0 +1,15 @@
+# GitHub delivery policy revision
+
+User authorization supersedes the earlier patch-local-only policy: every approved small update must be committed, checked and pushed to GitHub; stable major/minor upgrades additionally publish to marketplace. No automatic main merge, force push or installation. Sources: AGENTS.md, STATE.json, README.md and scripts/RELEASING.md. Historical automatic-release.md describes the previous behavior, not the current rule.
+
+## Governance usage
+
+Called the installed community governance status and git_status. Registry had no tasks. Tried git_create coordinator delivery-github-sync at 258528daceb0a79c6c909c03eca1b97f3cbeadc9 with scoped files and one test criterion. Plugin refused: Worktree is dirty; commit or resolve explicitly. No automatic stash/reset. Existing unrelated untracked .pi/ and redesign archive were preserved. No writing delegate, invented managed registration or git_verify claim. Serial scoped native commit is used. Project architecture update used the real Governance API with revision guard; only reviewed README fingerprint changed, no graph relationships changed.
+
+## Implementation and verification
+
+release:auto now checks and pushes small deliveries to immutable release/source-VERSION-FULLSHA branches; same version can have multiple independently identified source updates. Fixed origin, branch validation, clean source, remote SHA verification and no-force/no-tag push preserved. Ordinary build/test and --plan do not push. Small path has no submit_version, publication journal or market mutation. Major/minor checks and durable attempt handling preserved. Existing community 0.6.0 and local runtime/package 0.6.1 unchanged; only repository scripts/docs/tests changed, so no package rebuild needed.
+
+Actual checks before commit: npm run typecheck passed; npm test built both sides and passed 60/60; npm run test:browser passed bilingual existing interactions; git diff --check passed. Reviewed script and policy/test diff, documentation and State scope. Logs are in session scratch source-sync-tests.log. New tests exercise preflight-before-source-push and stop/no-retry failures. Existing tests cover major/minor state machine and security gates.
+
+Next delivery action is a scoped commit followed by the actual release:auto command. That command repeats typecheck/test/browser, scans reachable Git objects for the local credential and common secret markers before pushing, and verifies the remote branch SHA. Publication is not requested. Outcome will be recorded after execution, not assumed here. Real-host, outer-window dragging and human visual acceptance remain outstanding; overall task is not closed.

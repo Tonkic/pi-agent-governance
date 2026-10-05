@@ -1,7 +1,7 @@
 'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { decision, stable, compare, validatePolicy, permissionGuard, receiptGuard, execute } = require('../scripts/release-auto.cjs');
+const { decision, stable, compare, validatePolicy, permissionGuard, receiptGuard, execute, executeSourceSync } = require('../scripts/release-auto.cjs');
 const { versionPayload, unwrap } = require('../scripts/plugin-center.cjs');
 const policy = require('../scripts/release-policy.json');
 const id = 'io.github.tonkic.agent-governance';
@@ -61,7 +61,7 @@ function operations(failAt) {
   const ops = Object.fromEntries(['preflight', 'checkRemote', 'push', 'markAttempt', 'submit', 'status'].map(key => [key, async () => { calls.push(key); if (key === failAt) throw Error(key); return { state: 'published' }; }]));
   return { calls, ops };
 }
-test('patch execution has no checks, push or submission side effects', async () => {
+test('patch market execution never submits; source synchronization is separate', async () => {
   const { calls, ops } = operations();
   await execute(decision('0.6.1', status()), ops);
   assert.deepEqual(calls, []);
@@ -79,4 +79,18 @@ test('failed checks or persistence prevent submission; timeouts never retry muta
     if (['preflight', 'checkRemote', 'push', 'markAttempt'].includes(step)) assert.ok(!calls.includes('submit'));
     if (step === 'submit') assert.equal(calls.at(-1), 'submit');
   }
+});
+test('small delivery checks then pushes source without any market calls', async () => {
+  const { calls, ops } = operations();
+  assert.deepEqual(await executeSourceSync(ops), { published: false, sourceSynced: true });
+  assert.deepEqual(calls, ['preflight', 'push']);
+});
+test('small delivery failed checks prevent push and push failure never retries', async () => {
+  for (const step of ['preflight', 'push']) {
+    const { calls, ops } = operations(step);
+    await assert.rejects(executeSourceSync(ops), new RegExp(step));
+    assert.deepEqual(calls, step === 'preflight' ? ['preflight'] : ['preflight', 'push']);
+  }
+  assert.throws(() => validatePolicy({ ...policy, sourceBranchPrefix: 'main' }), /approval/);
+  assert.throws(() => validatePolicy({ ...policy, syncPatches: false }), /approval/);
 });

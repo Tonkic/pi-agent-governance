@@ -38,7 +38,7 @@ function decision(candidate, status) {
 }
 function validatePolicy(p) {
   if (!p.enabled) fail('Automatic release disabled');
-  if (p.rule !== 'stable-major-or-minor' || p.pluginId !== pluginId || p.repository !== repository || p.branchPrefix !== 'release/plugin-center-' || p.allowPermissionChanges !== false || p.allowSupersede !== false) fail('Policy changed; renewed human approval required');
+  if (p.rule !== 'stable-major-or-minor' || p.pluginId !== pluginId || p.repository !== repository || p.branchPrefix !== 'release/plugin-center-' || p.sourceBranchPrefix !== 'release/source-' || p.syncPatches !== true || p.allowPermissionChanges !== false || p.allowSupersede !== false) fail('Policy changed; renewed human approval required');
 }
 function permissionGuard(candidate, baseline) {
   if (!Array.isArray(candidate.permissions) || !Array.isArray(baseline.permissions)) fail('Missing permissions');
@@ -61,6 +61,21 @@ async function execute(plan, ops) {
   await ops.markAttempt(); // Durable BEFORE network mutation; uncertainty never triggers a retry.
   await ops.submit();
   return ops.status(); // Approval and catalog publication may still be pending.
+}
+async function executeSourceSync(ops) {
+  await ops.preflight();
+  await ops.push();
+  return { published: false, sourceSynced: true };
+}
+function pushSource(sourceRef, branch) {
+  const origin = git('remote', 'get-url', '--push', '--all', 'origin').trim();
+  if (!['https://github.com/Tonkic/pi-agent-governance.git', 'https://github.com/Tonkic/pi-agent-governance', 'git@github.com:Tonkic/pi-agent-governance.git'].includes(origin)) fail('Unexpected push remote');
+  if (!/^refs\/heads\/release\/(?:source-|plugin-center-)[A-Za-z0-9.-]+$/.test(branch)) fail('Unexpected release branch');
+  clean(sourceRef);
+  const existing = git('ls-remote', '--heads', 'origin', branch).trim();
+  if (existing && existing.split(/\s/)[0] !== sourceRef) fail('Release branch already points elsewhere; refusing replacement');
+  git('-c', 'push.followTags=false', '-c', 'remote.origin.mirror=false', 'push', 'origin', `${sourceRef}:${branch}`);
+  if (git('ls-remote', '--heads', 'origin', branch).trim().split(/\s/)[0] !== sourceRef) fail('Remote source verification failed');
 }
 function git(...args) {
   return execFileSync('git', args, { cwd: root, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
@@ -103,9 +118,18 @@ async function main() {
   const getStatus = async () => unwrap(await call('plugin_status', { pluginId }));
   const plan = decision(manifest.version, await getStatus());
   console.log(JSON.stringify({ ...plan, mode: preview ? 'plan' : 'auto', version: manifest.version, sourceRef, baselineSourceRef: plan.sourceRef }));
-  if (preview || !plan.publish) return; // No push, tests, receipt or submission for patches.
+  if (preview) return; // Plan remains read-only.
   clean(sourceRef);
   if (JSON.stringify(JSON.parse(readCommit(sourceRef, 'scripts/release-policy.json'))) !== JSON.stringify(policy)) fail('Policy must belong to the released commit');
+  if (!plan.publish) {
+    const branch = `refs/heads/${policy.sourceBranchPrefix}${manifest.version}-${sourceRef}`;
+    const result = await executeSourceSync({
+      preflight: async () => { runChecks(); clean(sourceRef); secretScan(sourceRef); },
+      push: async () => pushSource(sourceRef, branch)
+    });
+    console.log(JSON.stringify({ ...result, branch, sourceRef }));
+    return result; // Patches sync source only; no submit_version or publication journal.
+  }
   if (!/^[a-f0-9]{40}$/.test(plan.sourceRef || '')) fail('Missing baseline source commit');
   permissionGuard(manifest, JSON.parse(readCommit(plan.sourceRef, 'plugin/manifest.json')));
   if (!notesPath || !/^[\w./-]+$/.test(notesPath) || notesPath.split('/').includes('..') || notesPath.startsWith('/')) fail('Provide a committed relative release-notes path');
@@ -136,13 +160,7 @@ async function main() {
     const result = await execute(plan, {
       preflight: async () => { runChecks(); clean(sourceRef); secretScan(sourceRef); },
       checkRemote,
-      push: async () => {
-        const existing = git('ls-remote', '--heads', 'origin', branch).trim();
-        if (existing && existing.split(/\s/)[0] !== sourceRef) fail('Release branch already points elsewhere; refusing replacement');
-        // Explicit ref only; keep normal pre-push hooks and never force or push tags.
-        git('-c', 'push.followTags=false', '-c', 'remote.origin.mirror=false', 'push', 'origin', `${sourceRef}:${branch}`);
-        if (git('ls-remote', '--heads', 'origin', branch).trim().split(/\s/)[0] !== sourceRef) fail('Remote source verification failed');
-      },
+      push: async () => pushSource(sourceRef, branch),
       markAttempt: async () => {
         const fd = fs.openSync(journal, 'wx');
         try { fs.writeFileSync(fd, JSON.stringify({ sourceRef, version: manifest.version, at: new Date().toISOString(), state: 'attempted-inspect-remote-before-any-retry' }, null, 2)); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
@@ -160,7 +178,7 @@ async function main() {
     return result;
   } finally { fs.rmdirSync(lock); }
 }
-module.exports = { stable, compare, decision, validatePolicy, permissionGuard, receiptGuard, execute };
+module.exports = { stable, compare, decision, validatePolicy, permissionGuard, receiptGuard, execute, executeSourceSync };
 if (require.main === module) main().catch(error => {
   // Do not print arbitrary subprocess output/remote payloads or credentials.
   console.error(error.code || error.status ? 'Release blocked by local command/IO failure; inspect checks and remote status. No mutation retry.' : String(error.message).replace(/pi_pat_[A-Za-z0-9_-]+/g, '[REDACTED]'));
