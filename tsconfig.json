@@ -8,6 +8,8 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "noEmitOnError": true,
+    "rootDir": ".",
+    "outDir": "build",
     "declaration": false,
     "sourceMap": false,
     "lib": ["ES2022", "DOM"],
@@ -19,5 +21,5 @@
     "test/**/*.ts",
     "types/**/*.d.ts"
   ],
-  "exclude": ["plugin/dist", "plugin/renderer"]
+  "exclude": ["plugin/dist", "plugin/runtime", "plugin/renderer", "build"]
 }

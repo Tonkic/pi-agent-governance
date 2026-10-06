@@ -4,7 +4,7 @@
 
 ## 调用顺序
 
-CLI 在所选工作区执行，向 `node <插件仓库>/scripts/governance.js` 标准输入传入一个 JSON 对象。先 `init`（不覆盖已有文件），再调用 `project_snapshot`。所有项目写入必须带上该快照返回的 `expectedRevision`，每次成功写入后重新读取快照。版本绑定工作区绝对路径、STATE 和两份项目数据；工作区切换、人工修改或其他写入均使旧版本失效。
+CLI 在所选工作区执行，向 `node <插件仓库>/build/scripts/governance.js` 标准输入传入一个 JSON 对象（先在插件仓库完成构建）。先 `init`（不覆盖已有文件），再调用 `project_snapshot`。所有项目写入必须带上快照的 `expectedRevision`，每次成功写入后重读快照。版本绑定工作区绝对路径、STATE 和两份项目数据；切换、人工修改或其他写入均使旧版本失效。
 
 ### 工作项
 

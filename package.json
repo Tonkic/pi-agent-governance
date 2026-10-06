@@ -1,15 +1,15 @@
 {
   "name": "pi-agent-governance",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "private": true,
   "description": "Repository-level agent engineering governance for PI-Desktop",
   "scripts": {
-    "build": "tsc --project tsconfig.json && tsc --project plugin/renderer/tsconfig.json && node scripts/build-manifest.js",
+    "build": "node scripts/build.cjs",
     "typecheck": "tsc --project tsconfig.json --noEmit && tsc --project plugin/renderer/tsconfig.json --noEmit",
-    "test": "npm run build && node --test test/git.test.js test/governance.test.js test/panel.test.js test/project.test.js test/release.test.cjs",
+    "test": "npm run build && node --test build/test/git.test.js build/test/governance.test.js build/test/panel.test.js build/test/project.test.js test/release.test.cjs test/layout.test.cjs",
     "test:browser": "npm run build && node test/browser.cjs",
     "release:auto": "node scripts/release-auto.cjs",
-    "governance": "npm run build --silent && node scripts/governance.js"
+    "governance": "npm run build --silent && node build/scripts/governance.js"
   },
   "engines": {
     "node": ">=20"

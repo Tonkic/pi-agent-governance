@@ -69,10 +69,10 @@
     "plugin/renderer/graph.ts": "cf91acb3d99450d57cc68437d0af350e2eba3f63ef77ec04e25a13e0475776a1",
     "plugin/renderer/graph-model.ts": "d49c21a002ef0284723e6c3106011c3c14c0377f4599dd72e0135267b4783899",
     "plugin/core.ts": "8c66389fa33f067b5c2f0703f5bb568a7e133cce4762b74aa9c0be764b71f6fd",
-    "README.md": "767234d5687766c288c09dbe4e696f28ed297fa2414575c7990fe317ecb3522c",
+    "README.md": "c31691e0909f999019ac7e4bd667e8a2fbbfbaaebe185b731de4742f21447b3e",
     "plugin/project.ts": "bda294b6e62258f6c196eb238f8bf5567a355a7a4affb6f94b2504867ae684aa",
-    "plugin/PROJECT.md": "70c5cb7a45161e31b507467fa732f51570dac4af343bf1d063ef4f11df2f57e8",
+    "plugin/PROJECT.md": "4674c9ceb716f75fef3b49f6976692990ce9346691b63399b7696bddb540cfa1",
     "plugin/git.ts": "8e710e661332bc90249da8e0cb6f1608251ccf32104393fe9377ded7a1e4aa24"
   },
-  "updatedAt": "2026-10-05T21:40:39.414Z"
+  "updatedAt": "2026-10-06T08:11:08.991Z"
 }

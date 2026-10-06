@@ -1,6 +1,6 @@
 # PI Agent Governance
 
-让新 Agent 从仓库文件接手工作，不依赖聊天记录。PI-Desktop 插件，本地版本 0.6.1，社区 ID 为 `io.github.tonkic.agent-governance`。提供 Agent 工具、CLI 和中英文可视化治理面板。
+让新 Agent 从仓库文件接手工作，不依赖聊天记录。PI-Desktop 插件，本地版本 0.6.2，社区 ID 为 `io.github.tonkic.agent-governance`。提供 Agent 工具、CLI 和中英文可视化治理面板。读代码从 [Docs 入口](docs/README.md) 开始。
 
 ## 原则
 
@@ -13,7 +13,7 @@
 
 ## 安装与使用
 
-在 PI-Desktop 插件页安装 `plugin/dist/io.github.tonkic.agent-governance-0.6.1.piplug`（本地包；社区已发布版本仍为 0.6.0），授权注册 Agent 工具与打开面板；开发时加载 `plugin/`。旧 ID `pi.agent-governance` 不会自动升级为新 ID：先备份项目的 STATE 与 `.governance/`，停用旧实例以避免工具/命令重名，再首次安装并授权新插件。无需迁移或删除项目数据。保留旧安装包；回退时停用新实例并重装旧包。
+在 PI-Desktop 插件页安装 `plugin/dist/io.github.tonkic.agent-governance-0.6.2.piplug`（本地包；社区已发布版本仍为 0.6.0），授权注册 Agent 工具与打开面板；开发时加载 `plugin/`。旧 ID `pi.agent-governance` 不会自动升级为新 ID：先备份 STATE 与 `.governance/`，停用旧实例避免重名，再安装并授权新插件。无需迁移或删除项目数据。旧安装包保留供回退。
 
 界面启动时使用宿主语言，无法读取时回退到浏览器语言（中文用 zh-CN，其他用英文）；切换语言后重新打开面板。用户目标、工作项、架构说明以及底层诊断原文不翻译。插件中心审核发布后，可使用宿主插件页的检查更新与自动更新选项；仅针对相同 ID 的更高版本，新增权限仍需确认。插件不自行下载替换自身，也不绕过宿主安装确认。上传与源码发布用法见 [发布说明](plugin/PUBLISHING.md)。
 
@@ -53,20 +53,19 @@ AGENTS.md                 Agent 工作规则
 STATE.json                当前总体任务与接手状态
 README.md                 原则、用法和限制
 plugin/
-  main.ts / main.js       PI 工具、命令与面板入口（TS 源码 / JS 产物）
-  core.ts / core.js       状态、验证、归档内核
-  git.ts / git.js         worktree、提交和集成管理
-  panel.ts / panel.js     面板通道与写入白名单
-  renderer/               HTML / CSS / TS 源码与 JS 产物
-  tool.ts / tool.js       Agent 工具参数定义
-  manifest.json           构建生成的插件清单
-  README.md / GIT.md       详细操作说明
-  dist/                   可安装的 .piplug
-scripts/                  TS 源码与编译后的 CLI/清单构建脚本
-test/                     TS 源码与编译后的内核、Git、面板回归测试
-types/                    PI 宿主和面板桥接的类型声明
-tsconfig.json             TypeScript 编译与类型检查配置
-changes/archive/          已完成任务的验收记录
+  *.ts                    主进程源码（main/core/git/panel/project/tool）
+  renderer/               HTML / CSS / 浏览器 TS 源码
+  runtime/                集中存放生成 JS，不手改；宿主实际加载
+  manifest.json           生成清单，入口 runtime/main.js
+  *.md                    工具、Git、项目数据与发布用法
+  dist/                   可安装的 .piplug，历史包保留
+scripts/                  构建、CLI、交付源码（TS与手写CJS）
+test/                     TS与手写CJS测试源码
+build/                    编译的CLI/测试及中间JS，被Git忽略
+docs/                     稳定架构、读码与开发文档
+notes/                    必要决策和验证记录，不替代STATE
+types/                    PI 宿主和面板桥接类型
+changes/                  已有任务证据与归档
 ```
 
 这是无第三方运行时依赖的本地插件；TypeScript 仅作为开发期编译依赖，不需要单独启动 Web 服务或数据库。面板通过宿主桥接调用同一内核；Git 本地登记表在 `.git` common directory 中，不在上述源码目录内。
@@ -84,17 +83,17 @@ changes/archive/          已完成任务的验收记录
 
 ## 开发与检查
 
-需要 Node.js 20+。源码使用 TypeScript，构建会在源文件旁生成 PI-Desktop 可加载的 CommonJS `.js` 产物；运行时仍无第三方依赖。
+需要 Node.js 20+。TS 源码与输出分离：插件 JS 在 `plugin/runtime/`，CLI/测试 JS 在忽略的 `build/`。运行产物提交用于源码SHA绑定打包，不手动修改。详见 [开发与构建](docs/development.md)。
 
 ```powershell
 npm ci
 npm run typecheck
 npm run build
 npm test
-'{"action":"status"}' | node scripts/governance.js
+'{"action":"status"}' | node build/scripts/governance.js
 ```
 
-CLI 作用于当前目录；PI 工具作用于宿主当前工作区主根。插件主进程使用根 `tsconfig.json` 编译为 CommonJS；浏览器脚本使用 `plugin/renderer/tsconfig.json` 单独构建，不能依赖 Node 的 require/exports。运行 `npm run build` 会完成两端构建并生成 manifest；入口继续指向 `main.js`。安装包打包使用 PI 的 PluginCheck 和 PluginPack。
+CLI 作用于当前目录；PI 工具作用于宿主当前工作区主根。主进程与浏览器分别构建，浏览器不依赖 Node require/exports。`npm run build` 清理固定输出目录、编译、组装 runtime 并生成 manifest；不清理历史包或项目数据。安装包使用 PI PluginCheck/PluginPack。
 
 可选浏览器测试：准备可解析的 Playwright（或用 `NODE_PATH` 指向其 node_modules），用 `PI_BROWSER` 指定 Chromium/Edge 路径，再运行 `npm run test:browser`。它在临时项目中连接真实内核、模拟宿主桥接，生成 390/768/1280 × light/dark 六张截图到 `PI_SCRATCH_DIR/project-board-screenshots`（未设置时使用系统临时目录）；不替代真实宿主安装验收。
 

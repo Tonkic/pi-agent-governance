@@ -4,3 +4,6 @@ node_modules/
 
 # Local publishing credentials; never commit or package.
 /.secrets/
+
+# Disposable compiled tooling and tests; plugin/runtime is versioned for packaging.
+/build/

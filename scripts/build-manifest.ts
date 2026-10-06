@@ -13,11 +13,11 @@ const zh = {
   safetyNotes: '直接使用 Node fs 和 execFile(git)，不经过宿主文件系统或命令网关。Git 操作可创建分支、工作区与提交，仅将已登记执行任务的提交合并到其协调任务。登记和工作区位于 Git 公共目录，可能在当前打开的关联工作区之外。不执行推送、拉取、reset、stash 或自动合并主分支。插件命令禁用 Git hooks、签名、fsmonitor 和 diff 辅助程序；仍须信任 Git 配置和属性，过滤器或合并驱动可能执行程序。不拦截其他工具。证据和所有者标签由调用方声明。不防御恶意并发写入；恢复前须检查遗留锁和中断操作。'
 };
 const manifest = {
-  schemaVersion: 1, id: 'io.github.tonkic.agent-governance', ...en, version: require('../package.json').version,
+  schemaVersion: 1, id: 'io.github.tonkic.agent-governance', ...en, version: require('../../package.json').version,
   i18n: { en, 'zh-CN': zh },
-  main: 'main.js', ui: { panel: 'renderer/index.html', title: { en: en.name, 'zh-CN': zh.name } },
+  main: 'runtime/main.js', ui: { panel: 'renderer/index.html', title: { en: en.name, 'zh-CN': zh.name } },
   contributes: { agentTools: [tool], commands: [{ id: 'governance.open', title: 'Agent Governance: Open panel / 打开治理面板', keywords: ['governance', '治理', '任务', 'git'] }] },
   permissions: ['agent.tool.register', 'ui.panel'],
   engines: { piDesktop: '>=0.1.0' }, activationEvents: ['onStartup', 'onCommand:governance.open']
 };
-fs.writeFileSync(path.join(__dirname, '../plugin/manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
+fs.writeFileSync(path.join(__dirname, '../../plugin/manifest.json'), JSON.stringify(manifest, null, 2) + '\n');

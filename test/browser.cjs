@@ -7,8 +7,8 @@ const path = require('node:path');
 const os = require('node:os');
 const { pathToFileURL } = require('node:url');
 const assert = require('node:assert/strict');
-const { Governance } = require('../plugin/core');
-const { panelInvoke } = require('../plugin/panel');
+const { Governance } = require('../plugin/runtime/core');
+const { panelInvoke } = require('../plugin/runtime/panel');
 (async () => {
   const base = process.env.PI_SCRATCH_DIR || os.tmpdir();
   const roots = await Promise.all([1, 2].map(() => fs.mkdtemp(path.join(base, 'board-browser-'))));
