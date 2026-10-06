@@ -37,10 +37,10 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "继续待办：已通过revision守卫同步看板过时规则与阻塞，并补GitHub交付及宿主窗口拖动卡片。网络已恢复，fetch及远端main祖先检查通过；最新双语浏览器回归和截图生成通过。安装清单为社区0.6.1，源码0.6.3尚未安装；真实面板snapshot仍guest unavailable，宿主/人工目视/窗口拖动不标完成。开始已授权源码同步与main集成，保留总体未验收状态。",
+  "current": "待办已同步，GitHub源码交付完成：0.6.2/0.6.3目录与可读性更新集成main至1ed8390并推送核对；集成后typecheck/build、65项测试与双语浏览器通过。最新截图已生成，但人工目视未通过；真实宿主guest不可用，安装清单为0.6.1而源码0.6.3未安装。GitHub卡片done，host-smoke/visual-check/release-acceptance及host-window-drag保留阻塞。最后同步完成记录并清理已合并临时分支，不发布补丁市场/安装/总体close。",
   "next": [
-    "完成源码交付、main集成重测推送与已合并临时分支清理",
-    "打开实际治理面板并核对新版安装、交互与截图；宿主拖动需可访问环境"
+    "通过宿主插件页手动升级0.6.3并打开治理面板，完成真实交互验收",
+    "人工复核最新中英文响应式截图；提供外层窗口截图与宿主版本以定位拖动"
   ],
   "blocked": [
     "本机安装0.6.1，源码0.6.3未安装；实际面板guest unavailable，宿主交互未通过。",

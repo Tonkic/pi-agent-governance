@@ -29,20 +29,20 @@
       "gitTaskId": null
     },
     {
-      "id": "architecture-clarity",
-      "title": "精简核心架构与依赖可视化",
-      "description": "按文档提炼核心逻辑；实现依赖分层、简洁节点和折叠来源。保留真实依赖、键盘操作及来源校验；浏览器回归后交付新版。",
+      "id": "github-delivery",
+      "title": "同步最新源码并集成main",
+      "description": "已完成：来源b1711fc通过release:auto重测/凭据扫描并同步；no-ff集成main至1ed8390，集成后typecheck/build、65测试和双语浏览器回归通过，普通推送且远端SHA核对一致。未发布市场。清理临时分支在完成记录同步后执行。",
       "blocker": "",
       "stage": "done",
       "taskId": "project-board-release",
       "gitTaskId": null
     },
     {
-      "id": "github-delivery",
-      "title": "同步最新源码并集成main",
-      "description": "运行已授权交付检查，核对远端main，合并后重测、普通推送，再删除确认已合并的临时分支。补丁不提交市场。",
+      "id": "architecture-clarity",
+      "title": "精简核心架构与依赖可视化",
+      "description": "按文档提炼核心逻辑；实现依赖分层、简洁节点和折叠来源。保留真实依赖、键盘操作及来源校验；浏览器回归后交付新版。",
       "blocker": "",
-      "stage": "todo",
+      "stage": "done",
       "taskId": "project-board-release",
       "gitTaskId": null
     },
@@ -56,5 +56,5 @@
       "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-06T20:40:53.845Z"
+  "updatedAt": "2026-10-06T20:45:08.774Z"
 }
