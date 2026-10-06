@@ -37,3 +37,9 @@ README从11376字节减为3661字节，移出Agent规则和重复参数/交付�
 typecheck/build、65测试及中英文浏览器回归通过；新增过期版本对所有提取动作的拒绝/锁释放回归，文档链接测试覆盖README。i18n门禁0FAIL，2既有REVIEW分别为安装器字符串命令标题和STATE固定标识。PluginPack通过：28文件301883字节，SHA256 6d841a0a8a6d35cbb6ae13e8ac0c5abb59a99aa80aadd199ed2027a1fc6ae4c6。包因排版增大，不声称减少运行体积或内存。日志在scratch的simplify-tests.log、simplify-i18n.log；formatter仅安装scratch，无新增项目依赖。GitHub只读核对仍443超时，待实际交付命令/远端核对结果，不假定已合并。不发布补丁市场或安装。
 
 代码提交087a0a7后实际release:auto在市场基线读取阶段fetch failed，未进入推送/市场提交。远端main不可核对，保留功能分支不删除；网络恢复按STATE接续。最终本地提交的回归日志使用scratch/simplify-final-tests.log，不以交付命令失败冒称测试运行。
+
+## 网络恢复后的交付与待办核对
+
+网络恢复后release:auto在b1711fc实际完成typecheck/build、65测试、双语浏览器与凭据历史扫描，源码分支同步成功，未提交市场。0.6.2/0.6.3改造no-ff集成main至1ed8390，集成后相同检查通过，普通推送且ls-remote SHA一致。日志：scratch/todo-delivery.log、todo-main-tests.log。
+
+看板通过revision接口修正过时main禁令、补交付与窗口卡片并填写阻塞；GitHub交付卡片完成。最新截图已生成，自动检查通过但人工目视未验收。真实宿主snapshot仍guest unavailable；安装清单为社区0.6.1，源码0.6.3没有自动安装。host-smoke、visual-check、release-acceptance、host-window-drag保留待办，不close整体任务。临时分支仅在远端main包含其全部提交并无活动worktree/登记后清理；旧0.6.0发布来源保留。
