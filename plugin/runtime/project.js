@@ -1,10 +1,10 @@
 'use strict';
 Object.defineProperty(exports, "__esModule", { value: true });
 const { createHash } = require('node:crypto');
-const digest = value => createHash('sha256').update(value).digest('hex');
+const digest = (value) => createHash('sha256').update(value).digest('hex');
 const boardFile = '.governance/board.json', architectureFile = '.governance/architecture.json';
 const stages = ['todo', 'doing', 'done'];
-const identifier = value => typeof value === 'string' && /^[a-z0-9][a-z0-9-]{0,63}$/.test(value);
+const identifier = (value) => typeof value === 'string' && /^[a-z0-9][a-z0-9-]{0,63}$/.test(value);
 function text(value, name, max = 4000, empty = false) {
     if (typeof value !== 'string' || value.length > max || (!empty && !value.trim()))
         throw Error(`${name}: invalid text (max ${max})`);
@@ -12,16 +12,22 @@ function text(value, name, max = 4000, empty = false) {
 }
 class ProjectData {
     g;
-    constructor(g) { this.g = g; }
-    async raw(file) { try {
-        return await this.g.read(file);
+    constructor(g) {
+        this.g = g;
     }
-    catch (e) {
-        if (e.code === 'ENOENT')
-            return null;
-        throw e;
-    } }
-    revision(raws) { return digest(JSON.stringify([this.g.root, this.g.expected ?? null, ...raws])); }
+    async raw(file) {
+        try {
+            return await this.g.read(file);
+        }
+        catch (e) {
+            if (e.code === 'ENOENT')
+                return null;
+            throw e;
+        }
+    }
+    revision(raws) {
+        return digest(JSON.stringify([this.g.root, this.g.expected ?? null, ...raws]));
+    }
     async sourcePath(file) {
         await this.g.safe(file);
         if (/^(\.governance|changes)(\/|$)/i.test(file) || /^STATE\.json$/i.test(file))
@@ -50,7 +56,12 @@ class ProjectData {
         return b;
     }
     async graph(value) {
-        if (!value || !Array.isArray(value.nodes) || !value.nodes.length || value.nodes.length > 40 || !Array.isArray(value.edges) || value.edges.length > 100)
+        if (!value ||
+            !Array.isArray(value.nodes) ||
+            !value.nodes.length ||
+            value.nodes.length > 40 ||
+            !Array.isArray(value.edges) ||
+            value.edges.length > 100)
             throw Error('Graph requires 1–40 nodes and 0–100 edges');
         const title = text(value.title, 'graph title', 160), source = text(value.source, 'source description', 1000);
         const ids = new Set(), files = new Set();
@@ -65,18 +76,28 @@ class ProjectData {
                 await this.sourcePath(file);
                 files.add(file);
             }
-            nodes.push({ id: node.id, title: text(node.title, 'node title', 100), description: text(node.description, 'node description'), files: [...new Set(node.files)] });
+            nodes.push({
+                id: node.id,
+                title: text(node.title, 'node title', 100),
+                description: text(node.description, 'node description'),
+                files: [...new Set(node.files)]
+            });
         }
         if (files.size > 60)
             throw Error('Graph references at most 60 files');
         const seen = new Set();
-        const edges = value.edges.map(edge => {
-            if (!ids.has(edge.from) || !ids.has(edge.to) || edge.from === edge.to || seen.has(`${edge.from}:${edge.to}`))
+        const edges = value.edges.map((edge) => {
+            if (!ids.has(edge.from) ||
+                !ids.has(edge.to) ||
+                edge.from === edge.to ||
+                seen.has(`${edge.from}:${edge.to}`))
                 throw Error('Invalid or duplicate graph edge');
             seen.add(`${edge.from}:${edge.to}`);
             return { from: edge.from, to: edge.to, label: text(edge.label, 'edge label', 100) };
         });
-        if (!value.fingerprints || typeof value.fingerprints !== 'object' || Object.keys(value.fingerprints).length !== files.size)
+        if (!value.fingerprints ||
+            typeof value.fingerprints !== 'object' ||
+            Object.keys(value.fingerprints).length !== files.size)
             throw Error('Source fingerprints required; call architecture_sources first');
         const fingerprints = {};
         for (const file of files) {
@@ -116,7 +137,12 @@ class ProjectData {
                 const stored = JSON.parse(raws[1]);
                 if (stored.version !== 1 || typeof stored.updatedAt !== 'string')
                     throw Error('Invalid architecture schema');
-                architecture = { ...await this.graph(stored), version: 1, updatedAt: stored.updatedAt, staleFiles: [] };
+                architecture = {
+                    ...(await this.graph(stored)),
+                    version: 1,
+                    updatedAt: stored.updatedAt,
+                    staleFiles: []
+                };
                 for (const [file, expected] of Object.entries(architecture.fingerprints)) {
                     try {
                         if (digest(await this.g.read(file)) !== expected)
@@ -131,9 +157,18 @@ class ProjectData {
         catch (e) {
             architectureError = e.message;
         }
-        if (await this.raw(boardFile) !== raws[0] || await this.raw(architectureFile) !== raws[1] || await this.raw('STATE.json') !== (this.g.expected ?? null))
+        if ((await this.raw(boardFile)) !== raws[0] ||
+            (await this.raw(architectureFile)) !== raws[1] ||
+            (await this.raw('STATE.json')) !== (this.g.expected ?? null))
             throw Error('Project data changed while reading; refresh');
-        return { workspace: this.g.root, revision: this.revision(raws), board, architecture: architectureError ? null : architecture, boardError, architectureError };
+        return {
+            workspace: this.g.root,
+            revision: this.revision(raws),
+            board,
+            architecture: architectureError ? null : architecture,
+            boardError,
+            architectureError
+        };
     }
     async run(a) {
         return this.g.locked(async () => {
@@ -157,16 +192,25 @@ class ProjectData {
             else {
                 const b = this.board(raws[0]);
                 if (a.action === 'board_create') {
-                    if (!identifier(a.id) || b.items.some(i => i.id === a.id) || b.items.length >= 100)
+                    if (!identifier(a.id) || b.items.some((i) => i.id === a.id) || b.items.length >= 100)
                         throw Error('Invalid/duplicate work item id or board full');
                     if (a.gitTaskId) {
-                        if (!identifier(a.gitTaskId) || !(await this.g.run({ action: 'git_status' })).tasks.some(t => t.id === a.gitTaskId))
+                        if (!identifier(a.gitTaskId) ||
+                            !(await this.g.run({ action: 'git_status' })).tasks.some((t) => t.id === a.gitTaskId))
                             throw Error('Unknown Git task');
                     }
-                    b.items.push({ id: a.id, title: text(a.title, 'title', 160), description: text(a.description ?? '', 'description', 4000, true), blocker: '', stage: 'todo', taskId: state.task, gitTaskId: a.gitTaskId || null });
+                    b.items.push({
+                        id: a.id,
+                        title: text(a.title, 'title', 160),
+                        description: text(a.description ?? '', 'description', 4000, true),
+                        blocker: '',
+                        stage: 'todo',
+                        taskId: state.task,
+                        gitTaskId: a.gitTaskId || null
+                    });
                 }
                 else {
-                    const item = b.items.find(i => i.id === a.id);
+                    const item = b.items.find((i) => i.id === a.id);
                     if (!item)
                         throw Error('Work item not found');
                     if (a.action === 'board_update') {
@@ -177,14 +221,15 @@ class ProjectData {
                             throw Error('Reopen work item before adding a blocker');
                     }
                     else if (a.action === 'board_move') {
-                        if (!stages.includes(a.stage) || Math.abs(stages.indexOf(item.stage) - stages.indexOf(a.stage)) > 1)
+                        if (!stages.includes(a.stage) ||
+                            Math.abs(stages.indexOf(item.stage) - stages.indexOf(a.stage)) > 1)
                             throw Error('Only adjacent work-item stages are allowed');
                         if (item.blocker && a.stage === 'done')
                             throw Error('Resolve work-item blocker first');
                         if (!Number.isInteger(a.position) || a.position < 0)
                             throw Error('Invalid position');
-                        const remaining = b.items.filter(i => i.id !== a.id);
-                        const column = remaining.filter(i => i.stage === a.stage);
+                        const remaining = b.items.filter((i) => i.id !== a.id);
+                        const column = remaining.filter((i) => i.stage === a.stage);
                         if (a.position > column.length)
                             throw Error('Position outside column');
                         item.stage = a.stage;
@@ -199,7 +244,9 @@ class ProjectData {
                 file = boardFile;
                 result = b;
             }
-            if (await this.raw(boardFile) !== raws[0] || await this.raw(architectureFile) !== raws[1] || await this.g.read('STATE.json') !== this.g.expected)
+            if ((await this.raw(boardFile)) !== raws[0] ||
+                (await this.raw(architectureFile)) !== raws[1] ||
+                (await this.g.read('STATE.json')) !== this.g.expected)
                 throw Error('Project changed externally; reload before retrying');
             const serialized = JSON.stringify(result, null, 2) + '\n';
             if (Buffer.byteLength(serialized, 'utf8') > 1024 * 1024)

@@ -1,89 +1,36 @@
 # PI Agent Governance
 
-让新 Agent 从仓库文件接手工作，不依赖聊天记录。PI-Desktop 插件，本地版本 0.6.2，社区 ID 为 `io.github.tonkic.agent-governance`。提供 Agent 工具、CLI 和中英文可视化治理面板。读代码从 [Docs 入口](docs/README.md) 开始。
+PI-Desktop 本地插件：保存任务目标和进度，展示项目看板与源码架构，管理受管 Git 工作区。项目数据保存在仓库文件中，Agent 可以据此接手工作。
 
-## 原则
-
-- **人定目标，Agent 在范围内执行。** 人决定目标、范围和验收条件；没有活动任务或已批准的后续任务时，Agent 等待指令，不自行增加需求。
-- **从仓库接手，不依赖聊天记录。** 新 Agent 先读 AGENTS、STATE 和 README。STATE 是唯一的当前任务定义；归档仅作完成记录，不作为新任务依据。
-- **尊重人工调整，及时同步状态。** 写入前重读状态，不覆盖人的新意图；进度变化同步 `current / next / blocked`。
-- **文档只写用途和用法。** 保留必要输入、限制和命令；不堆积历史、临时计划或重复解释。Notes 按需创建，不强制逐层阅读文档。
-- **修改通过 Git 留痕，写入任务隔离。** 写入型子任务使用独立分支/worktree；只读审查不必分支。不自动 stash/reset 或丢弃用户修改；主分支合并和远端推送须人工授权。
-- **实际检查后才能完成。** 审查差异、运行检查、更新必要用法，再验证和关闭任务；Git 验证绑定具体提交，集成后重新检查。
+社区 ID：`io.github.tonkic.agent-governance`。本地版本 0.6.3；市场已发布版本 0.6.0。
 
 ## 安装与使用
 
-在 PI-Desktop 插件页安装 `plugin/dist/io.github.tonkic.agent-governance-0.6.2.piplug`（本地包；社区已发布版本仍为 0.6.0），授权注册 Agent 工具与打开面板；开发时加载 `plugin/`。旧 ID `pi.agent-governance` 不会自动升级为新 ID：先备份 STATE 与 `.governance/`，停用旧实例避免重名，再安装并授权新插件。无需迁移或删除项目数据。旧安装包保留供回退。
+1. 在 PI-Desktop 插件页安装 `plugin/dist/io.github.tonkic.agent-governance-0.6.3.piplug`，确认权限。开发时加载 `plugin/`。
+2. 打开项目工作区，在命令面板运行 `Agent Governance: 打开治理面板`。
+3. 向 Agent 提出目标与验收条件，例如：`使用 governance 初始化这个项目，保留已有文件。目标是修复搜索功能，验收是相关测试通过。`
 
-界面启动时使用宿主语言，无法读取时回退到浏览器语言（中文用 zh-CN，其他用英文）；切换语言后重新打开面板。用户目标、工作项、架构说明以及底层诊断原文不翻译。插件中心审核发布后，可使用宿主插件页的检查更新与自动更新选项；仅针对相同 ID 的更高版本，新增权限仍需确认。插件不自行下载替换自身，也不绕过宿主安装确认。上传与源码发布用法见 [发布说明](plugin/PUBLISHING.md)。
+已有任务时先调用 `status`，按 `STATE.json` 接续工作。基本流程为 `status → start（需要时）→ 开发与检查 → verify → close`。看板完成不代表总体验收通过。
 
-本仓库采用[更新交付流程](scripts/RELEASING.md)：每次小更新检查、提交后推送 GitHub 专用源码分支；相对插件中心最新稳定版的主/次版本升级，另推送发布分支并提交市场。补丁不发布市场，但必须同步 GitHub。本仓库通过治理插件维护状态/项目数据并优先使用受管 Git 工作区；不能通过丢弃用户修改绕过门禁。此为交付流程，不是后台服务，普通构建不推送或发布，也不自动安装。`npm run release:auto -- --plan` 只读预览；`scripts/release-policy.json` 的 `enabled: false` 关闭自动交付。
+旧 ID `pi.agent-governance` 不会自动迁移。先备份 STATE 与 `.governance/`，停用旧插件，再安装新 ID；不需要删除项目数据。保留旧包供回退。
 
-向 Agent 说：“使用 governance 初始化当前项目，保留已有文件，按 STATE 继续工作。”
+## 代码入口
 
-默认流程：`status → start（需要时）→ 开发与检查 → verify → close`。进度变化时使用 `progress`。具体参数见 [工具用法](plugin/README.md)。
+先看 `plugin/main.ts` 的入口，再看 `plugin/core.ts` 的 `run()` 分派。任务动作在同文件的具名方法中；看板与架构在 `project.ts`，Git 协作在 `git.ts`。界面入口是 `renderer/panel.ts`，面板操作校验在 `panel.ts`。
 
-### 可视化面板
+| 路径 | 内容 |
+| --- | --- |
+| `plugin/*.ts`、`plugin/renderer/` | 插件源码及静态资源 |
+| `plugin/runtime/` | 生成的运行 JS，不手改 |
+| `scripts/`、`test/` | 构建、交付工具与测试源码 |
+| `build/` | Git 忽略的 CLI、测试与编译中间文件 |
+| `docs/` | 稳定用法与架构说明 |
+| `notes/`、`changes/` | 决策、验收证据与历史归档 |
+| `STATE.json`、`.governance/` | 当前任务、看板与项目架构数据 |
 
-1. 在 PI-Desktop 打开要管理的项目，安装或重载插件。
-2. 在命令面板搜索 **Agent Governance: 打开治理面板**（`governance.open`）。
-3. 没有 STATE 时点击「初始化治理」；待命时填写目标与验收条件创建任务；有活动任务时更新进度、下一步和阻塞项。
-4. 查看目标、范围、验收条件，以及 Git 工作区、分支、修改和验证状态。外部修改后点击「刷新状态」。
-5. 工作项看板支持创建、编辑、拖动排序及相邻列迁移，也可用卡片按钮和键盘操作。工作项完成不代表总体任务验收通过；有阻塞时不能完成。项目架构由 Agent 阅读源码后通过 `architecture_sources / architecture_set` 保存，显示来源、更新时间和失效文件；无数据或损坏时明确提示，不替换成插件模块图。「任务流程」依据有效 STATE 显示当前阶段与允许的转换，不代表自动执行或历史阶段已通过。详见 [项目数据用法](plugin/PROJECT.md)。
-6. 点击图节点查看职责、源码与直接关系；关系列表可跳转相邻节点，上游/下游按钮追踪关系。拖动画布空白平移；用 +/− 或 Ctrl/⌘ + 滚轮缩放，「适应画布」恢复全图。聚焦画布后方向键平移、+/− 缩放、0 适应；Tab 访问节点。这不是运行时监控。
-项目图按依赖方向分层，循环依赖放在同层。节点只显示名称与一行职责，选中后强调直接关系；完整来源和文件路径可展开查看，源码失效警告始终单独显示。建议先依据项目文档划分 3–5 个核心职责，再核对源码依赖，不必把所有入口和构建工具都列入核心图。
+## 开发
 
-面板的写入均需确认；页面状态过期或工作区切换时拒绝写入。已有文件不会被初始化覆盖。Git 创建、提交、验证、集成及任务关闭仍交给 Agent，面板不自动运行测试或执行高风险操作。
-
-直接打开 `plugin/renderer/index.html` 只能预览界面，不能读写项目。面板不实时轮询；有未保存表单时，第一次刷新提示，第二次刷新丢弃表单并重新读取。
-刷新时先展示任务看板和项目图，再读取 Git 概览；全部读取结束前保持写入控件禁用。插件不使用后台轮询或长期快照缓存。
-
-### 本仓库自用
-
-本仓库直接使用插件维护 `.governance/architecture.json` 和 `.governance/board.json`，两者纳入 Git。打开本仓库后先调用 `status` 与 `project_snapshot` 接续当前任务，不重复初始化；面板点击「刷新状态」查看图与工作项。源码变化后根据 `staleFiles` 重新阅读并更新架构，实际进展通过工作项和 `progress` 同步，不能以卡片完成替代总体 `verify/close`。Git 受管任务登记是本机数据，不随 clone 恢复；需要写入委派时先 `git_status / git_create`，不倒填历史登记。
-
-### 典型使用
-
-告诉 Agent：“使用 governance 初始化这个项目。目标是修复搜索功能，范围仅限搜索模块，验收是相关测试通过；先读取状态，有已有任务则先确认如何接续。”之后通过面板查看进度，或让 Agent 用 `status` 汇报。不要把本插件当作自动执行任务的后台服务。
-
-## 项目结构
-
-```text
-AGENTS.md                 Agent 工作规则
-STATE.json                当前总体任务与接手状态
-README.md                 原则、用法和限制
-plugin/
-  *.ts                    主进程源码（main/core/git/panel/project/tool）
-  renderer/               HTML / CSS / 浏览器 TS 源码
-  runtime/                集中存放生成 JS，不手改；宿主实际加载
-  manifest.json           生成清单，入口 runtime/main.js
-  *.md                    工具、Git、项目数据与发布用法
-  dist/                   可安装的 .piplug，历史包保留
-scripts/                  构建、CLI、交付源码（TS与手写CJS）
-test/                     TS与手写CJS测试源码
-build/                    编译的CLI/测试及中间JS，被Git忽略
-docs/                     稳定架构、读码与开发文档
-notes/                    必要决策和验证记录，不替代STATE
-types/                    PI 宿主和面板桥接类型
-changes/                  已有任务证据与归档
-```
-
-这是无第三方运行时依赖的本地插件；TypeScript 仅作为开发期编译依赖，不需要单独启动 Web 服务或数据库。面板通过宿主桥接调用同一内核；Git 本地登记表在 `.git` common directory 中，不在上述源码目录内。
-
-## 人工调整
-
-- 新任务或方向调整：编辑 STATE 的目标、验收条件、范围、限制或 `followUp`；也可让 Agent 按你的要求代写。
-- 当前使用方式修正：编辑 README 或相关 Docs；未实现功能仍放在 State，不写成现有能力。
-
-## Git 协作
-
-用 `git_status` 接手已有任务。写入型子任务先用 `git_create` 创建独立分支/worktree，再把返回目录明确交给子代理。先审查 `git_diff`，再 `git_commit`，实际测试后 `git_verify`，最后 `git_integrate` 到协调分支并重新检查。
-
-支持范围检查、过期验证拒绝、冲突保留与登记恢复。State 管总体目标，Git 本地登记表管工作区任务。使用要求与参数见 [Git 协作](plugin/GIT.md)。
-
-## 开发与检查
-
-需要 Node.js 20+。TS 源码与输出分离：插件 JS 在 `plugin/runtime/`，CLI/测试 JS 在忽略的 `build/`。运行产物提交用于源码SHA绑定打包，不手动修改。详见 [开发与构建](docs/development.md)。
+需要 Node.js 20+。修改 TS 后重新构建，不直接修改 runtime 或 manifest。
 
 ```powershell
 npm ci
@@ -93,17 +40,21 @@ npm test
 '{"action":"status"}' | node build/scripts/governance.js
 ```
 
-CLI 作用于当前目录；PI 工具作用于宿主当前工作区主根。主进程与浏览器分别构建，浏览器不依赖 Node require/exports。`npm run build` 清理固定输出目录、编译、组装 runtime 并生成 manifest；不清理历史包或项目数据。安装包使用 PI PluginCheck/PluginPack。
+浏览器检查、输出目录及修改定位见 [开发说明](docs/development.md)。宿主只加载 JS；插件没有第三方运行时依赖，不需要 Web 服务或数据库。
 
-可选浏览器测试：准备可解析的 Playwright（或用 `NODE_PATH` 指向其 node_modules），用 `PI_BROWSER` 指定 Chromium/Edge 路径，再运行 `npm run test:browser`。它在临时项目中连接真实内核、模拟宿主桥接，生成 390/768/1280 × light/dark 六张截图到 `PI_SCRATCH_DIR/project-board-screenshots`（未设置时使用系统临时目录）；不替代真实宿主安装验收。
+## 文档
 
-## 必要限制
+- [文档入口](docs/README.md)：Microsoft 写作指南、架构和开发说明。
+- [工具用法](plugin/README.md)、[项目数据](plugin/PROJECT.md)、[Git 协作](plugin/GIT.md)：参数、行为与限制。
+- [交付流程](scripts/RELEASING.md)：小更新同步 GitHub并集成 main；主/次版本升级另发布市场。检查后清理已合并临时分支。
+- [市场发布说明](plugin/PUBLISHING.md)：凭据、旧 ID 迁移和提交方式。
+- [Agent 入口](AGENTS.md)：执行规则。当前目标、范围和阻塞只以 STATE 为准。
 
-- State 保持单总体任务，Git 可管理多个隔离子任务；工具不会全局拦截操作、自动唤醒 Agent 或自动给任意宿主委派分支。
-- 验证证据由调用方提交，不独立执行测试。State 验证依赖提交的文件清单；Git 验证检查真实 worktree 变化、提交和验收记录，但不是语义审查。
-- 验证覆盖提交文件、context 读过的文件，以及存在的根 README/AGENTS。其他文档变化需 Agent 自行发现并重新验证。
-- 修改 State 的任务定义、进度或后续任务会使旧验证失效；status 返回有效状态，但不会自动重写人工文件。重新 verify 后落盘。
-- 使用 Node fs，非宿主 fs 权限网关；拒绝越界、子路径符号链接与常见凭据路径。操作锁和写前比较不能防御恶意写入、硬链接或最后瞬间的并发编辑；人工改状态时应暂停正在运行的工具操作。
-- Git 动作用 Node execFile 执行，不经过宿主命令网关。登记表和工作区位于 Git common directory；linked worktree 的该位置可能在当前目录之外。仅使用可信 Git 配置，详见 Git 协作安全限制。
-- 中断后重试 close，使用相同 knowledge 文本。遇到遗留锁、孤立 active 目录或归档与状态冲突，先检查再人工恢复，不直接覆盖。
-- 旧版 STATE 可读取；旧验证必须重做。init 保留已有文件，不会替你更新旧 AGENTS 规则。旧五类 gate 和 route 仅作为可选兼容工具。
+## 限制
+
+- 面板写入需确认；版本过期或工作区切换后拒绝写入。刷新不会自动保存表单，也没有后台轮询。
+- 宿主语言决定界面语言，切换后重开面板。用户数据和底层诊断原文不翻译。
+- 架构图保存源码依据和指纹，不是运行时监控；源码变化后须重新核对。
+- 测试证据由调用方提交，插件不执行测试、不拦截其他工具、不自动调度 Agent。
+- Node fs 和 Git execFile 不经过宿主文件/命令网关。仅用于可信仓库；锁和写前比较不能防御恶意并发写入。Git配置、worktree位置与恢复限制见 Git 协作说明。
+- 更新安装由 PI-Desktop 管理。仓库构建不推送、不发布、不安装；发布成功也不代表实际宿主验收完成。

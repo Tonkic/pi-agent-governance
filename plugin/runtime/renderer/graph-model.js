@@ -7,10 +7,10 @@ function setGraphData(data) {
     graphNodes = {};
     graphEdges = [];
     const nodes = data?.nodes || [];
-    const ids = nodes.map(node => node.id), edges = data?.edges || [];
+    const ids = nodes.map((node) => node.id), edges = data?.edges || [];
     // Collapse strongly connected components before ranking: cycles never recurse forever.
-    const adjacency = new Map(ids.map(id => [id, []]));
-    edges.forEach(edge => adjacency.get(edge.from)?.push(edge.to));
+    const adjacency = new Map(ids.map((id) => [id, []]));
+    edges.forEach((edge) => adjacency.get(edge.from)?.push(edge.to));
     const index = new Map(), low = new Map();
     const stack = [], active = new Set(), components = [];
     function visit(id) {
@@ -37,10 +37,12 @@ function setGraphData(data) {
             components.push(component);
         }
     }
-    ids.forEach(id => { if (!index.has(id))
-        visit(id); });
+    ids.forEach((id) => {
+        if (!index.has(id))
+            visit(id);
+    });
     const group = new Map();
-    components.forEach((members, i) => members.forEach(id => group.set(id, i)));
+    components.forEach((members, i) => members.forEach((id) => group.set(id, i)));
     const ranks = components.map(() => 0);
     for (let pass = 0; pass < components.length; pass++) {
         for (const edge of edges) {
@@ -50,24 +52,33 @@ function setGraphData(data) {
         }
     }
     const layers = [];
-    ids.forEach(id => { const rank = ranks[group.get(id)]; (layers[rank] ||= []).push(id); });
+    ids.forEach((id) => {
+        const rank = ranks[group.get(id)];
+        (layers[rank] ||= []).push(id);
+    });
     // Stable barycentric ordering brings related modules closer without shuffling ties.
     layers.forEach((layer, rank) => {
         if (!rank)
             return;
         const center = (id) => {
-            const parents = edges.filter(edge => edge.to === id && ranks[group.get(edge.from)] < rank);
-            return parents.length ? parents.reduce((sum, edge) => {
-                const row = layers[ranks[group.get(edge.from)]];
-                return sum + (row.indexOf(edge.from) + .5) / row.length;
-            }, 0) / parents.length : .5;
+            const parents = edges.filter((edge) => edge.to === id && ranks[group.get(edge.from)] < rank);
+            return parents.length
+                ? parents.reduce((sum, edge) => {
+                    const row = layers[ranks[group.get(edge.from)]];
+                    return sum + (row.indexOf(edge.from) + 0.5) / row.length;
+                }, 0) / parents.length
+                : 0.5;
         };
         layer.sort((a, b) => center(a) - center(b));
     });
-    const width = Math.max(310, ...layers.map(layer => layer.length * 300 + 10));
+    const width = Math.max(310, ...layers.map((layer) => layer.length * 300 + 10));
     layers.forEach((layer, rank) => layer.forEach((id, column) => {
-        graphNodes[id] = { ...nodes.find(node => node.id === id), layer: rank,
-            x: (width - layer.length * 300) / 2 + column * 300 + 45, y: 80 + rank * 210 };
+        graphNodes[id] = {
+            ...nodes.find((node) => node.id === id),
+            layer: rank,
+            x: (width - layer.length * 300) / 2 + column * 300 + 45,
+            y: 80 + rank * 210
+        };
     }));
     let outerLane = 0;
     graphEdges = edges.map((edge, i) => {
@@ -78,15 +89,33 @@ function setGraphData(data) {
             const top = a.x <= b.x, y = top ? a.y : a.y + 96;
             const lane = y + (top ? -1 : 1) * (30 + (i % 3) * 12);
             const start = x1 - 24, end = x2 + 24;
-            return { ...edge, path: `M${start} ${y} C${start} ${lane} ${end} ${lane} ${end} ${y}`, x: (start + end) / 2, y: lane };
+            return {
+                ...edge,
+                path: `M${start} ${y} C${start} ${lane} ${end} ${lane} ${end} ${y}`,
+                x: (start + end) / 2,
+                y: lane
+            };
         }
         if (b.layer > a.layer + 1) {
             const lane = width + 24 + outerLane++ * 18;
-            return { ...edge, path: `M${x1} ${y1} V${y1 + 62} H${lane} V${y2 - 62} H${x2} V${y2}`, x: lane, y: (y1 + y2) / 2 };
+            return {
+                ...edge,
+                path: `M${x1} ${y1} V${y1 + 62} H${lane} V${y2 - 62} H${x2} V${y2}`,
+                x: lane,
+                y: (y1 + y2) / 2
+            };
         }
-        return { ...edge, path: `M${x1} ${y1} C${x1} ${(y1 + y2) / 2} ${x2} ${(y1 + y2) / 2} ${x2} ${y2}`, x: (x1 + x2) / 2, y: (y1 + y2) / 2 - 8 };
+        return {
+            ...edge,
+            path: `M${x1} ${y1} C${x1} ${(y1 + y2) / 2} ${x2} ${(y1 + y2) / 2} ${x2} ${y2}`,
+            x: (x1 + x2) / 2,
+            y: (y1 + y2) / 2 - 8
+        };
     });
-    graphSize = { width: width + (outerLane ? 48 + outerLane * 18 : 0), height: Math.max(260, layers.length * 210 + 40) };
+    graphSize = {
+        width: width + (outerLane ? 48 + outerLane * 18 : 0),
+        height: Math.max(260, layers.length * 210 + 40)
+    };
 }
 function graphReach(selected, direction, edges = graphEdges) {
     const nodes = new Set([selected]), links = new Set();
@@ -110,11 +139,11 @@ function graphReach(selected, direction, edges = graphEdges) {
     return { nodes, links };
 }
 function graphFit(width, height, bounds = graphSize) {
-    const scale = Math.max(.05, Math.min(1.25, (width - 24) / bounds.width, (height - 24) / bounds.height));
+    const scale = Math.max(0.05, Math.min(1.25, (width - 24) / bounds.width, (height - 24) / bounds.height));
     return { scale, x: (width - bounds.width * scale) / 2, y: (height - bounds.height * scale) / 2 };
 }
 function graphZoom(view, factor, x, y) {
-    const scale = Math.max(.05, Math.min(2, view.scale * factor));
+    const scale = Math.max(0.05, Math.min(2, view.scale * factor));
     const ratio = scale / view.scale;
     return { scale, x: x - (x - view.x) * ratio, y: y - (y - view.y) * ratio };
 }

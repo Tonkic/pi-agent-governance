@@ -27,3 +27,11 @@ build/runtime为编译器拥有目录，仅允许生成文件；构建拒绝符�
 追加检查：3项布局/CLI/文档链接测试独立通过；全部10个运行JS与迁移前逐字节一致。官方i18n门禁0 FAIL、2 REVIEW：安装器要求的双语字符串命令标题与固定标识STATE，保持已验证兼容方案。diff审查覆盖输出/入口/脚本白名单与测试路径，无权限扩大。
 
 提交后验证：代码提交577c79d；release:auto实际重跑typecheck/build、64/64测试、中英文浏览器回归通过，审核SHA白名单27文件可完整读取并包含runtime入口。GitHub在远端核对阶段HTTPS443超时，随后两次只读ls-remote也失败；不假定推送成功，不合并/删除未核实远端的分支。待网络恢复按STATE接续，保留功能分支。日志：session scratch layout-delivery.log。
+
+## 0.6.3 阅读负担精简
+
+用户批准排版、任务动作提取和文档去重一起实施。core.run保留锁、版本校验和状态检查，动作由同文件progress/context/verify/gate/close方法执行；没有增加运行模块或新抽象层。10个TS排版展开字段与语句，超过200字符行由41条降为0；初始化模板三份输出与旧版本完全一致，工具描述/schema值一致，其他8模块规范化后与旧源码一致。
+
+README从11376字节减为3661字节，移出Agent规则和重复参数/交付说明，唯一的图键盘与刷新说明迁入PROJECT。AGENTS和RELEASING统一当前main授权，历史包/截图/证据保留；同一任务检查更新此记录，不新建模板。
+
+typecheck/build、65测试及中英文浏览器回归通过；新增过期版本对所有提取动作的拒绝/锁释放回归，文档链接测试覆盖README。i18n门禁0FAIL，2既有REVIEW分别为安装器字符串命令标题和STATE固定标识。PluginPack通过：28文件301883字节，SHA256 6d841a0a8a6d35cbb6ae13e8ac0c5abb59a99aa80aadd199ed2027a1fc6ae4c6。包因排版增大，不声称减少运行体积或内存。日志在scratch的simplify-tests.log、simplify-i18n.log；formatter仅安装scratch，无新增项目依赖。GitHub只读核对仍443超时，待实际交付命令/远端核对结果，不假定已合并。不发布补丁市场或安装。

@@ -37,9 +37,9 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "Docs已按用户选择的Microsoft Writing Style Guide重写：导航、模块职责/调用关系、直接构建命令与修改入口，删除教程式步骤及重复解释；官方依据见docs/README.md，AGENTS同步。仅文档/入口要求更新，不改版本或插件包。构建及64测试（含文档链接）通过，diff检查通过。宿主工具指向C盘失败，已用当前仓库同一治理内核CLI同步。GitHub只读ls-remote再次HTTPS443超时；保留refactor/source-output-layout，0.6.2目录迁移和本次文档尚未同步main。",
+  "current": "用户批准1–3精简已实施为本地0.6.3：10个TS排版展开，超过200字符长行41→0；core.run只分派，progress/context/verify/gate/close同文件方法实现，锁/版本/无任务校验保留。README约11KB→3.7KB，详细规则链接已有文档，唯一图交互说明迁入PROJECT；AGENTS/RELEASING消除旧授权矛盾，记录追加既有notes。初始化三文件输出、工具接口值与旧版一致；其他8模块规范化等价。typecheck/build、65测试、双语浏览器与PluginPack通过。包301883字节28文件，SHA6d841a0a8a6d35cbb6ae13e8ac0c5abb59a99aa80aadd199ed2027a1fc6ae4c6。GitHub仍443超时，准备范围提交后实际交付尝试；未发布/安装，整体阻塞保留。",
   "next": [
-    "GitHub网络恢复后同步功能分支，核对远端main再集成重测/推送/清理",
+    "完成本地提交后交付核对；网络恢复后main集成重测推送并清理已合并分支",
     "真实宿主交互、外层窗口拖动与目视验收仍待完成"
   ],
   "blocked": [

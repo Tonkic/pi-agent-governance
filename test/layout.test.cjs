@@ -24,7 +24,7 @@ test('compiled CLI runs from the repository without adjacent JS dependencies', (
   assert.equal(result.task, JSON.parse(fs.readFileSync(path.join(root, 'STATE.json'), 'utf8')).task);
 });
 test('reader documentation links resolve to real repository files', () => {
-  for (const file of ['docs/README.md', 'docs/architecture.md', 'docs/development.md']) {
+  for (const file of ['README.md', 'docs/README.md', 'docs/architecture.md', 'docs/development.md']) {
     const text = fs.readFileSync(path.join(root, file), 'utf8');
     for (const [, link] of text.matchAll(/\]\(([^)]+)\)/g)) {
       if (!/^https?:/.test(link)) assert.ok(fs.existsSync(path.resolve(root, path.dirname(file), link.split('#')[0])), `${file}: ${link}`);
