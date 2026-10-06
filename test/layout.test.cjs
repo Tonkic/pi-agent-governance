@@ -21,7 +21,7 @@ test('compiled JavaScript is separated and runtime exactly matches compiler outp
 });
 test('compiled CLI runs from the repository without adjacent JS dependencies', () => {
   const result = JSON.parse(execFileSync(process.execPath, ['build/scripts/governance.js'], { cwd: root, input: '{"action":"status"}', encoding: 'utf8' }));
-  assert.equal(result.task, 'project-board-release');
+  assert.equal(result.task, JSON.parse(fs.readFileSync(path.join(root, 'STATE.json'), 'utf8')).task);
 });
 test('reader documentation links resolve to real repository files', () => {
   for (const file of ['docs/README.md', 'docs/architecture.md', 'docs/development.md']) {

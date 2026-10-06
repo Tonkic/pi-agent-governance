@@ -25,3 +25,5 @@
 build/runtime为编译器拥有目录，仅允许生成文件；构建拒绝符号链接输出根，不防恶意并发。历史包和STATE/.governance不清理。受管git_create此前因无关未跟踪目录拒绝，使用串行独立功能分支与原生Git，不伪造受管git_verify。总体验收仍待宿主窗口拖动与人工目视检查，整体STATE不close。提交后及main集成后仍需实测与远端核对，不能用上述提交前结果代替。
 
 追加检查：3项布局/CLI/文档链接测试独立通过；全部10个运行JS与迁移前逐字节一致。官方i18n门禁0 FAIL、2 REVIEW：安装器要求的双语字符串命令标题与固定标识STATE，保持已验证兼容方案。diff审查覆盖输出/入口/脚本白名单与测试路径，无权限扩大。
+
+提交后验证：代码提交577c79d；release:auto实际重跑typecheck/build、64/64测试、中英文浏览器回归通过，审核SHA白名单27文件可完整读取并包含runtime入口。GitHub在远端核对阶段HTTPS443超时，随后两次只读ls-remote也失败；不假定推送成功，不合并/删除未核实远端的分支。待网络恢复按STATE接续，保留功能分支。日志：session scratch layout-delivery.log。

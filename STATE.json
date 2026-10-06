@@ -37,12 +37,13 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "本地0.6.2源码/产物分离已实施：TS路径不变，JS集中plugin/runtime，CLI/测试在忽略build；10个runtime JS与旧产物逐字节一致。新增docs读码/架构/开发指南及notes/source-output-layout.md必要决策证据。typecheck/build、63测试及中英文浏览器回归通过；干净npm ci/typecheck/build/test63通过，追加文档链接测试独立通过；PluginPack28文件277359字节通过，仅原权限提示。已同步manifest/HTML/发布白名单和CLI文档，并刷新README/PROJECT架构来源。准备最后64测试、提交后交付命令与main集成后重测/推送/清理；不发布市场或安装。",
+  "current": "0.6.2源码/产物分离和读码文档已完成，代码提交577c79d（refactor/source-output-layout）：JS集中plugin/runtime、CLI/测试在忽略build；10个runtime JS字节不变。新增docs入口/架构/开发与必要notes；manifest/HTML/发布白名单及旧CLI说明全部更新。提交后release:auto重复typecheck/build、64项测试及中英文浏览器回归通过，审核SHA发布载荷27文件正确。干净npm ci构建测试通过，PluginPack28文件277359字节SHA ade28c7fb06fc033d140cedf0894fa9277ae78c58ef35c66cea48c956f20c930，i18n0FAIL2既有兼容REVIEW。GitHub网络连接阻塞推送，尚未合并main，分支未删。未发布市场或安装；正在本地记录最终证据。",
   "next": [
-    "提交并验证0.6.2交付，在main集成后重测并推送清理",
+    "网络恢复后运行补丁交付并核对远端main，再集成重测/推送/清理已合并分支",
     "真实宿主交互、外层窗口拖动与目视验收仍待完成"
   ],
   "blocked": [
+    "GitHub HTTPS连接443超时，交付脚本及两次ls-remote均失败；本地功能分支保留，尚未同步/合并远端main/删除分支。",
     "外层插件窗口拖动尚未复现/修复；真实窗口工具返回browser guest is not available，须宿主截图/版本或可访问环境。",
     "中英文响应式截图已生成但未完成人工目视验收；整体任务不关闭。"
   ],
