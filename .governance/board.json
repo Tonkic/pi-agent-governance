@@ -4,8 +4,8 @@
     {
       "id": "host-smoke",
       "title": "真实宿主面板交互验收",
-      "description": "已自行核对PI0.16.1及安装0.6.3，真实窗口可枚举和截图；隔离项目的创建/编辑/取消/迁移/刷新/重开尚未实测。",
-      "blocker": "UIA只暴露9个空容器；宿主插件页切换后浏览器截图响应超时，无法可靠操作和安装0.6.4。",
+      "description": "实际宿主0.16.1通过插件页安装包/原生选择框升级0.6.4并重新加载；真实窗口已打开、拖动、缩放、刷新点击及关闭重开。当前项目架构4节点4关系可见。隔离项目完整创建/编辑/迁移/取消/持久化/切图仍需实测。",
+      "blocker": "不再有安装/窗口拖动阻塞；隔离项目全流程尚未完成，不能用当前仓库原有工作项当测试数据。",
       "stage": "todo",
       "taskId": "project-board-release",
       "gitTaskId": null
@@ -29,6 +29,15 @@
       "gitTaskId": null
     },
     {
+      "id": "host-window-drag",
+      "title": "定位宿主外层窗口不能拖动",
+      "description": "已通过正常UI安装0.6.4，真实窗口854818顶部拖动位置1032,516→924,552，尺寸496×368保持。边缘缩放到656×448，关闭后原生窗口数0，插件页重开新句柄10293024。宿主按钮恢复，已查看真实中文截图；CSP冲突修复生效。",
+      "blocker": "",
+      "stage": "done",
+      "taskId": "project-board-release",
+      "gitTaskId": null
+    },
+    {
       "id": "github-delivery",
       "title": "同步最新源码并集成main",
       "description": "已完成：来源b1711fc通过release:auto重测/凭据扫描并同步；no-ff集成main至1ed8390，集成后typecheck/build、65测试和双语浏览器回归通过，普通推送且远端SHA核对一致。未发布市场。清理临时分支在完成记录同步后执行。",
@@ -45,16 +54,7 @@
       "stage": "done",
       "taskId": "project-board-release",
       "gitTaskId": null
-    },
-    {
-      "id": "host-window-drag",
-      "title": "定位宿主外层窗口不能拖动",
-      "description": "真实窗口5312264在两个顶部点拖动后位置均1032,154，故障已复现。installed preload内联Shadow DOM样式被插件CSP阻止；回归先红后绿，0.6.4只放行内联样式，脚本self保留。",
-      "blocker": "0.6.4包尚未通过宿主安装入口加载，实际原生移动/缩放/关闭/按钮未复验，不能标done。",
-      "stage": "todo",
-      "taskId": "project-board-release",
-      "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-06T21:20:19.624Z"
+  "updatedAt": "2026-10-06T22:02:23.703Z"
 }
