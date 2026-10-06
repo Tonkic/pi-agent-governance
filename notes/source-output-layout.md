@@ -35,3 +35,5 @@ build/runtime为编译器拥有目录，仅允许生成文件；构建拒绝符�
 README从11376字节减为3661字节，移出Agent规则和重复参数/交付说明，唯一的图键盘与刷新说明迁入PROJECT。AGENTS和RELEASING统一当前main授权，历史包/截图/证据保留；同一任务检查更新此记录，不新建模板。
 
 typecheck/build、65测试及中英文浏览器回归通过；新增过期版本对所有提取动作的拒绝/锁释放回归，文档链接测试覆盖README。i18n门禁0FAIL，2既有REVIEW分别为安装器字符串命令标题和STATE固定标识。PluginPack通过：28文件301883字节，SHA256 6d841a0a8a6d35cbb6ae13e8ac0c5abb59a99aa80aadd199ed2027a1fc6ae4c6。包因排版增大，不声称减少运行体积或内存。日志在scratch的simplify-tests.log、simplify-i18n.log；formatter仅安装scratch，无新增项目依赖。GitHub只读核对仍443超时，待实际交付命令/远端核对结果，不假定已合并。不发布补丁市场或安装。
+
+代码提交087a0a7后实际release:auto在市场基线读取阶段fetch failed，未进入推送/市场提交。远端main不可核对，保留功能分支不删除；网络恢复按STATE接续。最终本地提交的回归日志使用scratch/simplify-final-tests.log，不以交付命令失败冒称测试运行。

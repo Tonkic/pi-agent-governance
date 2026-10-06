@@ -37,13 +37,13 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "用户批准1–3精简已实施为本地0.6.3：10个TS排版展开，超过200字符长行41→0；core.run只分派，progress/context/verify/gate/close同文件方法实现，锁/版本/无任务校验保留。README约11KB→3.7KB，详细规则链接已有文档，唯一图交互说明迁入PROJECT；AGENTS/RELEASING消除旧授权矛盾，记录追加既有notes。初始化三文件输出、工具接口值与旧版一致；其他8模块规范化等价。typecheck/build、65测试、双语浏览器与PluginPack通过。包301883字节28文件，SHA6d841a0a8a6d35cbb6ae13e8ac0c5abb59a99aa80aadd199ed2027a1fc6ae4c6。GitHub仍443超时，准备范围提交后实际交付尝试；未发布/安装，整体阻塞保留。",
+  "current": "1–3精简本地完成，源码提交087a0a7：0.6.3整理10个TS，超过200字符行41→0；core.run分派五个同文件动作方法，锁/版本/任务检查保留。README11KB→3.7KB，重复规则改链接，AGENTS/RELEASING统一main授权；结果追加既有notes。初始化/工具接口值一致，其他8模块规范化等价；typecheck/build、65测试、双语浏览器、i18n门禁和PluginPack通过。包301883字节28文件。实际release:auto在读取市场基线时fetch failed停止，GitHub只读核对443超时，无远端推送/合并/删分支；功能分支保留。整体宿主/目视阻塞保留，不发布市场或安装。",
   "next": [
-    "完成本地提交后交付核对；网络恢复后main集成重测推送并清理已合并分支",
+    "网络恢复后同步功能分支、核对远端main，再集成重测推送并清理已合并分支",
     "真实宿主交互、外层窗口拖动与目视验收仍待完成"
   ],
   "blocked": [
-    "GitHub HTTPS连接443超时，交付脚本及两次ls-remote均失败；本地功能分支保留，尚未同步/合并远端main/删除分支。",
+    "GitHub只读核对HTTPS443超时，release:auto读取插件中心基线fetch failed；网络交付阻塞，保留分支，未推送/合并main/删除分支。",
     "外层插件窗口拖动尚未复现/修复；真实窗口工具返回browser guest is not available，须宿主截图/版本或可访问环境。",
     "中英文响应式截图已生成但未完成人工目视验收；整体任务不关闭。"
   ],
