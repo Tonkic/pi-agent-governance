@@ -40,6 +40,21 @@ const { panelInvoke } = require('../plugin/runtime/panel');
     const refresh = async () => { await page.locator('#refresh').click(); await settled(); };
     const card = id => page.locator(`[data-workitem="${id}"]`);
     await page.goto(pathToFileURL(path.resolve('plugin/renderer/index.html')).href); await settled();
+    // Real host preload injects its 46px native drag band via an inline Shadow DOM style.
+    // CSP must permit those styles without permitting inline scripts.
+    const chromeStyle = await page.evaluate(() => {
+      const host = document.createElement('pi-plugin-panel-chrome');
+      const shadow = host.attachShadow({ mode: 'open' });
+      const style = document.createElement('style');
+      style.textContent = '.drag-region { position: fixed; height: 46px; -webkit-app-region: drag; } .control { -webkit-app-region: no-drag; }';
+      const drag = document.createElement('div'); drag.className = 'drag-region';
+      const button = document.createElement('button'); button.className = 'control';
+      shadow.append(style, drag, button); document.documentElement.append(host);
+      const result = { region: getComputedStyle(drag).getPropertyValue('-webkit-app-region'), position: getComputedStyle(drag).position, height: getComputedStyle(drag).height, button: getComputedStyle(button).getPropertyValue('-webkit-app-region') };
+      host.remove(); return result;
+    });
+    assert.deepEqual(chromeStyle, { region: 'drag', position: 'fixed', height: '46px', button: 'no-drag' }, 'Host chrome styles must survive the panel CSP');
+    assert.match(await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content'), /script-src 'self';/);
     assert.match(await page.locator('#graph-empty').textContent(), /尚无项目架构/);
     for (const id of ['first', 'second']) {
       await page.locator('#workitem-id').fill(id); await page.locator('#workitem-title').fill(id);

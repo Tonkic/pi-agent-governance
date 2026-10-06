@@ -43,3 +43,13 @@ typecheck/build、65测试及中英文浏览器回归通过；新增过期版本
 网络恢复后release:auto在b1711fc实际完成typecheck/build、65测试、双语浏览器与凭据历史扫描，源码分支同步成功，未提交市场。0.6.2/0.6.3改造no-ff集成main至1ed8390，集成后相同检查通过，普通推送且ls-remote SHA一致。日志：scratch/todo-delivery.log、todo-main-tests.log。
 
 看板通过revision接口修正过时main禁令、补交付与窗口卡片并填写阻塞；GitHub交付卡片完成。最新截图已生成，自动检查通过但人工目视未验收。真实宿主snapshot仍guest unavailable；安装清单为社区0.6.1，源码0.6.3没有自动安装。host-smoke、visual-check、release-acceptance、host-window-drag保留待办，不close整体任务。临时分支仅在远端main包含其全部提交并无活动worktree/登记后清理；旧0.6.0发布来源保留。
+
+## 0.6.4 宿主拖动CSP修复（真实复验未完成）
+
+合同：.pi/goal/修复真实插件窗口拖动并完成剩余验收-20261007-0457.md。自行读取PI0.16.1和安装0.6.3，枚举真实治理窗口5312264。两次原生鼠标拖动（相对顶部200,20和400,35；第二次确认前台句柄）前后均(1032,154)，尺寸1356×730。PrintWindow成功捕获；已实际查看一张中文窗口图像，证据host-inspection.html及host-window-0.6.3.png。不证明全部尺寸/主题目视通过。
+
+实际installed preload为closed Shadow DOM注入内联style，46px app-region drag、按钮no-drag。插件style-src self阻止注入：新浏览器回归旧策略失败，计算值none/static/0px；仅放行style unsafe-inline后回归通过，script-src self、网络限制和permissions不变。未修改宿主程序。65测试、typecheck/build、双语浏览器通过；i18n0FAIL2既有REVIEW；PluginPack28文件305076字节SHA4020c2fbfab9374d177718f669bc8f65ffcd1c22e4970fb09f66d2b626999c13。只读审查08723261无具体缺陷，明确CSS回归不能证明原生移动。
+
+尝试原生UIA：主窗口10、治理窗口9个空Pane，无可操作控件。通过截图辨认并点击主窗口插件入口；之后浏览器截图反复plugin did not answer，恢复预览仍超时。Windows无piplug关联，也无公开安装工具；无法安全辨认确认按钮，因此停止UI安装，不盲点、不通过内部IPC或直接覆盖目录。0.6.4未安装；真实移动/缩放/关闭、隔离项目交互、12组目视均未验收。保留全部未完成项，不verify/close。用户已确认更新的0.6.3安装阻塞已删除。架构来源的CRLF导致expected指纹拒绝，未通过重写所有指纹绕过。
+
+临时诊断与只读提取均在scratch：inspect-windows.ps1、host-ui/installed-plugin-panel.js、公开宿主ADR0093/0275与preload源文件。主窗口截图不提交，未开调试端口或终止进程。

@@ -2,11 +2,11 @@
 
 PI-Desktop 本地插件：保存任务目标和进度，展示项目看板与源码架构，管理受管 Git 工作区。项目数据保存在仓库文件中，Agent 可以据此接手工作。
 
-社区 ID：`io.github.tonkic.agent-governance`。本地版本 0.6.3；市场已发布版本 0.6.0。
+社区 ID：`io.github.tonkic.agent-governance`。本地版本 0.6.4；市场已发布版本 0.6.0。
 
 ## 安装与使用
 
-1. 在 PI-Desktop 插件页安装 `plugin/dist/io.github.tonkic.agent-governance-0.6.3.piplug`，确认权限。开发时加载 `plugin/`。
+1. 在 PI-Desktop 插件页安装 `plugin/dist/io.github.tonkic.agent-governance-0.6.4.piplug`，确认权限。开发时加载 `plugin/`。
 2. 打开项目工作区，在命令面板运行 `Agent Governance: 打开治理面板`。
 3. 向 Agent 提出目标与验收条件，例如：`使用 governance 初始化这个项目，保留已有文件。目标是修复搜索功能，验收是相关测试通过。`
 

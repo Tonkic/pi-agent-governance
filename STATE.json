@@ -37,15 +37,15 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "待办已同步，GitHub源码交付完成：0.6.2/0.6.3目录与可读性更新集成main至1ed8390并推送核对；集成后typecheck/build、65项测试与双语浏览器通过。最新截图已生成，但人工目视未通过；真实宿主guest不可用，安装清单为0.6.1而源码0.6.3未安装。GitHub卡片done，host-smoke/visual-check/release-acceptance及host-window-drag保留阻塞。最后同步完成记录并清理已合并临时分支，不发布补丁市场/安装/总体close。",
+  "current": "执行新目标合同：自行读取宿主0.16.1/安装0.6.3，Win32枚举找到治理窗口并截图，两次顶部拖动位置均1032,154未变，真实故障已复现。CSP style-src self阻止宿主preload Shadow DOM内联拖动样式，浏览器回归先失败region none/static/0，再加仅样式unsafe-inline后通过；script-src self/权限不变。0.6.4构建/65测试/typecheck/浏览器/PluginPack/i18n通过，单次只读审查无具体缺陷。UIA空容器，插件页切换使截图工具超时，正常安装无法可靠继续，未覆盖安装目录。真实修复/隔离宿主交互/全部响应式目视尚未验收，保留待办。",
   "next": [
-    "通过宿主插件页手动升级0.6.3并打开治理面板，完成真实交互验收",
-    "人工复核最新中英文响应式截图；提供外层窗口截图与宿主版本以定位拖动"
+    "通过正常宿主安装入口加载0.6.4，复验原生拖动、缩放、关闭和面板按钮",
+    "完成隔离项目真实交互和12组中英文响应式目视，全部证据满足再verify/close"
   ],
   "blocked": [
-    "本机安装0.6.1，源码0.6.3未安装；实际面板guest unavailable，宿主交互未通过。",
-    "最新截图已生成并通过自动断言，人工目视验收待完成。",
-    "外层窗口拖动未复现，需宿主版本/截图和可访问环境。"
+    "已安装0.6.3，0.6.4修复尚未部署；现有浏览器工具在宿主插件页切换后超时，UIA仅空容器，无法安全继续安装/真实交互。",
+    "真实故障两次复现；CSP修复回归通过不等于原生窗口修复通过。",
+    "只查看一张真实中文窗口截图，未完成全部中英文尺寸/主题目视。"
   ],
   "followUp": null,
   "change": "changes/active/project-board-release",
