@@ -37,9 +37,9 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "0.6.2源码/产物分离和读码文档已完成，代码提交577c79d（refactor/source-output-layout）：JS集中plugin/runtime、CLI/测试在忽略build；10个runtime JS字节不变。新增docs入口/架构/开发与必要notes；manifest/HTML/发布白名单及旧CLI说明全部更新。提交后release:auto重复typecheck/build、64项测试及中英文浏览器回归通过，审核SHA发布载荷27文件正确。干净npm ci构建测试通过，PluginPack28文件277359字节SHA ade28c7fb06fc033d140cedf0894fa9277ae78c58ef35c66cea48c956f20c930，i18n0FAIL2既有兼容REVIEW。GitHub网络连接阻塞推送，尚未合并main，分支未删。未发布市场或安装；正在本地记录最终证据。",
+  "current": "Docs已按用户选择的Microsoft Writing Style Guide重写：导航、模块职责/调用关系、直接构建命令与修改入口，删除教程式步骤及重复解释；官方依据见docs/README.md，AGENTS同步。仅文档/入口要求更新，不改版本或插件包。构建及64测试（含文档链接）通过，diff检查通过。宿主工具指向C盘失败，已用当前仓库同一治理内核CLI同步。GitHub只读ls-remote再次HTTPS443超时；保留refactor/source-output-layout，0.6.2目录迁移和本次文档尚未同步main。",
   "next": [
-    "网络恢复后运行补丁交付并核对远端main，再集成重测/推送/清理已合并分支",
+    "GitHub网络恢复后同步功能分支，核对远端main再集成重测/推送/清理",
     "真实宿主交互、外层窗口拖动与目视验收仍待完成"
   ],
   "blocked": [

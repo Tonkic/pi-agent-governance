@@ -1,10 +1,14 @@
-# 文档入口
+# 文档
 
-本目录保存稳定的用途、架构和开发用法，不保存任务进度。
+| 需要了解什么 | 文档 |
+| --- | --- |
+| 模块职责与代码入口 | [架构](architecture.md) |
+| 构建、测试和修改源码 | [开发](development.md) |
+| 治理工具及参数 | [工具用法](../plugin/README.md) |
+| 分支、提交与验证 | [Git 协作](../plugin/GIT.md) |
+| 看板和架构数据 | [项目数据](../plugin/PROJECT.md) |
+| GitHub 与市场交付 | [交付流程](../scripts/RELEASING.md) |
 
-- [读代码与架构](architecture.md)：职责、数据流、读码路径和安全边界。
-- [开发与构建](development.md)：源码/产物目录、命令和变更检查。
-- [治理工具](../plugin/README.md)、[Git 协作](../plugin/GIT.md)、[项目数据](../plugin/PROJECT.md)：具体 API 与限制。
-- [交付流程](../scripts/RELEASING.md)：GitHub、main 集成、市场发布与分支清理。
+文档采用 [Microsoft Writing Style Guide](https://learn.microsoft.com/en-us/style-guide/welcome/)，以 [Top 10 tips](https://learn.microsoft.com/en-us/style-guide/top-10-tips-style-voice) 为写作依据：重点在前、用词简洁、动作明确、便于扫读。中文采用这些表达原则，不照搬英文大小写规则。不新增教程或空模板。
 
-当前目标、范围和下一步以根 STATE.json 为准。notes/ 保存必要的决策与验证记录；changes/ 保留既有任务证据和归档，不强制迁移历史文件或创建空模板。
+`docs/` 保存当前用途与用法；`notes/` 和 `changes/` 保存必要决策及验证记录。当前任务以根 `STATE.json` 为准。
