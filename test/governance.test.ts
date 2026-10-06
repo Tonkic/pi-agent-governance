@@ -162,3 +162,16 @@ test('legacy verification without intent fingerprint requires re-verification', 
   assert.equal((await g.state()).status, 'working');
   await assert.rejects(g.run({ action: 'close', knowledge: 'No docs change' }), /gate required/);
 });
+test('extracted actions share revision guards and release the lock on rejection', async t => {
+  const g = await fixture(t);
+  await g.run(start);
+  const before = await g.read('STATE.json');
+  for (const action of ['progress', 'context', 'verify', 'gate', 'close']) {
+    await assert.rejects(g.run({ action, expectedState: 'stale' }), /状态已过期/);
+    assert.equal(await g.read('STATE.json'), before);
+    await assert.rejects(fs.stat(path.join(g.root, '.governance.lock')), /ENOENT/);
+  }
+  const result = await g.run({ action: 'progress', current: 'Reviewed', next: [], blocked: [] });
+  assert.equal(result.current, 'Reviewed');
+  assert.equal(result.status, 'working');
+});

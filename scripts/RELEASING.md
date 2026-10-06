@@ -46,14 +46,14 @@ node scripts/plugin-center.cjs plugin_status
 ## 边界与恢复
 
 - `scripts/release-policy.json` 的 enabled:false 关闭自动交付。仓库、规则、分支策略变更需重新批准；新增权限或 fs/net 范围变化拦截市场发布。
-- 只接受固定 GitHub 仓库，拒绝多个 push URL。保留 pre-push hook；只推明确分支，不强推、不合并 main、不推标签、不安装。已存在分支指向其他 SHA 时拒绝替换。推送结果不明先用 ls-remote 核对。
+- 只接受固定GitHub仓库，拒绝多个push URL；保留pre-push hook，不强推、不推标签、不安装。release:auto只推明确来源分支，main由下面的集成步骤处理。来源分支指向其他SHA时拒绝替换；推送结果不明先用ls-remote核对。
 - 市场提交互斥锁和持久化 attempted 记录在 Git common directory 的 pi-governance/releases/。提交前持久化；超时、断网、崩溃不得盲目重试、supersede 或删除记录。人工检查远端状态及存活进程后恢复。
 - 只允许保留既有无关未跟踪 `.pi/` 与 redesign archive；不纳入提交。其他未跟踪内容或已跟踪修改均停止交付。密钥扫描只是辅助，不代替人工敏感内容审查。
 - 发布成功不等于真实宿主/目视验收完成，也不等于本机自动安装成功。保留未完成的总体标准。
 - 首次 create_plugin 和手动 submit_version 仍需要对应授权与完整检查。
 
-## main 集成与分支清理（新授权优先）
+## main 集成与分支清理
 
-用户已授权完成的更新在源码同步后合并 main、集成后重测、普通推送 main，再删除已合并临时开发/源码分支。本节替代上述旧的“不合并main”限制；release:auto 仍只负责源码/市场交付，不自动完成集成或删分支。Agent 必须执行此收尾步骤，不以同步分支代替交付完成。
+用户已授权完成更新后合并main、集成重测、普通推送，再清理已合并临时分支。release:auto只负责源码/市场交付；Agent须完成集成步骤，不能以来源分支同步代替交付完成。
 
 合并前获取并核对远端main，保留其提交，用普通merge（建议--no-ff保留功能历史）。集成提交实际运行typecheck/build/test/browser后再推送；分支保护要求PR/CI时遵循保护，不绕过。仅当远端main已包含临时分支全部提交、无活跃worktree/受管任务时，才普通删除远端临时分支及本地已合并分支（git branch -d，不用-D）。保留市场发布来源分支和仍有未合并工作的分支。整体真实宿主/目视阻塞仍需诚实保留，不因合并而close。

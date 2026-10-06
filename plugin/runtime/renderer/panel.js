@@ -4,17 +4,35 @@ let snapshot = null, busy = false, edited = false;
 let projectSnapshot = null, editingItem = null, draggedItem = null;
 const dirtyForms = new Set();
 function discardWarning(submitted) {
-    const names = { 'progress-form': t('draftProgress'), 'start-form': t('draftTask'), 'workitem-form': t('draftItem') };
-    const drafts = [...dirtyForms].filter(id => id !== submitted).map(id => names[id] || id);
+    const names = {
+        'progress-form': t('draftProgress'),
+        'start-form': t('draftTask'),
+        'workitem-form': t('draftItem')
+    };
+    const drafts = [...dirtyForms].filter((id) => id !== submitted).map((id) => names[id] || id);
     return drafts.length ? t('discard', drafts.join(' / ')) : '';
 }
 const boardStages = ['todo', 'doing', 'done'];
 const boardLabels = new Proxy({}, { get: (_, key) => t(key) });
-const labels = new Proxy({}, { get: (_, key) => copy[locale][key] ? t(key) : String(key) });
-const text = (id, value) => { $(id).textContent = value ?? ''; };
-const lines = id => $(id).value.split('\n').map(s => s.trim()).filter(Boolean);
-function notify(message, error = false) { text('notice-message', message); $('notice').classList.toggle('error', error); }
-function lock(value) { busy = value; document.querySelectorAll('main button, main input, main textarea').forEach(el => { el.disabled = value; }); $('workitem-blocker').disabled = value || !editingItem; }
+const labels = new Proxy({}, { get: (_, key) => (copy[locale][key] ? t(key) : String(key)) });
+const text = (id, value) => {
+    $(id).textContent = value ?? '';
+};
+const lines = (id) => $(id)
+    .value.split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean);
+function notify(message, error = false) {
+    text('notice-message', message);
+    $('notice').classList.toggle('error', error);
+}
+function lock(value) {
+    busy = value;
+    document.querySelectorAll('main button, main input, main textarea').forEach((el) => {
+        el.disabled = value;
+    });
+    $('workitem-blocker').disabled = value || !editingItem;
+}
 async function invoke(channel, payload = {}) {
     if (!window.pluginBridge?.invoke)
         throw Error(t('staticPreview'));
@@ -24,7 +42,11 @@ async function invoke(channel, payload = {}) {
     return response.result;
 }
 function list(id, values) {
-    $(id).replaceChildren(...(values?.length ? values : [t('none')]).map(value => { const li = document.createElement('li'); li.textContent = value; return li; }));
+    $(id).replaceChildren(...(values?.length ? values : [t('none')]).map((value) => {
+        const li = document.createElement('li');
+        li.textContent = value;
+        return li;
+    }));
 }
 function render(data) {
     snapshot = data;
@@ -72,7 +94,17 @@ function renderGit(g) {
     for (const task of g.tasks) {
         const card = document.createElement('article');
         card.className = 'git-task';
-        const rows = [['h3', `${task.id} · ${task.role === 'coordinator' ? t('coordinator') : t('worker')}`], ['p', task.goal], ['p', `${labels[task.status] || task.status} · ${task.dirty ? t('dirty') : t('clean')} · ${task.verificationValid ? t('valid') : t('invalid')}`], ['p', t('branch', task.branch)], ['p', task.worktree, 'path'], ['p', t('scopeValue', (task.allowedPaths || []).join(' / '))]];
+        const rows = [
+            ['h3', `${task.id} · ${task.role === 'coordinator' ? t('coordinator') : t('worker')}`],
+            ['p', task.goal],
+            [
+                'p',
+                `${labels[task.status] || task.status} · ${task.dirty ? t('dirty') : t('clean')} · ${task.verificationValid ? t('valid') : t('invalid')}`
+            ],
+            ['p', t('branch', task.branch)],
+            ['p', task.worktree, 'path'],
+            ['p', t('scopeValue', (task.allowedPaths || []).join(' / '))]
+        ];
         if (task.error)
             rows[2] = ['p', t('unavailable')];
         if (task.error)
@@ -142,14 +174,21 @@ function confirmWrite(description) {
     text('confirm-workspace', snapshot?.workspace || '');
     dialog.returnValue = '';
     dialog.showModal();
-    return new Promise(resolve => dialog.addEventListener('close', () => resolve(dialog.returnValue === 'confirm'), { once: true }));
+    return new Promise((resolve) => dialog.addEventListener('close', () => resolve(dialog.returnValue === 'confirm'), {
+        once: true
+    }));
 }
 async function mutate(args, description) {
     if (busy || !snapshot)
         return;
     lock(true);
     try {
-        if (!await confirmWrite(description + discardWarning(args.action === 'progress' ? 'progress-form' : args.action === 'start' ? 'start-form' : undefined)))
+        if (!(await confirmWrite(description +
+            discardWarning(args.action === 'progress'
+                ? 'progress-form'
+                : args.action === 'start'
+                    ? 'start-form'
+                    : undefined))))
             return;
         await invoke('governance.mutate', { args, revision: snapshot.revision, confirmed: true });
         await load();
@@ -178,15 +217,30 @@ $('refresh').addEventListener('click', async () => {
     }
 });
 for (const form of document.querySelectorAll('main form'))
-    form.addEventListener('input', () => { edited = true; dirtyForms.add(form.id); });
+    form.addEventListener('input', () => {
+        edited = true;
+        dirtyForms.add(form.id);
+    });
 $('initialize').addEventListener('click', () => mutate({ action: 'init' }, t('initConfirm')));
-$('start-form').addEventListener('submit', event => {
+$('start-form').addEventListener('submit', (event) => {
     event.preventDefault();
-    mutate({ action: 'start', id: $('new-id').value.trim(), goal: $('new-goal').value.trim(), criteria: lines('new-criteria'), scope: lines('new-scope'), constraints: lines('new-constraints') }, t('startConfirm'));
+    mutate({
+        action: 'start',
+        id: $('new-id').value.trim(),
+        goal: $('new-goal').value.trim(),
+        criteria: lines('new-criteria'),
+        scope: lines('new-scope'),
+        constraints: lines('new-constraints')
+    }, t('startConfirm'));
 });
-$('progress-form').addEventListener('submit', event => {
+$('progress-form').addEventListener('submit', (event) => {
     event.preventDefault();
-    mutate({ action: 'progress', current: $('edit-current').value.trim(), next: lines('edit-next'), blocked: lines('edit-blocked') }, t('progressConfirm'));
+    mutate({
+        action: 'progress',
+        current: $('edit-current').value.trim(),
+        next: lines('edit-next'),
+        blocked: lines('edit-blocked')
+    }, t('progressConfirm'));
 });
 let graphView = 'architecture';
 function renderProjectGraph() {
@@ -204,14 +258,45 @@ function renderProjectGraph() {
             message = t('notInitialized');
         else {
             const phases = ['idle', 'working', 'verified', 'ready'];
-            graph = { nodes: phases.map(id => ({ id, title: labels[id], current: s.status === id, files: ['STATE.json'], description: id === s.status ? t('phaseDetails', s.current || '', (s.blocked || []).join(' / ') || t('none'), s.verification ? t('recorded') : t('noRecord'), s.followUp ? t('approved', s.followUp.id) : '') : ({ idle: t('phaseIdle'), working: t('phaseWorking'), verified: t('phaseVerified'), ready: t('phaseReady') })[id] })), edges: [{ from: 'idle', to: 'working', label: 'start' }, { from: 'working', to: 'verified', label: 'verify' }, { from: 'verified', to: 'ready', label: 'gate / close(knowledge)' }, { from: 'ready', to: 'idle', label: 'close / archive' }, { from: 'verified', to: 'working', label: t('intentChange') }, { from: 'ready', to: 'working', label: t('intentChange') }] };
+            graph = {
+                nodes: phases.map((id) => ({
+                    id,
+                    title: labels[id],
+                    current: s.status === id,
+                    files: ['STATE.json'],
+                    description: id === s.status
+                        ? t('phaseDetails', s.current || '', (s.blocked || []).join(' / ') || t('none'), s.verification ? t('recorded') : t('noRecord'), s.followUp ? t('approved', s.followUp.id) : '')
+                        : {
+                            idle: t('phaseIdle'),
+                            working: t('phaseWorking'),
+                            verified: t('phaseVerified'),
+                            ready: t('phaseReady')
+                        }[id]
+                })),
+                edges: [
+                    { from: 'idle', to: 'working', label: 'start' },
+                    { from: 'working', to: 'verified', label: 'verify' },
+                    { from: 'verified', to: 'ready', label: 'gate / close(knowledge)' },
+                    { from: 'ready', to: 'idle', label: 'close / archive' },
+                    { from: 'verified', to: 'working', label: t('intentChange') },
+                    { from: 'ready', to: 'working', label: t('intentChange') }
+                ]
+            };
         }
     }
     else {
         text('architecture-title', t('architecture'));
         graph = projectSnapshot?.architecture;
-        message = projectSnapshot?.architectureError ? t('architectureError', projectSnapshot.architectureError) : !projectSnapshot ? t('graphReadError') : !graph ? t('noGraph') : '';
-        text('graph-source', graph ? t('graphSource', graph.title, graph.source, graph.updatedAt, graph.staleFiles?.length ? t('sourceChanged', graph.staleFiles.join(' / ')) : '') : t('persistedOnly'));
+        message = projectSnapshot?.architectureError
+            ? t('architectureError', projectSnapshot.architectureError)
+            : !projectSnapshot
+                ? t('graphReadError')
+                : !graph
+                    ? t('noGraph')
+                    : '';
+        text('graph-source', graph
+            ? t('graphSource', graph.title, graph.source, graph.updatedAt, graph.staleFiles?.length ? t('sourceChanged', graph.staleFiles.join(' / ')) : '')
+            : t('persistedOnly'));
         text('graph-overview', graph?.title || t('coreModules'));
         const stale = graph?.staleFiles || [];
         text('graph-warning', stale.length ? t('stale', stale.join(' / ')) : '');
@@ -224,11 +309,17 @@ function renderProjectGraph() {
     $('show-workflow').setAttribute('aria-pressed', String(graphView === 'workflow'));
     window.dispatchEvent(new CustomEvent('project-graph', { detail: graph }));
 }
-$('show-architecture').addEventListener('click', () => { graphView = 'architecture'; renderProjectGraph(); });
-$('show-workflow').addEventListener('click', () => { graphView = 'workflow'; renderProjectGraph(); });
+$('show-architecture').addEventListener('click', () => {
+    graphView = 'architecture';
+    renderProjectGraph();
+});
+$('show-workflow').addEventListener('click', () => {
+    graphView = 'workflow';
+    renderProjectGraph();
+});
 function highlightNavigation() {
     const target = location.hash || '#architecture';
-    document.querySelectorAll('.workspace-nav a').forEach(link => {
+    document.querySelectorAll('.workspace-nav a').forEach((link) => {
         if (link.hash === target)
             link.setAttribute('aria-current', 'location');
         else
@@ -237,10 +328,16 @@ function highlightNavigation() {
 }
 window.addEventListener('hashchange', highlightNavigation);
 highlightNavigation();
-const appearance = (value = {}) => { document.documentElement.dataset.base = value?.base || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); };
+const appearance = (value = {}) => {
+    document.documentElement.dataset.base =
+        value?.base || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+};
 appearance();
 window.pluginBridge?.on?.('appearance:changed', appearance);
-window.pluginBridge?.invoke('app.getAppearance').then(appearance).catch(() => { });
+window.pluginBridge
+    ?.invoke('app.getAppearance')
+    .then(appearance)
+    .catch(() => { });
 function resetWorkitem() {
     dirtyForms.delete('workitem-form');
     editingItem = null;
@@ -255,7 +352,8 @@ async function writeWorkitem(args) {
     const revision = projectSnapshot.revision;
     lock(true);
     try {
-        if (!await confirmWrite(t('itemConfirm', args.id, args.stage ? ` → ${boardLabels[args.stage]}` : '') + discardWarning(args.action === 'board_move' ? undefined : 'workitem-form')))
+        if (!(await confirmWrite(t('itemConfirm', args.id, args.stage ? ` → ${boardLabels[args.stage]}` : '') +
+            discardWarning(args.action === 'board_move' ? undefined : 'workitem-form'))))
             return;
         await invoke('governance.workitem', { args, revision, confirmed: true });
         resetWorkitem();
@@ -270,7 +368,9 @@ async function writeWorkitem(args) {
         lock(false);
     }
 }
-function moveWorkitem(id, stage, position) { return writeWorkitem({ action: 'board_move', id, stage, position }); }
+function moveWorkitem(id, stage, position) {
+    return writeWorkitem({ action: 'board_move', id, stage, position });
+}
 function renderBoard() {
     const data = projectSnapshot;
     $('board-columns').replaceChildren();
@@ -284,28 +384,32 @@ function renderBoard() {
         const column = document.createElement('section');
         column.className = 'board-column';
         column.dataset.stage = stage;
-        const items = data.board.items.filter(item => item.stage === stage);
+        const items = data.board.items.filter((item) => item.stage === stage);
         const heading = document.createElement('h3');
         heading.textContent = `${boardLabels[stage]} · ${items.length}`;
         column.append(heading);
-        column.addEventListener('dragover', event => { if (draggedItem && !busy) {
-            event.preventDefault();
-            column.classList.add('drop-target');
-        } });
-        column.addEventListener('dragleave', event => { if (!column.contains(event.relatedTarget))
-            column.classList.remove('drop-target'); });
-        column.addEventListener('drop', event => {
+        column.addEventListener('dragover', (event) => {
+            if (draggedItem && !busy) {
+                event.preventDefault();
+                column.classList.add('drop-target');
+            }
+        });
+        column.addEventListener('dragleave', (event) => {
+            if (!column.contains(event.relatedTarget))
+                column.classList.remove('drop-target');
+        });
+        column.addEventListener('drop', (event) => {
             event.preventDefault();
             column.classList.remove('drop-target');
             const id = draggedItem;
             draggedItem = null;
             if (!id || busy)
                 return;
-            const others = items.filter(item => item.id !== id);
+            const others = items.filter((item) => item.id !== id);
             const target = event.target.closest('[data-workitem]');
             if (target?.dataset.workitem === id)
                 return;
-            const index = target ? others.findIndex(item => item.id === target.dataset.workitem) : -1;
+            const index = target ? others.findIndex((item) => item.id === target.dataset.workitem) : -1;
             void moveWorkitem(id, stage, index < 0 ? others.length : index);
         });
         items.forEach((item, index) => {
@@ -313,25 +417,49 @@ function renderBoard() {
             card.className = 'workitem';
             card.dataset.workitem = item.id;
             card.draggable = true;
-            card.addEventListener('dragstart', event => { if (busy) {
-                event.preventDefault();
-                return;
-            } draggedItem = item.id; event.dataTransfer.setData('text/plain', item.id); event.dataTransfer.effectAllowed = 'move'; card.classList.add('dragging'); });
-            card.addEventListener('dragend', () => { draggedItem = null; card.classList.remove('dragging'); document.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target')); });
-            for (const [tag, value] of [['h4', item.title], ['p', item.description], ['small', t('itemLinks', item.taskId || t('none'), item.gitTaskId || t('none'))], ['p', item.blocker ? t('blocker', item.blocker) : '']]) {
+            card.addEventListener('dragstart', (event) => {
+                if (busy) {
+                    event.preventDefault();
+                    return;
+                }
+                draggedItem = item.id;
+                event.dataTransfer.setData('text/plain', item.id);
+                event.dataTransfer.effectAllowed = 'move';
+                card.classList.add('dragging');
+            });
+            card.addEventListener('dragend', () => {
+                draggedItem = null;
+                card.classList.remove('dragging');
+                document
+                    .querySelectorAll('.drop-target')
+                    .forEach((el) => el.classList.remove('drop-target'));
+            });
+            for (const [tag, value] of [
+                ['h4', item.title],
+                ['p', item.description],
+                ['small', t('itemLinks', item.taskId || t('none'), item.gitTaskId || t('none'))],
+                ['p', item.blocker ? t('blocker', item.blocker) : '']
+            ]) {
                 const el = document.createElement(tag);
                 el.textContent = value;
                 card.append(el);
             }
             const controls = document.createElement('div');
             controls.className = 'workitem-controls';
-            const button = (label, action) => { const el = document.createElement('button'); el.type = 'button'; el.textContent = label; el.setAttribute('aria-label', `${item.title}：${label}`); el.addEventListener('click', action); controls.append(el); };
+            const button = (label, action) => {
+                const el = document.createElement('button');
+                el.type = 'button';
+                el.textContent = label;
+                el.setAttribute('aria-label', `${item.title}：${label}`);
+                el.addEventListener('click', action);
+                controls.append(el);
+            };
             button(t('edit'), async () => {
                 if (busy)
                     return;
                 lock(true);
                 try {
-                    if (dirtyForms.has('workitem-form') && !await confirmWrite(t('switchDraft')))
+                    if (dirtyForms.has('workitem-form') && !(await confirmWrite(t('switchDraft'))))
                         return;
                     resetWorkitem();
                     editingItem = item.id;
@@ -350,8 +478,8 @@ function renderBoard() {
                 button(t('moveUp'), () => moveWorkitem(item.id, stage, index - 1));
             if (index < items.length - 1)
                 button(t('moveDown'), () => moveWorkitem(item.id, stage, index + 1));
-            for (const target of boardStages.filter(s => Math.abs(boardStages.indexOf(s) - boardStages.indexOf(stage)) === 1))
-                button(t('moveTo', boardLabels[target]), () => moveWorkitem(item.id, target, data.board.items.filter(i => i.stage === target).length));
+            for (const target of boardStages.filter((s) => Math.abs(boardStages.indexOf(s) - boardStages.indexOf(stage)) === 1))
+                button(t('moveTo', boardLabels[target]), () => moveWorkitem(item.id, target, data.board.items.filter((i) => i.stage === target).length));
             card.append(controls);
             column.append(card);
         });
@@ -365,9 +493,15 @@ function renderBoard() {
     }
 }
 $('workitem-cancel').addEventListener('click', resetWorkitem);
-$('workitem-form').addEventListener('submit', event => {
+$('workitem-form').addEventListener('submit', (event) => {
     event.preventDefault();
-    void writeWorkitem({ action: editingItem ? 'board_update' : 'board_create', id: editingItem || $('workitem-id').value.trim(), title: $('workitem-title').value.trim(), description: $('workitem-description').value, ...(editingItem ? { blocker: $('workitem-blocker').value } : {}) });
+    void writeWorkitem({
+        action: editingItem ? 'board_update' : 'board_create',
+        id: editingItem || $('workitem-id').value.trim(),
+        title: $('workitem-title').value.trim(),
+        description: $('workitem-description').value,
+        ...(editingItem ? { blocker: $('workitem-blocker').value } : {})
+    });
 });
 lock(true);
 localeReady.then(load).finally(() => lock(false));

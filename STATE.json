@@ -18,6 +18,10 @@
     "test/",
     "scripts/",
     "types/",
+    "docs/",
+    "notes/",
+    "tsconfig.json",
+    "AGENTS.md",
     "README.md",
     "package.json",
     "package-lock.json",
@@ -33,13 +37,15 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "已按用户新授权将完成源码与交付规则以no-ff合并main，69dce96集成后typecheck/build、61测试和中英文浏览器回归通过；426可达对象凭据扫描通过，普通推送main并核对远端SHA。已检查祖先关系、无额外worktree与受管任务后删除远端feat/git-collaboration及两条release/source临时分支，本地开发分支也用-d删除。保留release/plugin-center-0.6.0发布追溯。正在短生命周期记录分支保存结果再集成；不发布市场，不安装，不冒称整体verify/close或窗口拖动修复完成。",
+  "current": "继续待办：已通过revision守卫同步看板过时规则与阻塞，并补GitHub交付及宿主窗口拖动卡片。网络已恢复，fetch及远端main祖先检查通过；最新双语浏览器回归和截图生成通过。安装清单为社区0.6.1，源码0.6.3尚未安装；真实面板snapshot仍guest unavailable，宿主/人工目视/窗口拖动不标完成。开始已授权源码同步与main集成，保留总体未验收状态。",
   "next": [
-    "真实宿主交互、外层窗口拖动与目视验收仍待完成"
+    "完成源码交付、main集成重测推送与已合并临时分支清理",
+    "打开实际治理面板并核对新版安装、交互与截图；宿主拖动需可访问环境"
   ],
   "blocked": [
-    "外层插件窗口拖动尚未复现/修复；真实窗口工具返回browser guest is not available，须宿主截图/版本或可访问环境。",
-    "中英文响应式截图已生成但未完成人工目视验收；整体任务不关闭。"
+    "本机安装0.6.1，源码0.6.3未安装；实际面板guest unavailable，宿主交互未通过。",
+    "最新截图已生成并通过自动断言，人工目视验收待完成。",
+    "外层窗口拖动未复现，需宿主版本/截图和可访问环境。"
   ],
   "followUp": null,
   "change": "changes/active/project-board-release",

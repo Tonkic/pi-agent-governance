@@ -10,7 +10,7 @@ Community plugin ID: `io.github.tonkic.agent-governance`. Repository handoff, a 
 
 ## 源码与构建
 
-插件源码和测试使用 TypeScript；`npm ci` 安装开发依赖后，`npm run build` 分别编译主进程（CommonJS）和浏览器脚本（独立配置，无 require/exports），再生成 `plugin/manifest.json`。产物为源码旁的 `.js`，PI-Desktop 入口保持 `main.js`。Node 20 不直接执行 `.ts`，修改后须重新构建。
+插件源码和测试使用 TypeScript；`npm ci` 后 `npm run build` 分别编译主进程和浏览器脚本，生成清单。安装运行 JS 集中到 `plugin/runtime/`，入口为 `runtime/main.js`；编译的 CLI/测试在忽略的 `build/`。不手改产物，改 TS 后重新构建。Node 20 不直接执行 `.ts`。完整仓库的读码与开发指南在 `docs/`；安装包只需本目录的工具说明。
 
 ```powershell
 npm run typecheck

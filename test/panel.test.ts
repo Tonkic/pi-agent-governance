@@ -71,7 +71,7 @@ test('renderer leads with architecture, removes promotional guide and keeps vali
   for (const match of html.matchAll(/href="#([^"]+)"/g)) assert.ok(ids.includes(match[1]), `Missing navigation target ${match[1]}`);
   assert.equal([...html.matchAll(/data-module="/g)].length, 0, 'No fixed plugin graph may masquerade as project data');
   for (const id of ['show-architecture', 'show-workflow', 'board-columns', 'workitem-form']) assert.ok(ids.includes(id));
-  for (const file of ['graph-model.js', 'graph.js', 'panel.js']) assert.ok(html.includes(`src="${file}"`));
+  for (const file of ['graph-model.js', 'graph.js', 'panel.js']) assert.ok(html.includes(`src="../runtime/renderer/${file}"`));
   const graphScript = await fs.readFile(path.join(__dirname, '../plugin/renderer/graph.js'), 'utf8');
   for (const match of graphScript.matchAll(/get\('([^']+)'/g)) assert.ok(ids.includes(match[1]), `Missing graph control ${match[1]}`);
 });
@@ -175,14 +175,14 @@ test('community manifest and publisher keep credentials and old packages out of 
     assert.ok(manifest.ui.title[locale].trim());
   }
   assert.equal(typeof manifest.contributes.commands[0].title, 'string', 'installer requires a plain command title');
-  const publisher = require('../scripts/plugin-center.cjs');
+  const publisher = require('../../scripts/plugin-center.cjs');
   assert.throws(() => publisher.buildPayload('main', 'Notes'), /full reviewed commit/);
   assert.equal(new Set(publisher.files).size, publisher.files.length);
   for (const file of publisher.files) {
     assert.doesNotMatch(file, /(?:^|\/)(?:\.\.|\.secrets|dist)(?:\/|$)|\.token$/);
-    assert.ok((await fs.stat(path.join(__dirname, '../plugin', file))).isFile());
+    assert.ok((await fs.stat(path.join(__dirname, '../../plugin', file))).isFile());
   }
-  const script = await fs.readFile(path.join(__dirname, '../scripts/plugin-center.cjs'), 'utf8');
+  const script = await fs.readFile(path.join(__dirname, '../../scripts/plugin-center.cjs'), 'utf8');
   assert.match(script, /redirect: 'error'/);
   assert.match(script, /--submit/);
   assert.doesNotMatch(script, /console\.(?:log|error)\(token\)/);

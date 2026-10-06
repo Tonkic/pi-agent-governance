@@ -7,12 +7,12 @@ const root = path.resolve(__dirname, '..');
 const endpoint = 'https://plugins.aiuo.net/mcp';
 const tokenPath = path.join(root, '.secrets', 'plugin-center.token');
 const files = [
-  'main.ts', 'main.js', 'core.ts', 'core.js', 'git.ts', 'git.js',
-  'panel.ts', 'panel.js', 'project.ts', 'project.js', 'tool.ts', 'tool.js',
+  'main.ts', 'runtime/main.js', 'core.ts', 'runtime/core.js', 'git.ts', 'runtime/git.js',
+  'panel.ts', 'runtime/panel.js', 'project.ts', 'runtime/project.js', 'tool.ts', 'runtime/tool.js',
   'README.md', 'GIT.md', 'PROJECT.md', 'PUBLISHING.md',
-  'renderer/index.html', 'renderer/panel.css', 'renderer/panel.ts', 'renderer/panel.js',
-  'renderer/graph.ts', 'renderer/graph.js', 'renderer/graph-model.ts', 'renderer/graph-model.js',
-  'renderer/i18n.ts', 'renderer/i18n.js', 'renderer/tsconfig.json'
+  'renderer/index.html', 'renderer/panel.css', 'renderer/panel.ts', 'runtime/renderer/panel.js',
+  'renderer/graph.ts', 'runtime/renderer/graph.js', 'renderer/graph-model.ts', 'runtime/renderer/graph-model.js',
+  'renderer/i18n.ts', 'runtime/renderer/i18n.js', 'renderer/tsconfig.json'
 ];
 function git(...args) { return execFileSync('git', args, { cwd: root, encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 }); }
 function buildPayload(sourceRef, releaseNotes) {
