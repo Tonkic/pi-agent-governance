@@ -4,8 +4,8 @@
     {
       "id": "host-smoke",
       "title": "真实宿主面板交互验收",
-      "description": "用户已确认安装。刷新本仓库面板确认源码架构与看板出现；在隔离测试项目检查创建/编辑、合法拖动、取消、重载持久化、架构/流程切换。记录实际加载版本和操作结果；Agent 工具调用成功不等同于面板交互全部通过。",
-      "blocker": "",
+      "description": "核对真实安装版本；在隔离测试项目检查创建、编辑、取消、刷新、重开持久化与图切换。工具调用和模拟浏览器通过不能替代宿主交互。",
+      "blocker": "本机清单为0.6.1，当前源码0.6.3尚未安装；真实面板访问待核对。",
       "stage": "todo",
       "taskId": "project-board-release",
       "gitTaskId": null
@@ -13,8 +13,8 @@
     {
       "id": "visual-check",
       "title": "六组尺寸与主题截图目视复核",
-      "description": "检查 changes/active/project-board-release/screenshots/index.html 中 390/768/1280 × light/dark 六张截图的文字可读性、图关系、布局与控件遮挡。自动布局断言和截图生成已通过，目视验收尚未完成；记录真实检查结果。",
-      "blocker": "",
+      "description": "复核当前版本中英文390/768/1280及明暗主题截图；检查可读性、关系图和遮挡。自动布局断言不等于人工目视通过。",
+      "blocker": "最新截图生成后仍需实际目视复核。",
       "stage": "todo",
       "taskId": "project-board-release",
       "gitTaskId": null
@@ -22,8 +22,8 @@
     {
       "id": "release-acceptance",
       "title": "汇总真实证据并完成总体验收",
-      "description": "依赖 host-smoke 和 visual-check 的实测结果；逐项核对八条验收，运行构建/测试、审查差异、更新必要用法与证据，再执行 verify/close。当前不得关闭；卡片完成不自动触发总体验收。不推送或合并主分支。",
-      "blocker": "",
+      "description": "依赖真实宿主与目视验收；核对八条标准、实际测试与差异证据后verify/close。用户已授权完成更新合并main并删除已合并临时分支；不能用卡片完成替代总体验收。",
+      "blocker": "依赖host-smoke和visual-check，当前不能关闭。",
       "stage": "todo",
       "taskId": "project-board-release",
       "gitTaskId": null
@@ -36,7 +36,25 @@
       "stage": "done",
       "taskId": "project-board-release",
       "gitTaskId": null
+    },
+    {
+      "id": "github-delivery",
+      "title": "同步最新源码并集成main",
+      "description": "运行已授权交付检查，核对远端main，合并后重测、普通推送，再删除确认已合并的临时分支。补丁不提交市场。",
+      "blocker": "",
+      "stage": "todo",
+      "taskId": "project-board-release",
+      "gitTaskId": null
+    },
+    {
+      "id": "host-window-drag",
+      "title": "定位宿主外层窗口不能拖动",
+      "description": "核对宿主版本和窗口标题栏拖动行为；外层窗口由PI-Desktop管理，不以页面内拖动伪装修复。不直接修改已安装宿主。",
+      "blocker": "缺少真实窗口截图/可访问环境与宿主源码，尚未复现。",
+      "stage": "todo",
+      "taskId": "project-board-release",
+      "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-03T14:53:53.922Z"
+  "updatedAt": "2026-10-06T20:40:53.845Z"
 }

@@ -37,15 +37,15 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "1–3精简本地完成，源码提交087a0a7：0.6.3整理10个TS，超过200字符行41→0；core.run分派五个同文件动作方法，锁/版本/任务检查保留。README11KB→3.7KB，重复规则改链接，AGENTS/RELEASING统一main授权；结果追加既有notes。初始化/工具接口值一致，其他8模块规范化等价；typecheck/build、65测试、双语浏览器、i18n门禁和PluginPack通过。包301883字节28文件。实际release:auto在读取市场基线时fetch failed停止，GitHub只读核对443超时，无远端推送/合并/删分支；功能分支保留。整体宿主/目视阻塞保留，不发布市场或安装。",
+  "current": "继续待办：已通过revision守卫同步看板过时规则与阻塞，并补GitHub交付及宿主窗口拖动卡片。网络已恢复，fetch及远端main祖先检查通过；最新双语浏览器回归和截图生成通过。安装清单为社区0.6.1，源码0.6.3尚未安装；真实面板snapshot仍guest unavailable，宿主/人工目视/窗口拖动不标完成。开始已授权源码同步与main集成，保留总体未验收状态。",
   "next": [
-    "网络恢复后同步功能分支、核对远端main，再集成重测推送并清理已合并分支",
-    "真实宿主交互、外层窗口拖动与目视验收仍待完成"
+    "完成源码交付、main集成重测推送与已合并临时分支清理",
+    "打开实际治理面板并核对新版安装、交互与截图；宿主拖动需可访问环境"
   ],
   "blocked": [
-    "GitHub只读核对HTTPS443超时，release:auto读取插件中心基线fetch failed；网络交付阻塞，保留分支，未推送/合并main/删除分支。",
-    "外层插件窗口拖动尚未复现/修复；真实窗口工具返回browser guest is not available，须宿主截图/版本或可访问环境。",
-    "中英文响应式截图已生成但未完成人工目视验收；整体任务不关闭。"
+    "本机安装0.6.1，源码0.6.3未安装；实际面板guest unavailable，宿主交互未通过。",
+    "最新截图已生成并通过自动断言，人工目视验收待完成。",
+    "外层窗口拖动未复现，需宿主版本/截图和可访问环境。"
   ],
   "followUp": null,
   "change": "changes/active/project-board-release",
