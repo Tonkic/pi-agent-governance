@@ -4,8 +4,8 @@
     {
       "id": "host-smoke",
       "title": "真实宿主面板交互验收",
-      "description": "核对真实安装版本；在隔离测试项目检查创建、编辑、取消、刷新、重开持久化与图切换。工具调用和模拟浏览器通过不能替代宿主交互。",
-      "blocker": "本机清单为0.6.1，当前源码0.6.3尚未安装；真实面板访问待核对。",
+      "description": "已自行核对PI0.16.1及安装0.6.3，真实窗口可枚举和截图；隔离项目的创建/编辑/取消/迁移/刷新/重开尚未实测。",
+      "blocker": "UIA只暴露9个空容器；宿主插件页切换后浏览器截图响应超时，无法可靠操作和安装0.6.4。",
       "stage": "todo",
       "taskId": "project-board-release",
       "gitTaskId": null
@@ -49,12 +49,12 @@
     {
       "id": "host-window-drag",
       "title": "定位宿主外层窗口不能拖动",
-      "description": "核对宿主版本和窗口标题栏拖动行为；外层窗口由PI-Desktop管理，不以页面内拖动伪装修复。不直接修改已安装宿主。",
-      "blocker": "缺少真实窗口截图/可访问环境与宿主源码，尚未复现。",
+      "description": "真实窗口5312264在两个顶部点拖动后位置均1032,154，故障已复现。installed preload内联Shadow DOM样式被插件CSP阻止；回归先红后绿，0.6.4只放行内联样式，脚本self保留。",
+      "blocker": "0.6.4包尚未通过宿主安装入口加载，实际原生移动/缩放/关闭/按钮未复验，不能标done。",
       "stage": "todo",
       "taskId": "project-board-release",
       "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-06T20:45:08.774Z"
+  "updatedAt": "2026-10-06T21:20:19.624Z"
 }
