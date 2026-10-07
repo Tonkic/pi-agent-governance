@@ -37,14 +37,14 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "四页导航和Fluent/Card界面本地0.6.5已完成并集成GitHub main至a4375da：项目架构、看板、当前任务、Git协作互斥显示；hash历史导航及草稿保留，圆角卡片和适度毛玻璃有明暗/减少透明度/高对比降级。提交后与main集成后65测试及48截图浏览器回归通过，代表3张实际目视无遮挡。PluginPack29文件309880字节通过，CSP拖动修复保留。首次网络中止后只读确认未推送，恢复普通推送且远端SHA核对。安装仍0.6.4，新包0.6.5未安装，不能宣称新界面宿主验收。正在交付记录收尾和删除已合并临时分支，整体任务不close。",
+  "current": "0.6.5安装已核对，四页48张中英文尺寸主题截图本轮实际逐组查看，视觉卡片done；窗口拖动既有真实验收done。隔离scratch验收夹具准备，但正常Ctrl+O项目选择未成功激活，完整真实面板操作仍未通过。已查公开ADR0203本地MCP和ADR0237官方会话编排：支持项目/会话创建，当前没有活动mcp-control.json/37123监听或SessionTask，未重启/启用新权限/开第二host-core写数据库。记录明确部分完成，不以工具接口查询代替host-smoke或总体验收。",
   "next": [
-    "通过正常安装入口升级0.6.5并核对四页/原生拖动，完成隔离宿主操作",
-    "复核四页全部中英文响应式截图及总体标准"
+    "确认是否启用本地loopback MCP或授权安装官方会话编排工具，再用受支持接口完成隔离宿主操作",
+    "修正架构CRLF来源一致性，全部真实验收满足后verify/close"
   ],
   "blocked": [
-    "完整隔离项目宿主交互尚未实测，当前窗口重开和拖动通过不替代全流程。",
-    "尚未完成12组中英文响应式人工目视；架构CRLF指纹误报另待修正，不绕过守卫。"
+    "隔离项目完整宿主交互未通过；公开MCP未启用/SessionTask未安装，前台UI选择尝试未成功。",
+    "架构CRLF指纹误报待修正；不直接覆写全部指纹绕过守卫。"
   ],
   "followUp": null,
   "change": "changes/active/project-board-release",
