@@ -338,12 +338,18 @@ $('show-workflow').addEventListener('click', () => {
   graphView = 'workflow';
   renderProjectGraph();
 });
+const pageIds = ['architecture', 'board-section', 'task-section', 'git-section'];
 function highlightNavigation() {
-  const target = location.hash || '#architecture';
+  const requested = location.hash.slice(1);
+  const active = pageIds.includes(requested) ? requested : 'architecture';
+  for (const id of pageIds) $(id).hidden = id !== active;
+  document.querySelector<HTMLElement>('.metrics').hidden = active !== 'task-section';
   document.querySelectorAll<HTMLAnchorElement>('.workspace-nav a').forEach((link) => {
-    if (link.hash === target) link.setAttribute('aria-current', 'location');
+    if (link.hash === `#${active}`) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
   });
+  // Hidden graph geometry is recalculated when the architecture page becomes visible.
+  if (active === 'architecture') window.dispatchEvent(new Event('resize'));
 }
 window.addEventListener('hashchange', highlightNavigation);
 highlightNavigation();

@@ -19,7 +19,7 @@ fs.rmSync(runtime, { recursive: true, force: true });
 fs.cpSync(path.join(build, 'plugin'), runtime, { recursive: true });
 // Test fixtures use the compiled tree; installed HTML uses plugin/runtime scripts.
 fs.cpSync(runtime, path.join(build, 'plugin/runtime'), { recursive: true });
-for (const file of ['renderer/index.html', 'renderer/panel.css', 'manifest.json']) {
+for (const file of ['renderer/index.html', 'renderer/panel.css', 'renderer/views.css', 'manifest.json']) {
   fs.copyFileSync(path.join(root, 'plugin', file), path.join(build, 'plugin', file));
 }
 console.log('Built plugin/runtime; tooling and tests are in build/');

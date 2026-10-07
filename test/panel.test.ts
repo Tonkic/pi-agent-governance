@@ -80,13 +80,13 @@ test('browser bundle starts without Node globals and reports static preview', as
   const script = await fs.readFile(path.join(__dirname, '../plugin/renderer/i18n.js'), 'utf8') + '\n' + await fs.readFile(path.join(__dirname, '../plugin/renderer/panel.js'), 'utf8');
   const elements = new Map();
   const document = {
-    documentElement: { dataset: {} }, querySelectorAll: () => [],
+    documentElement: { dataset: {} }, querySelectorAll: () => [], querySelector: () => ({ hidden: false }),
     getElementById: id => {
       if (!elements.has(id)) elements.set(id, { textContent: '', classList: { toggle() {} }, reset() {}, setAttribute() {}, addEventListener() {}, replaceChildren() {} });
       return elements.get(id);
     }
   };
-  vm.runInNewContext(script, { document, navigator: { language: 'zh-CN' }, window: { addEventListener() {}, dispatchEvent() {} }, CustomEvent: class { constructor(...args) {} }, location: { hash: '' }, matchMedia: () => ({ matches: false }) });
+  vm.runInNewContext(script, { document, navigator: { language: 'zh-CN' }, window: { addEventListener() {}, dispatchEvent() {} }, Event: class {}, CustomEvent: class { constructor(...args) {} }, location: { hash: '' }, matchMedia: () => ({ matches: false }) });
   await new Promise(resolve => setImmediate(resolve));
   assert.match(elements.get('notice-message').textContent, /静态预览/);
   assert.equal(elements.get('progress-form').hidden, true);
