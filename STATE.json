@@ -37,10 +37,10 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "宿主主题适配本地0.6.6实现并测试打包：九个标准颜色映射，有限别名/优先级/important，清旧值、系统变化及初次读取竞态保护；只读颜色不执行主题CSS。内置回退改宿主中性色，保留Fluent圆角/材质。审查三项具体问题均修复回归；typecheck/build、65测试/主题/草稿/CSP/四页浏览器通过，48截图生成、2张代表图实际复核。PluginPack29文件318639字节SHA11bfccc6ede0b4328b97a24597eb015a75d7cac80ecdd01f5983fc0570c7919f。MCP loopback握手及项目读取已通过。美化卡片doing保留真实安装0.6.6复验阻塞。准备GitHub交付/main集成，未安装/发布市场/整体close。",
+  "current": "宿主主题适配0.6.6已测试、打包、提交并集成GitHub main至61d3f79，远端SHA一致，临时源码/功能分支清理。九个标准颜色安全映射，受限别名/优先级/important、旧值清理及实时系统/宿主切换，保留Fluent圆角卡片/玻璃降级与草稿。单次审查三项缺陷修复并回归；typecheck/build、65测试、主题/四页/CSP浏览器提交后及集成后通过，代表明暗图实际复核。包29文件318639字节。美化卡片doing，当前安装0.6.5，0.6.6未安装/真实自定义主题未验收；MCP loopback认证与只读项目查询通过。未发布市场/变更宿主主题/整体close。",
   "next": [
-    "完成0.6.6交付与main集成检查清理",
-    "正常安装后核对宿主自定义主题；继续隔离宿主与CRLF验收"
+    "正常安装0.6.6后核对真实宿主自定义主题，满足后完成美化卡片",
+    "继续隔离宿主操作及CRLF指纹验收，全部标准通过再verify/close"
   ],
   "blocked": [
     "当前安装0.6.5，0.6.6真实宿主自定义主题未复验。",
