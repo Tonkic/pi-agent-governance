@@ -37,14 +37,14 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "按用户请求更新：本地MCP握手/操作目录/plugin-list查询成功，公开目录仅插件只读操作，没有安装/更新/重载；未调用目录外IPC。通过正常插件页安装包/原生打开框更新0.6.6，MCP确认0.6.6 enabled installed；清单/views.css/runtime与本地包匹配，临时预览删除。主题卡片doing已清安装阻塞，剩真实贡献主题复验；host-smoke仍需隔离真实UI全流程，MCP未启用旧阻塞已删除。CRLF指纹误报及总体verify/close仍未完成，不发布市场。",
+  "current": "用户选择一次启动连续已批准待办/独立pebrel参考配色。原生手动自动化接续项目：已批准待办已创建并ScheduledTaskList验证（manual/Agent/perRun/本项目），未启动、不定时；AGENTS/开发用法保存连续接续及停止守卫。0.6.7独立色系、悬浮侧栏/SVG导航、页面标题和配色模式切换已实现，宿主明暗跟随/安全配色映射保留。typecheck/build、65测试/48截图浏览器回归通过；PluginPack29文件325685字节SHA08a898604acf021377110a6aab035fbcb616e7a50817894f9b37df71ce7a9c1e。截图工具两次超时，新版未目视/安装，诚实保留美化doing。配置入口卡片done只代表配置成功。准备按授权GitHub交付，旧宿主/CRLF总体待办不close。",
   "next": [
-    "使用公开MCP选择隔离项目后完成真实宿主全操作",
-    "真实自定义主题复验、CRLF误报修正后对照总体标准verify/close"
+    "完成0.6.7提交后交付/main集成重测同步清理",
+    "正常安装并复核新界面；手动自动化一次运行接续其余授权任务，阻塞/权限停止"
   ],
   "blocked": [
-    "主题适配已安装0.6.6，但真实贡献主题变化尚未实测。",
-    "完整隔离项目宿主操作、CRLF来源误报尚未完成；MCP现已可用。"
+    "当前安装0.6.6，0.6.7新界面尚未安装/目视，截图工具did not answer。",
+    "真实隔离项目交互和CRLF指纹误报仍待完成，整体不得close；新手动接续任务未实际运行。"
   ],
   "followUp": null,
   "change": "changes/active/project-board-release",

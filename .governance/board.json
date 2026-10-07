@@ -20,6 +20,15 @@
       "gitTaskId": null
     },
     {
+      "id": "project-continuation-entry",
+      "title": "配置一次启动接续入口",
+      "description": "原生手动自动化已创建并列表核对：接续项目：已批准待办，Agent/perRun/当前项目；无定时、递归对话、自动安装或提权。配置完成不等于已启动自动执行。",
+      "blocker": "",
+      "stage": "done",
+      "taskId": "project-board-release",
+      "gitTaskId": null
+    },
+    {
       "id": "visual-check",
       "title": "六组尺寸与主题截图目视复核",
       "description": "已逐组查看0.6.5四页×中英文×390/768/1280×明暗48张布局截图，核对导航换行、关系图/卡片/表单及遮挡，无可见布局缺陷；Git夹具为非仓库错误状态，不代表协作关系图。记录见notes/source-output-layout.md。仅布局目视通过，不替代真实宿主操作。",
@@ -57,13 +66,13 @@
     },
     {
       "id": "host-theme-adaptation",
-      "title": "宿主主题颜色适配与Fluent界面复核",
-      "description": "0.6.6代码和浏览器主题回归完成，已通过正常宿主UI安装；MCP plugin/list确认0.6.6 enabled，安装manifest/views.css/runtime与本地一致。MCP目录没有安装更新操作，不是通过内部RPC安装。支持标准颜色、安全回退/别名/优先级，Fluent圆角/玻璃及草稿保留。",
-      "blocker": "已安装；真实宿主贡献主题切换与颜色对比尚未实测，不用安装成功代替验收。",
+      "title": "独立配色与宿主模式界面复验",
+      "description": "0.6.7默认独立pebrel参考色系，明暗随宿主；可切换宿主配色并本地持久化。悬浮圆角侧栏、SVG导航、独立页标题、蓝紫/淡青层次与材质实际改入代码，65测试/主题/草稿/四页回归和包校验通过。",
+      "blocker": "当前安装0.6.6；0.6.7未安装，预览截图工具超时，新界面目视/真实宿主复验未通过。",
       "stage": "doing",
       "taskId": "project-board-release",
       "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-07T18:22:00.404Z"
+  "updatedAt": "2026-10-07T19:11:02.311Z"
 }

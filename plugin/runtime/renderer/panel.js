@@ -321,6 +321,8 @@ const pageIds = ['architecture', 'board-section', 'task-section', 'git-section']
 function highlightNavigation() {
     const requested = location.hash.slice(1);
     const active = pageIds.includes(requested) ? requested : 'architecture';
+    const pageTitles = { architecture: 'navArchitecture', 'board-section': 'navBoard', 'task-section': 'navTask', 'git-section': 'navGit' };
+    text('page-title', t(pageTitles[active]));
     for (const id of pageIds)
         $(id).hidden = id !== active;
     document.querySelector('.metrics').hidden = active !== 'task-section';
@@ -350,6 +352,12 @@ const themeColors = {
 };
 const systemAppearance = matchMedia('(prefers-color-scheme: dark)');
 let lastAppearance = {}, appearanceRevision = 0;
+let paletteMode = 'pebrel';
+try {
+    if (localStorage.getItem('governance-palette') === 'host')
+        paletteMode = 'host';
+}
+catch { /* Storage can be disabled by the host. */ }
 function contributedColors(css) {
     const colors = {};
     if (typeof css !== 'string' || css.length > 256 * 1024)
@@ -406,17 +414,28 @@ const appearance = (value = {}) => {
         : systemAppearance.matches ? 'dark' : 'light';
     root.dataset.base = base;
     root.dataset.theme = base;
+    root.dataset.palette = paletteMode;
+    text('palette-label', t(paletteMode === 'pebrel' ? 'paletteIndependent' : 'paletteHost'));
+    $('palette-toggle').setAttribute('aria-pressed', String(paletteMode === 'pebrel'));
     if (value?.pluginTheme?.id)
         root.dataset.pluginTheme = String(value.pluginTheme.id);
     else
         delete root.dataset.pluginTheme;
     for (const target of Object.values(themeColors))
         root.style?.removeProperty(target);
-    if (value?.pluginTheme?.base === base) {
+    if (paletteMode === 'host' && value?.pluginTheme?.base === base) {
         for (const [target, color] of Object.entries(contributedColors(value.pluginTheme.css)))
             root.style.setProperty(target, color);
     }
 };
+$('palette-toggle').addEventListener('click', () => {
+    paletteMode = paletteMode === 'pebrel' ? 'host' : 'pebrel';
+    try {
+        localStorage.setItem('governance-palette', paletteMode);
+    }
+    catch { /* This session still changes when persistence is unavailable. */ }
+    appearance(lastAppearance);
+});
 appearance();
 systemAppearance.addEventListener?.('change', () => {
     if (!['light', 'dark'].includes(lastAppearance.base))
@@ -594,4 +613,4 @@ $('workitem-form').addEventListener('submit', (event) => {
     });
 });
 lock(true);
-localeReady.then(load).finally(() => lock(false));
+localeReady.then(() => { highlightNavigation(); appearance(lastAppearance); return load(); }).finally(() => lock(false));

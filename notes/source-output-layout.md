@@ -91,3 +91,11 @@ PluginPack29文件318639字节，SHA256 11bfccc6ede0b4328b97a24597eb015a75d7cac8
 本轮实时MCP工具目录/describe只有plugin/list、themes、views等读取，未提供install/update/reload/market安装；没有调用目录外内部接口。MCP前查询0.6.5 enabled，包SHA匹配后使用正常插件页更多→安装插件包→原生选择框8588270、文件名粘贴准确路径（恢复剪贴板）、点击打开升级。后MCP plugin/list确认0.6.6 enabled/source installed，manifest/views.css/runtime文本与本地一致。MCP用于核对，UI用于安装，不能称MCP执行了安装。未输出令牌/创建对话/更改用户项目数据；临时预览删除。
 
 看板修正0.6.6安装阻塞和过时MCP未启用说明。剩3卡：host-theme-adaptation doing（真实贡献主题复验），host-smoke todo（隔离真实面板全流程），release-acceptance todo（依赖前项和STATE中CRLF误报修正）；不宣称安装后全部验收完成或close。
+
+## 0.6.7 一次启动接续与独立配色
+
+用户选择“一次启动连续已批准待办”“pebrel参考独立配色、跟随明暗”。采用宿主原生手动自动化，不自建循环调度或新权限：ScheduledTaskCreate/List确认ID0e911110-ced0-4202-b04a-f7746fae395a，title接续项目：已批准待办，cadence manual、Agent、perRun、工作区D:/pi-agent-governance。指令限定STATE/看板授权，重读/锁/确认、受管worktree，完成/外部阻塞/新授权时停止，不递归开对话、不定时/安装/提权。入口保存及列出通过，尚未点击运行；不声称已验证完整自动执行。AGENTS和开发文档已写连续接续及停止规则，本机配置不随clone迁移。
+
+默认独立低饱和蓝紫/靛色与淡青背景层次，明暗跟随宿主；可显式切宿主标准配色，本地选择持久化。悬浮圆角侧栏、统一SVG图标、独立页标题、卡片留白和玻璃材质实际改入代码；保留CSP原生拖动、高对比/透明度降级、四页隔离与草稿。没有复制pebrel GPL源码/资源到插件；参考仓库说明和截图文件仅在scratch下载，未做逐像素复制。
+
+typecheck/build、65测试和四页48截图浏览器回归通过；新增默认配色/切回宿主/本地保存/切色草稿断言，旧主题安全及导航回归保留。新截图工具两次did not answer，未完成人工目视或真实宿主0.6.7验收，不能沿用0.6.5布局目视当新版通过。PluginPack29文件325685字节SHA08a898604acf021377110a6aab035fbcb616e7a50817894f9b37df71ce7a9c1e。新包未安装/发布市场，当前安装0.6.6；临时预览删除。日志scratch/continuation-ui-tests.log。
