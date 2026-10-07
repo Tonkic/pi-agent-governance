@@ -99,3 +99,5 @@ PluginPack29文件318639字节，SHA256 11bfccc6ede0b4328b97a24597eb015a75d7cac8
 默认独立低饱和蓝紫/靛色与淡青背景层次，明暗跟随宿主；可显式切宿主标准配色，本地选择持久化。悬浮圆角侧栏、统一SVG图标、独立页标题、卡片留白和玻璃材质实际改入代码；保留CSP原生拖动、高对比/透明度降级、四页隔离与草稿。没有复制pebrel GPL源码/资源到插件；参考仓库说明和截图文件仅在scratch下载，未做逐像素复制。
 
 typecheck/build、65测试和四页48截图浏览器回归通过；新增默认配色/切回宿主/本地保存/切色草稿断言，旧主题安全及导航回归保留。新截图工具两次did not answer，未完成人工目视或真实宿主0.6.7验收，不能沿用0.6.5布局目视当新版通过。PluginPack29文件325685字节SHA08a898604acf021377110a6aab035fbcb616e7a50817894f9b37df71ce7a9c1e。新包未安装/发布市场，当前安装0.6.6；临时预览删除。日志scratch/continuation-ui-tests.log。
+
+0.6.7源码a5dfcc1在提交后release:auto重复typecheck/build、65测试、配色/四页浏览器和凭据历史扫描通过并同步；no-ff集成main d1a7d5e后65测试和浏览器回归通过，远端SHA一致，源码/功能临时分支清理。日志scratch/continuation-ui-delivery.log、continuation-ui-main.log。原生手动任务在此交付期间没有运行，避免双写；新包未安装/发布市场，不以CI或生成截图代替新目视/宿主验收。
