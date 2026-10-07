@@ -176,10 +176,13 @@ async function load() {
             if (data.workspace !== snapshot.workspace)
                 throw Error(t('switched'));
             projectSnapshot = data;
+            if (data.boardError)
+                notify(t('boardError', data.boardError), true);
             renderBoard();
         }
         catch (error) {
             text('board-status', t('boardReadError', error.message));
+            notify(t('boardReadError', error.message), true);
         }
     }
     else
@@ -618,7 +621,7 @@ async function writeWorkitem(args) {
         }
         await invoke('governance.workitem', { args, revision, confirmed: true });
         await load();
-        if (projectSnapshot)
+        if (projectSnapshot && !projectSnapshot.boardError)
             notify(t('itemSaved'));
         document.querySelector(`[data-workitem="${args.id}"]`)?.focus();
     }

@@ -180,9 +180,11 @@ async function load() {
       const data: any = await invoke('governance.project');
       if (data.workspace !== snapshot.workspace) throw Error(t('switched'));
       projectSnapshot = data;
+      if (data.boardError) notify(t('boardError', data.boardError), true);
       renderBoard();
     } catch (error) {
       text('board-status', t('boardReadError', error.message));
+      notify(t('boardReadError', error.message), true);
     }
   } else text('board-status', t('boardDisconnected'));
   renderProjectGraph();
@@ -639,7 +641,7 @@ async function writeWorkitem(args) {
     }
     await invoke('governance.workitem', { args, revision, confirmed: true });
     await load();
-    if (projectSnapshot) notify(t('itemSaved'));
+    if (projectSnapshot && !projectSnapshot.boardError) notify(t('itemSaved'));
     document.querySelector<HTMLElement>(`[data-workitem="${args.id}"]`)?.focus();
   } catch (error) {
     notify(t('itemError', error.message), true);

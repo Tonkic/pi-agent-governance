@@ -37,11 +37,11 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "0.6.8对象式工作台实现和回归完成：三页导航、搜索、非模态详情、右键/长按/键盘菜单、指导文本，移除常驻工作项表单/KPI墙，总体目标折叠但语义独立。65测试、真实Chromium+隔离后端43截图回归、scratch干净npm ci/typecheck/build/test通过；一次只读复核的断网确认写入、长按释放和取消迁移焦点缺陷已加断言修复重测。PluginCheck/Pack通过30文件366228字节，许可随包，权限未变。正在完成目视记录并提交/集成main；实际安装仍0.6.6，整体不close。",
+  "current": "0.6.8对象式工作台实现、一次复核及视觉/状态检查完成；65测试、最终scratch干净npm ci/typecheck/build/test及43截图浏览器回归通过。修复断网确认写入、长按释放、取消迁移焦点、导航定位和读取失败误称同步。最终包30文件366580字节，SHA62a08dfb02e11b0cf4c12174ba548114769f4b56f612a6a66e05a63bba43c65e；MIT许可随包、权限未变。初始cf2cc95源码提交后检查并同步，最终状态修正待提交/同步/main集成重测。当前安装仍0.6.6，不总体close。",
   "next": [
-    "完成状态截图复核、提交并按已授权流程同步/集成main后重测",
-    "正常安装新版后完成真实宿主隔离交互及独立配色验收",
-    "继续处理CRLF指纹误报与一次启动任务的实际执行验收"
+    "提交最终状态修正并同步来源，集成main后实际重测/推送/清理已合并临时分支",
+    "正常安装新版后完成真实宿主隔离交互和独立配色验收",
+    "保留CRLF指纹误报与一次启动任务执行验收"
   ],
   "blocked": [
     "实际安装仍0.6.6；0.6.8尚未安装及真实宿主验收。",

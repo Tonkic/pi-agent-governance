@@ -423,6 +423,7 @@ const { panelInvoke } = require('../plugin/runtime/panel');
     failProject = true;
     await refresh(page);
     assert.match(await page.locator('#board-status').textContent(), /Fixture read failure/);
+    assert.match(await page.locator('#notice.error').textContent(), /Fixture read failure/);
     await capture(page, 'read-error');
     assert.equal(await page.locator('#board-new').isDisabled(), true);
     failProject = false;
