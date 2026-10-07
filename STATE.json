@@ -37,10 +37,10 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "0.6.4通过正常宿主UI安装成功：插件页…安装插件包→原生打开框粘贴准确路径，未内部IPC/覆盖目录。安装清单及HTML修复确认0.6.4。真实窗口移动1032,516→924,552；边缘缩放496×368→656×448；点击关闭后窗口数0，正常插件页重开新句柄10293024。真实中文图像已查看，宿主控制胶囊恢复，当前架构4节点4关系显示。窗口拖动卡片done；完整隔离项目宿主操作、12组目视与总体验收仍待完成。记录同步GitHub，不close。",
+  "current": "用户要求四项导航独立页面并采用Fluent/Card风格，已实现本地0.6.5：hash单页可见、保留草稿/历史导航，侧栏和浮层适度blur、圆角不透明卡片，明暗/高对比/减少动画降级。typecheck、65测试通过，浏览器四页互斥/跨页草稿取消/返回前进/CSP/安全回归通过，48截图生成，实际检查3张代表图无遮挡溢出。构建发布白名单已带views.css，PluginPack29文件309880字节通过，宿主拖动修复不变。准备提交后交付/main集成。当前安装仍0.6.4，新包未安装，整体宿主/目视标准未全部完成。",
   "next": [
-    "完成隔离项目真实看板创建/编辑/迁移/取消/持久化与架构流程切换",
-    "复核12组中英文尺寸主题截图，证据齐全后总体验收"
+    "完成0.6.5提交后及main集成检查并同步GitHub/清理",
+    "按正常宿主入口升级0.6.5后完成隔离交互与全部页目视验收"
   ],
   "blocked": [
     "完整隔离项目宿主交互尚未实测，当前窗口重开和拖动通过不替代全流程。",
