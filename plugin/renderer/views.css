@@ -1,24 +1,29 @@
 /* Fluent-inspired surfaces. Native host drag band remains untouched. */
 :root {
-  --bg: #edf2f9;
-  --surface: #ffffff;
-  --subtle: #f3f6fc;
-  --sidebar: #e8eef8;
-  --line: #dbe2ee;
-  --accent: #3e5ed1;
-  --selected: #e5edff;
-  --glass: rgba(246, 249, 255, .86);
-  --card-shadow: 0 8px 28px rgba(40, 58, 94, .055);
+  /* PI-Desktop 0.16.x built-in palette, used when no supported custom color exists. */
+  --bg: #ffffff;
+  --surface: #f9f9f9;
+  --subtle: #f3f3f3;
+  --sidebar: #f3f3f3;
+  --text: #1a1c1f;
+  --muted: #5d5d5d;
+  --line: rgba(26, 28, 31, .12);
+  --accent: #1a1c1f;
+  --error: #e02e2a;
+  --selected: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  --glass: color-mix(in srgb, var(--sidebar) 90%, transparent);
+  --card-shadow: 0 8px 28px rgba(0, 0, 0, .055);
 }
 :root[data-base="dark"] {
-  --bg: #111724;
-  --surface: #1b2434;
-  --subtle: #202b3d;
-  --sidebar: #151e2d;
-  --line: #344158;
-  --accent: #a8beff;
-  --selected: #2b3b60;
-  --glass: rgba(23, 32, 48, .91);
+  --bg: #181818;
+  --surface: #212121;
+  --subtle: #282828;
+  --sidebar: #0d0d0d;
+  --text: #ffffff;
+  --muted: #afafaf;
+  --line: rgba(255, 255, 255, .12);
+  --accent: #ffffff;
+  --error: #ff6764;
   --card-shadow: 0 10px 32px rgba(0, 0, 0, .16);
 }
 body { background: radial-gradient(ellipse at 90% 0, color-mix(in srgb, var(--accent) 10%, transparent), transparent 58%), var(--bg); }
@@ -54,3 +59,8 @@ dialog { border-radius: 18px; background: var(--glass); backdrop-filter: blur(18
 @media(prefers-reduced-motion:reduce) { button, .workspace-nav a { transition: none; } }
 @media(prefers-reduced-transparency:reduce), (prefers-contrast:more) { .workspace-nav, dialog { background: var(--surface); backdrop-filter: none; } }
 @media(forced-colors:active) { .panel,.workitem,.git-task,.workspace-nav a { border: 1px solid CanvasText; box-shadow:none; } }
+/* Both schemes override the legacy selected color; derive materials after host color mapping. */
+:root, :root[data-base="dark"] {
+  --selected: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  --glass: color-mix(in srgb, var(--sidebar) 90%, transparent);
+}

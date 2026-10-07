@@ -54,7 +54,16 @@
       "stage": "done",
       "taskId": "project-board-release",
       "gitTaskId": null
+    },
+    {
+      "id": "host-theme-adaptation",
+      "title": "宿主主题颜色适配与Fluent界面复核",
+      "description": "本地0.6.6实现：公开appearance读取九个标准颜色，有限别名/优先级/important、旧值清理和系统实时回退，不执行主题布局/图片/字体。内置中性配色与Fluent圆角/玻璃派生，主题切换保留草稿。typecheck/65测试及主题/CSP/四页浏览器回归通过，包校验通过；真实宿主尚为0.6.5。",
+      "blocker": "0.6.6未安装，宿主真实自定义主题复验仍需完成；不能用模拟主题回归标记全部done。",
+      "stage": "doing",
+      "taskId": "project-board-release",
+      "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-07T08:49:02.612Z"
+  "updatedAt": "2026-10-07T18:03:35.010Z"
 }
