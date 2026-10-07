@@ -336,15 +336,97 @@ function highlightNavigation() {
 }
 window.addEventListener('hashchange', highlightNavigation);
 highlightNavigation();
+// Read theme colors, never inject a contributed stylesheet into the panel.
+const themeColors = {
+    '--ds-bg-primary': '--bg',
+    '--ds-bg-secondary': '--surface',
+    '--ds-bg-tertiary': '--subtle',
+    '--ds-bg-sidebar': '--sidebar',
+    '--ds-text-primary': '--text',
+    '--ds-text-muted': '--muted',
+    '--ds-border-default': '--line',
+    '--ds-accent': '--accent',
+    '--ds-error': '--error'
+};
+const systemAppearance = matchMedia('(prefers-color-scheme: dark)');
+let lastAppearance = {}, appearanceRevision = 0;
+function contributedColors(css) {
+    const colors = {};
+    if (typeof css !== 'string' || css.length > 256 * 1024)
+        return colors;
+    try {
+        const sheet = new CSSStyleSheet();
+        // Imports and all non-color rules are ignored; this sheet is never adopted.
+        sheet.replaceSync(css.replace(/\/\*[\s\S]*?\*\//g, ''));
+        const variables = {};
+        const priorities = {};
+        for (const rule of Array.from(sheet.cssRules)) {
+            if (!(rule instanceof CSSStyleRule))
+                continue;
+            const selectors = rule.selectorText.split(',').map(s => s.trim()).filter(s => /^:root(?:\[data-(?:theme|plugin-theme)=(?:"[^"\r\n]+"|'[^'\r\n]+'|[\w:-]+)\])*$/.test(s) &&
+                document.documentElement.matches(s));
+            if (!selectors.length)
+                continue;
+            const specificity = Math.max(...selectors.map(s => (s.match(/\[/g) || []).length));
+            for (const name of Array.from(rule.style)) {
+                const priority = specificity + (rule.style.getPropertyPriority(name) === 'important' ? 10000 : 0);
+                if (/^--[a-z][a-z0-9-]*$/.test(name) && priority >= (priorities[name] ?? -1)) {
+                    variables[name] = rule.style.getPropertyValue(name).trim();
+                    priorities[name] = priority;
+                }
+            }
+        }
+        let expansions = 0;
+        const resolve = (value, seen = []) => {
+            if (++expansions > 256 || value.length > 2048 || seen.length > 8)
+                throw Error('Color alias budget exceeded');
+            const result = value.replace(/var\((--[a-z][a-z0-9-]*)(?:,\s*([^()]+))?\)/g, (_, name, fallback) => seen.includes(name) ? '' : resolve(variables[name] || fallback || '', [...seen, name]));
+            if (result.length > 2048)
+                throw Error('Color value budget exceeded');
+            return result;
+        };
+        for (const [name, target] of Object.entries(themeColors)) {
+            const value = resolve(variables[name] || '');
+            // CSS color syntax only; reject URLs, expressions, unresolved vars and declarations.
+            if (value && !/[;{}@]|url\s*\(|var\s*\(|expression\s*\(/i.test(value) &&
+                /^(?:#[\da-f]{3,8}|(?:rgb|rgba|hsl|hsla|oklab|oklch|lab|lch|color|color-mix)\([\s\S]*\)|[a-z]+)$/i.test(value) &&
+                !/^(?:inherit|initial|unset|revert|currentcolor|transparent)$/i.test(value) && CSS.supports('color', value)) {
+                colors[target] = value;
+            }
+        }
+    }
+    catch { /* Unsupported/invalid custom CSS keeps the built-in palette. */ }
+    return colors;
+}
 const appearance = (value = {}) => {
-    document.documentElement.dataset.base =
-        value?.base || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    lastAppearance = value || {};
+    // System-media changes update the palette but do not invalidate the initial host read.
+    const root = document.documentElement;
+    const base = value?.base === 'light' || value?.base === 'dark' ? value.base
+        : systemAppearance.matches ? 'dark' : 'light';
+    root.dataset.base = base;
+    root.dataset.theme = base;
+    if (value?.pluginTheme?.id)
+        root.dataset.pluginTheme = String(value.pluginTheme.id);
+    else
+        delete root.dataset.pluginTheme;
+    for (const target of Object.values(themeColors))
+        root.style?.removeProperty(target);
+    if (value?.pluginTheme?.base === base) {
+        for (const [target, color] of Object.entries(contributedColors(value.pluginTheme.css)))
+            root.style.setProperty(target, color);
+    }
 };
 appearance();
-window.pluginBridge?.on?.('appearance:changed', appearance);
-window.pluginBridge
-    ?.invoke('app.getAppearance')
-    .then(appearance)
+systemAppearance.addEventListener?.('change', () => {
+    if (!['light', 'dark'].includes(lastAppearance.base))
+        appearance(lastAppearance);
+});
+window.pluginBridge?.on?.('appearance:changed', value => { appearanceRevision++; appearance(value); });
+const initialAppearanceRevision = appearanceRevision;
+window.pluginBridge?.invoke('app.getAppearance')
+    .then(value => { if (appearanceRevision === initialAppearanceRevision)
+    appearance(value); })
     .catch(() => { });
 function resetWorkitem() {
     dirtyForms.delete('workitem-form');

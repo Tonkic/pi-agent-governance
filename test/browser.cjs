@@ -26,15 +26,15 @@ const { panelInvoke } = require('../plugin/runtime/panel');
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
     const errors = []; page.on('pageerror', e => errors.push(e.message));
-    let holdGit = false, releaseGit;
+    let holdGit = false, releaseGit, releaseAppearance, holdAppearance = true;
     await page.exposeFunction('hostInvoke', async (channel, payload) => {
-      if (channel === 'app.getAppearance') return { base: 'light' };
+      if (channel === 'app.getAppearance') return holdAppearance ? new Promise(resolve => { releaseAppearance = () => { holdAppearance = false; resolve({ base: 'light' }); }; }) : { base: 'light' };
       if (channel === 'app.getLocale') return 'zh-CN';
       if (channel === 'governance.git' && holdGit) await new Promise(resolve => { releaseGit = resolve; });
       try { return { ok: true, result: await panelInvoke(root, channel, payload) }; }
       catch (e) { return { ok: false, error: e.message }; }
     });
-    await page.addInitScript(() => { window.pluginBridge = { invoke: (...args) => window.hostInvoke(...args), on: () => {} }; });
+    await page.addInitScript(() => { window.pluginBridge = { invoke: (...args) => window.hostInvoke(...args), on: (event, handler) => { if (event === 'appearance:changed') window.addEventListener('test-appearance', e => handler(e.detail)); } }; });
     const settled = () => page.waitForFunction(() => !document.querySelector('#refresh').disabled);
     const confirm = async () => { await page.getByRole('button', { name: '确认写入', exact: true }).click(); await settled(); };
     const refresh = async () => { await page.locator('#refresh').click(); await settled(); };
@@ -42,6 +42,11 @@ const { panelInvoke } = require('../plugin/runtime/panel');
     const views = ['architecture', 'board-section', 'task-section', 'git-section'];
     const navigate = async (target, owner = page) => { await owner.locator(`.workspace-nav a[href="#${target}"]`).click(); await owner.waitForFunction(id => !document.getElementById(id).hidden, target); };
     await page.goto(pathToFileURL(path.resolve('plugin/renderer/index.html')).href); await settled();
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.waitForFunction(() => document.documentElement.dataset.base === 'dark');
+    releaseAppearance();
+    await page.waitForFunction(() => document.documentElement.dataset.base === 'light');
+    await page.emulateMedia({ colorScheme: 'light' });
     // Real host preload injects its 46px native drag band via an inline Shadow DOM style.
     // CSP must permit those styles without permitting inline scripts.
     const chromeStyle = await page.evaluate(() => {
@@ -66,6 +71,30 @@ const { panelInvoke } = require('../plugin/runtime/panel');
     await page.goBack(); await page.waitForFunction(() => !document.getElementById('task-section').hidden);
     await page.goForward(); await page.waitForFunction(() => !document.getElementById('git-section').hidden);
     await page.emulateMedia({ reducedMotion: 'reduce', contrast: 'more' });
+    const sendAppearance = value => page.evaluate(v => window.dispatchEvent(new CustomEvent('test-appearance', { detail: v })), value);
+    const rootColor = name => page.locator('html').evaluate((el, key) => el.style.getPropertyValue(key), name);
+    await sendAppearance({ base: 'dark', pluginTheme: { id: 'custom', base: 'dark', css: ':root[data-theme="light"] { --ds-accent: red; } :root[data-theme="dark"] { --brand: #82b89a; --ds-accent: var(--brand); --ds-bg-primary: #15251c; --ds-text-primary: #f2faf5; } body { display: none; }' } });
+    assert.equal(await rootColor('--accent'), '#82b89a');
+    assert.equal(await rootColor('--bg'), '#15251c');
+    assert.equal(await page.locator('#refresh').isVisible(), true, 'Theme selectors must never change layout');
+    await sendAppearance({ base: 'dark', pluginTheme: { id: 'cascade', base: 'dark', css: ':root[data-theme="dark"] { --ds-accent: green; --ds-bg-primary: #112233; } :root { --ds-accent: red; --ds-bg-primary: #223344 !important; }' } });
+    assert.equal(await rootColor('--accent'), 'green', 'Matching attribute selector wins over later root');
+    assert.equal(await rootColor('--bg'), '#223344', 'Important root declaration wins');
+    const expandingCss = ':root { --ds-accent: var(--v0); ' + Array.from({ length: 7 }, (_, i) => `--v${i}: ${`var(--v${i + 1}) `.repeat(30)};`).join(' ') + ' --v7: red; }';
+    await sendAppearance({ base: 'dark', pluginTheme: { id: 'bounded', base: 'dark', css: expandingCss } });
+    assert.equal(await rootColor('--accent'), '', 'Expanding aliases fall back instead of blocking the renderer');
+    await sendAppearance({ base: 'dark', pluginTheme: { id: 'unsafe', base: 'dark', css: ':root { --ds-bg-primary: url(https://example.invalid/track); --loop: var(--loop); --ds-accent: var(--loop); --ds-text-muted: var(--missing, #aabbcc); }' } });
+    assert.equal(await rootColor('--bg'), '');
+    assert.equal(await rootColor('--accent'), '');
+    assert.equal(await rootColor('--muted'), '#aabbcc');
+    await sendAppearance({ base: 'light', pluginTheme: null });
+    assert.equal(await rootColor('--muted'), '', 'Returning to built-in removes contributed colors');
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await sendAppearance({ base: 'system' });
+    assert.equal(await page.locator('html').getAttribute('data-base'), 'dark');
+    await page.emulateMedia({ colorScheme: 'light' });
+    await page.waitForFunction(() => document.documentElement.dataset.base === 'light');
+    await sendAppearance({ base: 'light' });
     assert.equal(await page.locator('.workspace-nav').evaluate(el => getComputedStyle(el).backdropFilter), 'none');
     await page.emulateMedia({ reducedMotion: 'no-preference', contrast: 'no-preference' });
     await navigate('board-section');
@@ -87,6 +116,9 @@ const { panelInvoke } = require('../plugin/runtime/panel');
     // Switching edit targets must preserve drafts when cancellation is chosen.
     await card('first').getByRole('button', { name: 'first：编辑', exact: true }).click();
     await page.locator('#workitem-title').fill('draft first');
+    await sendAppearance({ base: 'dark' });
+    assert.equal(await page.locator('#workitem-title').inputValue(), 'draft first', 'Theme changes preserve unsaved user content');
+    await sendAppearance({ base: 'light' });
     await card('second').getByRole('button', { name: 'second：编辑', exact: true }).click();
     assert.match(await page.locator('#confirm-description').textContent(), /丢弃当前未保存/);
     await page.getByRole('button', { name: '取消', exact: true }).click(); await settled();
