@@ -80,7 +80,7 @@ test('browser bundle starts without Node globals and reports static preview', as
   const script = await fs.readFile(path.join(__dirname, '../plugin/renderer/i18n.js'), 'utf8') + '\n' + await fs.readFile(path.join(__dirname, '../plugin/renderer/panel.js'), 'utf8');
   const elements = new Map();
   const document = {
-    documentElement: { dataset: {} }, querySelectorAll: () => [], querySelector: () => ({ hidden: false }),
+    addEventListener() {}, documentElement: { dataset: {} }, querySelectorAll: () => [], querySelector: () => ({ hidden: false }),
     getElementById: id => {
       if (!elements.has(id)) elements.set(id, { textContent: '', classList: { toggle() {} }, reset() {}, setAttribute() {}, addEventListener() {}, replaceChildren() {} });
       return elements.get(id);

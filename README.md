@@ -2,15 +2,15 @@
 
 PI-Desktop 本地插件：保存任务目标和进度，展示项目看板与源码架构，管理受管 Git 工作区。项目数据保存在仓库文件中，Agent 可以据此接手工作。
 
-社区 ID：`io.github.tonkic.agent-governance`。本地版本 0.6.7；市场已发布版本 0.6.0。
+社区 ID：`io.github.tonkic.agent-governance`。本地版本 0.6.8；市场已发布版本 0.6.0。
 
 ## 安装与使用
 
-1. 在 PI-Desktop 插件页安装 `plugin/dist/io.github.tonkic.agent-governance-0.6.7.piplug`，确认权限。开发时加载 `plugin/`。
+1. 在 PI-Desktop 插件页安装 `plugin/dist/io.github.tonkic.agent-governance-0.6.8.piplug`，确认权限。开发时加载 `plugin/`。
 2. 打开项目工作区，在命令面板运行 `Agent Governance: 打开治理面板`。
 3. 向 Agent 提出目标与验收条件，例如：`使用 governance 初始化这个项目，保留已有文件。目标是修复搜索功能，验收是相关测试通过。`
 
-四项导航一次显示一页，切页保留草稿。默认使用 pebrel 参考的独立低饱和配色，只跟随宿主明暗；顶部配色按钮可切到宿主标准颜色，选择本地保存，不修改宿主主题。卡片保持实色，导航和浮层适度毛玻璃；高对比/减少透明度时降级。宿主模式只映射支持的颜色，不复制第三方图片、字体或布局CSS。
+三页导航：工作台、项目架构、Git 协作。工作台搜索和拖动工作项，点击查看详情，右键、长按或 Shift+F10 打开编辑、排序、迁移和指导菜单；总体任务在「项目目标与进度」中展开。切页保留草稿，切换编辑对象或关闭详情须确认丢弃。指导仅生成可复制文本，不启动 Agent。默认独立配色，跟随宿主明暗；顶部按钮可切宿主颜色并本地保存，不修改宿主设置。组件来源及许可见 [UI sources](plugin/UI-SOURCES.md)。
 
 已有任务时先调用 `status`，按 `STATE.json` 接续工作。基本流程为 `status → start（需要时）→ 开发与检查 → verify → close`。看板完成不代表总体验收通过。
 

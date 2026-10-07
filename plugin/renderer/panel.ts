@@ -36,10 +36,31 @@ function notify(message, error = false) {
 }
 function lock(value) {
   busy = value;
-  document.querySelectorAll('main button, main input, main textarea').forEach((el) => {
-    (el as HTMLButtonElement | HTMLInputElement | HTMLTextAreaElement).disabled = value;
-  });
+  document
+    .querySelectorAll(
+      'main button, main input, main textarea, #item-sheet button, #item-sheet input, #item-sheet textarea'
+    )
+    .forEach((el) => {
+      (el as HTMLButtonElement | HTMLInputElement | HTMLTextAreaElement).disabled = value;
+    });
   $('workitem-blocker').disabled = value || !editingItem;
+  for (const id of ['workitem-save', 'item-edit', 'initialize'])
+    $(id).disabled = value || !navigator.onLine;
+  document.querySelectorAll<HTMLButtonElement>('main button[type="submit"]').forEach((button) => {
+    button.disabled = value || !navigator.onLine;
+  });
+  $('board-new').disabled =
+    value ||
+    !snapshot?.state ||
+    !projectSnapshot ||
+    !!projectSnapshot.boardError ||
+    !navigator.onLine;
+  document.querySelectorAll<HTMLElement>('[data-workitem]').forEach((card) => {
+    card.draggable = !value && !searchQuery && navigator.onLine;
+  });
+  document.querySelectorAll<HTMLButtonElement>('.column-add').forEach((button) => {
+    button.disabled = value || !snapshot?.state || !navigator.onLine;
+  });
 }
 async function invoke(channel, payload = {}) {
   if (!window.pluginBridge?.invoke) throw Error(t('staticPreview'));
@@ -133,6 +154,13 @@ async function load() {
   projectSnapshot = null;
   resetWorkitem();
   $('workitem-form').hidden = true;
+  if ($('item-sheet').open) $('item-sheet').close();
+  closeItemMenu(false);
+  stopLongPress();
+  draggedItem = null;
+  longPressConsumed = null;
+  $('board-empty').hidden = true;
+  $('board-section').setAttribute('aria-busy', 'true');
   $('board-columns').replaceChildren();
   text('board-status', t('boardLoading'));
   notify(t('workspaceLoading'));
@@ -165,6 +193,7 @@ async function load() {
   } catch (error) {
     text('git-summary', t('gitError', error.message));
   }
+  $('board-section').setAttribute('aria-busy', 'false');
 }
 function confirmWrite(description) {
   const dialog = $('confirm-dialog');
@@ -180,6 +209,10 @@ function confirmWrite(description) {
 }
 async function mutate(args, description) {
   if (busy || !snapshot) return;
+  if (!navigator.onLine) {
+    notify(t('offlineNotice'), true);
+    return;
+  }
   lock(true);
   try {
     if (
@@ -195,6 +228,10 @@ async function mutate(args, description) {
       ))
     )
       return;
+    if (!navigator.onLine) {
+      notify(t('offlineNotice'), true);
+      return;
+    }
     await invoke('governance.mutate', { args, revision: snapshot.revision, confirmed: true });
     await load();
   } catch (error) {
@@ -217,7 +254,7 @@ $('refresh').addEventListener('click', async () => {
     lock(false);
   }
 });
-for (const form of document.querySelectorAll('main form'))
+for (const form of document.querySelectorAll('main form, #workitem-form'))
   form.addEventListener('input', () => {
     edited = true;
     dirtyForms.add(form.id);
@@ -338,22 +375,29 @@ $('show-workflow').addEventListener('click', () => {
   graphView = 'workflow';
   renderProjectGraph();
 });
-const pageIds = ['architecture', 'board-section', 'task-section', 'git-section'];
+const pageIds = ['board-section', 'architecture', 'git-section'];
 function highlightNavigation() {
   const requested = location.hash.slice(1);
-  const active = pageIds.includes(requested) ? requested : 'architecture';
-  const pageTitles: Record<string, CopyKey> = { architecture: 'navArchitecture', 'board-section': 'navBoard', 'task-section': 'navTask', 'git-section': 'navGit' };
+  const active = pageIds.includes(requested) ? requested : 'board-section';
+  const pageTitles: Record<string, CopyKey> = {
+    architecture: 'navArchitecture',
+    'board-section': 'navBoard',
+    'git-section': 'navGit'
+  };
   text('page-title', t(pageTitles[active]));
   for (const id of pageIds) $(id).hidden = id !== active;
-  document.querySelector<HTMLElement>('.metrics').hidden = active !== 'task-section';
+  if (requested === 'task-section') $('project-details').open = true;
   document.querySelectorAll<HTMLAnchorElement>('.workspace-nav a').forEach((link) => {
     if (link.hash === `#${active}`) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
   });
-  // Hidden graph geometry is recalculated when the architecture page becomes visible.
   if (active === 'architecture') window.dispatchEvent(new Event('resize'));
 }
-window.addEventListener('hashchange', highlightNavigation);
+window.addEventListener('hashchange', () => {
+  closeItemMenu(false);
+  stopLongPress();
+  highlightNavigation();
+});
 highlightNavigation();
 // Read theme colors, never inject a contributed stylesheet into the panel.
 const themeColors = {
@@ -368,9 +412,14 @@ const themeColors = {
   '--ds-error': '--error'
 };
 const systemAppearance = matchMedia('(prefers-color-scheme: dark)');
-let lastAppearance: any = {}, appearanceRevision = 0;
+let lastAppearance: any = {},
+  appearanceRevision = 0;
 let paletteMode: 'pebrel' | 'host' = 'pebrel';
-try { if (localStorage.getItem('governance-palette') === 'host') paletteMode = 'host'; } catch { /* Storage can be disabled by the host. */ }
+try {
+  if (localStorage.getItem('governance-palette') === 'host') paletteMode = 'host';
+} catch {
+  /* Storage can be disabled by the host. */
+}
 function contributedColors(css: unknown) {
   const colors: Record<string, string> = {};
   if (typeof css !== 'string' || css.length > 256 * 1024) return colors;
@@ -382,14 +431,20 @@ function contributedColors(css: unknown) {
     const priorities: Record<string, number> = {};
     for (const rule of Array.from(sheet.cssRules)) {
       if (!(rule instanceof CSSStyleRule)) continue;
-      const selectors = rule.selectorText.split(',').map(s => s.trim()).filter(s =>
-        /^:root(?:\[data-(?:theme|plugin-theme)=(?:"[^"\r\n]+"|'[^'\r\n]+'|[\w:-]+)\])*$/.test(s) &&
-        document.documentElement.matches(s)
-      );
+      const selectors = rule.selectorText
+        .split(',')
+        .map((s) => s.trim())
+        .filter(
+          (s) =>
+            /^:root(?:\[data-(?:theme|plugin-theme)=(?:"[^"\r\n]+"|'[^'\r\n]+'|[\w:-]+)\])*$/.test(
+              s
+            ) && document.documentElement.matches(s)
+        );
       if (!selectors.length) continue;
-      const specificity = Math.max(...selectors.map(s => (s.match(/\[/g) || []).length));
+      const specificity = Math.max(...selectors.map((s) => (s.match(/\[/g) || []).length));
       for (const name of Array.from(rule.style)) {
-        const priority = specificity + (rule.style.getPropertyPriority(name) === 'important' ? 10000 : 0);
+        const priority =
+          specificity + (rule.style.getPropertyPriority(name) === 'important' ? 10000 : 0);
         if (/^--[a-z][a-z0-9-]*$/.test(name) && priority >= (priorities[name] ?? -1)) {
           variables[name] = rule.style.getPropertyValue(name).trim();
           priorities[name] = priority;
@@ -398,30 +453,46 @@ function contributedColors(css: unknown) {
     }
     let expansions = 0;
     const resolve = (value: string, seen: string[] = []): string => {
-      if (++expansions > 256 || value.length > 2048 || seen.length > 8) throw Error('Color alias budget exceeded');
-      const result = value.replace(/var\((--[a-z][a-z0-9-]*)(?:,\s*([^()]+))?\)/g,
-        (_, name, fallback) => seen.includes(name) ? '' : resolve(variables[name] || fallback || '', [...seen, name]));
+      if (++expansions > 256 || value.length > 2048 || seen.length > 8)
+        throw Error('Color alias budget exceeded');
+      const result = value.replace(
+        /var\((--[a-z][a-z0-9-]*)(?:,\s*([^()]+))?\)/g,
+        (_, name, fallback) =>
+          seen.includes(name) ? '' : resolve(variables[name] || fallback || '', [...seen, name])
+      );
       if (result.length > 2048) throw Error('Color value budget exceeded');
       return result;
     };
     for (const [name, target] of Object.entries(themeColors)) {
       const value = resolve(variables[name] || '');
       // CSS color syntax only; reject URLs, expressions, unresolved vars and declarations.
-      if (value && !/[;{}@]|url\s*\(|var\s*\(|expression\s*\(/i.test(value) &&
-          /^(?:#[\da-f]{3,8}|(?:rgb|rgba|hsl|hsla|oklab|oklch|lab|lch|color|color-mix)\([\s\S]*\)|[a-z]+)$/i.test(value) &&
-          !/^(?:inherit|initial|unset|revert|currentcolor|transparent)$/i.test(value) && CSS.supports('color', value)) {
+      if (
+        value &&
+        !/[;{}@]|url\s*\(|var\s*\(|expression\s*\(/i.test(value) &&
+        /^(?:#[\da-f]{3,8}|(?:rgb|rgba|hsl|hsla|oklab|oklch|lab|lch|color|color-mix)\([\s\S]*\)|[a-z]+)$/i.test(
+          value
+        ) &&
+        !/^(?:inherit|initial|unset|revert|currentcolor|transparent)$/i.test(value) &&
+        CSS.supports('color', value)
+      ) {
         colors[target] = value;
       }
     }
-  } catch { /* Unsupported/invalid custom CSS keeps the built-in palette. */ }
+  } catch {
+    /* Unsupported/invalid custom CSS keeps the built-in palette. */
+  }
   return colors;
 }
 const appearance = (value: any = {}) => {
   lastAppearance = value || {};
   // System-media changes update the palette but do not invalidate the initial host read.
   const root = document.documentElement;
-  const base = value?.base === 'light' || value?.base === 'dark' ? value.base
-    : systemAppearance.matches ? 'dark' : 'light';
+  const base =
+    value?.base === 'light' || value?.base === 'dark'
+      ? value.base
+      : systemAppearance.matches
+        ? 'dark'
+        : 'light';
   root.dataset.base = base;
   root.dataset.theme = base;
   root.dataset.palette = paletteMode;
@@ -437,28 +508,121 @@ const appearance = (value: any = {}) => {
 };
 $('palette-toggle').addEventListener('click', () => {
   paletteMode = paletteMode === 'pebrel' ? 'host' : 'pebrel';
-  try { localStorage.setItem('governance-palette', paletteMode); } catch { /* This session still changes when persistence is unavailable. */ }
+  try {
+    localStorage.setItem('governance-palette', paletteMode);
+  } catch {
+    /* This session still changes when persistence is unavailable. */
+  }
   appearance(lastAppearance);
 });
 appearance();
 systemAppearance.addEventListener?.('change', () => {
   if (!['light', 'dark'].includes(lastAppearance.base)) appearance(lastAppearance);
 });
-window.pluginBridge?.on?.('appearance:changed', value => { appearanceRevision++; appearance(value); });
+window.pluginBridge?.on?.('appearance:changed', (value) => {
+  appearanceRevision++;
+  appearance(value);
+});
 const initialAppearanceRevision = appearanceRevision;
-window.pluginBridge?.invoke('app.getAppearance')
-  .then(value => { if (appearanceRevision === initialAppearanceRevision) appearance(value); })
+window.pluginBridge
+  ?.invoke('app.getAppearance')
+  .then((value) => {
+    if (appearanceRevision === initialAppearanceRevision) appearance(value);
+  })
   .catch(() => {});
+let selectedItem: string = null,
+  itemOrigin: HTMLElement = null,
+  searchQuery = '';
+let menuOrigin: HTMLElement = null,
+  longPress: ReturnType<typeof setTimeout> = null;
+let longPressConsumed: { id: string; until: number } = null;
+function itemById(id) {
+  return projectSnapshot?.board?.items.find((item) => item.id === id);
+}
 function resetWorkitem() {
   dirtyForms.delete('workitem-form');
   editingItem = null;
+  edited = dirtyForms.size > 0;
   $('workitem-form').reset();
   $('workitem-id').readOnly = false;
   $('workitem-blocker').disabled = true;
-  text('workitem-save', t('createItem'));
+  $('workitem-form').hidden = true;
+  text('workitem-save', t('saveChanges'));
+}
+function closeItemMenu(restore = true) {
+  $('item-menu').hidden = true;
+  if (restore && menuOrigin?.isConnected) menuOrigin.focus();
+}
+async function allowItemSwitch() {
+  if (busy) return false;
+  if (!dirtyForms.has('workitem-form')) return true;
+  lock(true);
+  try {
+    return !!(await confirmWrite(t('switchDraft')));
+  } finally {
+    lock(false);
+  }
+}
+async function openItem(id: string = null, edit = false, origin?: HTMLElement) {
+  if (
+    !id &&
+    (!snapshot?.state || !projectSnapshot || projectSnapshot.boardError || !navigator.onLine)
+  )
+    return;
+  if (!(await allowItemSwitch())) return;
+  const item = id ? itemById(id) : null;
+  if (id && !item) return;
+  resetWorkitem();
+  closeItemMenu(false);
+  selectedItem = id;
+  itemOrigin = origin || (document.activeElement as HTMLElement);
+  $('item-guidance').hidden = true;
+  $('item-read').hidden = !item || edit;
+  text('item-sheet-title', item ? item.title : t('newItem'));
+  text('item-sheet-meta', item ? boardLabels[item.stage] : t('newItem'));
+  if (item) {
+    text('item-description', item.description || t('noDescription'));
+    text('item-blocker', item.blocker);
+    $('item-blocker').hidden = !item.blocker;
+    text('item-record-id', item.id);
+    text('item-record-task', item.taskId || t('none'));
+    text('item-record-git', item.gitTaskId || t('none'));
+  }
+  if (edit || !item) {
+    editingItem = item?.id || null;
+    $('workitem-id').value = item?.id || `item-${crypto.randomUUID().slice(0, 8)}`;
+    $('workitem-title').value = item?.title || '';
+    $('workitem-description').value = item?.description || '';
+    $('workitem-blocker').value = item?.blocker || '';
+    $('workitem-blocker').disabled = !item;
+    $('blocker-field').hidden = !item;
+    $('workitem-form').hidden = false;
+    text('workitem-save', t(item ? 'saveChanges' : 'createItem'));
+  }
+  if (!$('item-sheet').open) $('item-sheet').show();
+  (edit || !item ? $('workitem-title') : $('item-edit')).focus();
+  lock(busy);
+  if (!edit && item && !navigator.onLine) $('item-back').focus();
+}
+async function closeItemSheet() {
+  if (!(await allowItemSwitch())) return;
+  resetWorkitem();
+  $('item-sheet').close();
+  const target =
+    itemOrigin?.isConnected && !itemOrigin.closest('[hidden]')
+      ? itemOrigin
+      : document.querySelector<HTMLElement>(`[data-workitem="${selectedItem}"]`);
+  (target && !target.closest('[hidden]')
+    ? target
+    : document.querySelector<HTMLElement>('.workspace-nav a[aria-current="page"]') || $('board-new')
+  ).focus();
 }
 async function writeWorkitem(args) {
-  if (busy || !snapshot || !projectSnapshot) return;
+  if (busy || !snapshot || !projectSnapshot || projectSnapshot.boardError) return;
+  if (!navigator.onLine) {
+    notify(t('offlineNotice'), true);
+    return;
+  }
   const revision = projectSnapshot.revision;
   lock(true);
   try {
@@ -469,10 +633,14 @@ async function writeWorkitem(args) {
       ))
     )
       return;
+    if (!navigator.onLine) {
+      notify(t('offlineNotice'), true);
+      return;
+    }
     await invoke('governance.workitem', { args, revision, confirmed: true });
-    resetWorkitem();
     await load();
     if (projectSnapshot) notify(t('itemSaved'));
+    document.querySelector<HTMLElement>(`[data-workitem="${args.id}"]`)?.focus();
   } catch (error) {
     notify(t('itemError', error.message), true);
   } finally {
@@ -482,28 +650,126 @@ async function writeWorkitem(args) {
 function moveWorkitem(id, stage, position) {
   return writeWorkitem({ action: 'board_move', id, stage, position });
 }
+function menuActions(item) {
+  const all = projectSnapshot.board.items;
+  const siblings = all.filter((i) => i.stage === item.stage);
+  const index = siblings.findIndex((i) => i.id === item.id);
+  const actions = [
+    { label: t('itemDetails'), run: () => openItem(item.id, false, menuOrigin) },
+    { label: t('edit'), run: () => openItem(item.id, true, menuOrigin) },
+    {
+      label: t('guideAgent'),
+      run: async () => {
+        await openItem(item.id, false, menuOrigin);
+        if (selectedItem === item.id) showGuidance();
+      }
+    }
+  ];
+  if (index > 0)
+    actions.push({ label: t('moveUp'), run: () => moveWorkitem(item.id, item.stage, index - 1) });
+  if (index < siblings.length - 1)
+    actions.push({ label: t('moveDown'), run: () => moveWorkitem(item.id, item.stage, index + 1) });
+  for (const stage of boardStages.filter(
+    (s) => Math.abs(boardStages.indexOf(s) - boardStages.indexOf(item.stage)) === 1
+  ))
+    actions.push({
+      label: t('moveTo', boardLabels[stage]),
+      run: () => moveWorkitem(item.id, stage, all.filter((i) => i.stage === stage).length)
+    });
+  return actions;
+}
+function openItemMenu(item, origin: HTMLElement, x?: number, y?: number) {
+  if (busy || !navigator.onLine) return;
+  menuOrigin = origin;
+  const menu = $('item-menu');
+  menu.replaceChildren();
+  for (const action of menuActions(item)) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.role = 'menuitem';
+    button.textContent = action.label;
+    button.addEventListener('click', () => {
+      closeItemMenu();
+      void action.run();
+    });
+    menu.append(button);
+  }
+  const rect = origin.getBoundingClientRect();
+  menu.hidden = false;
+  const bounds = menu.getBoundingClientRect();
+  menu.style.left = `${Math.max(8, Math.min(x ?? rect.left, innerWidth - bounds.width - 8))}px`;
+  menu.style.top = `${Math.max(8, Math.min(y ?? rect.bottom, innerHeight - bounds.height - 8))}px`;
+  menu.querySelector('button').focus();
+}
+function showGuidance() {
+  const item = itemById(selectedItem);
+  if (!item) return;
+  $('item-guidance').hidden = false;
+  $('agent-brief').value = t(
+    'guidanceBrief',
+    snapshot.workspace,
+    item.id,
+    item.title,
+    item.description,
+    item.blocker || t('none')
+  );
+  text('brief-status', '');
+  $('agent-brief').focus();
+  $('agent-brief').select();
+}
+function stopLongPress() {
+  if (longPress) clearTimeout(longPress);
+  longPress = null;
+}
 function renderBoard() {
   const data = projectSnapshot;
+  closeItemMenu(false);
+  stopLongPress();
+  draggedItem = null;
   $('board-columns').replaceChildren();
-  if (data.boardError) {
-    text('board-status', t('boardError', data.boardError));
+  $('board-empty').hidden = true;
+  $('board-new').disabled = busy || !snapshot?.state || !!data?.boardError || !navigator.onLine;
+  if (!data || data.boardError) {
+    text(
+      'board-status',
+      data?.boardError ? t('boardError', data.boardError) : t('boardDisconnected')
+    );
     return;
   }
-  $('workitem-form').hidden = !snapshot?.state;
-  text(
-    'board-status',
-    t('boardStatus', data.board.items.length, data.board.updatedAt || t('notCreated'))
-  );
+  const matches = (item) =>
+    !searchQuery ||
+    [item.title, item.description, item.blocker, item.id].some((s) =>
+      s?.toLocaleLowerCase().includes(searchQuery)
+    );
+  const matchCount = data.board.items.filter(matches).length;
+  text('board-status', searchQuery ? t('searchCount', matchCount) : '');
+  $('board-empty').hidden = !searchQuery || matchCount > 0;
   for (const stage of boardStages) {
     const column = document.createElement('section');
     column.className = 'board-column';
     column.dataset.stage = stage;
-    const items = data.board.items.filter((item) => item.stage === stage);
+    const all = data.board.items.filter((item) => item.stage === stage);
+    const items = all.filter(matches);
+    const header = document.createElement('header');
     const heading = document.createElement('h3');
-    heading.textContent = `${boardLabels[stage]} · ${items.length}`;
-    column.append(heading);
+    heading.textContent = boardLabels[stage];
+    const count = document.createElement('span');
+    count.className = 'column-count';
+    count.textContent = String(items.length);
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'column-add';
+    add.textContent = '+';
+    add.setAttribute('aria-label', t('newItem'));
+    add.disabled = busy || !snapshot?.state || !navigator.onLine;
+    add.addEventListener('click', () => {
+      void openItem(null, true, add);
+    });
+    header.append(heading, count);
+    if (stage === 'todo') header.append(add);
+    column.append(header);
     column.addEventListener('dragover', (event) => {
-      if (draggedItem && !busy) {
+      if (draggedItem && !busy && !searchQuery) {
         event.preventDefault();
         column.classList.add('drop-target');
       }
@@ -516,20 +782,103 @@ function renderBoard() {
       column.classList.remove('drop-target');
       const id = draggedItem;
       draggedItem = null;
-      if (!id || busy) return;
-      const others = items.filter((item) => item.id !== id);
+      if (!id || busy || searchQuery) return;
       const target = (event.target as Element).closest<HTMLElement>('[data-workitem]');
       if (target?.dataset.workitem === id) return;
+      const others = all.filter((item) => item.id !== id);
       const index = target ? others.findIndex((item) => item.id === target.dataset.workitem) : -1;
       void moveWorkitem(id, stage, index < 0 ? others.length : index);
     });
-    items.forEach((item, index) => {
+    for (const item of items) {
       const card = document.createElement('article');
       card.className = 'workitem';
       card.dataset.workitem = item.id;
-      card.draggable = true;
+      card.dataset.blocked = String(!!item.blocker);
+      card.tabIndex = 0;
+      card.draggable = !searchQuery && !busy && navigator.onLine;
+      card.setAttribute('aria-label', item.title);
+      card.setAttribute('aria-haspopup', 'menu');
+      const title = document.createElement('h4');
+      title.textContent = item.title;
+      const content = document.createElement('p');
+      content.className = 'item-excerpt';
+      content.textContent = item.description;
+      const meta = document.createElement('div');
+      meta.className = 'item-meta';
+      const status = document.createElement('span');
+      status.textContent = item.blocker ? t('blocked') : boardLabels[item.stage];
+      const more = document.createElement('button');
+      more.type = 'button';
+      more.className = 'item-more';
+      more.textContent = '···';
+      more.disabled = busy || !navigator.onLine;
+      more.setAttribute('aria-label', t('itemActionsFor', item.title));
+      more.setAttribute('aria-haspopup', 'menu');
+      more.addEventListener('click', (event) => {
+        event.stopPropagation();
+        openItemMenu(item, more);
+      });
+      meta.append(status, more);
+      card.append(title);
+      if (item.description) card.append(content);
+      card.append(meta);
+      card.addEventListener('click', (event) => {
+        if ((event.target as Element).closest('button')) return;
+        if (longPressConsumed?.id === item.id && Date.now() < longPressConsumed.until) {
+          longPressConsumed = null;
+          return;
+        }
+        void openItem(item.id, false, card);
+      });
+      card.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+        stopLongPress();
+        openItemMenu(item, card, event.clientX, event.clientY);
+      });
+      card.addEventListener('keydown', (event) => {
+        if ((event.target as Element).closest('button')) return;
+        if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+          event.preventDefault();
+          openItemMenu(item, card);
+        }
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          void openItem(item.id, false, card);
+        }
+      });
+      let pressX = 0,
+        pressY = 0;
+      card.addEventListener('pointerdown', (event) => {
+        stopLongPress();
+        longPressConsumed = null;
+        if (
+          event.pointerType === 'mouse' ||
+          event.button !== 0 ||
+          (event.target as Element).closest('button')
+        )
+          return;
+        pressX = event.clientX;
+        pressY = event.clientY;
+        longPress = setTimeout(() => {
+          if (!card.isConnected || busy) return;
+          longPressConsumed = { id: item.id, until: Infinity };
+          openItemMenu(item, card, pressX, pressY);
+        }, 500);
+      });
+      card.addEventListener('pointermove', (event) => {
+        if (Math.hypot(event.clientX - pressX, event.clientY - pressY) > 8) stopLongPress();
+      });
+      for (const event of ['pointerup', 'pointercancel', 'pointerleave'])
+        card.addEventListener(event, stopLongPress);
       card.addEventListener('dragstart', (event) => {
-        if (busy) {
+        stopLongPress();
+        closeItemMenu(false);
+        if (
+          busy ||
+          searchQuery ||
+          !navigator.onLine ||
+          (longPressConsumed?.id === item.id && Date.now() < longPressConsumed.until)
+        ) {
           event.preventDefault();
           return;
         }
@@ -545,74 +894,131 @@ function renderBoard() {
           .querySelectorAll('.drop-target')
           .forEach((el) => el.classList.remove('drop-target'));
       });
-      for (const [tag, value] of [
-        ['h4', item.title],
-        ['p', item.description],
-        ['small', t('itemLinks', item.taskId || t('none'), item.gitTaskId || t('none'))],
-        ['p', item.blocker ? t('blocker', item.blocker) : '']
-      ]) {
-        const el = document.createElement(tag);
-        el.textContent = value;
-        card.append(el);
-      }
-      const controls = document.createElement('div');
-      controls.className = 'workitem-controls';
-      const button = (label, action) => {
-        const el = document.createElement('button');
-        el.type = 'button';
-        el.textContent = label;
-        el.setAttribute('aria-label', `${item.title}：${label}`);
-        el.addEventListener('click', action);
-        controls.append(el);
-      };
-      button(t('edit'), async () => {
-        if (busy) return;
-        lock(true);
-        try {
-          if (dirtyForms.has('workitem-form') && !(await confirmWrite(t('switchDraft')))) return;
-          resetWorkitem();
-          editingItem = item.id;
-          $('workitem-id').value = item.id;
-          $('workitem-id').readOnly = true;
-          for (const key of ['title', 'description', 'blocker'])
-            $(`workitem-${key}`).value = item[key];
-          text('workitem-save', t('saveChanges'));
-        } finally {
-          lock(false);
-          $('workitem-title').focus();
-        }
-      });
-      if (index > 0) button(t('moveUp'), () => moveWorkitem(item.id, stage, index - 1));
-      if (index < items.length - 1)
-        button(t('moveDown'), () => moveWorkitem(item.id, stage, index + 1));
-      for (const target of boardStages.filter(
-        (s) => Math.abs(boardStages.indexOf(s) - boardStages.indexOf(stage)) === 1
-      ))
-        button(t('moveTo', boardLabels[target]), () =>
-          moveWorkitem(item.id, target, data.board.items.filter((i) => i.stage === target).length)
-        );
-      card.append(controls);
       column.append(card);
-    });
+    }
     if (!items.length) {
       const empty = document.createElement('p');
-      empty.className = 'muted';
-      empty.textContent = t('noItems');
+      empty.className = 'column-empty';
+      empty.textContent = t(searchQuery ? 'noResults' : 'emptyColumn');
       column.append(empty);
     }
     $('board-columns').append(column);
   }
 }
-$('workitem-cancel').addEventListener('click', resetWorkitem);
+$('board-new').addEventListener('click', () => {
+  void openItem(null, true, $('board-new'));
+});
+$('board-search').addEventListener('input', () => {
+  searchQuery = $('board-search').value.trim().toLocaleLowerCase();
+  if (projectSnapshot) renderBoard();
+});
+$('search-clear').addEventListener('click', () => {
+  $('board-search').value = '';
+  searchQuery = '';
+  renderBoard();
+  $('board-search').focus();
+});
+for (const id of ['item-back', 'item-close', 'workitem-cancel'])
+  $(id).addEventListener('click', () => {
+    void closeItemSheet();
+  });
+$('item-sheet').addEventListener('cancel', (event) => {
+  event.preventDefault();
+  void closeItemSheet();
+});
+$('item-edit').addEventListener('click', () => {
+  void openItem(selectedItem, true, itemOrigin);
+});
+$('item-guide').addEventListener('click', showGuidance);
+$('brief-copy').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText($('agent-brief').value);
+    text('brief-status', t('guidanceCopied'));
+  } catch {
+    text('brief-status', t('selectToCopy'));
+    $('agent-brief').focus();
+    $('agent-brief').select();
+  }
+});
+$('item-menu').addEventListener('keydown', (event) => {
+  const buttons = Array.from($('item-menu').querySelectorAll('button')) as HTMLButtonElement[];
+  const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
+  if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
+    event.preventDefault();
+    buttons[
+      event.key === 'Home'
+        ? 0
+        : event.key === 'End'
+          ? buttons.length - 1
+          : (index + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length
+    ].focus();
+  }
+  if (event.key === 'Escape' || event.key === 'Tab') {
+    event.preventDefault();
+    event.stopPropagation();
+    closeItemMenu();
+  }
+});
+document.addEventListener('pointerdown', (event) => {
+  if (!$('item-menu').hidden && !$('item-menu').contains(event.target)) closeItemMenu(false);
+});
+window.addEventListener('resize', () => closeItemMenu(false));
+document.addEventListener('pointerup', () => {
+  if (longPressConsumed) longPressConsumed.until = Date.now() + 1200;
+});
+document.addEventListener('pointercancel', () => {
+  longPressConsumed = null;
+  stopLongPress();
+});
+document.addEventListener('keydown', (event) => {
+  if (
+    event.key === 'Escape' &&
+    $('item-sheet').open &&
+    !$('confirm-dialog').open &&
+    $('item-menu').hidden
+  ) {
+    event.preventDefault();
+    void closeItemSheet();
+    return;
+  }
+  if (
+    event.key === '/' &&
+    !(event.target as Element).closest('input, textarea, [contenteditable]') &&
+    !$('item-sheet').open &&
+    !$('confirm-dialog').open
+  ) {
+    event.preventDefault();
+    location.hash = '#board-section';
+    highlightNavigation();
+    $('board-search').focus();
+  }
+});
+window.addEventListener('offline', () => {
+  closeItemMenu(false);
+  notify(t('offlineNotice'), true);
+  if (projectSnapshot) renderBoard();
+  lock(busy);
+});
+window.addEventListener('online', () => {
+  notify(t('onlineNotice'));
+  if (projectSnapshot) renderBoard();
+  lock(busy);
+});
 $('workitem-form').addEventListener('submit', (event) => {
   event.preventDefault();
   void writeWorkitem({
     action: editingItem ? 'board_update' : 'board_create',
-    id: editingItem || $('workitem-id').value.trim(),
+    id: editingItem || $('workitem-id').value,
     title: $('workitem-title').value.trim(),
     description: $('workitem-description').value,
     ...(editingItem ? { blocker: $('workitem-blocker').value } : {})
   });
 });
 lock(true);
-localeReady.then(() => { highlightNavigation(); appearance(lastAppearance); return load(); }).finally(() => lock(false));
+localeReady
+  .then(() => {
+    highlightNavigation();
+    appearance(lastAppearance);
+    return load();
+  })
+  .finally(() => lock(false));

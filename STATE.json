@@ -37,14 +37,15 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "按用户选项完成一次启动接续配置与0.6.7独立配色代码交付。原生手动自动化接续项目：已批准待办已保存/List核对，manual/Agent/perRun/当前项目，未启动、不定时、不自动安装；AGENTS连续接续/审批阻塞停止规则已生效。0.6.7默认pebrel参考低饱和配色，只随明暗，可切宿主并本地保存；SVG导航、悬浮侧栏、页标题/卡片材质实际更新。源码a5dfcc1提交后与main d1a7d5e集成后65测试/四页及配色安全回归通过，GitHub远端一致且临时分支清理。包29文件325685字节通过。当前安装0.6.6，0.6.7未安装/真实目视，截图工具超时；自动任务也未试跑，不能宣称全部自动执行通过。旧隔离宿主/CRLF/总体待办仍保留，不close。",
+  "current": "0.6.8对象式工作台实现和回归完成：三页导航、搜索、非模态详情、右键/长按/键盘菜单、指导文本，移除常驻工作项表单/KPI墙，总体目标折叠但语义独立。65测试、真实Chromium+隔离后端43截图回归、scratch干净npm ci/typecheck/build/test通过；一次只读复核的断网确认写入、长按释放和取消迁移焦点缺陷已加断言修复重测。PluginCheck/Pack通过30文件366228字节，许可随包，权限未变。正在完成目视记录并提交/集成main；实际安装仍0.6.6，整体不close。",
   "next": [
-    "正常安装并复核0.6.7实际界面，满足后完成美化验收",
-    "在自动化中点一次接续任务处理其余已批准可执行工作；遇真实阻塞/权限停止"
+    "完成状态截图复核、提交并按已授权流程同步/集成main后重测",
+    "正常安装新版后完成真实宿主隔离交互及独立配色验收",
+    "继续处理CRLF指纹误报与一次启动任务的实际执行验收"
   ],
   "blocked": [
-    "当前安装0.6.6，0.6.7新界面尚未安装/目视，截图工具did not answer。",
-    "真实隔离项目交互和CRLF指纹误报仍待完成，整体不得close；新手动接续任务未实际运行。"
+    "实际安装仍0.6.6；0.6.8尚未安装及真实宿主验收。",
+    "真实隔离项目交互和CRLF指纹误报仍待完成；手动接续任务未实际运行。"
   ],
   "followUp": null,
   "change": "changes/active/project-board-release",
