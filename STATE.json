@@ -37,10 +37,10 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "用户选择一次启动连续已批准待办/独立pebrel参考配色。原生手动自动化接续项目：已批准待办已创建并ScheduledTaskList验证（manual/Agent/perRun/本项目），未启动、不定时；AGENTS/开发用法保存连续接续及停止守卫。0.6.7独立色系、悬浮侧栏/SVG导航、页面标题和配色模式切换已实现，宿主明暗跟随/安全配色映射保留。typecheck/build、65测试/48截图浏览器回归通过；PluginPack29文件325685字节SHA08a898604acf021377110a6aab035fbcb616e7a50817894f9b37df71ce7a9c1e。截图工具两次超时，新版未目视/安装，诚实保留美化doing。配置入口卡片done只代表配置成功。准备按授权GitHub交付，旧宿主/CRLF总体待办不close。",
+  "current": "按用户选项完成一次启动接续配置与0.6.7独立配色代码交付。原生手动自动化接续项目：已批准待办已保存/List核对，manual/Agent/perRun/当前项目，未启动、不定时、不自动安装；AGENTS连续接续/审批阻塞停止规则已生效。0.6.7默认pebrel参考低饱和配色，只随明暗，可切宿主并本地保存；SVG导航、悬浮侧栏、页标题/卡片材质实际更新。源码a5dfcc1提交后与main d1a7d5e集成后65测试/四页及配色安全回归通过，GitHub远端一致且临时分支清理。包29文件325685字节通过。当前安装0.6.6，0.6.7未安装/真实目视，截图工具超时；自动任务也未试跑，不能宣称全部自动执行通过。旧隔离宿主/CRLF/总体待办仍保留，不close。",
   "next": [
-    "完成0.6.7提交后交付/main集成重测同步清理",
-    "正常安装并复核新界面；手动自动化一次运行接续其余授权任务，阻塞/权限停止"
+    "正常安装并复核0.6.7实际界面，满足后完成美化验收",
+    "在自动化中点一次接续任务处理其余已批准可执行工作；遇真实阻塞/权限停止"
   ],
   "blocked": [
     "当前安装0.6.6，0.6.7新界面尚未安装/目视，截图工具did not answer。",
