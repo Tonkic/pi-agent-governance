@@ -85,3 +85,9 @@ typecheck/build、65项测试和四页浏览器回归通过。新增贡献绿色
 PluginPack29文件318639字节，SHA256 11bfccc6ede0b4328b97a24597eb015a75d7cac80ecdd01f5983fc0570c7919f；只有原agent.tool.register提示。未新增框架、权限或脚本CSP放宽，未改变宿主主题、未安装0.6.6/发布市场。当前真实宿主安装0.6.5，主题卡片应保留安装后自定义主题复验阻塞，整体不close。原架构CRLF问题不纳入本次修复；原始指纹过期仍诚实保留。日志scratch/theme-final-tests.log及浏览器输出。
 
 0.6.6源码3ca3610完成release:auto提交后typecheck/build、65测试、主题/四页浏览器及敏感历史扫描后普通推送；no-ff集成main至61d3f79，集成后65测试和浏览器回归通过，远端SHA核对一致，来源/功能分支已清理。新增颜色回归是浏览器断言，不增加node:test计数。日志scratch/theme-delivery.log、theme-main-tests.log。公开REST API403未阻塞Git协议推送；未安装0.6.6或改变宿主主题，宿主复验仍保留。
+
+### 0.6.6实际更新与待办查询
+
+本轮实时MCP工具目录/describe只有plugin/list、themes、views等读取，未提供install/update/reload/market安装；没有调用目录外内部接口。MCP前查询0.6.5 enabled，包SHA匹配后使用正常插件页更多→安装插件包→原生选择框8588270、文件名粘贴准确路径（恢复剪贴板）、点击打开升级。后MCP plugin/list确认0.6.6 enabled/source installed，manifest/views.css/runtime文本与本地一致。MCP用于核对，UI用于安装，不能称MCP执行了安装。未输出令牌/创建对话/更改用户项目数据；临时预览删除。
+
+看板修正0.6.6安装阻塞和过时MCP未启用说明。剩3卡：host-theme-adaptation doing（真实贡献主题复验），host-smoke todo（隔离真实面板全流程），release-acceptance todo（依赖前项和STATE中CRLF误报修正）；不宣称安装后全部验收完成或close。
