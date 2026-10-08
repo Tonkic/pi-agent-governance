@@ -37,14 +37,15 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "0.6.10统一顶部分类操作栏和任务模型/思考强度选择完成并交付GitHub main。源码f305ff5提交后release:auto类型/77测试/60截图浏览器/历史凭据扫描通过，集成main 6e9b67c后再次typecheck/build/77测试/browser通过、普通推送与远端SHA一致。新增models.list经用户明确批准，只读可用模型投影，选择仅作用本次session/create，不改默认。模型竞争与取消焦点回归修复。包32文件459119字节SHAfa1344e4a9f1d84807cc70833ab5c0b69f98ad0ebf0d2922a70340417fbf378e。已有两份项目数据经用户允许单独提交579c89f并集成，不改running/原分析，不作测试证据。最新MCP本机0.6.9 ready，新版未安装/真实选择执行未验收，不总体close。",
+  "current": "0.6.11工作项详情改居中原生模态弹窗，移除打开态CSS对容器/网格联动，开关不再使1×4变2×2。独立列框、标题底色、状态顶边强化区分，已完成绿/已验收紫；弹窗内上一项/下一项、草稿确认和焦点返回保留。隔离Chromium两次稳定red及计算样式探针证明CSS根因，探针已清除。typecheck/build、78测试、干净npm ci/typecheck/build/78测试、72截图及全语言/尺寸/明暗几何/居中/焦点/嵌套验收和模型回归通过。包32文件462966字节SHAe16f9b7fa42f9e3af8daf2ce9229825abd1dd9dc524efcd15c87ac35849717ba，权限/后端不变。预览请求与恢复后仍guest不可用，新版未目视；宿主切到另一工作区，未在那边写入，使用仓库公开校验模块绑定快照更新。最新MCP本机0.6.10 ready，0.6.11未安装；正在提交交付，不总体close。",
   "next": [
-    "0.6.10安装与models.list实际授权后，完成真实宿主模型/思考强度选择和既有隔离交互验收",
-    "处理既有CRLF源码指纹与一次启动接续执行验收"
+    "提交本次前端修复和包，提交后检查/同步来源，main集成重测推送",
+    "恢复预览后补0.6.11目视；安装后真实宿主复验",
+    "保留既有CRLF/接续执行及总体待办"
   ],
   "blocked": [
-    "本机0.6.9；0.6.10未安装，models.list实际授权/真实模型任务执行未验收。",
-    "现有MCP无安装更新接口，未擅自改用UI；CRLF/接续执行等总体标准未完成，不close。"
+    "0.6.11截图目视未完成：browser guest不可用，恢复一次仍失败。",
+    "本机0.6.10；0.6.11未安装/真实宿主验收，MCP无安装接口；既有总体待办未完成，不close。"
   ],
   "followUp": null,
   "change": "changes/active/project-board-release",

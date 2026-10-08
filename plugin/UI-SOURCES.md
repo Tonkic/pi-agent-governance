@@ -1,11 +1,11 @@
 # UI sources
 
-The detail sheet and context menu in `renderer/views.css` adapt the surface, spacing and focus-state recipes from [shadcn/ui](https://github.com/shadcn-ui/ui):
+The context menu and some detail-surface spacing in `renderer/views.css` adapt recipes from [shadcn/ui](https://github.com/shadcn-ui/ui). The work-item detail surface is now a centered modal, not an edge sheet:
 
 - [Sheet](https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/sheet.tsx)
 - [Context Menu](https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/context-menu.tsx)
 
-This plugin uses native HTML, TypeScript and a nonmodal `<dialog>`. It does not bundle the React/Radix components. Object actions, confirmation, keyboard handling and write safeguards are implemented locally. Keyboard menus open instantly; reduced-motion and high-contrast modes are supported.
+This plugin uses native HTML, TypeScript and a modal `<dialog>` for item details. It does not bundle the React/Radix components. Board layout does not change when details open. Object actions, confirmation, keyboard handling and write safeguards are implemented locally. Keyboard menus open instantly; reduced-motion and high-contrast modes are supported.
 
 ## shadcn/ui license
 

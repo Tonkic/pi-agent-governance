@@ -97,7 +97,7 @@ const models = {
     headless: true,
     ...(process.env.PI_BROWSER ? { executablePath: process.env.PI_BROWSER } : {})
   });
-  const output = path.join(base, 'toolbar-model-screenshots');
+  const output = path.join(base, 'modal-board-screenshots');
   await fs.mkdir(output, { recursive: true });
   const errors = [];
   let shots = 0;
@@ -367,7 +367,43 @@ const models = {
     await card(page, first).dragTo(card(page, first));
     assert.equal(await page.locator('#confirm-dialog').evaluate((el) => el.open), false);
     // Details return, generated Agent guidance, literal user data.
+    if (await page.locator('#item-sheet').evaluate((el) => el.open)) await close(page);
+    const boardGeometry = async () =>
+      page.locator('.board-column').evaluateAll((rows) =>
+        rows.map((el) => {
+          const r = el.getBoundingClientRect();
+          return {
+            x: Math.round(r.x + scrollX),
+            y: Math.round(r.y + scrollY),
+            width: Math.round(r.width)
+          };
+        })
+      );
+    const beforeDetails = await boardGeometry();
+    assert.equal(
+      new Set(beforeDetails.map((r) => r.y)).size,
+      1,
+      'Desktop board starts as one row of four columns'
+    );
     await card(page, first).click();
+    const openedGeometry = await boardGeometry();
+    assert.deepEqual(
+      openedGeometry,
+      beforeDetails,
+      'Opening item details must not resize or reflow the four-column board'
+    );
+    assert.equal(
+      await page.locator('#item-sheet').evaluate((el) => el.matches(':modal')),
+      true,
+      'Item details are a real modal dialog'
+    );
+    await page.locator('#item-close').focus();
+    await page.keyboard.press('Tab');
+    assert.equal(
+      await page.locator('#item-sheet').evaluate((el) => el.contains(document.activeElement)),
+      true,
+      'Tab focus remains inside details'
+    );
     assert.equal(await page.locator('#workitem-form').isVisible(), false);
     assert.match(await page.locator('#item-description').textContent(), /keyboard return/);
     await page.locator('#item-guide').click();
@@ -383,8 +419,6 @@ const models = {
     await page.keyboard.press('End');
     await page.keyboard.press('Escape');
     assert.equal(await card(page, first).evaluate((el) => el === document.activeElement), true);
-    await menu(page, first, '编辑');
-    await page.locator('#workitem-title').fill('draft first');
     await card(page, first).focus();
     await page.keyboard.press('Shift+F10');
     await page
@@ -398,22 +432,38 @@ const models = {
       true,
       'Canceled keyboard move restores card focus'
     );
-    await menu(page, second, '编辑');
+    await menu(page, first, '编辑');
+    await page.locator('#workitem-title').fill('draft first');
+    assert.equal(await page.locator('#item-previous').isDisabled(), true);
+    await page.locator('#item-next').click();
     await confirm(page, false);
     assert.equal(await page.locator('#workitem-title').inputValue(), 'draft first');
+    assert.equal(
+      await page.locator('#item-sheet').evaluate((el) => el.contains(document.activeElement)),
+      true,
+      'Canceled switching returns focus to details'
+    );
     await page.keyboard.press('Escape');
     await confirm(page, false);
     assert.equal(await page.locator('#item-sheet').evaluate((el) => el.open), true);
-    await page.locator('#palette-toggle').click();
-    await page.locator('#palette-toggle').click();
+    await sendAppearance(page, { base: 'dark' });
+    await sendAppearance(page, { base: 'light' });
     assert.equal(await page.locator('#workitem-title').inputValue(), 'draft first');
-    // Total project controls share the workbench but keep their own governance boundary.
-    await page.locator('#project-open').click();
-    await page.getByRole('button', { name: '保存进度', exact: true }).click();
-    assert.match(await page.locator('#confirm-description').textContent(), /工作项草稿/);
-    await confirm(page, false);
-    await page.locator('#project-close').click();
-    await close(page);
+    await page.locator('#item-next').click();
+    await confirm(page);
+    assert.equal(await page.locator('#item-record-id').textContent(), second);
+    assert.equal(await page.locator('#item-next').isDisabled(), true);
+    await page.locator('#item-previous').click();
+    assert.equal(await page.locator('#item-record-id').textContent(), first);
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('#item-sheet').open);
+    assert.equal(await card(page, first).evaluate((el) => el === document.activeElement), true);
+    assert.deepEqual(
+      await boardGeometry(),
+      beforeDetails,
+      'Closing details preserves board geometry'
+    );
+    // Project drafts remain independent; the background is inert while item details are open.
     await page.locator('#project-open').click();
     await page.locator('#edit-current').fill('progress draft');
     await page.locator('#project-close').click();
@@ -873,6 +923,51 @@ const models = {
           });
           shots++;
           await p.locator('#launch-cancel').click();
+          await navigate(p, 'board-section');
+          const geometry = () =>
+            p.locator('.board-column').evaluateAll((rows) =>
+              rows.map((el) => {
+                const r = el.getBoundingClientRect();
+                return {
+                  x: Math.round(r.x + scrollX),
+                  y: Math.round(r.y + scrollY),
+                  width: Math.round(r.width)
+                };
+              })
+            );
+          const before = await geometry();
+          await card(p, first).click();
+          assert.deepEqual(
+            await geometry(),
+            before,
+            `${lang}/${width}/${theme}: modal preserves board layout`
+          );
+          assert.ok(
+            await p.locator('#item-sheet').evaluate((el) => {
+              const r = el.getBoundingClientRect();
+              return (
+                Math.abs(r.left + r.width / 2 - innerWidth / 2) < 2 &&
+                el.scrollWidth <= el.clientWidth
+              );
+            }),
+            'Details are centered without horizontal overflow'
+          );
+          await p.screenshot({
+            path: path.join(output, `${lang}-modal-${width}-${theme}.png`),
+            fullPage: true
+          });
+          shots++;
+          await close(p);
+          assert.deepEqual(await geometry(), before, 'Closing modal preserves geometry');
+          assert.equal(
+            await p
+              .locator('.board-column')
+              .evaluateAll((rows) =>
+                rows.every((el) => getComputedStyle(el).borderLeftWidth !== '0px')
+              ),
+            true,
+            'Every stage has a visible column boundary'
+          );
         }
       await p.setViewportSize({ width: 1280, height: 1000 });
       await navigate(p, 'board-section');
