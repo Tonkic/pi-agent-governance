@@ -37,15 +37,14 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "0.6.9四列与项目操作实现完成：待办/正在进行/已完成/已验收，人工或Agent证据验收、逐项条件、内容修改失效、当前任务绑定；总体目标/进度入口移至顶部。用户明确批准新增desktop.control，固定公开session/create/agent/prompt/getStatus/session/get/open/abort用于确认后独立分析/架构/验收及进度结果取消，不读取MCP令牌。一次只读复核发现并已red→green修复跨任务验收、会话创建恢复、取消状态竞争和Escape顶层弹窗。typecheck/build、75测试、最终scratch干净npm ci/typecheck/build/test、47截图浏览器回归及中英文三页/验收进度/详情/错误恢复目视通过；最终包32文件436228字节SHAe09b95508816bae115c4e52909d1950909e8f065b7156519a0518735f17e9fca。正在提交并按既有授权同步/集成main。当前实际安装0.6.7，未安装新版/发起实际收费Agent，不总体close。",
+  "current": "0.6.9四列验收与项目操作已完成代码/包/GitHub main交付。源码0711419提交后release:auto实际typecheck/75测试/47截图浏览器/历史凭据扫描通过并同步；no-ff集成main 81fca6d后再次typecheck/build/75测试/browser通过，普通推送且远端SHA一致。人工/Agent验收绑定条件、证据、当前task和内容版本；改内容失效，底部区域移至顶部项目操作。用户批准desktop.control，固定公开会话操作、确认/取消/进度/恢复守卫，未改发布规则。包32文件436228字节SHAe09b95508816bae115c4e52909d1950909e8f065b7156519a0518735f17e9fca。实际安装0.6.7；新版未安装、实际Agent按钮执行未验收，不总体close。",
   "next": [
-    "提交审查过的源码、包及记录，提交后检查并同步来源/集成main重测推送",
-    "用户只允许MCP安装更新；当前宿主无该接口，保留安装及真实Agent操作验收",
-    "保留CRLF源码指纹与一次启动接续执行待办"
+    "等待受支持的MCP更新接口或用户允许正常安装后，完成0.6.9新增权限与真实宿主Agent/隔离交互验收",
+    "处理既有CRLF源码指纹误报与一次启动接续任务实际执行验收"
   ],
   "blocked": [
-    "实际安装0.6.7；0.6.9未安装，新增desktop.control还需宿主实际授权，Agent按钮真实宿主执行未验收。",
-    "用户只允许MCP更新，现有MCP没有安装接口；CRLF指纹和一次启动接续执行未验收，不总体close。"
+    "实际安装0.6.7；0.6.9未安装，desktop.control需宿主授权、Agent按钮实际执行未验收。",
+    "用户只允许MCP更新，而现有MCP无安装接口；CRLF及接续执行仍未验收，总体不close。"
   ],
   "followUp": null,
   "change": "changes/active/project-board-release",
