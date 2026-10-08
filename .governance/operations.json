@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "runs": [
+    {
+      "id": "84f6f6b1-a387-4dae-82ea-ca09dde55fa6",
+      "kind": "architecture",
+      "workspace": "D:\\pi-agent-governance",
+      "taskId": "project-board-release",
+      "itemId": null,
+      "itemFingerprint": null,
+      "sessionId": "bcb743f8-e37e-46f7-854b-c28c0f9b62bf",
+      "phase": "running",
+      "startedAt": "2026-10-08T18:57:34.302Z",
+      "updatedAt": "2026-10-08T18:57:36.483Z",
+      "error": ""
+    }
+  ]
+}

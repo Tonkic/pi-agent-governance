@@ -1,78 +1,94 @@
 {
   "version": 1,
-  "title": "核心逻辑 · 目标、知识与执行",
-  "source": "依据 README 原则和 PROJECT 用法划分四个职责，核对 panel/core/project/git 及图渲染源码。边表示代码委派或注入对象回调；保留 core 与 project 循环依赖。省略宿主注册、CLI、构建等外围设施；并非完整调用图或运行时监控。",
+  "title": "核心架构 · 接入、治理与项目操作",
+  "source": "阅读 STATE/README、docs/architecture.md 与 plugin/PROJECT.md，随后通过 architecture_sources 完整读取并核对六份非敏感 TS 源码。五个节点按职责分组；边仅表示已核对的直接调用、动作分派或注入 Governance 对象的方法调用，不表示运行时事件或业务先后。依据入口 onLoad/onPanelInvoke、Governance.run、ProjectData.run/snapshot、GitGovernance.run 和 operationInvoke。未检查渲染器、工具参数定义、CLI、构建产物及测试；不是完整依赖图、运行时监控或安全审计，也未执行真实宿主会话操作。指纹绑定当前磁盘内容（含换行），本次重建不证明跨 CRLF/LF 切换问题已修复。",
   "nodes": [
     {
-      "id": "interaction",
-      "title": "交互确认",
-      "description": "呈现项目状态，确认后提交受限操作。面板与桥接合为一个职责边界；版本校验拒绝过期或跨工作区写入。",
+      "id": "host",
+      "title": "宿主接入与面板守卫",
+      "description": "main.ts 注册工具与命令，按当前工作区构造治理内核，将普通面板通道交给 panelInvoke、项目操作通道交给 operationInvoke。panel.ts 限定写入动作和字段，检查显式确认，向内核传递状态或项目修订；面板验收固定为 human。此节点不包含渲染器。",
       "files": [
-        "plugin/panel.ts",
-        "plugin/renderer/panel.ts",
-        "plugin/renderer/graph.ts",
-        "plugin/renderer/graph-model.ts"
+        "plugin/main.ts",
+        "plugin/panel.ts"
       ]
     },
     {
       "id": "governance",
-      "title": "任务治理",
-      "description": "以人工目标约束执行、验证与归档。STATE 是总体任务唯一来源；提供锁和安全文件操作，分派项目数据及协作动作。",
+      "title": "任务治理内核",
+      "description": "Governance 管理 STATE 的任务、进度、验证和归档；提供受限路径读取、临时文件重命名写入及文件锁。run 将项目动作分派给 ProjectData，将 git_ 动作分派给 GitGovernance。验证记录绑定任务意图与文件指纹；测试证据由调用方提供。",
       "files": [
-        "plugin/core.ts",
-        "README.md"
+        "plugin/core.ts"
       ]
     },
     {
-      "id": "knowledge",
-      "title": "项目知识",
-      "description": "保存工作项和有源码依据的架构。维护版本、来源指纹与迁移约束；卡片完成不等于总体验收。",
+      "id": "project",
+      "title": "看板与源码架构",
+      "description": "ProjectData 保存 board.json 和 architecture.json，快照修订绑定工作区、STATE 与两份项目数据。验证工作项阶段、验收内容指纹、图端点和源码指纹；写前再次比较数据与 STATE。通过构造参数 g 复用内核的锁、状态与安全文件操作；不独立认证测试或依赖语义。",
       "files": [
-        "plugin/project.ts",
-        "plugin/PROJECT.md"
+        "plugin/project.ts"
       ]
     },
     {
-      "id": "execution",
-      "title": "隔离协作",
-      "description": "隔离修改范围，将审查和验证绑定提交。使用 Git worktree 登记执行任务，只将已验证工作集成到协调分支。",
+      "id": "git",
+      "title": "受管 Git 协作",
+      "description": "GitGovernance 使用独立 Git common directory 登记表与操作锁，管理 worktree、允许路径、差异快照和提交验证。提交要求已审查快照，验证绑定当前提交；集成仅面向受管协调任务。不依赖注入的 Governance 对象，也不自动启动宿主 Agent 或推送。",
       "files": [
         "plugin/git.ts"
+      ]
+    },
+    {
+      "id": "operations",
+      "title": "显式 Agent 操作",
+      "description": "operationInvoke 检查 desktop.control 可用性、固定操作目录、用户确认及活动任务/修订，通过公开宿主接口创建分析、架构或工作项验收会话。使用治理锁保存 operations.json，复核创建后的任务与工作区；未知提交不重放，取消限本地记录的会话。会话结束不等于验收通过，提示约束不是工具沙箱。",
+      "files": [
+        "plugin/operations.ts"
       ]
     }
   ],
   "edges": [
     {
-      "from": "interaction",
+      "from": "host",
       "to": "governance",
-      "label": "确认后调用"
+      "label": "工具 execute / panelInvoke → Governance.run、locked"
+    },
+    {
+      "from": "host",
+      "to": "operations",
+      "label": "onPanelInvoke 的 governance.operation → operationInvoke"
     },
     {
       "from": "governance",
-      "to": "knowledge",
-      "label": "委派项目动作"
+      "to": "project",
+      "label": "项目动作 → new ProjectData(this).run"
     },
     {
-      "from": "knowledge",
+      "from": "project",
       "to": "governance",
-      "label": "复用锁与状态"
+      "label": "注入 g → locked、state、safe、read/write；Git登记查询经 g.run"
     },
     {
       "from": "governance",
-      "to": "execution",
-      "label": "委派协作动作"
+      "to": "git",
+      "label": "git_ 动作 → new GitGovernance(root).run"
+    },
+    {
+      "from": "operations",
+      "to": "governance",
+      "label": "构造 Governance → 状态、锁、文件操作与创建后复核"
+    },
+    {
+      "from": "operations",
+      "to": "project",
+      "label": "启动前 new ProjectData(g).snapshot 核对项目修订"
     }
   ],
   "fingerprints": {
-    "plugin/panel.ts": "78bd9484e895ab243ea31f8c0f49d29b2b1d4daa09bef00ce9a26e691087c8f3",
-    "plugin/renderer/panel.ts": "04108584904d0a067b8a263a3c8592a93821a0f764c20bc8df309ee2c2bdf886",
-    "plugin/renderer/graph.ts": "a5077ea18c6aa8d687d50554cd05ca1a849b72115d917b4964846f6346f77b12",
-    "plugin/renderer/graph-model.ts": "c63c9b5dcd919aec3d7765d36e5653d16e7e1d55c6f9fa8dbeda6eee2d8af424",
-    "plugin/core.ts": "30f0a126612b2962e6639ee5c03fac14da0c6a831715b01446528538ec934b4f",
-    "README.md": "5fcd592a005c80b9abc8803667a469b2c5552250a908b4538fce679edd34928a",
-    "plugin/project.ts": "2c9b11be3846615fb695299f0be2de4f9acb0ee64e57e97decec2342fb385eb1",
-    "plugin/PROJECT.md": "30eb73c55944b2f327e64a5085ba1d7fda3468b6949ca4e891f7f841dbfbfaad",
-    "plugin/git.ts": "e22db64ea81821bf710878d7c347df01f69f1d7287e89c865dfde4f4c82aa7bb"
+    "plugin/main.ts": "b4536f4b353542e8d5651f25d394f700c6186c5bfaccdc07e4e4bd7a6188626c",
+    "plugin/panel.ts": "671289d010efdae7ef7fa7251abd9584abcbcea248dd62cf5627ff673a449286",
+    "plugin/core.ts": "f7e66110ffc381e5f7f58844c1a9f3cd5c10d456d8d0192b764b7bc0b643c53c",
+    "plugin/project.ts": "747d9e2df4e2b8a1ff8852d04a901453523b1661c22c440701f0ee18529ad5da",
+    "plugin/git.ts": "acd31e0dbc1c3b5bedd72eb2bd9cd5f84605d36779627622f2ada44850093218",
+    "plugin/operations.ts": "bce548106914ec421afba93bd383bfee394002363f79b4150c9da768a08ad40a"
   },
-  "updatedAt": "2026-10-06T16:53:41.691Z"
+  "updatedAt": "2026-10-08T19:00:16.061Z"
 }
