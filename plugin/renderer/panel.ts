@@ -7,6 +7,10 @@ let projectSnapshot: any = null,
   editingItem: string = null,
   draggedItem: string = null;
 const dirtyForms = new Set<string>();
+let launchContext: any = null,
+  launchModels: any[] = [],
+  launchLoading = false,
+  launchRequest = 0;
 function discardWarning(submitted?: string) {
   const names = {
     'progress-form': t('draftProgress'),
@@ -73,6 +77,7 @@ function lock(value) {
     .forEach((button) => {
       button.disabled = value || !navigator.onLine;
     });
+  updateLaunchControls();
 }
 async function invoke(channel, payload = {}) {
   if (!window.pluginBridge?.invoke) throw Error(t('staticPreview'));
@@ -163,6 +168,10 @@ function renderGit(g) {
 async function load() {
   snapshot = null;
   dirtyForms.clear();
+  launchRequest++;
+  launchContext = null;
+  launchLoading = false;
+  if ($('launch-dialog').open) $('launch-dialog').close();
   if ($('accept-dialog').open) $('accept-dialog').close();
   $('accept-form').reset();
   projectSnapshot = null;
@@ -404,6 +413,9 @@ function highlightNavigation() {
   };
   text('page-title', t(pageTitles[active]));
   for (const id of pageIds) $(id).hidden = id !== active;
+  document.querySelectorAll<HTMLElement>('[data-page-control]').forEach((control) => {
+    control.hidden = control.dataset.pageControl !== active;
+  });
   if (requested === 'task-section') openProjectControls();
   document.querySelectorAll<HTMLAnchorElement>('.workspace-nav a').forEach((link) => {
     if (link.hash === `#${active}`) link.setAttribute('aria-current', 'page');
@@ -1044,7 +1056,9 @@ document.addEventListener('keydown', (event) => {
     event.key === 'Escape' &&
     $('item-sheet').open &&
     !$('confirm-dialog').open &&
-    !['project-dialog', 'accept-dialog', 'operations-dialog'].some((id) => $(id).open) &&
+    !['project-dialog', 'accept-dialog', 'operations-dialog', 'launch-dialog'].some(
+      (id) => $(id).open
+    ) &&
     $('item-menu').hidden
   ) {
     event.preventDefault();
@@ -1188,32 +1202,138 @@ const operationLabel = (kind): CopyKey =>
     : kind === 'acceptance'
       ? 'acceptanceTask'
       : 'analysis';
+function launchOption(value, label) {
+  const option = document.createElement('option');
+  option.value = value;
+  option.textContent = label;
+  return option;
+}
+function updateLaunchControls() {
+  $('launch-start').disabled = busy || launchLoading || !launchContext || !navigator.onLine;
+  $('launch-model').disabled = busy || launchLoading;
+  const model = launchModels.find((row) => row.key === $('launch-model').value);
+  $('launch-thinking').disabled = busy || launchLoading || !model?.thinkingLevels.length;
+}
+function updateThinkingChoices() {
+  const model = launchModels.find((row) => row.key === $('launch-model').value);
+  $('launch-thinking').replaceChildren(
+    launchOption('', t('hostDefault')),
+    ...(model?.thinkingLevels || []).map((level) =>
+      launchOption(level, t(('thinking_' + level) as CopyKey))
+    )
+  );
+  text(
+    'launch-status',
+    model && !model.thinkingLevels.length
+      ? t('noThinking')
+      : launchModels.length
+        ? t('modelOptionsReady')
+        : t('noModels')
+  );
+  updateLaunchControls();
+}
+function closeLaunch() {
+  if (busy) return;
+  launchRequest++;
+  launchContext = null;
+  launchLoading = false;
+  $('launch-dialog').close();
+  updateLaunchControls();
+}
 async function startOperation(kind, itemId?) {
   if (busy || !projectSnapshot || !snapshot?.state?.task || !navigator.onLine) return;
-  const revision = projectSnapshot.revision;
+  if ($('launch-dialog').open) return;
+  const request = ++launchRequest;
+  launchContext = {
+    kind,
+    itemId,
+    revision: projectSnapshot.revision,
+    workspace: snapshot.workspace
+  };
+  launchModels = [];
+  launchLoading = true;
+  $('launch-model').replaceChildren(launchOption('', t('hostDefault')));
+  $('launch-thinking').replaceChildren(launchOption('', t('hostDefault')));
+  text('launch-title', `${t('launchSettings')} · ${t(operationLabel(kind))}`);
+  text(
+    'launch-scope',
+    `${snapshot.workspace}${itemId ? '\n' + (itemById(itemId)?.title || itemId) : ''}`
+  );
+  text('launch-status', t('modelsLoading'));
+  $('launch-dialog').showModal();
+  updateLaunchControls();
+  $('launch-cancel').focus();
+  try {
+    const data: any = await invoke('governance.operation', { action: 'models' });
+    if (request !== launchRequest || !$('launch-dialog').open) return;
+    if (data.workspace !== launchContext.workspace) throw Error(t('switched'));
+    launchModels = data.models;
+    $('launch-model').replaceChildren(
+      launchOption('', t('hostDefault')),
+      ...launchModels.map((row) => launchOption(row.key, `${row.providerName} · ${row.label}`))
+    );
+    launchLoading = false;
+    updateThinkingChoices();
+  } catch (error) {
+    if (request !== launchRequest) return;
+    launchLoading = false;
+    text('launch-status', t('modelOptionsError', error.message));
+    updateLaunchControls();
+  }
+}
+$('launch-model').addEventListener('change', updateThinkingChoices);
+for (const id of ['launch-close', 'launch-cancel']) $(id).addEventListener('click', closeLaunch);
+$('launch-dialog').addEventListener('cancel', (event) => {
+  event.preventDefault();
+  closeLaunch();
+});
+$('launch-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (busy || launchLoading || !launchContext || !navigator.onLine) return;
+  const context = { ...launchContext };
+  const modelKey = $('launch-model').value,
+    thinkingLevel = $('launch-thinking').disabled ? '' : $('launch-thinking').value;
+  const model = launchModels.find((row) => row.key === modelKey);
+  if (modelKey && !model) return;
   lock(true);
   try {
-    if (!(await confirmWrite(t('operationConfirm', t(operationLabel(kind)))))) return;
+    const selectionLabel = t(
+      'launchSelection',
+      model ? `${model.providerName} · ${model.label}` : t('hostDefault'),
+      thinkingLevel ? t(('thinking_' + thinkingLevel) as CopyKey) : t('hostDefault')
+    );
+    if (
+      !(await confirmWrite(
+        t('operationConfirm', t(operationLabel(context.kind))) + '\n' + selectionLabel
+      ))
+    )
+      return;
     if (!navigator.onLine) {
       notify(t('offlineNotice'), true);
       return;
     }
     await invoke('governance.operation', {
       action: 'start',
-      kind,
-      itemId,
-      revision,
+      ...context,
+      ...(modelKey ? { modelKey } : {}),
+      ...(thinkingLevel ? { thinkingLevel } : {}),
       confirmed: true
     });
+    launchRequest++;
+    launchContext = null;
+    $('launch-dialog').close();
     notify(t('operationStarted'));
     if (!$('operations-dialog').open) $('operations-dialog').showModal();
     await loadOperations();
   } catch (error) {
+    text('launch-status', t('operationError', error.message));
     notify(t('operationError', error.message), true);
   } finally {
     lock(false);
+    if ($('launch-dialog').open)
+      ($('launch-start').disabled ? $('launch-cancel') : $('launch-start')).focus();
   }
-}
+});
 async function operationAction(action, id) {
   if (busy) return;
   lock(true);
@@ -1258,7 +1378,7 @@ async function loadOperations() {
       const heading = document.createElement('h3');
       heading.textContent = `${t(operationLabel(run.kind))} · ${labels[run.phase]}`;
       const note = document.createElement('p');
-      note.textContent = `${run.updatedAt}${run.error ? ' · ' + run.error : ''}`;
+      note.textContent = `${run.updatedAt} · ${run.modelKey || t('hostDefault')} · ${run.thinkingLevel ? t(('thinking_' + run.thinkingLevel) as CopyKey) : t('hostDefault')}${run.error ? ' · ' + run.error : ''}`;
       row.append(heading, note);
       if (run.sessionId)
         for (const [key, action] of [

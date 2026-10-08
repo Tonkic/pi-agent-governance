@@ -26,28 +26,21 @@
         <h1 id="page-title" data-i18n="navArchitecture"></h1>
       </div>
     </div>
-    <div class="topbar-actions">
-      <span id="status" class="badge">—</span>
-      <button id="palette-toggle" class="palette-toggle" type="button" aria-pressed="true" data-i18n-aria-label="paletteToggle"><span class="palette-dot" aria-hidden="true"></span><span id="palette-label" data-i18n="paletteIndependent"></span></button>
-      <button id="refresh" class="icon-button" type="button" data-i18n-aria-label="refreshState">
-        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 11a8.1 8.1 0 0 0-14.8-4L3 9"/><path d="M3 4v5h5M4 13a8.1 8.1 0 0 0 14.8 4L21 15"/><path d="M21 20v-5h-5"/></svg>
-        <span data-i18n="refresh"></span>
-      </button>
-    </div>
+    <span id="status" class="badge">—</span>
   </header>
-  <div class="project-actions" role="group" data-i18n-aria-label="projectControls"><button id="project-open" type="button" data-i18n="projectControls"></button><button id="analysis-start" class="primary" type="button" data-i18n="startAnalysis"></button><button id="operations-open" type="button" data-i18n="analysisProgress"></button></div>
+  <section id="action-panel" class="action-panel-bar" data-i18n-aria-label="actionPanel">
+    <div class="action-group" role="group" data-i18n-aria-label="pageActions"><span class="action-group-label" data-i18n="pageActions"></span><div class="action-group-controls"><button id="refresh" type="button" data-i18n="refresh" data-i18n-aria-label="refreshState"></button><button id="board-new" class="primary" type="button" data-page-control="board-section" data-i18n="newItem"></button><button id="architecture-analyze" class="primary" type="button" data-page-control="architecture" data-i18n="reanalyzeArchitecture" hidden></button></div></div>
+    <div class="action-group" role="group" data-i18n-aria-label="projectTasks"><span class="action-group-label" data-i18n="projectTasks"></span><div class="action-group-controls"><button id="project-open" type="button" data-i18n="projectControls"></button><button id="analysis-start" type="button" data-i18n="startAnalysis"></button><button id="operations-open" type="button" data-i18n="analysisProgress"></button></div></div>
+    <div class="action-group" role="group" data-i18n-aria-label="displaySettings"><span class="action-group-label" data-i18n="displaySettings"></span><div class="action-group-controls"><button id="palette-toggle" class="palette-toggle" type="button" aria-pressed="true" data-i18n-aria-label="paletteToggle"><span class="palette-dot" aria-hidden="true"></span><span id="palette-label" data-i18n="paletteIndependent"></span></button><div class="graph-modes" role="group" data-page-control="architecture" data-i18n-aria-label="graphView" hidden><button id="show-architecture" type="button" aria-pressed="true" data-i18n="architecture"></button><button id="show-workflow" type="button" aria-pressed="false" data-i18n="workflow"></button></div><div class="graph-modes" role="group" data-page-control="architecture" data-i18n-aria-label="trace" hidden><button type="button" data-trace="all" aria-pressed="true" data-i18n="all"></button><button type="button" data-trace="upstream" aria-pressed="false" data-i18n="upstream"></button><button type="button" data-trace="downstream" aria-pressed="false" data-i18n="downstream"></button></div></div></div>
+    <div class="action-group" role="group" data-page-control="architecture" data-i18n-aria-label="graphTools" hidden><span class="action-group-label" data-i18n="canvasTools"></span><div class="graph-camera action-group-controls"><button id="graph-out" type="button" data-i18n-aria-label="zoomOut">−</button><output id="graph-scale" data-i18n-aria-label="zoom">100%</output><button id="graph-in" type="button" data-i18n-aria-label="zoomIn">+</button><button id="graph-fit" type="button" data-i18n="fit"></button></div></div>
+    <label class="search-field" data-page-control="board-section"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><input id="board-search" type="search" maxlength="200" data-i18n-placeholder="searchItems" data-i18n-aria-label="searchItems" autocomplete="off"><kbd>/</kbd></label>
+  </section>
 
   <section id="architecture" class="panel architecture-panel" aria-labelledby="architecture-title">
     <div class="section-head"><div><h2 id="architecture-title" data-i18n="architecture"></h2><p id="graph-overview" class="muted" data-i18n="waiting"></p></div><span id="graph-count" class="badge">—</span></div>
     <p id="graph-warning" class="graph-warning" role="status" hidden></p>
     <details class="graph-provenance"><summary data-i18n="provenance"></summary><p id="graph-source" class="muted" data-i18n="waiting"></p></details>
-    <div class="graph-modes" role="group" data-i18n-aria-label="graphView"><button id="show-architecture" type="button" aria-pressed="true" data-i18n="architecture"></button><button id="show-workflow" type="button" aria-pressed="false" data-i18n="workflow"></button></div>
-    <button id="architecture-analyze" class="primary" type="button" data-i18n="reanalyzeArchitecture"></button>
     <p id="graph-empty" role="status" data-i18n="graphUnread"></p>
-    <div class="graph-toolbar" data-i18n-aria-label="graphTools">
-      <div class="graph-modes" role="group" data-i18n-aria-label="trace"><button type="button" data-trace="all" aria-pressed="true" data-i18n="all"></button><button type="button" data-trace="upstream" aria-pressed="false" data-i18n="upstream"></button><button type="button" data-trace="downstream" aria-pressed="false" data-i18n="downstream"></button></div>
-      <div class="graph-camera"><button id="graph-out" type="button" data-i18n-aria-label="zoomOut">−</button><output id="graph-scale" data-i18n-aria-label="zoom">100%</output><button id="graph-in" type="button" data-i18n-aria-label="zoomIn">+</button><button id="graph-fit" type="button" data-i18n="fit"></button></div>
-    </div>
     <div class="architecture-layout">
       <div id="graph-viewport" class="graph-viewport" tabindex="0" role="group" data-i18n-aria-label="canvas" aria-describedby="graph-help">
         <div id="graph-stage" class="graph-stage">
@@ -67,10 +60,6 @@
 
   <section id="board-section" class="panel" aria-labelledby="board-title">
     <h2 id="board-title" class="sr-only" data-i18n="navBoard"></h2>
-    <div class="workbench-toolbar">
-      <label class="search-field"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><input id="board-search" type="search" maxlength="200" data-i18n-placeholder="searchItems" data-i18n-aria-label="searchItems" autocomplete="off"><kbd>/</kbd></label>
-      <button id="board-new" class="primary" type="button"><span aria-hidden="true">+</span><span data-i18n="newItem"></span></button>
-    </div>
     <p id="board-status" class="board-status" role="status" data-i18n="boardWaiting"></p>
     <div id="board-empty" class="empty-state" hidden><h3 data-i18n="noResults"></h3><button id="search-clear" type="button" data-i18n="clearSearch"></button></div>
     <div id="board-columns" class="board-columns"></div>
@@ -88,6 +77,7 @@
 
   <footer><span data-i18n="app"></span><span id="updated"></span></footer>
 </main>
+<dialog id="launch-dialog" class="action-dialog" aria-labelledby="launch-title"><header class="dialog-header"><h2 id="launch-title" data-i18n="launchSettings"></h2><button id="launch-close" type="button" data-i18n-aria-label="closeDetails">×</button></header><p id="launch-scope"></p><p class="muted" data-i18n="launchHint"></p><form id="launch-form"><label><span data-i18n="modelChoice"></span><select id="launch-model"><option value="" data-i18n="hostDefault"></option></select></label><label><span data-i18n="thinkingChoice"></span><select id="launch-thinking" disabled><option value="" data-i18n="hostDefault"></option></select></label><p id="launch-status" role="status" aria-live="polite"></p><div class="sheet-actions"><button id="launch-start" class="primary" type="submit" data-i18n="reviewAndStart" disabled></button><button id="launch-cancel" type="button" data-i18n="cancel"></button></div></form></dialog>
 <dialog id="project-dialog" class="action-dialog" aria-labelledby="project-dialog-title">
   <header class="dialog-header"><h2 id="project-dialog-title" data-i18n="projectControls"></h2><button id="project-close" type="button" data-i18n-aria-label="closeDetails">×</button></header>
   <p class="muted"><span id="status-metric"></span> · <span id="criteria-count"></span> <span data-i18n="acceptance"></span> · <span id="blocked-count"></span> <span data-i18n="blockers"></span></p>

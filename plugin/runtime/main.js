@@ -42,7 +42,7 @@ async function onUnload() {
 }
 async function onPanelInvoke(channel, payload) {
     return execute((root) => channel === 'governance.operation'
-        ? operationInvoke(root, payload, pi.desktop, async () => resolve((await pi.workspace.get())?.path || '') === resolve(root))
+        ? operationInvoke(root, payload, pi.desktop, async () => resolve((await pi.workspace.get())?.path || '') === resolve(root), pi.models)
         : panelInvoke(root, channel, payload));
 }
 module.exports = { onLoad, onUnload, onPanelInvoke };

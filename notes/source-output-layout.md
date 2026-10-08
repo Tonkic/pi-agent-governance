@@ -131,3 +131,15 @@ board_accept要求done、当前task、expectedItem指纹、结论/依据/验收�
 目视证据changes/active/project-board-release/workbench-0.6.9/index.html：中英文三页390/768/1280明暗对照、人工验收/Agent进度/项目操作/中英详情/错误恢复大图已实际查看。PluginCheck/Pack通过32文件436228字节，SHA e09b95508816bae115c4e52909d1950909e8f065b7156519a0518735f17e9fca。官方i18n 0 FAIL/2 REVIEW，command安装器纯字符串及STATE数据名理由保留。包许可继续包含shadcn MIT；无新运行时依赖。既有受管创建因原有未跟踪目录dirty被拒绝，feat/four-stage-actions串行普通分支，不伪造受管git_verify。新版本未安装/未发布市场；CRLF误报及接续入口执行验收仍保留，不close。
 
 源码0711419fde0b4b3b467b3d0c81ed443ec2cb917a提交后release:auto实际typecheck/build、75测试、47截图浏览器与可达历史凭据扫描通过，来源分支sourceSynced:true/published:false。no-ff集成main 81fca6ddb64ac5c5d70351439ba1147a22e98e68后重跑typecheck/build/75测试/browser通过，普通推送并ls-remote核对一致；日志scratch/four-stage-delivery.log、four-stage-main.log。新包哈希不变，旧包/发布来源保留。最终记录只更新既有卡片说明，不用真实用户卡片作夹具、不自动写accepted；本机0.6.7仍可读。临时分支仅在记录同步且已完全合并、无活动受管worktree时清理。
+
+## 0.6.10 顶部操作面板与任务模型设置
+
+用户要求页面级按钮统一置顶分类，架构重分析不再位于图视图切换下方，并在点击Agent入口后选择模型/思考强度。页面操作、项目任务、显示设置、画布控件置于标题下同一面板，按页面隐藏不相关项；对象编辑/验收和弹窗提交仍就近。开始分析/架构分析/Agent验收共用启动窗口，默认明确使用宿主默认，也可用户显式选择；不持久改宿主设置。
+
+用户明确批准新增只读models.list。pi.models.list只返回已启用已认证模型的SDK元数据，后端投影key/providerId/modelId/名称/支持强度，不传额外字段或凭据。thinkingLevels仅采用宿主声明的标准值，不支持时禁用；显式选择在启动前重验，模型失效/强度不支持则拒绝，不隐式换模型。session/create收到providerId/modelId和可选thinkingLevel，操作历史保存本次选择。加载取消/迟到回应、空列表/权限错误、最终确认显示选择及取消保留选择有回归；只读目录失败时明确提示默认选项，不自动启动。
+
+一次只读复核f8dc1c5e发现模型读取前提交锁保留竞争与取消确认焦点丢失。隔离并发/键盘断言实际red，修复后green；未进行第二轮审查。最终77测试、typecheck/build和真实Chromium+隔离治理后端/模拟模型与desktop接口60截图回归通过。scratch/workbench-clean-149b4963888f4331a71e4ae726fa9327从归档叠加本次修改（排除用户项目数据）npm ci/typecheck/build/77测试通过；日志toolbar-model-clean.log、toolbar-model-review-red.log、toolbar-model-focus-red.log、toolbar-model-review-green.log、toolbar-model-browser-final.log。未实际启动收费模型或安装新版。
+
+PluginCheck/Pack通过32文件459119字节，SHA fa1344e4a9f1d84807cc70833ab5c0b69f98ad0ebf0d2922a70340417fbf378e；i18n 0 FAIL/2 REVIEW理由沿用安装器纯字符串command与STATE数据名。视觉证据workbench-0.6.10/index.html，中英文顶部操作/启动窗口390/768/1280明暗对照及架构/启动大图实际查看。最新MCP只读确认本机0.6.9 ready/enabled，不再沿用0.6.7安装信息；0.6.10实际权限/模型选择执行未验收，不close。
+
+开工前用户已有architecture.json修改与未跟踪operations.json，整个实现过程中哈希保持CD7C6390…A4A9F与C7ACEF62…526D6。用户明确允许它们单独提交并公开同步（已告知本机路径/会话ID/状态），579c89f5f6eed13a6e5aea327cd132a36a349c1a仅保存这两份原内容，未改running状态、不伪造任务完成或作为测试夹具。5节点7关系原分析范围/限制与旧源码指纹保留，不自动“修复”指纹。原有.pi/归档保留；无受管任务，仍串行普通功能分支，不伪造受管git_verify。

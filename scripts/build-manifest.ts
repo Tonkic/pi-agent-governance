@@ -14,12 +14,14 @@ const zh = {
 };
 en.safetyNotes += ' User-confirmed panel actions use desktop.control to create isolated analysis/review Agent sessions, send prompts, read bounded progress/results, open and cancel recorded sessions. Model calls may incur charges. No local MCP token access. Acceptance evidence is caller-attested, not independent proof; completed Agent turns do not automatically accept work.';
 zh.safetyNotes += ' 经用户确认的面板操作使用desktop.control创建独立分析/验收Agent会话、发送任务、读取有限进度/结果、打开和取消已记录会话，模型运行可能产生费用。不读取本地MCP令牌。验收证据由调用方声明，不是独立证明；Agent对话结束不自动代表验收通过。';
+en.safetyNotes += ' Reads enabled model names and supported thinking levels through models.list; explicit choices apply only to the new task session, never host defaults.';
+zh.safetyNotes += ' 通过models.list只读已启用模型名称和支持的思考强度，显式选择仅作用于新任务会话，不修改宿主默认设置。';
 const manifest = {
   schemaVersion: 1, id: 'io.github.tonkic.agent-governance', ...en, version: require('../../package.json').version,
   i18n: { en, 'zh-CN': zh },
   main: 'runtime/main.js', ui: { panel: 'renderer/index.html', title: { en: en.name, 'zh-CN': zh.name } },
   contributes: { agentTools: [tool], commands: [{ id: 'governance.open', title: 'Agent Governance: Open panel / 打开治理面板', keywords: ['governance', '治理', '任务', 'git'] }] },
-  permissions: ['agent.tool.register', 'ui.panel', 'desktop.control'],
+  permissions: ['agent.tool.register', 'ui.panel', 'desktop.control', 'models.list'],
   engines: { piDesktop: '>=0.1.0' }, activationEvents: ['onStartup', 'onCommand:governance.open']
 };
 fs.writeFileSync(path.join(__dirname, '../../plugin/manifest.json'), JSON.stringify(manifest, null, 2) + '\n');

@@ -37,14 +37,14 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "0.6.9四列验收与项目操作已完成代码/包/GitHub main交付。源码0711419提交后release:auto实际typecheck/75测试/47截图浏览器/历史凭据扫描通过并同步；no-ff集成main 81fca6d后再次typecheck/build/75测试/browser通过，普通推送且远端SHA一致。人工/Agent验收绑定条件、证据、当前task和内容版本；改内容失效，底部区域移至顶部项目操作。用户批准desktop.control，固定公开会话操作、确认/取消/进度/恢复守卫，未改发布规则。包32文件436228字节SHAe09b95508816bae115c4e52909d1950909e8f065b7156519a0518735f17e9fca。实际安装0.6.7；新版未安装、实际Agent按钮执行未验收，不总体close。",
+  "current": "0.6.10统一顶部分类操作栏与Agent模型/思考强度启动设置实现完成，用户批准新增只读models.list。公开pi.models.list仅投影模型/能力，显式选择只用于新session/create，后端重验可用性，不改宿主默认。分类为页面操作/项目任务/显示设置/画布，相关控件随页显示；对象操作仍就近。一次只读复核发现并red→green修复模型读取提交锁竞争与取消确认焦点，77测试/干净npm ci/typecheck/build/test、60截图浏览器及关键大图/中英文响应式目视通过；包32文件459119字节SHAfa1344e4a9f1d84807cc70833ab5c0b69f98ad0ebf0d2922a70340417fbf378e。用户明确允许两份已有项目数据单独留痕并公开同步，已提交579c89f不改内容/状态，不作本轮验收夹具。MCP最新本机0.6.9 ready/enabled，新0.6.10未安装。正在提交及同步GitHub，不总体close。",
   "next": [
-    "等待受支持的MCP更新接口或用户允许正常安装后，完成0.6.9新增权限与真实宿主Agent/隔离交互验收",
-    "处理既有CRLF源码指纹误报与一次启动接续任务实际执行验收"
+    "提交本次代码/包/记录，提交后检查并按既有授权同步来源、集成main重测推送",
+    "保留0.6.10实际宿主权限/模型选择执行验收及既有总体待办"
   ],
   "blocked": [
-    "实际安装0.6.7；0.6.9未安装，desktop.control需宿主授权、Agent按钮实际执行未验收。",
-    "用户只允许MCP更新，而现有MCP无安装接口；CRLF及接续执行仍未验收，总体不close。"
+    "本机0.6.9；0.6.10未安装及models.list宿主实际授权/模型选择执行未验收。",
+    "既有CRLF源码指纹与接续执行/总体真实宿主验收仍未完成，不close。"
   ],
   "followUp": null,
   "change": "changes/active/project-board-release",
