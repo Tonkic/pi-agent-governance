@@ -292,3 +292,120 @@ test('a rejected prompt response is not reported as a running task', async (t) =
     'unknown'
   );
 });
+
+test('model metadata is projected without secrets; explicit selection validates before creating a session', async (t) => {
+  const f = await fixture(t);
+  const rows = [
+    {
+      key: 'configured/model/one',
+      providerId: 'configured',
+      providerName: 'Provider',
+      modelId: 'model/one',
+      label: 'Reasoning model',
+      supportsReasoning: true,
+      thinkingLevels: ['low', 'high', 'invented'],
+      apiKey: 'fixture-secret'
+    },
+    {
+      key: 'configured/plain',
+      providerId: 'configured',
+      modelId: 'plain',
+      supportsReasoning: false,
+      thinkingLevels: ['high']
+    }
+  ];
+  const models = { list: async () => rows };
+  const invoke = async (payload) =>
+    operationInvoke(f.root, payload, f.desktop, async () => true, models);
+  const options = await invoke({ action: 'models' });
+  assert.equal(JSON.stringify(options).includes('fixture-secret'), false);
+  assert.deepEqual(options.models[0].thinkingLevels, ['low', 'high']);
+  assert.deepEqual(options.models[1].thinkingLevels, []);
+  const revision = (await f.g.run({ action: 'project_snapshot' })).revision;
+  const start = { action: 'start', kind: 'architecture', confirmed: true, revision };
+  for (const selection of [
+    { modelKey: 'missing', thinkingLevel: 'high' },
+    { modelKey: 'configured/plain', thinkingLevel: 'high' },
+    { modelKey: 'configured/model/one', thinkingLevel: 'invented' },
+    { thinkingLevel: 'high' }
+  ])
+    await assert.rejects(invoke({ ...start, ...selection }), /model|thinking/);
+  assert.equal(f.calls.length, 0);
+  assert.equal((await operationInvoke(f.root, { action: 'list' }, f.desktop)).runs.length, 0);
+  const run = await invoke({ ...start, modelKey: 'configured/model/one', thinkingLevel: 'high' });
+  assert.deepEqual(f.calls[0].args[0], {
+    title: 'Governance · architecture',
+    projectPath: f.root,
+    mode: 'agent',
+    providerId: 'configured',
+    modelId: 'model/one',
+    thinkingLevel: 'high'
+  });
+  assert.equal(run.modelKey, 'configured/model/one');
+  assert.equal(run.thinkingLevel, 'high');
+  await assert.rejects(operationInvoke(f.root, { action: 'models' }, f.desktop), /unavailable/);
+});
+
+test('model lookup reserves submission before awaiting; a duplicate cannot release its reservation', async (t) => {
+  const f = await fixture(t);
+  let releaseModels, releaseCreate, enteredCreate;
+  const modelGate = new Promise((resolve) => {
+    releaseModels = resolve;
+  });
+  const createEntered = new Promise((resolve) => {
+    enteredCreate = resolve;
+  });
+  const models = {
+    list: async () => {
+      await modelGate;
+      return [
+        {
+          key: 'fixture/model',
+          providerId: 'fixture',
+          modelId: 'model',
+          supportsReasoning: true,
+          thinkingLevels: ['high']
+        }
+      ];
+    }
+  };
+  const hostInvoke = f.desktop.invoke;
+  f.desktop.invoke = async (request) => {
+    if (request.operation === 'session/create') {
+      enteredCreate();
+      await new Promise((resolve) => {
+        releaseCreate = resolve;
+      });
+    }
+    return hostInvoke(request);
+  };
+  const args = {
+    action: 'start',
+    kind: 'analysis',
+    confirmed: true,
+    modelKey: 'fixture/model',
+    thinkingLevel: 'high',
+    revision: (await f.g.run({ action: 'project_snapshot' })).revision
+  };
+  const first = operationInvoke(f.root, args, f.desktop, async () => true, models);
+  const second = operationInvoke(f.root, args, f.desktop, async () => true, models).then(
+    () => null,
+    (e) => e
+  );
+  releaseModels();
+  await createEntered;
+  try {
+    const rejected = await second;
+    assert.match(rejected?.message || '', /already being submitted/);
+    const run = (await operationInvoke(f.root, { action: 'list' }, f.desktop)).runs[0];
+    await assert.rejects(
+      operationInvoke(f.root, { action: 'resolve', id: run.id, confirmed: true }, f.desktop),
+      /Wait/
+    );
+  } finally {
+    releaseCreate();
+    await first;
+  }
+  assert.equal(f.calls.filter((c) => c.operation === 'session/create').length, 1);
+  assert.equal(f.calls.filter((c) => c.operation === 'agent/prompt').length, 1);
+});

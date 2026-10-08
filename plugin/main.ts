@@ -45,7 +45,8 @@ async function onPanelInvoke(channel, payload) {
           root,
           payload,
           pi.desktop,
-          async () => resolve((await pi.workspace.get())?.path || '') === resolve(root)
+          async () => resolve((await pi.workspace.get())?.path || '') === resolve(root),
+          pi.models
         )
       : panelInvoke(root, channel, payload)
   );

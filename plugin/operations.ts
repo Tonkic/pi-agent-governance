@@ -83,11 +83,63 @@ function taskPrompt(run, state, item) {
     `. Its reviewed itemFingerprint must remain ${run.itemFingerprint}. Use governance board_accept with method="agent", id=${JSON.stringify(run.itemId)}, expectedItem=${JSON.stringify(run.itemFingerprint)}, reviewer="Agent", passed=true/false, accepted (one Boolean per item criterion), conclusion and evidence. Read a fresh project_snapshot revision, but refuse to accept if the item content, task or stage changed; only review a done item. Passing records move to accepted, failing records return to doing. A settled conversation alone is not acceptance.`
   );
 }
+const thinkingLevels = ['off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'];
+async function availableModels(models) {
+  if (!models?.list) throw Error('models.list is unavailable or not granted');
+  const rows = await models.list();
+  if (!Array.isArray(rows) || rows.length > 5000) throw Error('Invalid host model list');
+  const seen = new Set();
+  return rows
+    .filter(
+      (row) =>
+        row &&
+        typeof row.providerId === 'string' &&
+        row.providerId &&
+        typeof row.modelId === 'string' &&
+        row.modelId &&
+        row.key === `${row.providerId}/${row.modelId}` &&
+        !seen.has(row.key) &&
+        seen.add(row.key)
+    )
+    .map((row) => ({
+      key: row.key,
+      providerId: row.providerId,
+      modelId: row.modelId,
+      providerName: typeof row.providerName === 'string' ? row.providerName : row.providerId,
+      label: typeof row.label === 'string' ? row.label : row.modelId,
+      thinkingLevels:
+        row.supportsReasoning === true && Array.isArray(row.thinkingLevels)
+          ? [...new Set(row.thinkingLevels.filter((level) => thinkingLevels.includes(level)))]
+          : []
+    }));
+}
+async function launchSelection(
+  payload,
+  models
+): Promise<{ providerId?: string; modelId?: string; thinkingLevel?: string }> {
+  if (payload.modelKey === undefined || payload.modelKey === '') {
+    if (payload.thinkingLevel !== undefined && payload.thinkingLevel !== '')
+      throw Error('Select a model before choosing thinking intensity');
+    return {};
+  }
+  if (typeof payload.modelKey !== 'string') throw Error('Invalid model selection');
+  const model = (await availableModels(models)).find((row) => row.key === payload.modelKey);
+  if (!model) throw Error('Selected model is no longer available; choose again');
+  const level = payload.thinkingLevel;
+  if (level !== undefined && level !== '' && !model.thinkingLevels.includes(level))
+    throw Error('Selected model does not support this thinking intensity');
+  return {
+    providerId: model.providerId,
+    modelId: model.modelId,
+    ...(level !== undefined && level !== '' ? { thinkingLevel: level } : {})
+  };
+}
 async function operationInvoke(
   root: string,
   payload: any,
   desktop: any,
-  isCurrent: () => Promise<boolean> = async () => true
+  isCurrent: () => Promise<boolean> = async () => true,
+  models?: any
 ) {
   const g = new Governance(root);
   if (!desktop?.invoke || !desktop?.listOperations)
@@ -99,6 +151,7 @@ async function operationInvoke(
     return result(await desktop.invoke({ operation, args }));
   };
   const action = payload?.action;
+  if (action === 'models') return { workspace: g.root, models: await availableModels(models) };
   if (action === 'list')
     return g.locked(async () => ({ workspace: g.root, ...(await readRuns(g)) }));
   if (action === 'start') {
@@ -111,6 +164,7 @@ async function operationInvoke(
     inFlight.add(g.root);
     let run, state, item;
     try {
+      const selection = await launchSelection(payload, models);
       run = await g.locked(async () => {
         state = await g.state();
         const snapshot = await new ProjectData(g).snapshot();
@@ -134,6 +188,8 @@ async function operationInvoke(
           taskId: state.task,
           itemId: item?.id || null,
           itemFingerprint: item?.itemFingerprint || null,
+          modelKey: selection.providerId ? `${selection.providerId}/${selection.modelId}` : null,
+          thinkingLevel: selection.thinkingLevel || null,
           sessionId: null,
           phase: 'creating',
           startedAt: now,
@@ -148,7 +204,8 @@ async function operationInvoke(
         {
           title: `Governance · ${run.kind}${item ? ' · ' + item.title : ''}`,
           projectPath: g.root,
-          mode: 'agent'
+          mode: 'agent',
+          ...selection
         }
       ]);
       const sessionId = created?.session?.id ?? created?.sessionId ?? created?.id;

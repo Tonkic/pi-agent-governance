@@ -2,15 +2,15 @@
 
 PI-Desktop 本地插件：保存任务目标和进度，展示项目看板与源码架构，管理受管 Git 工作区。项目数据保存在仓库文件中，Agent 可以据此接手工作。
 
-社区 ID：`io.github.tonkic.agent-governance`。本地版本 0.6.9；市场已发布版本 0.6.0。
+社区 ID：`io.github.tonkic.agent-governance`。本地版本 0.6.10；市场已发布版本 0.6.0。
 
 ## 安装与使用
 
-1. 在 PI-Desktop 插件页安装 `plugin/dist/io.github.tonkic.agent-governance-0.6.9.piplug`，确认权限。开发时加载 `plugin/`。本版新增 `desktop.control`，用于显式确认的项目 Agent 操作。
+1. 在 PI-Desktop 插件页安装 `plugin/dist/io.github.tonkic.agent-governance-0.6.10.piplug`，确认权限。开发时加载 `plugin/`。任务执行需 `desktop.control`；模型选择新增只读 `models.list`。
 2. 打开项目工作区，在命令面板运行 `Agent Governance: 打开治理面板`。
 3. 向 Agent 提出目标与验收条件，例如：`使用 governance 初始化这个项目，保留已有文件。目标是修复搜索功能，验收是相关测试通过。`
 
-工作台分为待办、正在进行、已完成、已验收四列。已完成卡片提供人工/Agent验收，记录结论与依据后才能通过；修改工作项会使旧验收失效。顶部「项目操作」打开总体目标和进度，「开始分析」「分析进度」管理独立Agent任务；架构页「重新分析架构」发起源码重分析，刷新仅重读已有数据。任务可能产生模型费用，不自动开发、关闭总体任务、合并、推送或安装。原有搜索、拖动、详情和上下文菜单保留；独立配色随明暗，可切宿主配色。[项目接口与限制](plugin/PROJECT.md)、[组件来源及许可](plugin/UI-SOURCES.md)。
+工作台分为待办、正在进行、已完成、已验收四列。页面级按钮集中在顶部操作面板，按「页面操作」「项目任务」「显示设置」「画布」分类，随当前页面显示；卡片编辑/验收仍贴近对象。开始分析、重新分析架构和Agent验收先打开启动设置，选择宿主可用模型及其支持的思考强度，再确认运行。也可明确使用宿主默认；选择仅用于本次新会话，不修改宿主设置。刷新只重读已有数据。验收证据、修改后失效及项目总体验收守卫保留。[项目接口与限制](plugin/PROJECT.md)、[组件来源及许可](plugin/UI-SOURCES.md)。
 
 已有任务时先调用 `status`，按 `STATE.json` 接续工作。基本流程为 `status → start（需要时）→ 开发与检查 → verify → close`。看板完成不代表总体验收通过。
 
