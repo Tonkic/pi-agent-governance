@@ -1,6 +1,5 @@
 'use strict';
-// Optional real-browser / real-core bridge test, NOT an installed-host test.
-// NODE_PATH must resolve Playwright; PI_BROWSER points to a Chromium executable.
+// Real Chromium + real governance backend, simulated plugin bridge. Not installed-host acceptance.
 const { chromium } = require('playwright');
 const fs = require('node:fs/promises');
 const path = require('node:path');
@@ -11,281 +10,619 @@ const { Governance } = require('../plugin/runtime/core');
 const { panelInvoke } = require('../plugin/runtime/panel');
 (async () => {
   const base = process.env.PI_SCRATCH_DIR || os.tmpdir();
-  const roots = await Promise.all([1, 2].map(() => fs.mkdtemp(path.join(base, 'board-browser-'))));
-  let root = roots[0];
+  const roots = await Promise.all(
+    [1, 2].map(() => fs.mkdtemp(path.join(base, 'workbench-browser-')))
+  );
+  let root = roots[0],
+    holdGit = false,
+    releaseGit,
+    failProject = false,
+    failSnapshot = false;
   const g = new Governance(root);
-  await g.run({ action: 'init' });
-  await g.run({ action: 'start', id: 'overall', goal: 'Browser fixture', criteria: ['Interactions pass'] });
-  await new Governance(roots[1]).run({ action: 'init' });
+  for (const dir of roots) await new Governance(dir).run({ action: 'init' });
+  await g.run({
+    action: 'start',
+    id: 'overall',
+    goal: 'Publish the next workspace release',
+    criteria: ['UI checks pass', 'Sources stay traceable']
+  });
   const stateBefore = await fs.readFile(path.join(root, 'STATE.json'), 'utf8');
   const snapshot = () => g.run({ action: 'project_snapshot' });
-  const mutate = async args => g.run({ ...args, expectedRevision: (await snapshot()).revision });
-  const browser = await chromium.launch({ headless: true, ...(process.env.PI_BROWSER ? { executablePath: process.env.PI_BROWSER } : {}) });
-  const output = path.join(base, 'project-board-screenshots');
+  const mutate = async (args) => g.run({ ...args, expectedRevision: (await snapshot()).revision });
+  const browser = await chromium.launch({
+    headless: true,
+    ...(process.env.PI_BROWSER ? { executablePath: process.env.PI_BROWSER } : {})
+  });
+  const output = path.join(base, 'object-workbench-screenshots');
   await fs.mkdir(output, { recursive: true });
-  try {
-    const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
-    const errors = []; page.on('pageerror', e => errors.push(e.message));
-    let holdGit = false, releaseGit, releaseAppearance, holdAppearance = true;
-    await page.exposeFunction('hostInvoke', async (channel, payload) => {
-      if (channel === 'app.getAppearance') return holdAppearance ? new Promise(resolve => { releaseAppearance = () => { holdAppearance = false; resolve({ base: 'light' }); }; }) : { base: 'light' };
-      if (channel === 'app.getLocale') return 'zh-CN';
-      if (channel === 'governance.git' && holdGit) await new Promise(resolve => { releaseGit = resolve; });
-      try { return { ok: true, result: await panelInvoke(root, channel, payload) }; }
-      catch (e) { return { ok: false, error: e.message }; }
-    });
-    await page.addInitScript(() => { window.pluginBridge = { invoke: (...args) => window.hostInvoke(...args), on: (event, handler) => { if (event === 'appearance:changed') window.addEventListener('test-appearance', e => handler(e.detail)); } }; });
-    const settled = () => page.waitForFunction(() => !document.querySelector('#refresh').disabled);
-    const confirm = async () => { await page.getByRole('button', { name: '确认写入', exact: true }).click(); await settled(); };
-    const refresh = async () => { await page.locator('#refresh').click(); await settled(); };
-    const card = id => page.locator(`[data-workitem="${id}"]`);
-    const views = ['architecture', 'board-section', 'task-section', 'git-section'];
-    const navigate = async (target, owner = page) => { await owner.locator(`.workspace-nav a[href="#${target}"]`).click(); await owner.waitForFunction(id => !document.getElementById(id).hidden, target); };
-    await page.goto(pathToFileURL(path.resolve('plugin/renderer/index.html')).href); await settled();
-    await page.emulateMedia({ colorScheme: 'dark' });
-    await page.waitForFunction(() => document.documentElement.dataset.base === 'dark');
-    releaseAppearance();
-    await page.waitForFunction(() => document.documentElement.dataset.base === 'light');
-    await page.emulateMedia({ colorScheme: 'light' });
-    // Real host preload injects its 46px native drag band via an inline Shadow DOM style.
-    // CSP must permit those styles without permitting inline scripts.
-    const chromeStyle = await page.evaluate(() => {
-      const host = document.createElement('pi-plugin-panel-chrome');
-      const shadow = host.attachShadow({ mode: 'open' });
-      const style = document.createElement('style');
-      style.textContent = '.drag-region { position: fixed; height: 46px; -webkit-app-region: drag; } .control { -webkit-app-region: no-drag; }';
-      const drag = document.createElement('div'); drag.className = 'drag-region';
-      const button = document.createElement('button'); button.className = 'control';
-      shadow.append(style, drag, button); document.documentElement.append(host);
-      const result = { region: getComputedStyle(drag).getPropertyValue('-webkit-app-region'), position: getComputedStyle(drag).position, height: getComputedStyle(drag).height, button: getComputedStyle(button).getPropertyValue('-webkit-app-region') };
-      host.remove(); return result;
-    });
-    assert.deepEqual(chromeStyle, { region: 'drag', position: 'fixed', height: '46px', button: 'no-drag' }, 'Host chrome styles must survive the panel CSP');
-    assert.match(await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content'), /script-src 'self';/);
-    assert.match(await page.locator('#graph-empty').textContent(), /尚无项目架构/);
-    for (const view of views) {
-      await navigate(view);
-      for (const other of views) assert.equal(await page.locator(`#${other}`).isVisible(), other === view);
-      assert.equal(await page.locator('.workspace-nav a[aria-current="page"]').count(), 1);
-    }
-    await page.goBack(); await page.waitForFunction(() => !document.getElementById('task-section').hidden);
-    await page.goForward(); await page.waitForFunction(() => !document.getElementById('git-section').hidden);
-    await page.emulateMedia({ reducedMotion: 'reduce', contrast: 'more' });
-    const sendAppearance = value => page.evaluate(v => window.dispatchEvent(new CustomEvent('test-appearance', { detail: v })), value);
-    const rootColor = name => page.locator('html').evaluate((el, key) => el.style.getPropertyValue(key), name);
-    assert.equal(await page.locator('html').getAttribute('data-palette'), 'pebrel');
-    await page.locator('#palette-toggle').click();
-    assert.equal(await page.locator('html').getAttribute('data-palette'), 'host');
-    await sendAppearance({ base: 'dark', pluginTheme: { id: 'custom', base: 'dark', css: ':root[data-theme="light"] { --ds-accent: red; } :root[data-theme="dark"] { --brand: #82b89a; --ds-accent: var(--brand); --ds-bg-primary: #15251c; --ds-text-primary: #f2faf5; } body { display: none; }' } });
-    assert.equal(await rootColor('--accent'), '#82b89a');
-    assert.equal(await rootColor('--bg'), '#15251c');
-    assert.equal(await page.locator('#refresh').isVisible(), true, 'Theme selectors must never change layout');
-    await sendAppearance({ base: 'dark', pluginTheme: { id: 'cascade', base: 'dark', css: ':root[data-theme="dark"] { --ds-accent: green; --ds-bg-primary: #112233; } :root { --ds-accent: red; --ds-bg-primary: #223344 !important; }' } });
-    assert.equal(await rootColor('--accent'), 'green', 'Matching attribute selector wins over later root');
-    assert.equal(await rootColor('--bg'), '#223344', 'Important root declaration wins');
-    const expandingCss = ':root { --ds-accent: var(--v0); ' + Array.from({ length: 7 }, (_, i) => `--v${i}: ${`var(--v${i + 1}) `.repeat(30)};`).join(' ') + ' --v7: red; }';
-    await sendAppearance({ base: 'dark', pluginTheme: { id: 'bounded', base: 'dark', css: expandingCss } });
-    assert.equal(await rootColor('--accent'), '', 'Expanding aliases fall back instead of blocking the renderer');
-    await sendAppearance({ base: 'dark', pluginTheme: { id: 'unsafe', base: 'dark', css: ':root { --ds-bg-primary: url(https://example.invalid/track); --loop: var(--loop); --ds-accent: var(--loop); --ds-text-muted: var(--missing, #aabbcc); }' } });
-    assert.equal(await rootColor('--bg'), '');
-    assert.equal(await rootColor('--accent'), '');
-    assert.equal(await rootColor('--muted'), '#aabbcc');
-    await sendAppearance({ base: 'light', pluginTheme: null });
-    assert.equal(await rootColor('--muted'), '', 'Returning to built-in removes contributed colors');
-    await page.emulateMedia({ colorScheme: 'dark' });
-    await sendAppearance({ base: 'system' });
-    assert.equal(await page.locator('html').getAttribute('data-base'), 'dark');
-    await page.emulateMedia({ colorScheme: 'light' });
-    await page.waitForFunction(() => document.documentElement.dataset.base === 'light');
-    await sendAppearance({ base: 'light' });
-    assert.equal(await page.locator('.workspace-nav').evaluate(el => getComputedStyle(el).backdropFilter), 'none');
-    await page.emulateMedia({ reducedMotion: 'no-preference', contrast: 'no-preference' });
-    await page.locator('#palette-toggle').click();
-    assert.equal(await page.locator('html').getAttribute('data-palette'), 'pebrel');
-    assert.equal(await page.evaluate(() => localStorage.getItem('governance-palette')), 'pebrel');
-    await navigate('board-section');
-    for (const id of ['first', 'second']) {
-      await page.locator('#workitem-id').fill(id); await page.locator('#workitem-title').fill(id);
-      await page.locator('#workitem-save').click();
-      if (id === 'first') {
-        await page.getByRole('button', { name: '取消', exact: true }).click(); await settled();
-        assert.equal((await snapshot()).board.items.length, 0);
-        assert.equal(await page.locator('#workitem-id').inputValue(), id);
-        await page.locator('#workitem-save').click();
+  const errors = [];
+  let shots = 0;
+  const url = pathToFileURL(path.resolve('plugin/renderer/index.html')).href;
+  async function makePage(locale = 'zh-CN') {
+    const p = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+    p.on('pageerror', (e) => errors.push(e.message));
+    await p.exposeFunction('hostInvoke', async (channel, payload) => {
+      if (channel === 'app.getLocale') return locale;
+      if (channel === 'app.getAppearance') return { base: 'light' };
+      if (channel === 'governance.git' && holdGit)
+        await new Promise((resolve) => {
+          releaseGit = resolve;
+        });
+      if (
+        (failProject && channel === 'governance.project') ||
+        (failSnapshot && channel === 'governance.snapshot')
+      )
+        return { ok: false, error: 'Fixture read failure' };
+      try {
+        return { ok: true, result: await panelInvoke(root, channel, payload) };
+      } catch (e) {
+        return { ok: false, error: e.message };
       }
-      await confirm(); assert.equal(await card(id).count(), 1);
+    });
+    await p.addInitScript(() => {
+      window.pluginBridge = {
+        invoke: (...args) => window.hostInvoke(...args),
+        on: (event, fn) => {
+          if (event === 'appearance:changed')
+            window.addEventListener('test-appearance', (e) => fn(e.detail));
+        }
+      };
+    });
+    await p.goto(url);
+    await settled(p);
+    return p;
+  }
+  const settled = (p) => p.waitForFunction(() => !document.querySelector('#refresh').disabled);
+  const confirm = async (p, yes = true) => {
+    await p.locator(`#confirm-dialog button[value="${yes ? 'confirm' : 'cancel'}"]`).click();
+    await settled(p);
+  };
+  const refresh = async (p) => {
+    await p.locator('#refresh').click();
+    await settled(p);
+  };
+  const navigate = async (p, id) => {
+    await p.locator(`.workspace-nav a[href="#${id}"]`).click();
+    await p.waitForFunction((id) => !document.getElementById(id).hidden, id);
+  };
+  const card = (p, id) => p.locator(`[data-workitem="${id}"]`);
+  const menu = async (p, id, label) => {
+    await card(p, id).click({ button: 'right' });
+    await p.locator('#item-menu').getByRole('menuitem', { name: label, exact: true }).click();
+  };
+  const close = async (p) => {
+    await p.locator('#item-close').click();
+    if (await p.locator('#confirm-dialog').evaluate((el) => el.open)) await confirm(p);
+    await p.waitForFunction(() => !document.querySelector('#item-sheet').open);
+  };
+  const capture = async (p, name) => {
+    await p.screenshot({ path: path.join(output, `state-${name}.png`), fullPage: true });
+    shots++;
+  };
+  const sendAppearance = (p, value) =>
+    p.evaluate(
+      (v) => window.dispatchEvent(new CustomEvent('test-appearance', { detail: v })),
+      value
+    );
+  const rootColor = (p, name) =>
+    p.locator('html').evaluate((el, key) => el.style.getPropertyValue(key), name);
+  try {
+    const page = await makePage();
+    // Default is object workbench, with no permanently visible item editor or KPI wall.
+    assert.equal(await page.locator('#board-section').isVisible(), true);
+    assert.equal(await page.locator('#workitem-form').isVisible(), false);
+    assert.equal(await page.locator('.metrics').count(), 0);
+    assert.equal(await page.locator('.workspace-nav a').count(), 3);
+    assert.equal(await page.locator('#project-details').getAttribute('open'), null);
+    for (const id of ['architecture', 'git-section', 'board-section']) {
+      await navigate(page, id);
+      for (const other of ['architecture', 'git-section', 'board-section'])
+        assert.equal(await page.locator('#' + other).isVisible(), other === id);
     }
-    // Dropping on self must not prompt or reorder.
-    await card('first').dragTo(card('first'));
-    assert.equal(await page.locator('#confirm-dialog').evaluate(el => el.open), false);
-    assert.equal((await snapshot()).board.items[0].id, 'first');
-    // Switching edit targets must preserve drafts when cancellation is chosen.
-    await card('first').getByRole('button', { name: 'first：编辑', exact: true }).click();
+    await page.goBack();
+    await page.waitForFunction(() => !document.querySelector('#git-section').hidden);
+    await page.goForward();
+    await page.waitForFunction(() => !document.querySelector('#board-section').hidden);
+    // Host-injected drag chrome styles must still survive CSP; inline scripts remain blocked.
+    const chrome = await page.evaluate(() => {
+      const host = document.createElement('pi-plugin-panel-chrome');
+      const s = host.attachShadow({ mode: 'open' });
+      const style = document.createElement('style');
+      style.textContent =
+        '.drag{position:fixed;height:46px;-webkit-app-region:drag}.control{-webkit-app-region:no-drag}';
+      const d = document.createElement('div');
+      d.className = 'drag';
+      const b = document.createElement('button');
+      b.className = 'control';
+      s.append(style, d, b);
+      document.documentElement.append(host);
+      const r = {
+        region: getComputedStyle(d).getPropertyValue('-webkit-app-region'),
+        height: getComputedStyle(d).height,
+        button: getComputedStyle(b).getPropertyValue('-webkit-app-region')
+      };
+      host.remove();
+      return r;
+    });
+    assert.deepEqual(chrome, { region: 'drag', height: '46px', button: 'no-drag' });
+    assert.match(
+      await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content'),
+      /script-src 'self';/
+    );
+    // Host palette remains opt-in, only color values are applied.
+    await page.locator('#palette-toggle').click();
+    await sendAppearance(page, {
+      base: 'dark',
+      pluginTheme: {
+        id: 'fixture',
+        base: 'dark',
+        css: ':root[data-theme="dark"]{--brand:#82b89a;--ds-accent:var(--brand);--ds-bg-primary:#15251c}:root{--ds-accent:red}body{display:none}'
+      }
+    });
+    assert.equal(await rootColor(page, '--accent'), '#82b89a');
+    assert.equal(await rootColor(page, '--bg'), '#15251c');
+    assert.equal(await page.locator('#board-new').isVisible(), true);
+    await sendAppearance(page, {
+      base: 'dark',
+      pluginTheme: {
+        id: 'important',
+        base: 'dark',
+        css: ':root[data-theme="dark"]{--ds-accent:green}:root{--ds-accent:red!important}'
+      }
+    });
+    assert.equal(await rootColor(page, '--accent'), 'red');
+    const huge =
+      ':root{--ds-accent:var(--v0);' +
+      Array.from({ length: 7 }, (_, i) => `--v${i}:${`var(--v${i + 1}) `.repeat(30)};`).join('') +
+      '--v7:red}';
+    await sendAppearance(page, {
+      base: 'dark',
+      pluginTheme: { id: 'budget', base: 'dark', css: huge }
+    });
+    assert.equal(await rootColor(page, '--accent'), '');
+    await sendAppearance(page, {
+      base: 'dark',
+      pluginTheme: {
+        id: 'invalid',
+        base: 'dark',
+        css: ':root{--ds-bg-primary:url(https://example.invalid);--loop:var(--loop);--ds-accent:var(--loop);--ds-text-muted:var(--missing,#aabbcc)}'
+      }
+    });
+    assert.equal(await rootColor(page, '--bg'), '');
+    assert.equal(await rootColor(page, '--accent'), '');
+    assert.equal(await rootColor(page, '--muted'), '#aabbcc');
+    await sendAppearance(page, { base: 'light' });
+    assert.equal(await rootColor(page, '--muted'), '');
+    await page.locator('#palette-toggle').click();
+    assert.equal(await page.locator('html').getAttribute('data-palette'), 'pebrel');
+    // Creation opens a sheet; generated ID is not part of the user's form.
+    async function create(title) {
+      await page.locator('#board-new').click();
+      await page.waitForFunction(() => document.querySelector('#item-sheet').open);
+      const id = await page.locator('#workitem-id').inputValue();
+      assert.match(id, /^item-[a-f0-9]{8}$/);
+      assert.equal(await page.locator('#workitem-id').isVisible(), false);
+      await page.locator('#workitem-title').fill(title);
+      return id;
+    }
+    const first = await create('Review workspace navigation');
+    await capture(page, 'new-item');
+    await page
+      .locator('#workitem-description')
+      .fill('Check search, object details and keyboard return.');
+    await page.locator('#workitem-save').click();
+    await confirm(page, false);
+    assert.equal((await snapshot()).board.items.length, 0);
+    assert.equal(await page.locator('#workitem-title').inputValue(), 'Review workspace navigation');
+    await page.locator('#workitem-save').click();
+    await confirm(page);
+    assert.equal(await card(page, first).count(), 1);
+    const second = await create('Polish architecture canvas');
+    await page.locator('#workitem-save').click();
+    await confirm(page);
+    await card(page, first).dragTo(card(page, first));
+    assert.equal(await page.locator('#confirm-dialog').evaluate((el) => el.open), false);
+    // Details return, generated Agent guidance, literal user data.
+    await card(page, first).click();
+    assert.equal(await page.locator('#workitem-form').isVisible(), false);
+    assert.match(await page.locator('#item-description').textContent(), /keyboard return/);
+    await page.locator('#item-guide').click();
+    assert.match(await page.locator('#agent-brief').inputValue(), new RegExp(first));
+    assert.match(await page.locator('#agent-brief').inputValue(), /governance/);
+    await close(page);
+    assert.equal(await card(page, first).evaluate((el) => el === document.activeElement), true);
+    // Menu keys and focus recovery.
+    await card(page, first).focus();
+    await page.keyboard.press('Shift+F10');
+    assert.equal(await page.locator('#item-menu').isVisible(), true);
+    await capture(page, 'menu');
+    await page.keyboard.press('End');
+    await page.keyboard.press('Escape');
+    assert.equal(await card(page, first).evaluate((el) => el === document.activeElement), true);
+    await menu(page, first, '编辑');
     await page.locator('#workitem-title').fill('draft first');
+    await card(page, first).focus();
+    await page.keyboard.press('Shift+F10');
+    await page
+      .locator('#item-menu')
+      .getByRole('menuitem', { name: '移至进行中', exact: true })
+      .focus();
+    await page.keyboard.press('Enter');
+    await confirm(page, false);
+    assert.equal(
+      await card(page, first).evaluate((el) => el === document.activeElement),
+      true,
+      'Canceled keyboard move restores card focus'
+    );
+    await menu(page, second, '编辑');
+    await confirm(page, false);
+    assert.equal(await page.locator('#workitem-title').inputValue(), 'draft first');
+    await page.keyboard.press('Escape');
+    await confirm(page, false);
+    assert.equal(await page.locator('#item-sheet').evaluate((el) => el.open), true);
     await page.locator('#palette-toggle').click();
     await page.locator('#palette-toggle').click();
     assert.equal(await page.locator('#workitem-title').inputValue(), 'draft first');
-    await sendAppearance({ base: 'dark' });
-    assert.equal(await page.locator('#workitem-title').inputValue(), 'draft first', 'Theme changes preserve unsaved user content');
-    await sendAppearance({ base: 'light' });
-    await card('second').getByRole('button', { name: 'second：编辑', exact: true }).click();
-    assert.match(await page.locator('#confirm-description').textContent(), /丢弃当前未保存/);
-    await page.getByRole('button', { name: '取消', exact: true }).click(); await settled();
-    assert.equal(await page.locator('#workitem-title').inputValue(), 'draft first');
-    assert.equal(await page.locator('#workitem-id').inputValue(), 'first');
-    // Saving progress must explicitly disclose loss of the other form's draft.
-    await navigate('task-section');
+    // Total project controls share the workbench but keep their own governance boundary.
+    await page.locator('#project-details > summary').click();
     await page.getByRole('button', { name: '保存进度', exact: true }).click();
-    assert.match(await page.locator('#confirm-description').textContent(), /丢弃未提交的工作项草稿/);
-    await page.getByRole('button', { name: '取消', exact: true }).click(); await settled();
-    assert.equal(await page.locator('#workitem-title').inputValue(), 'draft first');
-    await navigate('board-section');
-    await page.locator('#workitem-cancel').click();
-    await navigate('task-section');
+    assert.match(await page.locator('#confirm-description').textContent(), /工作项草稿/);
+    await confirm(page, false);
+    await close(page);
     await page.locator('#edit-current').fill('progress draft');
-    await navigate('board-section');
-    await card('first').getByRole('button', { name: 'first：移至进行中', exact: true }).click();
-    assert.match(await page.locator('#confirm-description').textContent(), /丢弃未提交的总体进度草稿/);
-    await page.getByRole('button', { name: '取消', exact: true }).click(); await settled();
+    await menu(page, first, '移至进行中');
+    assert.match(await page.locator('#confirm-description').textContent(), /总体进度草稿/);
+    await confirm(page, false);
     assert.equal(await page.locator('#edit-current').inputValue(), 'progress draft');
-    await refresh(); await refresh();
-    await card('second').getByRole('button', { name: 'second：上移', exact: true }).focus();
-    await page.keyboard.press('Enter'); await confirm();
-    assert.equal((await snapshot()).board.items[0].id, 'second');
-    await card('first').dragTo(page.locator('.board-column[data-stage="doing"]')); await confirm();
-    assert.equal((await snapshot()).board.items.find(i => i.id === 'first').stage, 'doing');
-    await page.reload(); await settled();
-    assert.equal(await page.locator('[data-stage="doing"] [data-workitem="first"]').count(), 1);
-    await card('first').getByRole('button', { name: 'first：编辑', exact: true }).click();
-    await page.locator('#workitem-blocker').fill('Needs review'); await page.locator('#workitem-save').click(); await confirm();
-    await card('first').getByRole('button', { name: 'first：移至完成', exact: true }).click(); await confirm();
+    await refresh(page);
+    await refresh(page);
+    await page.locator('#project-details > summary').click(); // restore collapsed workbench
+    await menu(page, second, '上移');
+    await confirm(page);
+    assert.equal((await snapshot()).board.items[0].id, second);
+    await card(page, first).dragTo(page.locator('.board-column[data-stage="doing"]'));
+    await confirm(page);
+    assert.equal((await snapshot()).board.items.find((i) => i.id === first).stage, 'doing');
+    await page.reload();
+    await settled(page);
+    assert.equal(await page.locator(`[data-stage="doing"] [data-workitem="${first}"]`).count(), 1);
+    await menu(page, first, '编辑');
+    await page.locator('#workitem-blocker').fill('Needs approval');
+    await page.locator('#workitem-save').click();
+    await confirm(page);
+    await menu(page, first, '移至完成');
+    await confirm(page);
     assert.match(await page.locator('#notice').textContent(), /blocker/);
-    assert.equal((await snapshot()).board.items.find(i => i.id === 'first').stage, 'doing');
-    await card('first').getByRole('button', { name: 'first：编辑', exact: true }).click();
-    await page.locator('#workitem-blocker').fill(''); await page.locator('#workitem-save').click(); await confirm();
-    await card('first').getByRole('button', { name: 'first：移至完成', exact: true }).click(); await confirm();
-    assert.equal((await snapshot()).board.items.find(i => i.id === 'first').stage, 'done');
+    assert.equal((await snapshot()).board.items.find((i) => i.id === first).stage, 'doing');
+    await menu(page, first, '编辑');
+    await page.locator('#workitem-blocker').fill('');
+    await page.locator('#workitem-save').click();
+    await confirm(page);
+    await menu(page, first, '移至完成');
+    await confirm(page);
+    assert.equal((await snapshot()).board.items.find((i) => i.id === first).stage, 'done');
     assert.equal(await fs.readFile(path.join(root, 'STATE.json'), 'utf8'), stateBefore);
-    // Unsaved refresh requires two clicks, and clears edit mode as well as fields.
-    await card('second').getByRole('button', { name: 'second：编辑', exact: true }).click();
-    await page.locator('#workitem-title').fill('unsaved'); await refresh();
-    assert.equal(await page.locator('#workitem-title').inputValue(), 'unsaved'); await refresh();
-    assert.equal(await page.locator('#workitem-title').inputValue(), '');
-    assert.equal(await page.locator('#workitem-id').evaluate(el => el.readOnly), false);
-    // Stale write must retain persisted placement.
-    await mutate({ action: 'board_update', id: 'second', title: 'External' });
-    await card('second').getByRole('button', { name: 'second：移至进行中', exact: true }).click(); await confirm();
+    // Search locator, filtered drag safety, empty-state recovery.
+    await page.keyboard.press('/');
+    assert.equal(
+      await page.locator('#board-search').evaluate((el) => el === document.activeElement),
+      true
+    );
+    await page.locator('#board-search').fill('canvas');
+    assert.equal(await page.locator('[data-workitem]').count(), 1);
+    assert.equal(await card(page, second).getAttribute('draggable'), 'false');
+    await page.locator('#board-search').fill('no-such-object');
+    assert.equal(await page.locator('#board-empty').isVisible(), true);
+    await capture(page, 'no-results');
+    await page.locator('#search-clear').click();
+    assert.equal(await page.locator('[data-workitem]').count(), 2);
+    // Synthetic touch PointerEvents exercise the long-press handler; not physical-device acceptance.
+    await card(page, first).dispatchEvent('pointerdown', {
+      pointerType: 'touch',
+      button: 0,
+      clientX: 200,
+      clientY: 200
+    });
+    await page.waitForTimeout(550);
+    assert.equal(await page.locator('#item-menu').isVisible(), true);
+    await card(page, first).dispatchEvent('pointerup', { pointerType: 'touch' });
+    await page.keyboard.press('Escape');
+    await card(page, first).dispatchEvent('pointerdown', {
+      pointerType: 'touch',
+      button: 0,
+      clientX: 200,
+      clientY: 200
+    });
+    await card(page, first).dispatchEvent('pointermove', {
+      pointerType: 'touch',
+      clientX: 225,
+      clientY: 210
+    });
+    await page.waitForTimeout(550);
+    assert.equal(await page.locator('#item-menu').isVisible(), false);
+    await card(page, first).dispatchEvent('pointerdown', {
+      pointerType: 'touch',
+      button: 0,
+      clientX: 200,
+      clientY: 200
+    });
+    await page.waitForTimeout(2200);
+    await card(page, first).dispatchEvent('pointerup', { pointerType: 'touch' });
+    await card(page, first).dispatchEvent('click');
+    assert.equal(
+      await page.locator('#item-menu').isVisible(),
+      true,
+      'Long hold release must preserve menu'
+    );
+    assert.equal(await page.locator('#item-sheet').evaluate((el) => el.open), false);
+    await page.keyboard.press('Escape');
+    // Offline pauses writes, preserves read access, and never replays an action on reconnect.
+    await page.context().setOffline(true);
+    await page.waitForFunction(() => document.querySelector('#board-new').disabled);
+    assert.match(await page.locator('#notice').textContent(), /离线/);
+    await capture(page, 'offline');
+    await card(page, first).click();
+    assert.equal(await page.locator('#item-sheet').evaluate((el) => el.open), true);
+    await close(page);
+    await page.context().setOffline(false);
+    await refresh(page);
+    assert.equal(await page.locator('#board-new').isEnabled(), true);
+    // Disconnecting during confirmation must not invoke either local write path.
+    const offlineBoard = JSON.stringify((await snapshot()).board);
+    await menu(page, second, '移至进行中');
+    await page.context().setOffline(true);
+    await confirm(page);
+    assert.equal(JSON.stringify((await snapshot()).board), offlineBoard);
+    await page.context().setOffline(false);
+    await refresh(page);
+    await menu(page, second, '编辑');
+    await page.locator('#workitem-title').fill('offline draft');
+    await page.locator('#workitem-save').click();
+    await page.context().setOffline(true);
+    await confirm(page);
+    assert.equal(JSON.stringify((await snapshot()).board), offlineBoard);
+    assert.equal(await page.locator('#workitem-title').inputValue(), 'offline draft');
+    await page.context().setOffline(false);
+    await close(page);
+    await page.locator('#project-details > summary').click();
+    await page.locator('#edit-current').fill('offline progress');
+    await page.getByRole('button', { name: '保存进度', exact: true }).click();
+    await page.context().setOffline(true);
+    await confirm(page);
+    assert.equal(await fs.readFile(path.join(root, 'STATE.json'), 'utf8'), stateBefore);
+    await page.context().setOffline(false);
+    assert.equal(await fs.readFile(path.join(root, 'STATE.json'), 'utf8'), stateBefore);
+    await refresh(page);
+    await refresh(page);
+    await page.locator('#project-details > summary').click();
+    await navigate(page, 'architecture');
+    await page.locator('#graph-viewport').focus();
+    await page.keyboard.press('/');
+    await page.waitForFunction(() => !document.querySelector('#board-section').hidden);
+    assert.equal(
+      await page.locator('#board-search').evaluate((el) => el === document.activeElement),
+      true
+    );
+    // Stale and workspace-switched writes rejected by real backend.
+    await mutate({ action: 'board_update', id: second, title: 'External change' });
+    await menu(page, second, '移至进行中');
+    await confirm(page);
     assert.match(await page.locator('#notice').textContent(), /stale/);
-    assert.equal((await snapshot()).board.items.find(i => i.id === 'second').stage, 'todo'); await refresh();
-    // Inspected fixture sources provide a genuine graph via the backend API.
-    await fs.writeFile(path.join(root, 'app.ts'), "import { value } from './store';\nconsole.log(value);\n");
+    await refresh(page);
+    root = roots[1];
+    await menu(page, second, '移至进行中');
+    await confirm(page);
+    assert.match(await page.locator('#notice').textContent(), /stale|switched/);
+    assert.equal(
+      (await new Governance(root).run({ action: 'project_snapshot' })).board.items.length,
+      0
+    );
+    root = roots[0];
+    await refresh(page);
+    // Independent project/snapshot read failures are visible and recover without overwriting data.
+    failProject = true;
+    await refresh(page);
+    assert.match(await page.locator('#board-status').textContent(), /Fixture read failure/);
+    assert.match(await page.locator('#notice.error').textContent(), /Fixture read failure/);
+    await capture(page, 'read-error');
+    assert.equal(await page.locator('#board-new').isDisabled(), true);
+    failProject = false;
+    await refresh(page);
+    failSnapshot = true;
+    await refresh(page);
+    assert.match(await page.locator('#notice').textContent(), /Fixture read failure/);
+    assert.equal(await page.locator('#board-new').isDisabled(), true);
+    failSnapshot = false;
+    await refresh(page);
+    // Source-backed graph, direct relations, camera/keyboard and stale-source warning.
+    await fs.writeFile(path.join(root, 'app.ts'), "import { value } from './store';\n");
     await fs.writeFile(path.join(root, 'store.ts'), 'export const value = 1;\n');
     const sources = await g.run({ action: 'architecture_sources', files: ['app.ts', 'store.ts'] });
-    await mutate({ action: 'architecture_set', graph: { title: 'Fixture architecture', source: 'Inspected app.ts import and store.ts export; fixture only', nodes: [{ id: 'app', title: 'Application', description: 'Imports store value', files: ['app.ts'] }, { id: 'store', title: 'Store', description: 'Exports value', files: ['store.ts'] }], edges: [{ from: 'app', to: 'store', label: 'imports' }], fingerprints: sources.fingerprints } });
-    await refresh(); assert.equal(await page.locator('.architecture-node').count(), 2);
-    await navigate('architecture');
-    assert.equal(await page.locator('.architecture-node code').count(), 0);
-    assert.equal(await page.locator('#graph-source').isVisible(), false);
-    await page.locator('.graph-provenance > summary').first().focus(); await page.keyboard.press('Enter');
-    assert.equal(await page.locator('#graph-source').isVisible(), true);
-    await page.keyboard.press('Enter');
-    const positions = await page.locator('.architecture-node').evaluateAll(nodes => nodes.map(n => parseFloat(n.style.top)));
-    assert.ok(positions[0] < positions[1]);
-    await page.locator('[data-module="app"]').click(); await page.locator('[data-trace="downstream"]').click();
-    assert.match(await page.locator('#graph-summary').textContent(), /1 个节点/);
-    await page.locator('#module-relations button').click(); assert.equal(await page.locator('#module-title').textContent(), 'Store');
-    assert.equal(await page.locator('#module-path').isVisible(), false);
-    await page.locator('.module-detail summary').click();
-    assert.match(await page.locator('#module-path').innerText(), /store.ts/);
-    const transform = () => page.locator('#graph-stage').evaluate(el => el.style.transform);
-    const original = await transform(); await page.locator('#graph-in').click(); assert.notEqual(await transform(), original);
-    await page.locator('#graph-viewport').focus(); await page.keyboard.press('ArrowRight'); await page.keyboard.press('0');
-    await page.locator('[data-trace="all"]').click();
-    // A pending Git overview must not postpone independent project content.
+    await mutate({
+      action: 'architecture_set',
+      graph: {
+        title: 'Workspace dependencies',
+        source: 'Inspected fixture imports',
+        nodes: [
+          { id: 'app', title: 'Application', description: 'Imports store', files: ['app.ts'] },
+          { id: 'store', title: 'Store', description: 'Exports value', files: ['store.ts'] }
+        ],
+        edges: [{ from: 'app', to: 'store', label: 'imports' }],
+        fingerprints: sources.fingerprints
+      }
+    });
+    await refresh(page);
+    await navigate(page, 'architecture');
+    assert.equal(await page.locator('.architecture-node').count(), 2);
+    await page.locator('[data-module="app"]').click();
+    await page.locator('#module-relations button').click();
+    assert.equal(await page.locator('#module-title').textContent(), 'Store');
+    await page.locator('#graph-viewport').focus();
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('0');
+    await page.locator('#show-workflow').click();
+    assert.equal(await page.locator('.architecture-node').count(), 4);
+    await page.locator('#module-jump').click();
+    await page.waitForFunction(
+      () =>
+        document.querySelector('#project-details').open &&
+        !document.querySelector('#board-section').hidden
+    );
+    assert.equal(await page.locator('#board-section').isVisible(), true);
+    await navigate(page, 'architecture');
+    await page.locator('#show-architecture').click();
+    await fs.appendFile(path.join(root, 'app.ts'), '// change\n');
+    await refresh(page);
+    assert.equal(await page.locator('#graph-warning').isVisible(), true);
     holdGit = true;
     try {
       await page.locator('#refresh').click();
-      await page.waitForFunction(() => document.querySelectorAll('[data-workitem]').length === 2 && document.querySelectorAll('.architecture-node').length === 2, null, { timeout: 2000 });
-      assert.equal(await page.locator('#refresh').isDisabled(), true, 'Keep writes locked until the whole refresh settles');
-      assert.equal(await page.locator('#workitem-save').isDisabled(), true);
-      assert.equal(await page.locator('[data-workitem] button:enabled').count(), 0, 'New card controls must remain locked');
-      await page.waitForFunction(() => document.querySelector('#git-summary').textContent.includes('正在读取'));
-    } finally { holdGit = false; releaseGit?.(); }
-    await settled();
-    for (const width of [390, 768, 1280]) for (const theme of ['light', 'dark']) {
-      await page.setViewportSize({ width, height: 1000 });
-      await page.evaluate(theme => { document.documentElement.dataset.base = theme; }, theme);
-      for (const view of views) {
-        await navigate(view);
-        await page.waitForTimeout(80);
-        assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `overflow ${view}/${width}/${theme}`);
-        await page.screenshot({ path: path.join(output, `${view}-${width}-${theme}.png`), fullPage: true });
-      }
+      await page.waitForFunction(
+        () => document.querySelectorAll('.architecture-node').length === 2,
+        null,
+        { timeout: 2000 }
+      );
+      assert.equal(await page.locator('#board-new').isDisabled(), true);
+      assert.equal(await page.locator('[data-workitem] button:enabled').count(), 0);
+    } finally {
+      holdGit = false;
+      releaseGit?.();
     }
-    await navigate('architecture');
-    await fs.appendFile(path.join(root, 'app.ts'), '// changed\n'); await refresh();
-    assert.match(await page.locator('#graph-source').textContent(), /源码已变化：app.ts/);
-    assert.equal(await page.locator('#graph-warning').isVisible(), true);
-    assert.match(await page.locator('#graph-warning').innerText(), /app.ts/);
-    await page.locator('#show-workflow').click(); assert.equal(await page.locator('.architecture-node').count(), 4);
-    assert.equal(await page.locator('[data-module="working"]').getAttribute('aria-pressed'), 'true');
-    await g.run({ action: 'progress', current: 'Blocked', next: [], blocked: ['Need approval'] }); await refresh();
-    assert.match(await page.locator('#module-description').textContent(), /Need approval/);
-    // Changing actual bridge workspace after reading must not apply old confirmation.
-    root = roots[1];
-    await navigate('board-section');
-    await card('second').getByRole('button', { name: 'External：移至进行中', exact: true }).click(); await confirm();
-    assert.match(await page.locator('#notice').textContent(), /stale|switched/);
-    assert.equal((await new Governance(root).run({ action: 'project_snapshot' })).board.items.length, 0);
-    await refresh(); await navigate('architecture'); await page.locator('#show-architecture').click();
-    assert.equal(await page.locator('.architecture-node').count(), 0); assert.equal(await page.locator('[data-workitem]').count(), 0);
-    await fs.mkdir(path.join(root, '.governance'), { recursive: true });
-    await fs.writeFile(path.join(root, '.governance/architecture.json'), '{bad'); await refresh();
-    assert.match(await page.locator('#graph-empty').textContent(), /架构读取失败/);
-    assert.deepEqual(errors, []);
-    // English host locale wins over the browser locale; user-owned text stays verbatim.
-    root = roots[0];
-    const english = await browser.newPage({ locale: 'zh-CN', viewport: { width: 1280, height: 1000 } });
-    english.on('pageerror', e => errors.push(e.message));
-    await english.exposeFunction('hostInvoke', async (channel, payload) => {
-      if (channel === 'app.getLocale') return 'en-US';
-      if (channel === 'app.getAppearance') return { base: 'light' };
-      try { return { ok: true, result: await panelInvoke(root, channel, payload) }; }
-      catch (e) { return { ok: false, error: e.message }; }
+    await settled(page);
+    await navigate(page, 'board-section');
+    // Realistic bounded fixture objects for visual checks; never user project records.
+    for (const item of [
+      {
+        id: 'fixture-a',
+        title: 'Check release packaging',
+        description: 'Keep the manifest and generated runtime aligned.'
+      },
+      {
+        id: 'fixture-b',
+        title: 'Inspect keyboard navigation',
+        description: 'Focus should return to the selected object.'
+      },
+      {
+        id: 'fixture-c',
+        title: 'Review native window behavior',
+        description: 'Confirm controls remain clickable.'
+      }
+    ])
+      await mutate({ action: 'board_create', ...item });
+    await mutate({ action: 'board_move', id: 'fixture-b', stage: 'doing', position: 0 });
+    await mutate({
+      action: 'board_update',
+      id: 'fixture-b',
+      title: 'Inspect keyboard navigation',
+      description: 'Focus should return to the selected object.',
+      blocker: 'Waiting for review'
     });
-    await english.addInitScript(() => { window.pluginBridge = { invoke: (...args) => window.hostInvoke(...args), on: () => {} }; });
-    await english.goto(pathToFileURL(path.resolve('plugin/renderer/index.html')).href);
-    await english.waitForFunction(() => !document.querySelector('#refresh').disabled);
-    assert.equal(await english.locator('html').getAttribute('lang'), 'en');
-    assert.equal(await english.locator('#show-workflow').textContent(), 'Task workflow');
-    await navigate('board-section', english);
-    await english.locator('#workitem-id').fill('english');
-    const originalText = '<b>工作项 {0}</b> & user data';
-    await english.locator('#workitem-title').fill(originalText);
+    await refresh(page);
+    const english = await makePage('en-US');
+    await english.locator('#board-new').click();
+    const enId = await english.locator('#workitem-id').inputValue();
+    const literal = '<b>工作项 {0}</b> & user data';
+    await english.locator('#workitem-title').fill(literal);
     await english.locator('#workitem-save').click();
-    assert.match(await english.locator('#confirm-description').textContent(), /does not verify or close/);
-    await english.getByRole('button', { name: 'Cancel', exact: true }).click();
-    await english.waitForFunction(() => !document.querySelector('#refresh').disabled);
-    assert.equal(await english.locator('#workitem-title').inputValue(), originalText);
+    await confirm(english, false);
+    assert.equal(await english.locator('#workitem-title').inputValue(), literal);
     await english.locator('#workitem-save').click();
-    await english.getByRole('button', { name: 'Confirm write', exact: true }).click();
-    await english.waitForFunction(() => !document.querySelector('#refresh').disabled);
-    assert.equal(await english.locator('[data-workitem="english"] h4').textContent(), originalText);
-    assert.equal(await english.locator('[data-workitem="english"] h4 b').count(), 0);
-    assert.equal((await snapshot()).board.items.find(item => item.id === 'english').title, originalText);
-    for (const width of [390, 768, 1280]) for (const theme of ['light', 'dark']) {
-      await english.setViewportSize({ width, height: 1000 });
-      await english.evaluate(theme => { document.documentElement.dataset.base = theme; }, theme);
-      for (const view of views) {
-        await navigate(view, english);
-        assert.ok(await english.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `English overflow ${view}/${width}/${theme}`);
-        await english.screenshot({ path: path.join(output, `en-${view}-${width}-${theme}.png`), fullPage: true });
-      }
+    await confirm(english);
+    assert.equal(await card(english, enId).locator('h4 b').count(), 0);
+    for (const [p, lang] of [
+      [page, 'zh'],
+      [english, 'en']
+    ]) {
+      await refresh(p);
+      if (await p.locator('#project-details').evaluate((el) => el.open))
+        await p.locator('#project-details > summary').click();
+      for (const width of [390, 768, 1280])
+        for (const theme of ['light', 'dark']) {
+          await p.setViewportSize({ width, height: 1000 });
+          await p.evaluate((theme) => {
+            document.documentElement.dataset.base = theme;
+          }, theme);
+          for (const view of ['board-section', 'architecture', 'git-section']) {
+            await navigate(p, view);
+            await p.waitForTimeout(80);
+            assert.ok(
+              await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+              `${lang}/${view}/${width}/${theme}`
+            );
+            await p.screenshot({
+              path: path.join(output, `${lang}-${view}-${width}-${theme}.png`),
+              fullPage: true
+            });
+            shots++;
+          }
+        }
+      await p.setViewportSize({ width: 1280, height: 1000 });
+      await navigate(p, 'board-section');
+      await card(p, first).click();
+      await p.screenshot({ path: path.join(output, `${lang}-details-1280.png`), fullPage: true });
+      shots++;
+      await close(p);
     }
-    await english.close(); assert.deepEqual(errors, []);
-    console.log(`PASS four views, draft/history navigation, host chrome and safety guards; 48 screenshots: ${output}`);
+    await page.emulateMedia({ reducedMotion: 'reduce', contrast: 'more' });
+    await card(page, first).click({ button: 'right' });
+    assert.equal(
+      await page.locator('#item-menu').evaluate((el) => getComputedStyle(el).animationName),
+      'none'
+    );
+    assert.equal(
+      await page.locator('#item-menu').evaluate((el) => getComputedStyle(el).backdropFilter),
+      'none'
+    );
+    await page.keyboard.press('Escape');
+    // Delayed host appearance wins over system fallback, but not a newer host event.
+    for (const newerHostEvent of [false, true]) {
+      const race = await browser.newPage();
+      let resolveAppearance;
+      await race.exposeFunction(
+        'appearanceFixture',
+        () =>
+          new Promise((resolve) => {
+            resolveAppearance = resolve;
+          })
+      );
+      await race.addInitScript(() => {
+        window.pluginBridge = {
+          invoke: (channel) =>
+            channel === 'app.getAppearance'
+              ? window.appearanceFixture()
+              : Promise.resolve(
+                  channel === 'app.getLocale' ? 'en' : { ok: false, error: 'Preview fixture' }
+                ),
+          on: (event, fn) => {
+            if (event === 'appearance:changed')
+              window.addEventListener('test-appearance', (e) => fn(e.detail));
+          }
+        };
+      });
+      await race.goto(url);
+      await race.waitForFunction(() => document.querySelector('#refresh').disabled === false);
+      await race.emulateMedia({ colorScheme: 'dark' });
+      if (newerHostEvent) await sendAppearance(race, { base: 'dark' });
+      resolveAppearance({ base: 'light' });
+      await race.waitForFunction(
+        (expected) => document.documentElement.dataset.base === expected,
+        newerHostEvent ? 'dark' : 'light'
+      );
+      await race.close();
+    }
+    assert.deepEqual(errors, []);
+    console.log(
+      `PASS object workbench: menus, search, sheet, drafts, long press, keyboard, offline/error/stale/workspace guards, theme and chrome; ${shots} screenshots: ${output}`
+    );
   } finally {
     await browser.close();
-    await Promise.all(roots.map(root => fs.rm(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })));
+    await Promise.all(
+      roots.map((dir) =>
+        fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })
+      )
+    );
   }
-})().catch(error => { console.error(error); process.exitCode = 1; });
+})().catch((e) => {
+  console.error(e);
+  process.exitCode = 1;
+});

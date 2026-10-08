@@ -9,7 +9,7 @@ const tokenPath = path.join(root, '.secrets', 'plugin-center.token');
 const files = [
   'main.ts', 'runtime/main.js', 'core.ts', 'runtime/core.js', 'git.ts', 'runtime/git.js',
   'panel.ts', 'runtime/panel.js', 'project.ts', 'runtime/project.js', 'tool.ts', 'runtime/tool.js',
-  'README.md', 'GIT.md', 'PROJECT.md', 'PUBLISHING.md',
+  'README.md', 'GIT.md', 'PROJECT.md', 'PUBLISHING.md', 'UI-SOURCES.md',
   'renderer/index.html', 'renderer/panel.css', 'renderer/views.css', 'renderer/panel.ts', 'runtime/renderer/panel.js',
   'renderer/graph.ts', 'runtime/renderer/graph.js', 'renderer/graph-model.ts', 'runtime/renderer/graph-model.js',
   'renderer/i18n.ts', 'runtime/renderer/i18n.js', 'renderer/tsconfig.json'

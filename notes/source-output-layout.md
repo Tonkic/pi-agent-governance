@@ -101,3 +101,17 @@ PluginPack29文件318639字节，SHA256 11bfccc6ede0b4328b97a24597eb015a75d7cac8
 typecheck/build、65测试和四页48截图浏览器回归通过；新增默认配色/切回宿主/本地保存/切色草稿断言，旧主题安全及导航回归保留。新截图工具两次did not answer，未完成人工目视或真实宿主0.6.7验收，不能沿用0.6.5布局目视当新版通过。PluginPack29文件325685字节SHA08a898604acf021377110a6aab035fbcb616e7a50817894f9b37df71ce7a9c1e。新包未安装/发布市场，当前安装0.6.6；临时预览删除。日志scratch/continuation-ui-tests.log。
 
 0.6.7源码a5dfcc1在提交后release:auto重复typecheck/build、65测试、配色/四页浏览器和凭据历史扫描通过并同步；no-ff集成main d1a7d5e后65测试和浏览器回归通过，远端SHA一致，源码/功能临时分支清理。日志scratch/continuation-ui-delivery.log、continuation-ui-main.log。原生手动任务在此交付期间没有运行，避免双写；新包未安装/发布市场，不以CI或生成截图代替新目视/宿主验收。
+
+## 0.6.8 对象式工作台
+
+用户批准将工作项和当前任务合并为高频工作台，而非再次换皮。三页导航保留架构与Git；工作台移除常驻工作项表单/KPI墙，总体目标/验收/进度折叠展示，完成语义不合并。对象点击看详情，右键/长按/Shift+F10/更多按钮打开编辑、排序、相邻列迁移、指导菜单；/搜索，过滤时暂停拖动。指导仅生成复制文本，不调用Agent。详情使用非模态native dialog，宽屏保留工作区并返回对象；草稿关闭/切换须确认，保存/迁移披露其他草稿丢弃。离线保留读访问、暂停写入，无重放。
+
+实际读取shadcn/ui Sheet、Context Menu及MIT许可，适配表面/间距/焦点样式，不引入React/Radix运行时、不声称使用原组件。plugin/UI-SOURCES.md保留许可并进入30文件包和发布清单。TS/CSS/浏览器测试按现有风格格式化；README/PROJECT更新实际用法，无后端数据格式或权限变化。
+
+一次只读复核ff2164f5指出确认期间断网仍写、长按过久误开详情、取消键盘迁移丢焦点。新增焦点断言实际red，修复并通过全部浏览器回归；断网确认覆盖工作项保存/迁移与总体进度，持久化不变且重连无重放；2.2s合成长按释放保持菜单，不等同真实触屏验收。目视发现导航指示条整页定位，已修复并重新截图。
+
+typecheck/build、65测试和真实Chromium+隔离治理后端43截图回归通过。最终修正从Git归档叠加到scratch/workbench-clean-d7bf64bf213f4f338104dcd560942772后npm ci/typecheck/build/65测试通过；日志workbench-clean-final.log、workbench-browser-final.log。官方i18n 0 FAIL/2 REVIEW：安装器要求command纯字符串、STATE为数据名，理由沿用。最终PluginPack通过，30文件366580字节，SHA 62a08dfb02e11b0cf4c12174ba548114769f4b56f612a6a66e05a63bba43c65e；既有agent.tool.register需用户授权，无新增权限。
+
+视觉证据在changes/active/project-board-release/workbench-0.6.8/index.html：中英文三页390/768/1280明暗的六张对照图已实际查看，并查看工作台及详情大图。Git fixture为非仓库真实错误，不虚构受管卡片；实际宿主0.6.8/触屏和总体隔离验收未通过。当前安装0.6.6，旧包和发布来源保留；不安装、不提交市场、不总体close。受管登记仍空，保留既有.pi/归档使受管创建受阻，本轮按已授权串行普通分支交付，不伪造git_verify。
+
+补看菜单、新建、搜索空态、离线、读取失败大图后，发现读取失败时顶部误称同步；修正读取异常/损坏board提示与保存后错误保留，新增顶部error断言重测通过，错误截图更新并复核。初始源码cf2cc9575f795c6cc7acb0002b1329dc9147e138提交后release:auto实际typecheck/65测试/43截图/历史凭据扫描通过，来源分支核对一致，无市场调用；该源码的366228字节初版包留在Git历史，不是最终包。最终修正继续同一功能分支交付，不启动第二轮审查。
