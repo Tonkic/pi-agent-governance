@@ -143,3 +143,5 @@ board_accept要求done、当前task、expectedItem指纹、结论/依据/验收�
 PluginCheck/Pack通过32文件459119字节，SHA fa1344e4a9f1d84807cc70833ab5c0b69f98ad0ebf0d2922a70340417fbf378e；i18n 0 FAIL/2 REVIEW理由沿用安装器纯字符串command与STATE数据名。视觉证据workbench-0.6.10/index.html，中英文顶部操作/启动窗口390/768/1280明暗对照及架构/启动大图实际查看。最新MCP只读确认本机0.6.9 ready/enabled，不再沿用0.6.7安装信息；0.6.10实际权限/模型选择执行未验收，不close。
 
 开工前用户已有architecture.json修改与未跟踪operations.json，整个实现过程中哈希保持CD7C6390…A4A9F与C7ACEF62…526D6。用户明确允许它们单独提交并公开同步（已告知本机路径/会话ID/状态），579c89f5f6eed13a6e5aea327cd132a36a349c1a仅保存这两份原内容，未改running状态、不伪造任务完成或作为测试夹具。5节点7关系原分析范围/限制与旧源码指纹保留，不自动“修复”指纹。原有.pi/归档保留；无受管任务，仍串行普通功能分支，不伪造受管git_verify。
+
+源码f305ff5a3481b5788082ebb65b072f88fea817df提交后release:auto实际typecheck/build、77测试、60截图浏览器及可达历史凭据扫描通过，sourceSynced:true/published:false。no-ff集成main 6e9b67c9cdffde6f7892958115e1bc06a04e84f0后重跑typecheck/build/77测试/browser通过，普通推送并ls-remote一致；日志scratch/toolbar-model-delivery.log、toolbar-model-main.log。用户原数据独立提交保持原内容/限制/运行记录，不自动确认其完成；正常Git换行转换不算CRLF误报修复。新版未安装/市场未发布，包哈希不变。预览长图出现一次重复拼接，不将其算为新证据；关键架构/启动大图及操作栏/启动中英响应式对照正常查看。

@@ -4,8 +4,8 @@
     {
       "id": "host-smoke",
       "title": "真实宿主面板交互验收",
-      "description": "最新MCP核对实际安装0.6.7 ready/enabled。0.6.9代码交付与模拟宿主接口/隔离后端回归通过；仍须真实隔离面板完成创建/编辑/迁移/取消/持久化/切图与新增Agent分析/验收按钮检查。",
-      "blocker": "0.6.9未安装；desktop.control需正常宿主授权；实际Agent执行尚未验收，不冒充MCP安装或收费运行已通过。",
+      "description": "最新只读MCP核对本机0.6.9 ready/enabled。0.6.10代码/包与模拟模型接口及隔离后端回归完成；真实隔离面板与模型/思考强度选择、取消、任务执行仍需实际验收，不使用用户卡片作夹具。",
+      "blocker": "0.6.10未安装，models.list需宿主授权；当前MCP没有安装更新接口，未擅自UI安装或实际收费执行。",
       "stage": "todo",
       "taskId": "project-board-release",
       "gitTaskId": null
@@ -31,7 +31,7 @@
     {
       "id": "visual-check",
       "title": "六组尺寸与主题截图目视复核",
-      "description": "0.6.9四列+三页×中英文×390/768/1280明暗布局、详情、人工验收/Agent进度/项目操作和错误恢复截图共47张通过浏览器回归，实际查看对照图与关键大图。证据workbench-0.6.9/index.html，仅布局目视，不替代实际宿主Agent/触屏。",
+      "description": "0.6.10统一分类顶部操作栏、模型/思考强度启动窗口，中英文三页与启动窗口390/768/1280明暗及详情状态共60截图浏览器回归通过；实际查看关键大图和操作栏/启动对照。证据workbench-0.6.10/index.html，仅浏览器视觉与模拟接口检查，不替代真实模型执行。",
       "blocker": "",
       "stage": "done",
       "taskId": "project-board-release",
@@ -49,7 +49,7 @@
     {
       "id": "github-delivery",
       "title": "同步最新源码并集成main",
-      "description": "0.6.9源码0711419提交后release:auto类型/75测试/47截图/凭据扫描通过并同步；no-ff集成main 81fca6d后typecheck/build/75测试/browser通过，普通推送及远端SHA核对一致。未发布市场，记录后仅清理已合并临时分支。",
+      "description": "0.6.10源码f305ff5提交后release:auto类型/77测试/60截图/凭据历史扫描通过；no-ff集成main 6e9b67c后重跑通过，普通推送及远端SHA一致。用户批准既有两份数据单独留痕579c89f，不伪造运行状态。未发布市场，记录后清理已合并临时分支。",
       "blocker": "",
       "stage": "done",
       "taskId": "project-board-release",
@@ -67,12 +67,12 @@
     {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
-      "description": "0.6.9四列验收、顶部项目操作和公开desktop.control会话按钮已通过双语/主题/草稿/离线/错误/权限与恢复回归及浏览器目视；包32文件。新增权限经用户批准，不等于本机安装授权。",
-      "blocker": "实际安装0.6.7；用户只允许MCP更新，但现有MCP无安装接口；0.6.9真实界面/主题及权限未验收。",
+      "description": "0.6.10顶部操作栏分类和模型启动设置已通过双语/明暗/响应式/草稿/焦点/模型接口回归与关键截图目视。新增models.list经用户批准，不修改宿主默认；包32文件。",
+      "blocker": "最新MCP实际安装0.6.9；0.6.10未安装，真实界面/主题/新权限验收仍未完成。",
       "stage": "doing",
       "taskId": "project-board-release",
       "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-08T18:36:05.927Z"
+  "updatedAt": "2026-10-08T19:45:43.905Z"
 }
