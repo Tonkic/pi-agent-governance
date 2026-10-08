@@ -35,12 +35,14 @@
       </button>
     </div>
   </header>
+  <div class="project-actions" role="group" data-i18n-aria-label="projectControls"><button id="project-open" type="button" data-i18n="projectControls"></button><button id="analysis-start" class="primary" type="button" data-i18n="startAnalysis"></button><button id="operations-open" type="button" data-i18n="analysisProgress"></button></div>
 
   <section id="architecture" class="panel architecture-panel" aria-labelledby="architecture-title">
     <div class="section-head"><div><h2 id="architecture-title" data-i18n="architecture"></h2><p id="graph-overview" class="muted" data-i18n="waiting"></p></div><span id="graph-count" class="badge">—</span></div>
     <p id="graph-warning" class="graph-warning" role="status" hidden></p>
     <details class="graph-provenance"><summary data-i18n="provenance"></summary><p id="graph-source" class="muted" data-i18n="waiting"></p></details>
     <div class="graph-modes" role="group" data-i18n-aria-label="graphView"><button id="show-architecture" type="button" aria-pressed="true" data-i18n="architecture"></button><button id="show-workflow" type="button" aria-pressed="false" data-i18n="workflow"></button></div>
+    <button id="architecture-analyze" class="primary" type="button" data-i18n="reanalyzeArchitecture"></button>
     <p id="graph-empty" role="status" data-i18n="graphUnread"></p>
     <div class="graph-toolbar" data-i18n-aria-label="graphTools">
       <div class="graph-modes" role="group" data-i18n-aria-label="trace"><button type="button" data-trace="all" aria-pressed="true" data-i18n="all"></button><button type="button" data-trace="upstream" aria-pressed="false" data-i18n="upstream"></button><button type="button" data-trace="downstream" aria-pressed="false" data-i18n="downstream"></button></div>
@@ -73,54 +75,6 @@
     <div id="board-empty" class="empty-state" hidden><h3 data-i18n="noResults"></h3><button id="search-clear" type="button" data-i18n="clearSearch"></button></div>
     <div id="board-columns" class="board-columns"></div>
 
-  <details id="project-details" class="project-details"><summary><span data-i18n="projectIntent"></span><span class="project-counts"><span id="status-metric"></span> · <span id="criteria-count"></span> <span data-i18n="acceptance"></span> · <span id="blocked-count"></span> <span data-i18n="blockers"></span></span></summary>
-  <section id="task-section" class="dashboard-grid" data-i18n-aria-label="taskActions">
-    <article class="panel task-panel">
-      <div class="section-head">
-        <div><p class="eyebrow" data-i18n="activeThread"></p><h2 data-i18n="currentTask"></h2></div>
-        <span id="task-id" class="badge">STATE</span>
-      </div>
-      <div class="task-intro">
-        <span class="task-number">01</span>
-        <div><p class="label-caps" data-i18n="intent"></p><h3 id="goal" data-i18n="handoff"></h3></div>
-      </div>
-      <p id="current" class="task-current" data-i18n="realData"></p>
-      <div class="detail-block">
-        <div class="detail-heading"><span class="section-index">A</span><h4 data-i18n="acceptance"></h4><span id="criteria-state" class="detail-count">—</span></div>
-        <ul id="criteria" class="clean-list"><li data-i18n="waitingRead"></li></ul>
-      </div>
-      <details class="detail-block collapsed-detail">
-        <summary><span class="section-index">B</span><span data-i18n="scopeConstraints"></span><svg class="icon chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"/></svg></summary>
-        <div class="detail-columns"><div><h4 data-i18n="scope"></h4><ul id="scope" class="clean-list"></ul></div><div><h4 data-i18n="constraints"></h4><ul id="constraints" class="clean-list"></ul></div></div>
-      </details>
-      <div id="followup" class="hint" hidden></div>
-    </article>
-
-    <article class="panel action-panel">
-      <div class="section-head">
-        <div><p class="eyebrow" data-i18n="controls"></p><h2 id="editor-title" data-i18n="actions"></h2></div>
-        <span class="secure-badge"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> <span data-i18n="confirmationRequired"></span></span>
-      </div>
-      <div id="uninitialized" class="empty-action" hidden><div class="empty-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3 4.5 7.2v9.6L12 21l7.5-4.2V7.2L12 3Z"/><path d="M12 8v8M8 12h8"/></svg></div><p data-i18n="initHint"></p><button id="initialize" class="primary" type="button"><span data-i18n="initialize"></span><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
-      <form id="start-form" hidden>
-        <div class="form-intro"><span class="form-step">01</span><div><h3 data-i18n="newTask"></h3><p data-i18n="newTaskHint"></p></div></div>
-        <label><span data-i18n="taskId"></span><input id="new-id" required pattern="[a-z0-9]([a-z0-9]|-){0,63}" maxlength="64" data-i18n-placeholder="exampleId"></label>
-        <label><span data-i18n="goal"></span><textarea id="new-goal" required maxlength="20000" rows="2" data-i18n-placeholder="goalPlaceholder"></textarea></label>
-        <label><span data-i18n="acceptance"></span> <small data-i18n="perLine"></small><textarea id="new-criteria" required maxlength="20000" rows="3" data-i18n-placeholder="acceptancePlaceholder"></textarea></label>
-        <div class="form-row"><label><span data-i18n="scope"></span> <small data-i18n="perLine"></small><textarea id="new-scope" maxlength="20000" rows="2" data-i18n-placeholder="scopePlaceholder"></textarea></label><label><span data-i18n="constraints"></span> <small data-i18n="optional"></small><textarea id="new-constraints" maxlength="20000" rows="2"></textarea></label></div>
-        <button class="primary action-submit" type="submit"><span data-i18n="createTask"></span><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
-      </form>
-      <form id="progress-form" hidden>
-        <div class="form-intro"><span class="form-step">02</span><div><h3 data-i18n="recordProgress"></h3><p data-i18n="progressHint"></p></div></div>
-        <label><span data-i18n="progress"></span><textarea id="edit-current" required maxlength="20000" rows="3"></textarea></label>
-        <label><span data-i18n="next"></span> <small data-i18n="perLine"></small><textarea id="edit-next" maxlength="20000" rows="3" data-i18n-placeholder="nextPlaceholder"></textarea></label>
-        <label><span data-i18n="blocked"></span> <small data-i18n="noBlockers"></small><textarea id="edit-blocked" maxlength="20000" rows="2" data-i18n-placeholder="blockerPlaceholder"></textarea></label>
-        <p class="hint"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7.2v.1"/></svg><span data-i18n="verificationHint"></span></p>
-        <button class="primary action-submit" type="submit"><span data-i18n="saveProgress"></span><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 7 9 17l-4-4"/></svg></button>
-      </form>
-    </article>
-  </section>
-  </details>
   </section>
 
   <section id="git-section" class="panel git-panel">
@@ -134,14 +88,29 @@
 
   <footer><span data-i18n="app"></span><span id="updated"></span></footer>
 </main>
+<dialog id="project-dialog" class="action-dialog" aria-labelledby="project-dialog-title">
+  <header class="dialog-header"><h2 id="project-dialog-title" data-i18n="projectControls"></h2><button id="project-close" type="button" data-i18n-aria-label="closeDetails">×</button></header>
+  <p class="muted"><span id="status-metric"></span> · <span id="criteria-count"></span> <span data-i18n="acceptance"></span> · <span id="blocked-count"></span> <span data-i18n="blockers"></span></p>
+  <section id="task-section" class="dashboard-grid" data-i18n-aria-label="taskActions">
+    <article class="task-panel"><div class="section-head"><h2 data-i18n="currentTask"></h2><span id="task-id" class="badge">STATE</span></div><h3 id="goal"></h3><p id="current"></p><h4 data-i18n="acceptance"></h4><span id="criteria-state"></span><ul id="criteria" class="clean-list"></ul><details><summary data-i18n="scopeConstraints"></summary><h4 data-i18n="scope"></h4><ul id="scope" class="clean-list"></ul><h4 data-i18n="constraints"></h4><ul id="constraints" class="clean-list"></ul></details><div id="followup" class="hint" hidden></div></article>
+    <article class="action-panel"><h2 id="editor-title" data-i18n="actions"></h2><div id="uninitialized" hidden><p data-i18n="initHint"></p><button id="initialize" class="primary" type="button" data-i18n="initialize"></button></div>
+      <form id="start-form" hidden><label><span data-i18n="taskId"></span><input id="new-id" required pattern="[a-z0-9]([a-z0-9]|-){0,63}" maxlength="64"></label><label><span data-i18n="goal"></span><textarea id="new-goal" required maxlength="20000" rows="2"></textarea></label><label><span data-i18n="acceptance"></span><textarea id="new-criteria" required maxlength="20000" rows="3"></textarea></label><label><span data-i18n="scope"></span><textarea id="new-scope" maxlength="20000" rows="2"></textarea></label><label><span data-i18n="constraints"></span><textarea id="new-constraints" maxlength="20000" rows="2"></textarea></label><button class="primary" type="submit" data-i18n="createTask"></button></form>
+      <form id="progress-form" hidden><label><span data-i18n="progress"></span><textarea id="edit-current" required maxlength="20000" rows="3"></textarea></label><label><span data-i18n="next"></span><textarea id="edit-next" maxlength="20000" rows="3"></textarea></label><label><span data-i18n="blocked"></span><textarea id="edit-blocked" maxlength="20000" rows="2"></textarea></label><p class="hint" data-i18n="verificationHint"></p><button class="primary" type="submit" data-i18n="saveProgress"></button></form>
+    </article>
+  </section>
+</dialog>
+<dialog id="accept-dialog" class="action-dialog" aria-labelledby="accept-title"><header class="dialog-header"><h2 id="accept-title" data-i18n="humanAcceptance"></h2><button id="accept-close" type="button" data-i18n-aria-label="closeDetails">×</button></header><p id="accept-item-title"></p><form id="accept-form"><div id="accept-criteria"></div><label><span data-i18n="reviewer"></span><input id="accept-reviewer" required maxlength="160"></label><label><span data-i18n="conclusion"></span><textarea id="accept-conclusion" required maxlength="2000" rows="2"></textarea></label><label><span data-i18n="reviewEvidence"></span><textarea id="accept-evidence" required maxlength="8000" rows="4"></textarea></label><label><span data-i18n="reviewResult"></span><select id="accept-result"><option value="pass" data-i18n="reviewPass"></option><option value="fail" data-i18n="reviewFail"></option></select></label><button class="primary" type="submit" data-i18n="saveAcceptance"></button></form></dialog>
+<dialog id="operations-dialog" class="action-dialog" aria-labelledby="operations-title"><header class="dialog-header"><h2 id="operations-title" data-i18n="analysisProgress"></h2><button id="operations-close" type="button" data-i18n-aria-label="closeDetails">×</button></header><button id="operations-refresh" type="button" data-i18n="refreshProgress"></button><p id="operations-notice" role="status"></p><div id="operation-runs"></div><pre id="operation-result" tabindex="0"></pre></dialog>
 <dialog id="item-sheet" class="item-sheet" aria-labelledby="item-sheet-title">
   <div class="sheet-header"><button id="item-back" type="button" data-i18n="backToBoard"></button><button id="item-close" class="icon-button" type="button" data-i18n-aria-label="closeDetails">×</button></div>
   <div class="sheet-body"><p id="item-sheet-meta" class="eyebrow"></p><h2 id="item-sheet-title" data-i18n="itemDetails"></h2>
     <div id="item-read"><p id="item-description"></p><p id="item-blocker" class="item-blocker" hidden></p><dl class="item-record"><dt data-i18n="itemId"></dt><dd id="item-record-id"></dd><dt data-i18n="taskId"></dt><dd id="item-record-task"></dd><dt data-i18n="git"></dt><dd id="item-record-git"></dd></dl><div class="sheet-actions"><button id="item-edit" type="button" data-i18n="edit"></button><button id="item-guide" type="button" data-i18n="guideAgent"></button></div></div>
+    <section id="item-acceptance"><h3 data-i18n="acceptance"></h3><ul id="item-criteria" class="clean-list"></ul><p id="item-review-record"></p><div class="sheet-actions"><button id="item-human-review" class="primary" type="button" data-i18n="humanAcceptance"></button><button id="item-agent-review" type="button" data-i18n="agentAcceptance"></button></div></section>
     <form id="workitem-form" hidden>
       <input id="workitem-id" type="hidden">
       <label><span data-i18n="title"></span><input id="workitem-title" required maxlength="160" autocomplete="off" data-i18n-placeholder="itemTitlePlaceholder"></label>
       <label><span data-i18n="description"></span><textarea id="workitem-description" maxlength="4000" rows="7" data-i18n-placeholder="itemContentPlaceholder"></textarea></label>
+      <label><span data-i18n="acceptance"></span> <small data-i18n="perLine"></small><textarea id="workitem-criteria" maxlength="20000" rows="3"></textarea></label>
       <label id="blocker-field"><span data-i18n="blocked"></span><textarea id="workitem-blocker" maxlength="1000" rows="2" disabled></textarea></label>
       <div class="sheet-actions"><button type="submit" class="primary" id="workitem-save" data-i18n="saveChanges"></button><button type="button" id="workitem-cancel" data-i18n="cancel"></button></div>
     </form>

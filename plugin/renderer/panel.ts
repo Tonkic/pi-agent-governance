@@ -11,12 +11,13 @@ function discardWarning(submitted?: string) {
   const names = {
     'progress-form': t('draftProgress'),
     'start-form': t('draftTask'),
-    'workitem-form': t('draftItem')
+    'workitem-form': t('draftItem'),
+    'accept-form': t('draftReview')
   };
   const drafts = [...dirtyForms].filter((id) => id !== submitted).map((id) => names[id] || id);
   return drafts.length ? t('discard', drafts.join(' / ')) : '';
 }
-const boardStages = ['todo', 'doing', 'done'];
+const boardStages = ['todo', 'doing', 'done', 'accepted'];
 const boardLabels = new Proxy({}, { get: (_, key: CopyKey) => t(key) });
 const labels = new Proxy(
   {},
@@ -38,7 +39,7 @@ function lock(value) {
   busy = value;
   document
     .querySelectorAll(
-      'main button, main input, main textarea, #item-sheet button, #item-sheet input, #item-sheet textarea'
+      'main button, main input, main textarea, #item-sheet button, #item-sheet input, #item-sheet textarea, .action-dialog button, .action-dialog input, .action-dialog textarea, .action-dialog select'
     )
     .forEach((el) => {
       (el as HTMLButtonElement | HTMLInputElement | HTMLTextAreaElement).disabled = value;
@@ -46,9 +47,13 @@ function lock(value) {
   $('workitem-blocker').disabled = value || !editingItem;
   for (const id of ['workitem-save', 'item-edit', 'initialize'])
     $(id).disabled = value || !navigator.onLine;
-  document.querySelectorAll<HTMLButtonElement>('main button[type="submit"]').forEach((button) => {
-    button.disabled = value || !navigator.onLine;
-  });
+  document
+    .querySelectorAll<HTMLButtonElement>(
+      '#project-dialog button[type="submit"], #accept-form button[type="submit"]'
+    )
+    .forEach((button) => {
+      button.disabled = value || !navigator.onLine;
+    });
   $('board-new').disabled =
     value ||
     !snapshot?.state ||
@@ -61,6 +66,13 @@ function lock(value) {
   document.querySelectorAll<HTMLButtonElement>('.column-add').forEach((button) => {
     button.disabled = value || !snapshot?.state || !navigator.onLine;
   });
+  for (const id of ['analysis-start', 'architecture-analyze'])
+    $(id).disabled = value || !snapshot?.state?.task || !projectSnapshot || !navigator.onLine;
+  document
+    .querySelectorAll<HTMLButtonElement>('.review-button, #item-human-review, #item-agent-review')
+    .forEach((button) => {
+      button.disabled = value || !navigator.onLine;
+    });
 }
 async function invoke(channel, payload = {}) {
   if (!window.pluginBridge?.invoke) throw Error(t('staticPreview'));
@@ -151,6 +163,8 @@ function renderGit(g) {
 async function load() {
   snapshot = null;
   dirtyForms.clear();
+  if ($('accept-dialog').open) $('accept-dialog').close();
+  $('accept-form').reset();
   projectSnapshot = null;
   resetWorkitem();
   $('workitem-form').hidden = true;
@@ -256,7 +270,9 @@ $('refresh').addEventListener('click', async () => {
     lock(false);
   }
 });
-for (const form of document.querySelectorAll('main form, #workitem-form'))
+for (const form of document.querySelectorAll(
+  'main form, #project-dialog form, #workitem-form, #accept-form'
+))
   form.addEventListener('input', () => {
     edited = true;
     dirtyForms.add(form.id);
@@ -388,7 +404,7 @@ function highlightNavigation() {
   };
   text('page-title', t(pageTitles[active]));
   for (const id of pageIds) $(id).hidden = id !== active;
-  if (requested === 'task-section') $('project-details').open = true;
+  if (requested === 'task-section') openProjectControls();
   document.querySelectorAll<HTMLAnchorElement>('.workspace-nav a').forEach((link) => {
     if (link.hash === `#${active}`) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
@@ -580,6 +596,7 @@ async function openItem(id: string = null, edit = false, origin?: HTMLElement) {
   itemOrigin = origin || (document.activeElement as HTMLElement);
   $('item-guidance').hidden = true;
   $('item-read').hidden = !item || edit;
+  $('item-acceptance').hidden = !item || edit;
   text('item-sheet-title', item ? item.title : t('newItem'));
   text('item-sheet-meta', item ? boardLabels[item.stage] : t('newItem'));
   if (item) {
@@ -589,12 +606,30 @@ async function openItem(id: string = null, edit = false, origin?: HTMLElement) {
     text('item-record-id', item.id);
     text('item-record-task', item.taskId || t('none'));
     text('item-record-git', item.gitTaskId || t('none'));
+    list('item-criteria', item.criteria);
+    const r = item.acceptance;
+    text(
+      'item-review-record',
+      r
+        ? t(
+            'reviewRecord',
+            t(r.method === 'human' ? 'humanAcceptance' : 'agentAcceptance'),
+            r.reviewer,
+            t(r.valid ? 'reviewValid' : 'reviewInvalid'),
+            r.at,
+            r.conclusion,
+            r.evidence
+          )
+        : t('noReview')
+    );
+    $('item-human-review').hidden = $('item-agent-review').hidden = item.stage !== 'done';
   }
   if (edit || !item) {
     editingItem = item?.id || null;
     $('workitem-id').value = item?.id || `item-${crypto.randomUUID().slice(0, 8)}`;
     $('workitem-title').value = item?.title || '';
     $('workitem-description').value = item?.description || '';
+    $('workitem-criteria').value = (item?.criteria || []).join('\n');
     $('workitem-blocker').value = item?.blocker || '';
     $('workitem-blocker').disabled = !item;
     $('blocker-field').hidden = !item;
@@ -605,6 +640,7 @@ async function openItem(id: string = null, edit = false, origin?: HTMLElement) {
   (edit || !item ? $('workitem-title') : $('item-edit')).focus();
   lock(busy);
   if (!edit && item && !navigator.onLine) $('item-back').focus();
+  return true;
 }
 async function closeItemSheet() {
   if (!(await allowItemSwitch())) return;
@@ -631,7 +667,13 @@ async function writeWorkitem(args) {
     if (
       !(await confirmWrite(
         t('itemConfirm', args.id, args.stage ? ` → ${boardLabels[args.stage]}` : '') +
-          discardWarning(args.action === 'board_move' ? undefined : 'workitem-form')
+          discardWarning(
+            args.action === 'board_accept'
+              ? 'accept-form'
+              : args.action === 'board_move'
+                ? undefined
+                : 'workitem-form'
+          )
       ))
     )
       return;
@@ -667,12 +709,17 @@ function menuActions(item) {
       }
     }
   ];
+  if (item.stage === 'done') {
+    actions.push({ label: t('humanAcceptance'), run: () => openHumanReview(item.id, menuOrigin) });
+    actions.push({ label: t('agentAcceptance'), run: () => startOperation('acceptance', item.id) });
+  }
   if (index > 0)
     actions.push({ label: t('moveUp'), run: () => moveWorkitem(item.id, item.stage, index - 1) });
   if (index < siblings.length - 1)
     actions.push({ label: t('moveDown'), run: () => moveWorkitem(item.id, item.stage, index + 1) });
   for (const stage of boardStages.filter(
-    (s) => Math.abs(boardStages.indexOf(s) - boardStages.indexOf(item.stage)) === 1
+    (s) =>
+      s !== 'accepted' && Math.abs(boardStages.indexOf(s) - boardStages.indexOf(item.stage)) === 1
   ))
     actions.push({
       label: t('moveTo', boardLabels[stage]),
@@ -824,6 +871,26 @@ function renderBoard() {
       card.append(title);
       if (item.description) card.append(content);
       card.append(meta);
+      if (item.stage === 'done') {
+        const actions = document.createElement('div');
+        actions.className = 'card-review-actions';
+        for (const [key, run] of [
+          ['humanAcceptance', () => openHumanReview(item.id, card)],
+          ['agentAcceptance', () => startOperation('acceptance', item.id)]
+        ] as const) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'review-button';
+          button.textContent = t(key);
+          button.disabled = busy || !navigator.onLine;
+          button.addEventListener('click', (event) => {
+            event.stopPropagation();
+            void run();
+          });
+          actions.append(button);
+        }
+        card.append(actions);
+      }
       card.addEventListener('click', (event) => {
         if ((event.target as Element).closest('button')) return;
         if (longPressConsumed?.id === item.id && Date.now() < longPressConsumed.until) {
@@ -977,6 +1044,7 @@ document.addEventListener('keydown', (event) => {
     event.key === 'Escape' &&
     $('item-sheet').open &&
     !$('confirm-dialog').open &&
+    !['project-dialog', 'accept-dialog', 'operations-dialog'].some((id) => $(id).open) &&
     $('item-menu').hidden
   ) {
     event.preventDefault();
@@ -1013,6 +1081,7 @@ $('workitem-form').addEventListener('submit', (event) => {
     id: editingItem || $('workitem-id').value,
     title: $('workitem-title').value.trim(),
     description: $('workitem-description').value,
+    criteria: lines('workitem-criteria'),
     ...(editingItem ? { blocker: $('workitem-blocker').value } : {})
   });
 });
@@ -1024,3 +1093,221 @@ localeReady
     return load();
   })
   .finally(() => lock(false));
+
+let reviewingItem: any = null;
+function openProjectControls() {
+  closeItemMenu(false);
+  if (!$('project-dialog').open) $('project-dialog').showModal();
+}
+$('project-open').addEventListener('click', openProjectControls);
+$('project-close').addEventListener('click', () => {
+  if (!busy) $('project-dialog').close();
+});
+async function openHumanReview(id, origin) {
+  if (!navigator.onLine || !(await openItem(id, false, origin))) return;
+  const item = itemById(id);
+  if (!item || item.stage !== 'done') return;
+  if (dirtyForms.has('accept-form')) {
+    lock(true);
+    try {
+      if (!(await confirmWrite(t('switchDraft')))) return;
+    } finally {
+      lock(false);
+    }
+  }
+  reviewingItem = { id, fingerprint: item.itemFingerprint };
+  $('accept-form').reset();
+  dirtyForms.delete('accept-form');
+  text('accept-item-title', item.title);
+  $('accept-criteria').replaceChildren(
+    ...(item.criteria || []).map((criterion) => {
+      const label = document.createElement('label');
+      label.className = 'criterion-check';
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.required = true;
+      label.append(box, document.createTextNode(criterion));
+      return label;
+    })
+  );
+  $('accept-dialog').showModal();
+  $('accept-reviewer').focus();
+}
+async function closeHumanReview() {
+  if (busy) return;
+  if (dirtyForms.has('accept-form')) {
+    lock(true);
+    try {
+      if (!(await confirmWrite(t('switchDraft')))) return;
+    } finally {
+      lock(false);
+    }
+  }
+  $('accept-dialog').close();
+  $('accept-form').reset();
+  dirtyForms.delete('accept-form');
+  edited = dirtyForms.size > 0;
+}
+$('accept-close').addEventListener('click', closeHumanReview);
+$('accept-dialog').addEventListener('cancel', (event) => {
+  event.preventDefault();
+  void closeHumanReview();
+});
+$('accept-result').addEventListener('change', () => {
+  $('accept-criteria')
+    .querySelectorAll('input')
+    .forEach((box) => {
+      box.required = $('accept-result').value === 'pass';
+    });
+});
+$('accept-form').addEventListener('submit', (event) => {
+  event.preventDefault();
+  if (!reviewingItem) return;
+  void writeWorkitem({
+    action: 'board_accept',
+    id: reviewingItem.id,
+    expectedItem: reviewingItem.fingerprint,
+    passed: $('accept-result').value === 'pass',
+    reviewer: $('accept-reviewer').value.trim(),
+    conclusion: $('accept-conclusion').value.trim(),
+    evidence: $('accept-evidence').value.trim(),
+    accepted: Array.from(
+      $('accept-criteria').querySelectorAll('input') as NodeListOf<HTMLInputElement>
+    ).map((box) => box.checked)
+  });
+});
+$('item-human-review').addEventListener('click', () => {
+  void openHumanReview(selectedItem, itemOrigin);
+});
+$('item-agent-review').addEventListener('click', () => {
+  void startOperation('acceptance', selectedItem);
+});
+const operationLabel = (kind): CopyKey =>
+  kind === 'architecture'
+    ? 'architectureTask'
+    : kind === 'acceptance'
+      ? 'acceptanceTask'
+      : 'analysis';
+async function startOperation(kind, itemId?) {
+  if (busy || !projectSnapshot || !snapshot?.state?.task || !navigator.onLine) return;
+  const revision = projectSnapshot.revision;
+  lock(true);
+  try {
+    if (!(await confirmWrite(t('operationConfirm', t(operationLabel(kind)))))) return;
+    if (!navigator.onLine) {
+      notify(t('offlineNotice'), true);
+      return;
+    }
+    await invoke('governance.operation', {
+      action: 'start',
+      kind,
+      itemId,
+      revision,
+      confirmed: true
+    });
+    notify(t('operationStarted'));
+    if (!$('operations-dialog').open) $('operations-dialog').showModal();
+    await loadOperations();
+  } catch (error) {
+    notify(t('operationError', error.message), true);
+  } finally {
+    lock(false);
+  }
+}
+async function operationAction(action, id) {
+  if (busy) return;
+  lock(true);
+  try {
+    if (
+      ['cancel', 'resolve'].includes(action) &&
+      !(await confirmWrite(
+        t(action === 'resolve' ? 'resolveOperationConfirm' : 'operationCancelConfirm')
+      ))
+    )
+      return;
+    const data: any = await invoke('governance.operation', {
+      action,
+      id,
+      confirmed: ['cancel', 'resolve'].includes(action)
+    });
+    if (action === 'status')
+      text(
+        'operation-result',
+        JSON.stringify(
+          { phase: data.run.phase, runtime: data.runtime, session: data.session },
+          null,
+          2
+        ).slice(0, 20000)
+      );
+    await loadOperations();
+  } catch (error) {
+    text('operations-notice', t('operationError', error.message));
+  } finally {
+    lock(false);
+  }
+}
+async function loadOperations() {
+  try {
+    const data: any = await invoke('governance.operation', { action: 'list' });
+    if (snapshot && data.workspace !== snapshot.workspace) throw Error(t('switched'));
+    $('operation-runs').replaceChildren();
+    text('operations-notice', data.runs.length ? t('progressHintReal') : t('noOperations'));
+    for (const run of [...data.runs].reverse()) {
+      const row = document.createElement('article');
+      row.className = 'operation-run';
+      const heading = document.createElement('h3');
+      heading.textContent = `${t(operationLabel(run.kind))} · ${labels[run.phase]}`;
+      const note = document.createElement('p');
+      note.textContent = `${run.updatedAt}${run.error ? ' · ' + run.error : ''}`;
+      row.append(heading, note);
+      if (run.sessionId)
+        for (const [key, action] of [
+          ['inspectResult', 'status'],
+          ['openSession', 'open'],
+          ...(['creating', 'created', 'running', 'unknown'].includes(run.phase)
+            ? [['cancelOperation', 'cancel']]
+            : [])
+        ]) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.textContent = t(key as CopyKey);
+          button.disabled = busy;
+          button.addEventListener('click', () => {
+            void operationAction(action, run.id);
+          });
+          row.append(button);
+        }
+      if (!run.sessionId && ['creating', 'created', 'unknown'].includes(run.phase)) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = t('resolveOperation');
+        button.disabled = busy;
+        button.addEventListener('click', () => {
+          void operationAction('resolve', run.id);
+        });
+        row.append(button);
+      }
+      $('operation-runs').append(row);
+    }
+  } catch (error) {
+    text('operations-notice', t('operationError', error.message));
+  }
+}
+$('analysis-start').addEventListener('click', () => {
+  void startOperation('analysis');
+});
+$('architecture-analyze').addEventListener('click', () => {
+  void startOperation('architecture');
+});
+$('operations-open').addEventListener('click', () => {
+  if (busy) return;
+  if (!$('operations-dialog').open) $('operations-dialog').showModal();
+  text('operation-result', '');
+  void loadOperations();
+});
+$('operations-refresh').addEventListener('click', () => {
+  if (!busy) void loadOperations();
+});
+$('operations-close').addEventListener('click', () => {
+  if (!busy) $('operations-dialog').close();
+});

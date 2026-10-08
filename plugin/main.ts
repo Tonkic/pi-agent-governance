@@ -1,6 +1,8 @@
 'use strict';
 const { Governance } = require('./core');
 const { panelInvoke } = require('./panel');
+const { operationInvoke } = require('./operations');
+const { resolve } = require('node:path');
 const tool = require('./tool');
 const command = { id: 'governance.open', keywords: ['governance', '治理', '任务', 'git'] };
 async function isChinese() {
@@ -37,6 +39,15 @@ async function onUnload() {
   await pi.commands.unregister(command.id);
 }
 async function onPanelInvoke(channel, payload) {
-  return execute((root) => panelInvoke(root, channel, payload));
+  return execute((root) =>
+    channel === 'governance.operation'
+      ? operationInvoke(
+          root,
+          payload,
+          pi.desktop,
+          async () => resolve((await pi.workspace.get())?.path || '') === resolve(root)
+        )
+      : panelInvoke(root, channel, payload)
+  );
 }
 module.exports = { onLoad, onUnload, onPanelInvoke };

@@ -8,6 +8,36 @@ const { pathToFileURL } = require('node:url');
 const assert = require('node:assert/strict');
 const { Governance } = require('../plugin/runtime/core');
 const { panelInvoke } = require('../plugin/runtime/panel');
+const { operationInvoke } = require('../plugin/runtime/operations');
+const hostCalls = [];
+let hostStreaming = true,
+  sessionCounter = 0,
+  failCreation = false;
+const desktop = {
+  listOperations: async () =>
+    [
+      'session/create',
+      'agent/prompt',
+      'agent/getStatus',
+      'session/get',
+      'session/open',
+      'agent/abort'
+    ].map((id) => ({ id })),
+  invoke: async (request) => {
+    hostCalls.push(request);
+    if (request.operation === 'session/create')
+      return failCreation ? {} : { id: `fixture-session-${++sessionCounter}` };
+    if (request.operation === 'agent/getStatus') return { isStreaming: hostStreaming };
+    if (request.operation === 'session/get')
+      return {
+        session: { id: request.args[0].id },
+        messages: [
+          { role: 'assistant', content: 'Fixture analysis output; not installed-host acceptance.' }
+        ]
+      };
+    return { accepted: true };
+  }
+};
 (async () => {
   const base = process.env.PI_SCRATCH_DIR || os.tmpdir();
   const roots = await Promise.all(
@@ -33,7 +63,7 @@ const { panelInvoke } = require('../plugin/runtime/panel');
     headless: true,
     ...(process.env.PI_BROWSER ? { executablePath: process.env.PI_BROWSER } : {})
   });
-  const output = path.join(base, 'object-workbench-screenshots');
+  const output = path.join(base, 'four-stage-workbench-screenshots');
   await fs.mkdir(output, { recursive: true });
   const errors = [];
   let shots = 0;
@@ -54,7 +84,13 @@ const { panelInvoke } = require('../plugin/runtime/panel');
       )
         return { ok: false, error: 'Fixture read failure' };
       try {
-        return { ok: true, result: await panelInvoke(root, channel, payload) };
+        return {
+          ok: true,
+          result:
+            channel === 'governance.operation'
+              ? await operationInvoke(root, payload, desktop)
+              : await panelInvoke(root, channel, payload)
+        };
       } catch (e) {
         return { ok: false, error: e.message };
       }
@@ -113,7 +149,9 @@ const { panelInvoke } = require('../plugin/runtime/panel');
     assert.equal(await page.locator('#workitem-form').isVisible(), false);
     assert.equal(await page.locator('.metrics').count(), 0);
     assert.equal(await page.locator('.workspace-nav a').count(), 3);
-    assert.equal(await page.locator('#project-details').getAttribute('open'), null);
+    assert.equal(await page.locator('#project-dialog').evaluate((el) => el.open), false);
+    assert.equal(await page.locator('.board-column').count(), 4);
+    assert.equal(await page.locator('#board-section #task-section').count(), 0);
     for (const id of ['architecture', 'git-section', 'board-section']) {
       await navigate(page, id);
       for (const other of ['architecture', 'git-section', 'board-section'])
@@ -206,6 +244,7 @@ const { panelInvoke } = require('../plugin/runtime/panel');
       return id;
     }
     const first = await create('Review workspace navigation');
+    await page.locator('#workitem-criteria').fill('Keyboard return verified');
     await capture(page, 'new-item');
     await page
       .locator('#workitem-description')
@@ -245,7 +284,7 @@ const { panelInvoke } = require('../plugin/runtime/panel');
     await page.keyboard.press('Shift+F10');
     await page
       .locator('#item-menu')
-      .getByRole('menuitem', { name: '移至进行中', exact: true })
+      .getByRole('menuitem', { name: '移至正在进行', exact: true })
       .focus();
     await page.keyboard.press('Enter');
     await confirm(page, false);
@@ -264,19 +303,21 @@ const { panelInvoke } = require('../plugin/runtime/panel');
     await page.locator('#palette-toggle').click();
     assert.equal(await page.locator('#workitem-title').inputValue(), 'draft first');
     // Total project controls share the workbench but keep their own governance boundary.
-    await page.locator('#project-details > summary').click();
+    await page.locator('#project-open').click();
     await page.getByRole('button', { name: '保存进度', exact: true }).click();
     assert.match(await page.locator('#confirm-description').textContent(), /工作项草稿/);
     await confirm(page, false);
+    await page.locator('#project-close').click();
     await close(page);
+    await page.locator('#project-open').click();
     await page.locator('#edit-current').fill('progress draft');
-    await menu(page, first, '移至进行中');
+    await page.locator('#project-close').click();
+    await menu(page, first, '移至正在进行');
     assert.match(await page.locator('#confirm-description').textContent(), /总体进度草稿/);
     await confirm(page, false);
     assert.equal(await page.locator('#edit-current').inputValue(), 'progress draft');
     await refresh(page);
     await refresh(page);
-    await page.locator('#project-details > summary').click(); // restore collapsed workbench
     await menu(page, second, '上移');
     await confirm(page);
     assert.equal((await snapshot()).board.items[0].id, second);
@@ -290,7 +331,7 @@ const { panelInvoke } = require('../plugin/runtime/panel');
     await page.locator('#workitem-blocker').fill('Needs approval');
     await page.locator('#workitem-save').click();
     await confirm(page);
-    await menu(page, first, '移至完成');
+    await menu(page, first, '移至已完成');
     await confirm(page);
     assert.match(await page.locator('#notice').textContent(), /blocker/);
     assert.equal((await snapshot()).board.items.find((i) => i.id === first).stage, 'doing');
@@ -298,10 +339,156 @@ const { panelInvoke } = require('../plugin/runtime/panel');
     await page.locator('#workitem-blocker').fill('');
     await page.locator('#workitem-save').click();
     await confirm(page);
-    await menu(page, first, '移至完成');
+    await menu(page, first, '移至已完成');
     await confirm(page);
     assert.equal((await snapshot()).board.items.find((i) => i.id === first).stage, 'done');
     assert.equal(await fs.readFile(path.join(root, 'STATE.json'), 'utf8'), stateBefore);
+    // Human review records criteria/evidence; cancellation retains the form, edits invalidate acceptance.
+    await card(page, first).getByRole('button', { name: '人工验收', exact: true }).click();
+    await page.locator('#accept-reviewer').fill('Fixture human');
+    await page.locator('#accept-conclusion').fill('Keyboard return checked');
+    await page.locator('#accept-evidence').fill('Real browser focus assertions passed');
+    await page.keyboard.press('Escape');
+    await confirm(page, false);
+    assert.equal(await page.locator('#accept-dialog').evaluate((el) => el.open), true);
+    assert.equal(await page.locator('#item-sheet').evaluate((el) => el.open), true);
+    assert.equal(
+      await page.locator('#accept-evidence').inputValue(),
+      'Real browser focus assertions passed'
+    );
+    await page.locator('#accept-form button[type="submit"]').click();
+    assert.equal(
+      await page.locator('#confirm-dialog').evaluate((el) => el.open),
+      false,
+      'Unchecked criteria block passing review'
+    );
+    await page.locator('#accept-criteria input').check();
+    await capture(page, 'human-review');
+    await page.locator('#accept-form button[type="submit"]').click();
+    await confirm(page, false);
+    assert.equal(
+      await page.locator('#accept-evidence').inputValue(),
+      'Real browser focus assertions passed'
+    );
+    assert.equal((await snapshot()).board.items.find((i) => i.id === first).stage, 'done');
+    await page.locator('#accept-form button[type="submit"]').click();
+    await confirm(page);
+    assert.equal((await snapshot()).board.items.find((i) => i.id === first).stage, 'accepted');
+    await card(page, first).click();
+    assert.match(await page.locator('#item-review-record').textContent(), /Fixture human/);
+    await close(page);
+    await menu(page, first, '编辑');
+    await page
+      .locator('#workitem-description')
+      .fill('Check search, object details and keyboard return. Revised.');
+    await page.locator('#workitem-save').click();
+    await confirm(page);
+    let reviewItem = (await snapshot()).board.items.find((i) => i.id === first);
+    assert.equal(reviewItem.stage, 'done');
+    assert.equal(reviewItem.acceptance.valid, false);
+    await card(page, first).getByRole('button', { name: '人工验收', exact: true }).click();
+    await page.locator('#accept-result').selectOption('fail');
+    await page.locator('#accept-reviewer').fill('Fixture human');
+    await page.locator('#accept-conclusion').fill('Need another check');
+    await page.locator('#accept-evidence').fill('A criterion was not verified');
+    await page.locator('#accept-form button[type="submit"]').click();
+    await confirm(page);
+    assert.equal((await snapshot()).board.items.find((i) => i.id === first).stage, 'doing');
+    await menu(page, first, '移至已完成');
+    await confirm(page);
+    // Public desktop operations are simulated. Settled turns alone never mutate board acceptance.
+    const beforeAgent = hostCalls.length;
+    await card(page, first).getByRole('button', { name: 'Agent 验收', exact: true }).click();
+    await confirm(page, false);
+    assert.equal(hostCalls.length, beforeAgent);
+    await card(page, first).getByRole('button', { name: 'Agent 验收', exact: true }).click();
+    await confirm(page);
+    await page.waitForSelector('.operation-run');
+    await capture(page, 'agent-progress');
+    assert.match(
+      hostCalls.findLast((c) => c.operation === 'agent/prompt').args[0].content,
+      /board_accept/
+    );
+    await page.getByRole('button', { name: '查看进度 / 结果', exact: true }).click();
+    await settled(page);
+    assert.match(await page.locator('#operation-result').textContent(), /Fixture analysis output/);
+    hostStreaming = false;
+    await page.getByRole('button', { name: '查看进度 / 结果', exact: true }).click();
+    await settled(page);
+    assert.equal((await snapshot()).board.items.find((i) => i.id === first).stage, 'done');
+    await page.locator('#operations-close').click();
+    // Simulate the Agent's explicit evidence submission, rather than a frontend auto-pass.
+    reviewItem = (await snapshot()).board.items.find((i) => i.id === first);
+    await mutate({
+      action: 'board_accept',
+      id: first,
+      expectedItem: reviewItem.itemFingerprint,
+      method: 'agent',
+      passed: true,
+      accepted: [true],
+      reviewer: 'Fixture Agent',
+      conclusion: 'Criterion checked',
+      evidence: 'Isolated browser checks, no physical-host claim'
+    });
+    await refresh(page);
+    assert.equal(
+      await page.locator(`[data-stage="accepted"] [data-workitem="${first}"]`).count(),
+      1
+    );
+    await page.locator('#analysis-start').click();
+    await confirm(page, false);
+    hostStreaming = true;
+    await page.locator('#analysis-start').click();
+    await confirm(page);
+    await page.waitForSelector('.operation-run');
+    assert.match(
+      hostCalls.findLast((c) => c.operation === 'agent/prompt').args[0].content,
+      /do not edit project files/
+    );
+    await page.getByRole('button', { name: '取消任务', exact: true }).click();
+    await confirm(page, false);
+    assert.equal(hostCalls.at(-1).operation, 'agent/prompt');
+    await page.getByRole('button', { name: '取消任务', exact: true }).click();
+    await confirm(page);
+    assert.equal(hostCalls.at(-1).operation, 'agent/abort');
+    await page.locator('#operations-close').click();
+    await navigate(page, 'architecture');
+    await page.locator('#architecture-analyze').click();
+    await confirm(page);
+    assert.match(
+      hostCalls.findLast((c) => c.operation === 'agent/prompt').args[0].content,
+      /architecture_sources/
+    );
+    await page.getByRole('button', { name: '取消任务', exact: true }).click();
+    await confirm(page);
+    await page.locator('#operations-close').click();
+    await navigate(page, 'board-section');
+    assert.equal(await fs.readFile(path.join(root, 'STATE.json'), 'utf8'), stateBefore);
+    await page.locator('#project-open').click();
+    await capture(page, 'project-actions');
+    await page.locator('#project-close').click();
+    const promptsBeforeRecovery = hostCalls.filter((c) => c.operation === 'agent/prompt').length;
+    failCreation = true;
+    await page.locator('#analysis-start').click();
+    await confirm(page);
+    assert.match(await page.locator('#notice').textContent(), /durable session ID/);
+    await page.locator('#operations-open').click();
+    await page.waitForSelector('.operation-run');
+    await page.getByRole('button', { name: '已核对 — 解除创建阻塞', exact: true }).click();
+    await confirm(page, false);
+    assert.equal(
+      hostCalls.filter((c) => c.operation === 'agent/prompt').length,
+      promptsBeforeRecovery
+    );
+    await capture(page, 'creation-recovery');
+    await page.getByRole('button', { name: '已核对 — 解除创建阻塞', exact: true }).click();
+    await confirm(page);
+    assert.equal(
+      hostCalls.filter((c) => c.operation === 'agent/prompt').length,
+      promptsBeforeRecovery
+    );
+    await page.locator('#operations-close').click();
+    failCreation = false;
     // Search locator, filtered drag safety, empty-state recovery.
     await page.keyboard.press('/');
     assert.equal(
@@ -369,7 +556,7 @@ const { panelInvoke } = require('../plugin/runtime/panel');
     assert.equal(await page.locator('#board-new').isEnabled(), true);
     // Disconnecting during confirmation must not invoke either local write path.
     const offlineBoard = JSON.stringify((await snapshot()).board);
-    await menu(page, second, '移至进行中');
+    await menu(page, second, '移至正在进行');
     await page.context().setOffline(true);
     await confirm(page);
     assert.equal(JSON.stringify((await snapshot()).board), offlineBoard);
@@ -384,7 +571,7 @@ const { panelInvoke } = require('../plugin/runtime/panel');
     assert.equal(await page.locator('#workitem-title').inputValue(), 'offline draft');
     await page.context().setOffline(false);
     await close(page);
-    await page.locator('#project-details > summary').click();
+    await page.locator('#project-open').click();
     await page.locator('#edit-current').fill('offline progress');
     await page.getByRole('button', { name: '保存进度', exact: true }).click();
     await page.context().setOffline(true);
@@ -392,9 +579,9 @@ const { panelInvoke } = require('../plugin/runtime/panel');
     assert.equal(await fs.readFile(path.join(root, 'STATE.json'), 'utf8'), stateBefore);
     await page.context().setOffline(false);
     assert.equal(await fs.readFile(path.join(root, 'STATE.json'), 'utf8'), stateBefore);
+    await page.locator('#project-close').click();
     await refresh(page);
     await refresh(page);
-    await page.locator('#project-details > summary').click();
     await navigate(page, 'architecture');
     await page.locator('#graph-viewport').focus();
     await page.keyboard.press('/');
@@ -405,12 +592,12 @@ const { panelInvoke } = require('../plugin/runtime/panel');
     );
     // Stale and workspace-switched writes rejected by real backend.
     await mutate({ action: 'board_update', id: second, title: 'External change' });
-    await menu(page, second, '移至进行中');
+    await menu(page, second, '移至正在进行');
     await confirm(page);
     assert.match(await page.locator('#notice').textContent(), /stale/);
     await refresh(page);
     root = roots[1];
-    await menu(page, second, '移至进行中');
+    await menu(page, second, '移至正在进行');
     await confirm(page);
     assert.match(await page.locator('#notice').textContent(), /stale|switched/);
     assert.equal(
@@ -465,10 +652,11 @@ const { panelInvoke } = require('../plugin/runtime/panel');
     await page.locator('#module-jump').click();
     await page.waitForFunction(
       () =>
-        document.querySelector('#project-details').open &&
+        document.querySelector('#project-dialog').open &&
         !document.querySelector('#board-section').hidden
     );
     assert.equal(await page.locator('#board-section').isVisible(), true);
+    await page.locator('#project-close').click();
     await navigate(page, 'architecture');
     await page.locator('#show-architecture').click();
     await fs.appendFile(path.join(root, 'app.ts'), '// change\n');
@@ -517,6 +705,8 @@ const { panelInvoke } = require('../plugin/runtime/panel');
       description: 'Focus should return to the selected object.',
       blocker: 'Waiting for review'
     });
+    await mutate({ action: 'board_move', id: 'fixture-c', stage: 'doing', position: 0 });
+    await mutate({ action: 'board_move', id: 'fixture-c', stage: 'done', position: 0 });
     await refresh(page);
     const english = await makePage('en-US');
     await english.locator('#board-new').click();
@@ -534,8 +724,8 @@ const { panelInvoke } = require('../plugin/runtime/panel');
       [english, 'en']
     ]) {
       await refresh(p);
-      if (await p.locator('#project-details').evaluate((el) => el.open))
-        await p.locator('#project-details > summary').click();
+      if (await p.locator('#project-dialog').evaluate((el) => el.open))
+        await p.locator('#project-close').click();
       for (const width of [390, 768, 1280])
         for (const theme of ['light', 'dark']) {
           await p.setViewportSize({ width, height: 1000 });

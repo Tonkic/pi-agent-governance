@@ -225,6 +225,7 @@ textarea:focus-visible {
   display: none;
 }
 .board-columns {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-top: 20px;
   gap: 24px;
 }
@@ -339,34 +340,6 @@ textarea:focus-visible {
   font-size: 14px;
   margin-bottom: 12px;
 }
-.project-details {
-  margin: 26px 0 12px;
-  border-top: 1px solid var(--line);
-}
-.project-details > summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 16px 0;
-  font-size: 12px;
-  cursor: pointer;
-  color: var(--muted);
-}
-.project-details > summary::before {
-  content: '›';
-  font-size: 18px;
-}
-.project-details[open] > summary::before {
-  transform: rotate(90deg);
-}
-.project-details > summary > span:first-child {
-  flex: 1;
-  color: var(--text);
-}
-.project-counts {
-  font-size: 10px;
-}
 #task-section {
   margin: 8px 0 24px;
   gap: 32px;
@@ -443,6 +416,9 @@ dialog.item-sheet {
   }
   body:has(#item-sheet[open]) .dashboard-grid {
     grid-template-columns: 1fr;
+  }
+  body:has(#item-sheet[open]) .board-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 .item-sheet::backdrop {
@@ -588,6 +564,7 @@ footer {
   }
   .board-columns {
     gap: 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (max-width: 900px) {
@@ -724,4 +701,145 @@ footer {
 }
 .item-sheet[open] ~ #confirm-dialog[open] {
   z-index: 1100;
+}
+
+.project-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 20px;
+}
+.project-actions button {
+  font-size: 12px;
+}
+.board-column[data-stage='accepted'] > header::before {
+  background: var(--success);
+  border-radius: 2px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 12%, transparent);
+}
+.card-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.review-button {
+  font-size: 11px;
+  padding: 5px 8px;
+  min-height: 30px;
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  background: var(--selected);
+}
+dialog.action-dialog {
+  width: min(820px, calc(100vw - 28px));
+  max-width: none;
+  max-height: calc(100dvh - var(--pi-plugin-titlebar-height, 0px) - 40px);
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  overflow: auto;
+  backdrop-filter: none;
+}
+.action-dialog::backdrop {
+  background: #0005;
+}
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.dialog-header h2 {
+  margin: 0;
+}
+.dialog-header button {
+  background: transparent;
+  border: 0;
+  font-size: 22px;
+}
+#accept-dialog {
+  width: min(560px, calc(100vw - 28px));
+}
+.criterion-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+}
+.criterion-check input {
+  width: auto;
+  margin: 3px 0 0;
+}
+#item-acceptance {
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+  margin-top: 24px;
+}
+#item-review-record {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.operation-run {
+  border-top: 1px solid var(--line);
+  padding: 16px 0;
+}
+.operation-run h3 {
+  font-size: 14px;
+  margin: 0 0 8px;
+}
+.operation-run p {
+  font-size: 12px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.operation-run button {
+  margin: 4px 6px 0 0;
+  font-size: 12px;
+}
+#operation-result {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 45vh;
+  overflow: auto;
+  background: var(--subtle);
+  padding: 16px;
+  font-size: 12px;
+}
+#operation-result:empty {
+  display: none;
+}
+select {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px;
+  width: 100%;
+}
+@media (max-width: 650px) {
+  dialog.action-dialog {
+    padding: 18px;
+  }
+  #task-section {
+    grid-template-columns: 1fr;
+  }
+  .project-actions {
+    gap: 6px;
+  }
+  .project-actions button {
+    flex: 1;
+    white-space: normal;
+  }
+}
+@media (forced-colors: active) {
+  .action-dialog,
+  .review-button {
+    border: 1px solid CanvasText;
+  }
 }
