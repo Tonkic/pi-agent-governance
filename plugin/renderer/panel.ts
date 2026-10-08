@@ -78,6 +78,7 @@ function lock(value) {
       button.disabled = value || !navigator.onLine;
     });
   updateLaunchControls();
+  updateItemNavigation();
 }
 async function invoke(channel, payload = {}) {
   if (!window.pluginBridge?.invoke) throw Error(t('staticPreview'));
@@ -591,6 +592,8 @@ async function allowItemSwitch() {
     return !!(await confirmWrite(t('switchDraft')));
   } finally {
     lock(false);
+    if ($('item-sheet').open)
+      ($('workitem-form').hidden ? $('item-edit') : $('workitem-title')).focus();
   }
 }
 async function openItem(id: string = null, edit = false, origin?: HTMLElement) {
@@ -648,10 +651,11 @@ async function openItem(id: string = null, edit = false, origin?: HTMLElement) {
     $('workitem-form').hidden = false;
     text('workitem-save', t(item ? 'saveChanges' : 'createItem'));
   }
-  if (!$('item-sheet').open) $('item-sheet').show();
+  if (!$('item-sheet').open) $('item-sheet').showModal();
   (edit || !item ? $('workitem-title') : $('item-edit')).focus();
   lock(busy);
   if (!edit && item && !navigator.onLine) $('item-back').focus();
+  updateItemNavigation();
   return true;
 }
 async function closeItemSheet() {
@@ -1003,6 +1007,31 @@ for (const id of ['item-back', 'item-close', 'workitem-cancel'])
   $(id).addEventListener('click', () => {
     void closeItemSheet();
   });
+function displayedItemIds() {
+  return Array.from(document.querySelectorAll<HTMLElement>('[data-workitem]')).map(
+    (card) => card.dataset.workitem
+  );
+}
+function updateItemNavigation() {
+  const ids = displayedItemIds(),
+    index = ids.indexOf(selectedItem);
+  $('item-previous').disabled = busy || index <= 0;
+  $('item-next').disabled = busy || index < 0 || index >= ids.length - 1;
+}
+async function browseItem(direction) {
+  if (busy) return;
+  const ids = displayedItemIds(),
+    index = ids.indexOf(selectedItem),
+    id = ids[index + direction];
+  if (index < 0 || !id) return;
+  await openItem(id, false, document.querySelector<HTMLElement>(`[data-workitem="${id}"]`));
+}
+$('item-previous').addEventListener('click', () => {
+  void browseItem(-1);
+});
+$('item-next').addEventListener('click', () => {
+  void browseItem(1);
+});
 $('item-sheet').addEventListener('cancel', (event) => {
   event.preventDefault();
   void closeItemSheet();

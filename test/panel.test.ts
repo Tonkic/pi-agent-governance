@@ -187,3 +187,11 @@ test('community manifest and publisher keep credentials and old packages out of 
   assert.match(script, /--submit/);
   assert.doesNotMatch(script, /console\.(?:log|error)\(token\)/);
 });
+
+test('item details use a modal and cannot shrink the board through open-state CSS', async () => {
+  const script = await fs.readFile(path.join(__dirname, '../plugin/renderer/panel.js'), 'utf8');
+  const css = await fs.readFile(path.join(__dirname, '../../plugin/renderer/views.css'), 'utf8');
+  assert.match(script, /\$\('item-sheet'\)\.showModal\(\)/);
+  assert.doesNotMatch(css, /body:has\(#item-sheet/);
+  assert.match(css, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
+});

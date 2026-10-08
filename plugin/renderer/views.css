@@ -214,20 +214,40 @@ textarea:focus-visible {
 .board-columns {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-top: 20px;
-  gap: 24px;
+  gap: 16px;
+  align-items: stretch;
 }
 .board-column {
-  background: transparent;
-  border: 0;
-  border-radius: 0;
-  padding: 0;
+  --column-tone: var(--waiting);
+  min-width: 0;
+  background: color-mix(in srgb, var(--surface) 74%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--line) 80%, var(--muted));
+  border-radius: 10px;
+  padding: 0 12px 12px;
   min-height: 240px;
+}
+.board-column[data-stage='doing'] {
+  --column-tone: var(--progress);
+}
+.board-column[data-stage='done'] {
+  --column-tone: var(--success);
+}
+.board-column[data-stage='accepted'] {
+  --column-tone: #805baa;
+}
+:root[data-base='dark'] .board-column[data-stage='accepted'] {
+  --column-tone: #c5a4ef;
 }
 .board-column > header {
   display: flex;
   align-items: center;
   gap: 9px;
-  margin: 0 0 16px;
+  margin: 0 -12px 14px;
+  padding: 12px;
+  border-top: 3px solid var(--column-tone);
+  border-bottom: 1px solid var(--line);
+  border-radius: 9px 9px 0 0;
+  background: color-mix(in srgb, var(--column-tone) 8%, var(--surface));
 }
 .board-column h3 {
   font-size: 13px;
@@ -252,6 +272,10 @@ textarea:focus-visible {
   color: var(--muted);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1px 6px;
 }
 .column-add {
   margin-left: auto;
@@ -375,45 +399,34 @@ textarea:focus-visible {
 .module-detail {
   background: transparent;
 }
-/* shadcn Sheet surface adapted for a nonmodal native dialog; background navigation remains available. */
+/* Centered native modal details: no geometry coupling to the board. */
 dialog.item-sheet {
   position: fixed;
-  inset: calc(var(--pi-plugin-titlebar-height, 0px) + 108px) 0 0 auto;
-  height: calc(100dvh - var(--pi-plugin-titlebar-height, 0px) - 108px);
-  max-height: none;
-  width: min(440px, 100vw);
+  inset: var(--pi-plugin-titlebar-height, 0px) 0 0;
+  height: fit-content;
+  max-height: calc(100dvh - var(--pi-plugin-titlebar-height, 0px) - 32px);
+  width: min(680px, calc(100vw - 32px));
   max-width: none;
-  margin: 0;
+  margin: auto;
   padding: 0;
-  border: 0;
-  border-left: 1px solid var(--line);
-  border-radius: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
   background: var(--surface);
   color: var(--text);
-  box-shadow: -16px 0 60px #0002;
+  box-shadow: 0 24px 72px #0003;
   backdrop-filter: none;
   overflow-y: auto;
 }
-@media (min-width: 1000px) {
-  body:has(#item-sheet[open]) .app-shell {
-    padding-right: 472px;
-  }
-  body:has(#item-sheet[open]) .topbar {
-    width: calc(100% + 440px);
-  }
-  body:has(#item-sheet[open]) .dashboard-grid {
-    grid-template-columns: 1fr;
-  }
-  body:has(#item-sheet[open]) .board-columns {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 .item-sheet::backdrop {
-  background: #0002;
+  background: #0005;
 }
 .sheet-header {
   display: flex;
   justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface);
   align-items: center;
   padding: 16px 20px;
   border-bottom: 1px solid var(--line);
@@ -422,6 +435,15 @@ dialog.item-sheet {
   border: 0;
   background: transparent;
   color: var(--muted);
+}
+.sheet-navigation {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+.sheet-navigation button {
+  min-width: 34px;
+  font-size: 18px;
 }
 .sheet-body {
   padding: 24px;
@@ -647,12 +669,18 @@ footer {
     background: var(--surface);
     backdrop-filter: none;
   }
-  .workitem {
+  .workitem,
+  .board-column {
     border-color: var(--muted);
   }
 }
 @media (forced-colors: active) {
+  .board-column > header {
+    background: Canvas;
+    border-color: CanvasText;
+  }
   .workitem,
+  .board-column,
   .context-menu,
   .item-sheet {
     border: 1px solid CanvasText;
@@ -677,17 +705,11 @@ footer {
   white-space: nowrap;
   border: 0;
 }
-.item-sheet {
-  z-index: 900;
-}
-.item-sheet[open] ~ #confirm-dialog[open] {
-  z-index: 1100;
-}
 
 .board-column[data-stage='accepted'] > header::before {
-  background: var(--success);
+  background: var(--column-tone);
   border-radius: 2px;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 12%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--column-tone) 12%, transparent);
 }
 .card-review-actions {
   display: flex;

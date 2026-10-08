@@ -145,3 +145,13 @@ PluginCheck/Pack通过32文件459119字节，SHA fa1344e4a9f1d84807cc70833ab5c0b
 开工前用户已有architecture.json修改与未跟踪operations.json，整个实现过程中哈希保持CD7C6390…A4A9F与C7ACEF62…526D6。用户明确允许它们单独提交并公开同步（已告知本机路径/会话ID/状态），579c89f5f6eed13a6e5aea327cd132a36a349c1a仅保存这两份原内容，未改running状态、不伪造任务完成或作为测试夹具。5节点7关系原分析范围/限制与旧源码指纹保留，不自动“修复”指纹。原有.pi/归档保留；无受管任务，仍串行普通功能分支，不伪造受管git_verify。
 
 源码f305ff5a3481b5788082ebb65b072f88fea817df提交后release:auto实际typecheck/build、77测试、60截图浏览器及可达历史凭据扫描通过，sourceSynced:true/published:false。no-ff集成main 6e9b67c9cdffde6f7892958115e1bc06a04e84f0后重跑typecheck/build/77测试/browser通过，普通推送并ls-remote一致；日志scratch/toolbar-model-delivery.log、toolbar-model-main.log。用户原数据独立提交保持原内容/限制/运行记录，不自动确认其完成；正常Git换行转换不算CRLF误报修复。新版未安装/市场未发布，包哈希不变。预览长图出现一次重复拼接，不将其算为新证据；关键架构/启动大图及操作栏/启动中英响应式对照正常查看。
+
+## 0.6.11 居中详情与稳定四列
+
+用户反馈详情侧栏打开使工作台1×4重排2×2，批准改弹窗并增强列区分。真实Chromium+隔离后端反馈环先确保详情关闭，连续两次复现：列宽232→268，后两列移到下一行。排查CSS联动、JS尺寸修改、滚动/断点三项；直接读取file CSSOM被浏览器安全限制，改为计算样式探针，仅恢复容器padding/标题宽度/网格，几何立即恢复且视口仍1280，确认根因是body:has(item-sheet[open])联动。探针仅在测试页面，已从源码清除，日志scratch/modal-board-red-1/2.log、modal-board-probe.log保留。
+
+详情改showModal居中显示，移除所有打开态压缩/两列CSS，不改背景布局；背景交互暂禁用，焦点受原生模态约束，返回/Escape关闭并回对象。顶部上一项/下一项按当前显示对象导航，边界禁用；切换/关闭草稿保留明确丢弃确认，取消回到弹窗焦点。长内容内部滚动，标题导航/关闭保持可见。四列独立浅底、边框、标题色带/顶边与数量标记，已完成绿/已验收紫区分；高对比/强制颜色用实体边界而不只依赖颜色。手机/中宽仍按视口响应式，不由详情触发。
+
+增加真实几何前后不变、真实:modal、Tab约束、取消/切换边界/关闭返回、全语言/明暗/390/768/1280居中无溢出及静态防回归。测试几何采用文档坐标，避免滚动点击底部卡片误报重排；不强点被模态遮住的背景，主题变化改用宿主事件。typecheck/build与78测试通过，scratch/workbench-clean-80fe96b405af44d0af5b1fdc4c135cd4干净npm ci/typecheck/build/78测试通过；72张浏览器截图及上述交互/几何断言通过，日志modal-board-tests.log、modal-board-browser-final.log、modal-board-clean.log。UI-SOURCES更新真实模态行为并保留原MIT许可。没有改后端、数据格式、权限/Agent逻辑，没有真实收费执行或安装。
+
+PluginCheck/Pack通过32文件462966字节，SHA e16f9b7fa42f9e3af8daf2ce9229825abd1dd9dc524efcd15c87ac35849717ba；i18n 0 FAIL/2 REVIEW理由沿用command安装器纯字符串与STATE数据名。生成视觉入口workbench-0.6.11/index.html，但BrowserPreview后guest不可用、恢复一次仍不可用，未实际目视，不沿用0.6.10截图作为新版通过。最新只读MCP核对本机0.6.10 ready/enabled，0.6.11未安装/真实宿主复验。不总体verify/close。原有.pi/旧归档保留，本轮只在普通串行功能分支修复，不伪造受管git_verify。
