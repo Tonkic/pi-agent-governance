@@ -433,7 +433,8 @@ class Governance {
             'architecture_set',
             'board_create',
             'board_update',
-            'board_move'
+            'board_move',
+            'board_accept'
         ].includes(a.action))
             return new (require('./project').ProjectData)(this).run(a);
         if (a.action === 'route')

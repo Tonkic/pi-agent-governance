@@ -40,7 +40,8 @@ module.exports = {
           'architecture_set',
           'board_create',
           'board_update',
-          'board_move'
+          'board_move',
+          'board_accept'
         ]
       },
       expectedRevision: {
@@ -51,7 +52,18 @@ module.exports = {
       description: { type: 'string' },
       blocker: { type: 'string' },
       gitTaskId: { type: 'string' },
-      stage: { type: 'string', enum: ['todo', 'doing', 'done'] },
+      stage: { type: 'string', enum: ['todo', 'doing', 'done', 'accepted'] },
+      method: { type: 'string', enum: ['human', 'agent'] },
+      reviewer: {
+        type: 'string',
+        description: 'Reviewer label; caller-attested, not identity authentication.'
+      },
+      conclusion: { type: 'string' },
+      expectedItem: {
+        type: 'string',
+        description:
+          'itemFingerprint from project_snapshot; binds acceptance to the reviewed work item.'
+      },
       position: { type: 'integer', minimum: 0 },
       graph: {
         type: 'object',

@@ -8,18 +8,27 @@ CLI 在所选工作区执行，向 `node <插件仓库>/build/scripts/governance
 
 ### 工作项
 
-- `board_create`：`id`（小写字母、数字、连字符，最多 64 字符）、`title`（最多 160 字符）、可选 `description`、可选已登记 `gitTaskId`。创建时记录当前总体任务 `taskId`，没有活动任务则为 null。
-- `board_update`：`id`、`title`、`description`、`blocker`。未传描述/阻塞按空字符串处理；完成项须先退回 doing 才能添加阻塞。
-- `board_move`：`id`、`stage`（todo / doing / done）、`position`（目标列从 0 开始的插入位置，不含被移动项）。只允许同列排序或相邻列迁移，有阻塞不能进入 done。
+- `board_create`：`id`（小写字母、数字、连字符，最多64字符）、`title`（最多160字符）、可选`description`、`criteria`（最多20条，每条1000字符）、已登记`gitTaskId`。创建时记录总体任务`taskId`，没有活动任务则为null。
+- `board_update`：`id`、`title`、`description`、`blocker`、可选`criteria`。省略criteria保留旧条件；省略描述/阻塞按空字符串处理。内容修改使旧验收失效；已验收项退回done，有阻塞则doing。
+- `board_move`：`id`、`stage`（todo/doing/done/accepted）、`position`（目标列从0开始，不含被移动项）。同列排序或相邻列迁移；有阻塞不能进入done。不能用迁移进入accepted，必须验收；从accepted退回done使验收失效。
+- `board_accept`：done项的`id`、`expectedItem`（快照itemFingerprint）、`method`（human/agent）、`reviewer`、`passed`、`accepted`、`conclusion`、`evidence`。通过时accepted须逐项为true且数量等于工作项criteria；失败退回doing。保存方式、结论、依据、时间和内容指纹。调用方标签不是身份认证；STATE verify/close不受工作项验收替代。
 - 最多 100 项；序列化数据不得超过 1 MiB，超过时拒绝写入并保留原文件。记录保存在 `.governance/board.json`，不修改 STATE 验收或 Git 登记状态。历史工作项保留创建时关联的总体任务，不随新任务改绑。
 
-面板通道 `governance.project` 读取快照；`governance.workitem` 仅允许上述三个写入动作，参数为 `{args, revision, confirmed: true}`。取消时不得调用写入；失败后重新读取，不以本地乐观位置假装成功。该确认是调用方声明，不是身份认证。
+面板通道`governance.project`读取快照；`governance.workitem`只允许四个工作项动作，参数`{args, revision, confirmed:true}`。面板board_accept固定为human，不能冒充agent。取消不写入；失败后重读，不以乐观位置假装成功。
 
-工作台默认显示三列工作项；总体目标、验收和进度在「项目目标与进度」中展开，两者完成语义不合并。点击工作项打开非模态详情，返回或 Escape 关闭；宽屏可边看详情边选其他对象。点「新建工作项」填写标题和描述，ID 自动生成。阻塞仅在编辑时填写；`gitTaskId` 仅通过工具/CLI 创建时关联，面板显示但不改绑。
+工作台四列：待办→正在进行→已完成→已验收。总体目标/进度通过顶部「项目操作」打开，不占看板下方；完成语义独立。点击对象看详情，返回/Escape关闭；新建ID自动生成。已完成对象提供人工/Agent验收，条件和记录位于详情，人工填写结论和实际依据，取消不丢草稿。
 
 右键、触屏长按、卡片更多按钮或 Shift+F10 打开菜单。方向键/Home/End 选择，Enter 执行，Escape/Tab 返回卡片。菜单提供详情、编辑、指导、排序与相邻列迁移；「指导 Agent」只生成可复制文本，不启动执行。卡片拖到目标前排序、拖到列空白处放末尾。`/` 聚焦搜索，筛选时暂停拖动；清除搜索后恢复。
 
 所有写入需确认，取消保留草稿和已保存位置；错误不自动重试。切换编辑对象或关闭详情时，未保存草稿须确认丢弃。保存/移动后的刷新会列出其他表单将丢弃的草稿，取消可继续编辑。离线时保留已读取详情，暂停写入；恢复连接不重放操作。刷新未保存表单先提示，再次点击才丢弃重读。
+
+### 项目 Agent 操作
+
+需要用户授予`desktop.control`与已批准活动任务。顶部「开始分析」启动只读项目分析；「重新分析架构」启动源码重分析，仅允许更新架构数据；已完成对象的「Agent验收」检查该项并提交明确证据。插件通过公开`session/create`、`agent/prompt`创建绑定当前项目的独立Agent会话，不改当前会话/权限模式、不读取MCP令牌。提示约束不是对Agent工具的安全沙箱；模型运行可能产生费用，运行权限仍由宿主管理。
+
+「分析进度」手动读取真实宿主状态和有限会话输出，可打开会话或确认取消本插件记录的任务。记录在`.governance/operations.json`，最多30条，一次只允许一个活动任务；超时结果不明不重发。没有会话ID的中断创建可在宿主核对后点「已核对—解除创建阻塞」，仅释放本地记录，不重发提示、不取消未知会话。只允许固定操作，不能传任意宿主命令或会话ID。会话结束不代表验收通过，须有board_accept证据记录且任务绑定未变。进度显示不伪造百分比，不后台轮询。
+
+旧三列卡片直接可读，读取不重写数据、不自动验收。旧插件不认识accepted阶段；回退前备份新数据，并使用对应的旧备份，不删除用户数据。
 
 ### 项目架构
 
@@ -51,6 +60,6 @@ CLI 在所选工作区执行，向 `node <插件仓库>/build/scripts/governance
 
 ## 权限、恢复与限制
 
-沿用 Node fs、工作区相对路径限制、敏感路径和符号链接拒绝策略；不读取仓库外文件，不发送源码到网络。请只选择非敏感源码，路径过滤不是完整的秘密扫描。项目写入复用 `.governance.lock`，使用临时文件重命名；遗留锁需确认原进程已退出后再人工移除。锁不防御不遵守协议的恶意并发写入或硬链接。
+沿用Node fs、工作区相对路径和敏感路径/符号链接限制。架构源码只显式选定读取；Agent分析可能通过宿主模型提供商处理项目内容，应只选择可信非敏感项目。项目记录复用`.governance.lock`与临时文件重命名；遗留锁须确认进程退出后人工处理。锁不防御恶意并发写入或硬链接。
 
 数据损坏时保留原文件，先备份再人工修复；不要删除用户数据“恢复默认”。工作项损坏会拒绝工作项写入；架构可通过重新核对源码并提交最新版本替换。没有 STATE 或 STATE 无效时拒绝写入。工作项不是自动调度器，也不允许通过此接口 verify、close 或 Git integrate。

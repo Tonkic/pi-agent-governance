@@ -3,7 +3,25 @@ const { createHash } = require('node:crypto');
 const digest = (value) => createHash('sha256').update(value).digest('hex');
 const boardFile = '.governance/board.json',
   architectureFile = '.governance/architecture.json';
-const stages = ['todo', 'doing', 'done'];
+const stages = ['todo', 'doing', 'done', 'accepted'];
+function itemFingerprint(item) {
+  return digest(
+    JSON.stringify([
+      item.id,
+      item.title,
+      item.description,
+      item.blocker,
+      item.criteria || [],
+      item.taskId,
+      item.gitTaskId
+    ])
+  );
+}
+function itemCriteria(value = []) {
+  if (!Array.isArray(value) || value.length > 20)
+    throw Error('Provide at most 20 acceptance criteria');
+  return value.map((c) => text(c, 'acceptance criterion', 1000));
+}
 const identifier = (value) => typeof value === 'string' && /^[a-z0-9][a-z0-9-]{0,63}$/.test(value);
 function text(value, name, max = 4000, empty = false) {
   if (typeof value !== 'string' || value.length > max || (!empty && !value.trim()))
@@ -44,6 +62,28 @@ class ProjectData {
       text(item.title, 'title', 160);
       text(item.description, 'description', 4000, true);
       text(item.blocker, 'blocker', 1000, true);
+      itemCriteria(item.criteria);
+      if (item.acceptance != null) {
+        const r = item.acceptance;
+        if (
+          !['human', 'agent'].includes(r.method) ||
+          typeof r.passed !== 'boolean' ||
+          typeof r.valid !== 'boolean' ||
+          !/^[a-f0-9]{64}$/.test(r.itemFingerprint || '') ||
+          !Number.isFinite(Date.parse(r.at))
+        )
+          throw Error('Invalid acceptance record');
+        text(r.reviewer, 'reviewer', 160);
+        text(r.conclusion, 'conclusion', 2000);
+        text(r.evidence, 'evidence', 8000);
+        if (r.valid && r.itemFingerprint !== itemFingerprint(item))
+          throw Error('Acceptance content changed; reopen item');
+      }
+      if (
+        item.stage === 'accepted' &&
+        (!item.acceptance?.passed || !item.acceptance.valid || item.blocker)
+      )
+        throw Error('Accepted item requires valid passing evidence');
       if (item.stage === 'done' && item.blocker) throw Error('Blocked work item cannot be done');
       for (const key of ['taskId', 'gitTaskId'])
         if (item[key] !== null && !identifier(item[key])) throw Error('Invalid linked task');
@@ -166,7 +206,12 @@ class ProjectData {
     return {
       workspace: this.g.root,
       revision: this.revision(raws),
-      board,
+      board: board
+        ? {
+            ...board,
+            items: board.items.map((item) => ({ ...item, itemFingerprint: itemFingerprint(item) }))
+          }
+        : null,
       architecture: architectureError ? null : architecture,
       boardError,
       architectureError
@@ -206,15 +251,52 @@ class ProjectData {
             blocker: '',
             stage: 'todo',
             taskId: state.task,
+            criteria: itemCriteria(a.criteria),
+            acceptance: null,
             gitTaskId: a.gitTaskId || null
           });
         } else {
           const item = b.items.find((i) => i.id === a.id);
           if (!item) throw Error('Work item not found');
-          if (a.action === 'board_update') {
+          if (a.action === 'board_accept') {
+            const criteria = item.criteria || [];
+            if (
+              a.passed &&
+              (!Array.isArray(a.accepted) ||
+                a.accepted.length !== criteria.length ||
+                a.accepted.some((v) => v !== true))
+            )
+              throw Error('Confirm every item acceptance criterion');
+            if (item.stage !== 'done') throw Error('Only completed items can be accepted');
+            if (item.taskId !== state.task)
+              throw Error('Project task changed; review belongs to another task');
+            if (item.blocker) throw Error('Resolve work-item blocker first');
+            if (!['human', 'agent'].includes(a.method) || typeof a.passed !== 'boolean')
+              throw Error('Acceptance method and result required');
+            if (typeof a.expectedItem !== 'string' || a.expectedItem !== itemFingerprint(item))
+              throw Error('Acceptance item changed; reread before accepting');
+            item.acceptance = {
+              method: a.method,
+              passed: a.passed,
+              accepted: Array.isArray(a.accepted) ? a.accepted.map((v) => v === true) : [],
+              valid: true,
+              reviewer: text(a.reviewer, 'reviewer', 160),
+              conclusion: text(a.conclusion, 'conclusion', 2000),
+              evidence: text(a.evidence, 'evidence', 8000),
+              itemFingerprint: itemFingerprint(item),
+              at: new Date().toISOString()
+            };
+            item.stage = a.passed ? 'accepted' : 'doing';
+          } else if (a.action === 'board_update') {
+            const before = itemFingerprint(item);
             item.title = text(a.title, 'title', 160);
             item.description = text(a.description ?? '', 'description', 4000, true);
             item.blocker = text(a.blocker ?? '', 'blocker', 1000, true);
+            if (a.criteria !== undefined) item.criteria = itemCriteria(a.criteria);
+            if (before !== itemFingerprint(item) && item.acceptance) {
+              item.acceptance.valid = false;
+              if (item.stage === 'accepted') item.stage = item.blocker ? 'doing' : 'done';
+            }
             if (item.blocker && item.stage === 'done')
               throw Error('Reopen work item before adding a blocker');
           } else if (a.action === 'board_move') {
@@ -223,6 +305,9 @@ class ProjectData {
               Math.abs(stages.indexOf(item.stage) - stages.indexOf(a.stage)) > 1
             )
               throw Error('Only adjacent work-item stages are allowed');
+            if (a.stage === 'accepted' && item.stage !== 'accepted')
+              throw Error('Use board_accept with evidence, not a move');
+            if (a.stage !== item.stage && item.acceptance) item.acceptance.valid = false;
             if (item.blocker && a.stage === 'done') throw Error('Resolve work-item blocker first');
             if (!Number.isInteger(a.position) || a.position < 0) throw Error('Invalid position');
             const remaining = b.items.filter((i) => i.id !== a.id);
@@ -252,4 +337,4 @@ class ProjectData {
     });
   }
 }
-module.exports = { ProjectData };
+module.exports = { ProjectData, itemFingerprint };

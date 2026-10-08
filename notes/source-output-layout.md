@@ -117,3 +117,15 @@ typecheck/build、65测试和真实Chromium+隔离治理后端43截图回归通�
 补看菜单、新建、搜索空态、离线、读取失败大图后，发现读取失败时顶部误称同步；修正读取异常/损坏board提示与保存后错误保留，新增顶部error断言重测通过，错误截图更新并复核。初始源码cf2cc9575f795c6cc7acb0002b1329dc9147e138提交后release:auto实际typecheck/65测试/43截图/历史凭据扫描通过，来源分支核对一致，无市场调用；该源码的366228字节初版包留在Git历史，不是最终包。最终修正继续同一功能分支交付，不启动第二轮审查。
 
 最终源码ed0da0e1fbdf9aac07bc0234f2541317a13b602a交付检查中断在测试中，无残留进程、远端无对应来源分支；只读核对后恢复release:auto，实际typecheck/65测试/43截图与历史凭据扫描通过，sourceSynced:true、published:false。no-ff集成main 52a08713422381c95680e3103391512e39a50d48后typecheck/build/65测试/browser再通过，普通推送并ls-remote核对相同SHA。日志scratch/workbench-delivery-resumed.log、workbench-main-checks.log。最终包哈希不变；构建后的三个生成文件与HEAD规范化内容相同，git add后缓存diff为空，未reset用户文件。
+
+## 0.6.9 四列验收与项目操作
+
+用户批准待办/正在进行/已完成/已验收四列，人工或Agent验收记录方式、结论、依据与时间，内容修改使验收失效，不通过退回进行中；总体STATE验收独立但界面入口移到顶部。用户说明“地址”为项目操作，要求开始分析、分析Progress与架构重分析按钮，并明确批准新增desktop.control，可能模型收费，实际安装仍须宿主授权。MCP最新只读核对当前安装0.6.7 ready/enabled；用户选择仅MCP更新，当前目录没有安装/更新/重载操作，未进行UI安装或目录覆盖。
+
+board_accept要求done、当前task、expectedItem指纹、结论/依据/验收标签，passing逐项criteria=true。保存验收记录和条件；accepted不能靠拖动进入，内容改变或退回时失效。旧三列数据读取不改写、不自动验收；回退旧插件需对应数据备份。PROJECT/README及工具schema更新，用法未堆教程；新字段仍沿用board v1，新阶段不支持旧插件直接读取。
+
+独立operations.ts通过公开pi.desktop目录固定调用session/create、agent/prompt、agent/getStatus、session/get/open、agent/abort，不使用tool-only collaboration spawn/send、隐藏IPC或MCP令牌。绑定当前项目，提示限定分析只读/架构仅写图/验收仅记录证据，不自动开发或总体验收/Git/安装。提示不是工具权限沙箱；模型选择由宿主继承，不指定委派模型。会话ID先持久化、发提示前重验revision/当前工作区/任务；不明结果不重发。当前项目最多一个活动任务、30条记录，手动进度刷新；仅已记录会话可打开/取消。无ID中断创建须明确人工核对后解除本地阻塞，不取消未知会话；宿主明确拒绝为terminal。会话结束不自动验收，展示不伪造百分比。
+
+一次只读复核8564aad7发现跨任务验收、sessionless创建永久阻塞、延迟status覆盖cancel、Escape绕过顶层草稿。新增真实失败断言后修复/重测；还覆盖宿主明确拒绝响应/提示拒绝、恢复按钮不重发。日志scratch/four-stage-review-red.log、four-stage-task-red.log、four-stage-escape-red.log及对应green；未启动二次宽泛审查。75测试、typecheck/build、47张真实Chromium+隔离治理后端/模拟desktop接口回归通过。最终clean目录workbench-clean-440d15ecc94b4727b39ef94ca1b197c9的npm ci/typecheck/build/75测试通过，日志four-stage-clean-final.log、four-stage-browser-final.log。实际宿主Agent执行/物理触屏未验收。
+
+目视证据changes/active/project-board-release/workbench-0.6.9/index.html：中英文三页390/768/1280明暗对照、人工验收/Agent进度/项目操作/中英详情/错误恢复大图已实际查看。PluginCheck/Pack通过32文件436228字节，SHA e09b95508816bae115c4e52909d1950909e8f065b7156519a0518735f17e9fca。官方i18n 0 FAIL/2 REVIEW，command安装器纯字符串及STATE数据名理由保留。包许可继续包含shadcn MIT；无新运行时依赖。既有受管创建因原有未跟踪目录dirty被拒绝，feat/four-stage-actions串行普通分支，不伪造受管git_verify。新版本未安装/未发布市场；CRLF误报及接续入口执行验收仍保留，不close。

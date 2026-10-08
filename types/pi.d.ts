@@ -19,6 +19,10 @@ interface PiCommandRegistration {
 
 declare var pi: {
   app?: { getLocale(): Promise<string> };
+  desktop?: {
+    listOperations(): Promise<Array<{ id: string; description: string; risk: 'read' | 'write' | 'dangerous' }>>;
+    invoke(input: { operation: string; args?: unknown[]; confirm?: boolean }): Promise<unknown>;
+  };
   workspace: {
     get(): Promise<PiWorkspace>;
   };

@@ -25,9 +25,18 @@ async function panelInvoke(root, channel, payload = {}) {
             throw Error('请先确认写入');
         const input = payload.args || {};
         const allowed = {
-            board_create: ['id', 'title', 'description', 'gitTaskId'],
-            board_update: ['id', 'title', 'description', 'blocker'],
-            board_move: ['id', 'stage', 'position']
+            board_create: ['id', 'title', 'description', 'criteria', 'gitTaskId'],
+            board_update: ['id', 'title', 'description', 'criteria', 'blocker'],
+            board_move: ['id', 'stage', 'position'],
+            board_accept: [
+                'id',
+                'passed',
+                'reviewer',
+                'conclusion',
+                'evidence',
+                'accepted',
+                'expectedItem'
+            ]
         };
         if (!Object.hasOwn(allowed, input.action))
             throw Error('Panel action not allowed');
@@ -35,6 +44,8 @@ async function panelInvoke(root, channel, payload = {}) {
         for (const key of allowed[input.action])
             if (input[key] !== undefined)
                 args[key] = input[key];
+        if (input.action === 'board_accept')
+            args['method'] = 'human';
         return g.run(args);
     }
     if (channel !== 'governance.mutate')

@@ -37,15 +37,15 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "0.6.8对象式工作台已完成源码、包及GitHub main交付。最终源码ed0da0e提交后release:auto恢复执行，typecheck/65测试/43截图浏览器及凭据历史扫描通过；no-ff集成main 52a0871后重新typecheck/build/65测试/browser通过，普通推送、远端SHA一致。包30文件366580字节，SHA62a08dfb02e11b0cf4c12174ba548114769f4b56f612a6a66e05a63bba43c65e。中英文响应式、详情/菜单/空态/离线/错误截图已实际查看。权限和后端格式未变，未安装/未发布市场，整体不close。正在同步最终记录并清理已合并临时分支。",
+  "current": "0.6.9四列与项目操作实现完成：待办/正在进行/已完成/已验收，人工或Agent证据验收、逐项条件、内容修改失效、当前任务绑定；总体目标/进度入口移至顶部。用户明确批准新增desktop.control，固定公开session/create/agent/prompt/getStatus/session/get/open/abort用于确认后独立分析/架构/验收及进度结果取消，不读取MCP令牌。一次只读复核发现并已red→green修复跨任务验收、会话创建恢复、取消状态竞争和Escape顶层弹窗。typecheck/build、75测试、最终scratch干净npm ci/typecheck/build/test、47截图浏览器回归及中英文三页/验收进度/详情/错误恢复目视通过；最终包32文件436228字节SHAe09b95508816bae115c4e52909d1950909e8f065b7156519a0518735f17e9fca。正在提交并按既有授权同步/集成main。当前实际安装0.6.7，未安装新版/发起实际收费Agent，不总体close。",
   "next": [
-    "同步交付记录并安全清理已合并临时分支",
-    "正常安装0.6.8后完成真实宿主隔离项目交互与主题验收",
-    "修复CRLF源码指纹误报；一次启动接续任务实际执行另验收"
+    "提交审查过的源码、包及记录，提交后检查并同步来源/集成main重测推送",
+    "用户只允许MCP安装更新；当前宿主无该接口，保留安装及真实Agent操作验收",
+    "保留CRLF源码指纹与一次启动接续执行待办"
   ],
   "blocked": [
-    "实际安装仍0.6.6；0.6.8尚未安装及真实宿主隔离交互/主题验收。",
-    "CRLF源码指纹误报待修复；一次启动接续入口已配置但未实际运行。"
+    "实际安装0.6.7；0.6.9未安装，新增desktop.control还需宿主实际授权，Agent按钮真实宿主执行未验收。",
+    "用户只允许MCP更新，现有MCP没有安装接口；CRLF指纹和一次启动接续执行未验收，不总体close。"
   ],
   "followUp": null,
   "change": "changes/active/project-board-release",
