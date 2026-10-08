@@ -37,15 +37,15 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "0.6.8对象式工作台实现、一次复核及视觉/状态检查完成；65测试、最终scratch干净npm ci/typecheck/build/test及43截图浏览器回归通过。修复断网确认写入、长按释放、取消迁移焦点、导航定位和读取失败误称同步。最终包30文件366580字节，SHA62a08dfb02e11b0cf4c12174ba548114769f4b56f612a6a66e05a63bba43c65e；MIT许可随包、权限未变。初始cf2cc95源码提交后检查并同步，最终状态修正待提交/同步/main集成重测。当前安装仍0.6.6，不总体close。",
+  "current": "0.6.8对象式工作台已完成源码、包及GitHub main交付。最终源码ed0da0e提交后release:auto恢复执行，typecheck/65测试/43截图浏览器及凭据历史扫描通过；no-ff集成main 52a0871后重新typecheck/build/65测试/browser通过，普通推送、远端SHA一致。包30文件366580字节，SHA62a08dfb02e11b0cf4c12174ba548114769f4b56f612a6a66e05a63bba43c65e。中英文响应式、详情/菜单/空态/离线/错误截图已实际查看。权限和后端格式未变，未安装/未发布市场，整体不close。正在同步最终记录并清理已合并临时分支。",
   "next": [
-    "提交最终状态修正并同步来源，集成main后实际重测/推送/清理已合并临时分支",
-    "正常安装新版后完成真实宿主隔离交互和独立配色验收",
-    "保留CRLF指纹误报与一次启动任务执行验收"
+    "同步交付记录并安全清理已合并临时分支",
+    "正常安装0.6.8后完成真实宿主隔离项目交互与主题验收",
+    "修复CRLF源码指纹误报；一次启动接续任务实际执行另验收"
   ],
   "blocked": [
-    "实际安装仍0.6.6；0.6.8尚未安装及真实宿主验收。",
-    "真实隔离项目交互和CRLF指纹误报仍待完成；手动接续任务未实际运行。"
+    "实际安装仍0.6.6；0.6.8尚未安装及真实宿主隔离交互/主题验收。",
+    "CRLF源码指纹误报待修复；一次启动接续入口已配置但未实际运行。"
   ],
   "followUp": null,
   "change": "changes/active/project-board-release",

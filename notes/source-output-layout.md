@@ -115,3 +115,5 @@ typecheck/build、65测试和真实Chromium+隔离治理后端43截图回归通�
 视觉证据在changes/active/project-board-release/workbench-0.6.8/index.html：中英文三页390/768/1280明暗的六张对照图已实际查看，并查看工作台及详情大图。Git fixture为非仓库真实错误，不虚构受管卡片；实际宿主0.6.8/触屏和总体隔离验收未通过。当前安装0.6.6，旧包和发布来源保留；不安装、不提交市场、不总体close。受管登记仍空，保留既有.pi/归档使受管创建受阻，本轮按已授权串行普通分支交付，不伪造git_verify。
 
 补看菜单、新建、搜索空态、离线、读取失败大图后，发现读取失败时顶部误称同步；修正读取异常/损坏board提示与保存后错误保留，新增顶部error断言重测通过，错误截图更新并复核。初始源码cf2cc9575f795c6cc7acb0002b1329dc9147e138提交后release:auto实际typecheck/65测试/43截图/历史凭据扫描通过，来源分支核对一致，无市场调用；该源码的366228字节初版包留在Git历史，不是最终包。最终修正继续同一功能分支交付，不启动第二轮审查。
+
+最终源码ed0da0e1fbdf9aac07bc0234f2541317a13b602a交付检查中断在测试中，无残留进程、远端无对应来源分支；只读核对后恢复release:auto，实际typecheck/65测试/43截图与历史凭据扫描通过，sourceSynced:true、published:false。no-ff集成main 52a08713422381c95680e3103391512e39a50d48后typecheck/build/65测试/browser再通过，普通推送并ls-remote核对相同SHA。日志scratch/workbench-delivery-resumed.log、workbench-main-checks.log。最终包哈希不变；构建后的三个生成文件与HEAD规范化内容相同，git add后缓存diff为空，未reset用户文件。

@@ -4,8 +4,8 @@
     {
       "id": "host-smoke",
       "title": "真实宿主面板交互验收",
-      "description": "当前真实宿主安装0.6.6已确认。已有原生拖动/缩放/关闭重开证据及四页布局回归；隔离scratch夹具已准备，完整创建/编辑/迁移/取消/持久化/切图仍需在真实面板完成。",
-      "blocker": "MCP已可用，可正常创建/切换隔离项目；剩余实际面板操作未验收，不再以MCP未启用为阻塞。",
+      "description": "当前真实安装0.6.6。0.6.8对象式工作台代码交付通过；原生拖动/缩放/关闭重开历史证据保留。完整创建/编辑/迁移/取消/持久化/切图须在真实隔离项目面板完成，不使用实际用户卡片作夹具。",
+      "blocker": "MCP可用；新版需正常UI安装，真实隔离面板操作尚未验收。",
       "stage": "todo",
       "taskId": "project-board-release",
       "gitTaskId": null
@@ -31,7 +31,7 @@
     {
       "id": "visual-check",
       "title": "六组尺寸与主题截图目视复核",
-      "description": "已逐组查看0.6.5四页×中英文×390/768/1280×明暗48张布局截图，核对导航换行、关系图/卡片/表单及遮挡，无可见布局缺陷；Git夹具为非仓库错误状态，不代表协作关系图。记录见notes/source-output-layout.md。仅布局目视通过，不替代真实宿主操作。",
+      "description": "0.6.8三页×中英文×390/768/1280×明暗36张布局、两张详情和五张状态截图已生成并实际查看对照图/详情菜单空态离线错误大图；导航定位和读取失败误称同步已修复重测。证据workbench-0.6.8/index.html，仅浏览器布局目视，不替代真实宿主。",
       "blocker": "",
       "stage": "done",
       "taskId": "project-board-release",
@@ -49,7 +49,7 @@
     {
       "id": "github-delivery",
       "title": "同步最新源码并集成main",
-      "description": "已完成：来源b1711fc通过release:auto重测/凭据扫描并同步；no-ff集成main至1ed8390，集成后typecheck/build、65测试和双语浏览器回归通过，普通推送且远端SHA核对一致。未发布市场。清理临时分支在完成记录同步后执行。",
+      "description": "0.6.8最终源码ed0da0e提交后release:auto检查/65测试/43截图/凭据扫描通过并同步；no-ff集成main 52a0871后typecheck/build/65测试/browser通过，普通推送、远端SHA一致。未发布市场；记录完成后仅清理已合并临时分支。",
       "blocker": "",
       "stage": "done",
       "taskId": "project-board-release",
@@ -67,12 +67,12 @@
     {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
-      "description": "0.6.7默认独立pebrel参考色系，明暗随宿主；可切换宿主配色并本地持久化。悬浮圆角侧栏、SVG导航、独立页标题、蓝紫/淡青层次与材质实际改入代码，65测试/主题/草稿/四页回归和包校验通过。",
-      "blocker": "当前安装0.6.6；0.6.7未安装，预览截图工具超时，新界面目视/真实宿主复验未通过。",
+      "description": "0.6.8对象式工作台默认独立配色随宿主明暗，可切宿主并保存。三页、详情和上下文菜单已通过双语/主题/草稿/离线/错误回归及浏览器截图目视；包30文件，权限未变。",
+      "blocker": "实际安装仍0.6.6；0.6.8未安装，真实宿主界面及主题复验未通过。",
       "stage": "doing",
       "taskId": "project-board-release",
       "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-07T19:11:02.311Z"
+  "updatedAt": "2026-10-08T12:18:17.876Z"
 }
