@@ -924,3 +924,10 @@ select {
     border-color: CanvasText;
   }
 }
+
+/* Architecture intent is a work-item label, not automatic analysis. */
+.architecture-tag { display: inline-block; max-width: 100%; margin: 8px 0 0; padding: 3px 7px; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
+.architecture-tag[data-impact="affects"] { color: var(--accent); border-color: var(--accent); }
+#workspace-drafts-text { width: 100%; box-sizing: border-box; white-space: pre-wrap; }
+#workitem-impact { width: 100%; padding: 8px; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+@media (forced-colors: active) { .architecture-tag { border-color: CanvasText; } }

@@ -11,6 +11,9 @@ let launchContext: any = null,
   launchModels: any[] = [],
   launchLoading = false,
   launchRequest = 0;
+let workspaceEpoch = 0, loadRevision = 0, observedWorkspace: string = null;
+const retainedDrafts = new Map<string, any>();
+const impactLabel = (value): CopyKey => value === 'affects' ? 'impactAffects' : value === 'none' ? 'impactNone' : 'impactUnassessed';
 function discardWarning(submitted?: string) {
   const names = {
     'progress-form': t('draftProgress'),
@@ -43,14 +46,16 @@ function lock(value) {
   busy = value;
   document
     .querySelectorAll(
-      'main button, main input, main textarea, #item-sheet button, #item-sheet input, #item-sheet textarea, .action-dialog button, .action-dialog input, .action-dialog textarea, .action-dialog select'
+      'main button, main input, main textarea, #item-sheet button, #item-sheet input, #item-sheet textarea, #item-sheet select, .action-dialog button, .action-dialog input, .action-dialog textarea, .action-dialog select'
     )
     .forEach((el) => {
       (el as HTMLButtonElement | HTMLInputElement | HTMLTextAreaElement).disabled = value;
     });
   $('workitem-blocker').disabled = value || !editingItem;
   for (const id of ['workitem-save', 'item-edit', 'initialize'])
-    $(id).disabled = value || !navigator.onLine;
+    $(id).disabled = value || !snapshot || !navigator.onLine;
+  $('initialize-workspace').disabled = value || !snapshot || !navigator.onLine;
+  $('architecture-check').disabled = value || !projectSnapshot?.architecture || !navigator.onLine;
   document
     .querySelectorAll<HTMLButtonElement>(
       '#project-dialog button[type="submit"], #accept-form button[type="submit"]'
@@ -80,9 +85,14 @@ function lock(value) {
   updateLaunchControls();
   updateItemNavigation();
 }
-async function invoke(channel, payload = {}) {
+async function invoke(channel, payload: any = {}) {
   if (!window.pluginBridge?.invoke) throw Error(t('staticPreview'));
-  const response = await window.pluginBridge.invoke(channel, payload);
+  const owner = workspaceEpoch;
+  const bound = channel !== 'governance.snapshot' && snapshot?.workspace;
+  let response;
+  try { response = await window.pluginBridge.invoke(channel, { ...payload, ...(bound ? { workspace: bound } : {}) }); }
+  catch (error) { if (owner !== workspaceEpoch) throw Object.assign(Error(t('switched')), { stale: true }); throw error; }
+  if (owner !== workspaceEpoch) throw Object.assign(Error(t('switched')), { stale: true });
   if (!response?.ok) throw Error(response?.error || t('invalidResponse'));
   return response.result;
 }
@@ -97,6 +107,8 @@ function list(id, values) {
 }
 function render(data) {
   snapshot = data;
+  observedWorkspace = data.workspace;
+  $('initialize-workspace').hidden = !!data.state;
   const s = data.state;
   const status = s ? labels[s.status] || s.status : t('uninitialized');
   const criteriaCount = s?.criteria?.length || 0;
@@ -166,8 +178,11 @@ function renderGit(g) {
     $('git-tasks').append(card);
   }
 }
-async function load() {
+async function load(checkSources = false) {
+  const owner = workspaceEpoch, request = ++loadRevision;
+  const current = () => owner === workspaceEpoch && request === loadRevision;
   snapshot = null;
+  $('initialize-workspace').hidden = true;
   dirtyForms.clear();
   launchRequest++;
   launchContext = null;
@@ -183,58 +198,70 @@ async function load() {
   stopLongPress();
   draggedItem = null;
   longPressConsumed = null;
+  $('architecture-reminder').hidden = true;
+  renderProjectGraph();
   $('board-empty').hidden = true;
   $('board-section').setAttribute('aria-busy', 'true');
   $('board-columns').replaceChildren();
   text('board-status', t('boardLoading'));
+  text('git-summary', t('gitLoading'));
+  $('git-tasks').replaceChildren();
   notify(t('workspaceLoading'));
   try {
-    render(await invoke('governance.snapshot'));
+    const data = await invoke('governance.snapshot');
+    if (!current()) return;
+    render(data);
     text('updated', t('updated', new Date().toLocaleTimeString(locale)));
     notify(t('synced'));
   } catch (error) {
+    if (!current()) return;
     notify(error.message, true);
     for (const id of ['uninitialized', 'start-form', 'progress-form']) $(id).hidden = true;
     text('workspace', t('disconnected'));
   }
-  text('git-summary', t('gitLoading'));
-  $('git-tasks').replaceChildren();
   if (snapshot) {
     try {
-      const data: any = await invoke('governance.project');
+      const data: any = await invoke('governance.project', { checkSources });
+      if (!current()) return;
       if (data.workspace !== snapshot.workspace) throw Error(t('switched'));
       projectSnapshot = data;
       if (data.boardError) notify(t('boardError', data.boardError), true);
       renderBoard();
     } catch (error) {
+      if (!current()) return;
       text('board-status', t('boardReadError', error.message));
       notify(t('boardReadError', error.message), true);
     }
   } else text('board-status', t('boardDisconnected'));
+  if (!current()) return;
   renderProjectGraph();
-  // Project content is useful before slow Git commands settle. Keep new controls locked.
   if (busy) lock(true);
   try {
-    renderGit(await invoke('governance.git'));
+    const data = await invoke('governance.git');
+    if (!current()) return;
+    renderGit(data);
   } catch (error) {
+    if (!current()) return;
     text('git-summary', t('gitError', error.message));
   }
-  $('board-section').setAttribute('aria-busy', 'false');
+  if (current()) $('board-section').setAttribute('aria-busy', 'false');
 }
 function confirmWrite(description) {
+  const owner = workspaceEpoch;
   const dialog = $('confirm-dialog');
   text('confirm-description', description);
   text('confirm-workspace', snapshot?.workspace || '');
   dialog.returnValue = '';
   dialog.showModal();
   return new Promise((resolve) =>
-    dialog.addEventListener('close', () => resolve(dialog.returnValue === 'confirm'), {
+    dialog.addEventListener('close', () => resolve(owner === workspaceEpoch && dialog.returnValue === 'confirm'), {
       once: true
     })
   );
 }
 async function mutate(args, description) {
   if (busy || !snapshot) return;
+  const owner = workspaceEpoch, revision = snapshot.revision;
   if (!navigator.onLine) {
     notify(t('offlineNotice'), true);
     return;
@@ -258,16 +285,19 @@ async function mutate(args, description) {
       notify(t('offlineNotice'), true);
       return;
     }
-    await invoke('governance.mutate', { args, revision: snapshot.revision, confirmed: true });
+    if (owner !== workspaceEpoch) return;
+    await invoke('governance.mutate', { args, revision, confirmed: true });
     await load();
   } catch (error) {
+    if (owner !== workspaceEpoch) return;
     notify(t('noRetry', error.message), true);
   } finally {
-    lock(false);
+    if (owner === workspaceEpoch) lock(false);
   }
 }
 $('refresh').addEventListener('click', async () => {
   if (busy) return;
+  const owner = workspaceEpoch;
   if (edited) {
     notify(t('unsaved'));
     edited = false;
@@ -277,7 +307,7 @@ $('refresh').addEventListener('click', async () => {
   try {
     await load();
   } finally {
-    lock(false);
+    if (owner === workspaceEpoch) lock(false);
   }
 });
 for (const form of document.querySelectorAll(
@@ -288,6 +318,7 @@ for (const form of document.querySelectorAll(
     dirtyForms.add(form.id);
   });
 $('initialize').addEventListener('click', () => mutate({ action: 'init' }, t('initConfirm')));
+$('initialize-workspace').addEventListener('click', () => mutate({ action: 'init' }, t('initConfirm')));
 $('start-form').addEventListener('submit', (event) => {
   event.preventDefault();
   mutate(
@@ -385,6 +416,7 @@ function renderProjectGraph() {
     );
     text('graph-overview', graph?.title || t('coreModules'));
     const stale = graph?.staleFiles || [];
+    text('graph-check-state', graph ? (graph.sourcesChecked ? t('sourcesChecked', graph.checkedAt) : t('sourcesUnchecked', graph.updatedAt)) : '');
     text('graph-warning', stale.length ? t('stale', stale.join(' / ')) : '');
     $('graph-warning').hidden = !stale.length;
   }
@@ -585,12 +617,14 @@ function closeItemMenu(restore = true) {
   if (restore && menuOrigin?.isConnected) menuOrigin.focus();
 }
 async function allowItemSwitch() {
+  const owner = workspaceEpoch;
   if (busy) return false;
   if (!dirtyForms.has('workitem-form')) return true;
   lock(true);
   try {
     return !!(await confirmWrite(t('switchDraft')));
   } finally {
+    if (owner !== workspaceEpoch) return false;
     lock(false);
     if ($('item-sheet').open)
       ($('workitem-form').hidden ? $('item-edit') : $('workitem-title')).focus();
@@ -614,6 +648,7 @@ async function openItem(id: string = null, edit = false, origin?: HTMLElement) {
   $('item-acceptance').hidden = !item || edit;
   text('item-sheet-title', item ? item.title : t('newItem'));
   text('item-sheet-meta', item ? boardLabels[item.stage] : t('newItem'));
+  text('item-impact', `${t('architectureImpact')}: ${t(impactLabel(item?.architectureImpact))}`);
   if (item) {
     text('item-description', item.description || t('noDescription'));
     text('item-blocker', item.blocker);
@@ -645,6 +680,7 @@ async function openItem(id: string = null, edit = false, origin?: HTMLElement) {
     $('workitem-title').value = item?.title || '';
     $('workitem-description').value = item?.description || '';
     $('workitem-criteria').value = (item?.criteria || []).join('\n');
+    $('workitem-impact').value = item?.architectureImpact || 'unassessed';
     $('workitem-blocker').value = item?.blocker || '';
     $('workitem-blocker').disabled = !item;
     $('blocker-field').hidden = !item;
@@ -678,6 +714,7 @@ async function writeWorkitem(args) {
     return;
   }
   const revision = projectSnapshot.revision;
+  const owner = workspaceEpoch;
   lock(true);
   try {
     if (
@@ -693,6 +730,7 @@ async function writeWorkitem(args) {
       ))
     )
       return;
+    if (owner !== workspaceEpoch) return;
     if (!navigator.onLine) {
       notify(t('offlineNotice'), true);
       return;
@@ -702,9 +740,10 @@ async function writeWorkitem(args) {
     if (projectSnapshot && !projectSnapshot.boardError) notify(t('itemSaved'));
     document.querySelector<HTMLElement>(`[data-workitem="${args.id}"]`)?.focus();
   } catch (error) {
+    if (owner !== workspaceEpoch) return;
     notify(t('itemError', error.message), true);
   } finally {
-    lock(false);
+    if (owner === workspaceEpoch) lock(false);
   }
 }
 function moveWorkitem(id, stage, position) {
@@ -778,6 +817,7 @@ function showGuidance() {
     item.description,
     item.blocker || t('none')
   );
+  $('agent-brief').value += '\n' + t('impactGuidance', t(impactLabel(item.architectureImpact)));
   text('brief-status', '');
   $('agent-brief').focus();
   $('agent-brief').select();
@@ -801,6 +841,9 @@ function renderBoard() {
     );
     return;
   }
+  const affected = data.board.items.filter(item => item.taskId === snapshot?.state?.task && item.architectureImpact === 'affects' && ['done', 'accepted'].includes(item.stage));
+  text('architecture-reminder', affected.length ? t('architectureReminder', affected.length) : '');
+  $('architecture-reminder').hidden = !affected.length;
   const matches = (item) =>
     !searchQuery ||
     [item.title, item.description, item.blocker, item.id].some((s) =>
@@ -887,6 +930,11 @@ function renderBoard() {
       card.append(title);
       if (item.description) card.append(content);
       card.append(meta);
+      const tag = document.createElement('span');
+      tag.className = 'architecture-tag';
+      tag.dataset.impact = item.architectureImpact || 'unassessed';
+      tag.textContent = t(impactLabel(item.architectureImpact));
+      card.append(tag);
       if (item.stage === 'done') {
         const actions = document.createElement('div');
         actions.className = 'card-review-actions';
@@ -1125,17 +1173,19 @@ $('workitem-form').addEventListener('submit', (event) => {
     title: $('workitem-title').value.trim(),
     description: $('workitem-description').value,
     criteria: lines('workitem-criteria'),
+    architectureImpact: $('workitem-impact').value,
     ...(editingItem ? { blocker: $('workitem-blocker').value } : {})
   });
 });
 lock(true);
 localeReady
-  .then(() => {
+  .then(async () => {
+    const owner = workspaceEpoch;
     highlightNavigation();
     appearance(lastAppearance);
-    return load();
-  })
-  .finally(() => lock(false));
+    await load();
+    if (owner === workspaceEpoch) lock(false);
+  });
 
 let reviewingItem: any = null;
 function openProjectControls() {
@@ -1147,6 +1197,7 @@ $('project-close').addEventListener('click', () => {
   if (!busy) $('project-dialog').close();
 });
 async function openHumanReview(id, origin) {
+  const owner = workspaceEpoch;
   if (!navigator.onLine || !(await openItem(id, false, origin))) return;
   const item = itemById(id);
   if (!item || item.stage !== 'done') return;
@@ -1155,6 +1206,7 @@ async function openHumanReview(id, origin) {
     try {
       if (!(await confirmWrite(t('switchDraft')))) return;
     } finally {
+      if (owner !== workspaceEpoch) return;
       lock(false);
     }
   }
@@ -1177,12 +1229,14 @@ async function openHumanReview(id, origin) {
   $('accept-reviewer').focus();
 }
 async function closeHumanReview() {
+  const owner = workspaceEpoch;
   if (busy) return;
   if (dirtyForms.has('accept-form')) {
     lock(true);
     try {
       if (!(await confirmWrite(t('switchDraft')))) return;
     } finally {
+      if (owner !== workspaceEpoch) return;
       lock(false);
     }
   }
@@ -1321,6 +1375,7 @@ $('launch-dialog').addEventListener('cancel', (event) => {
 $('launch-form').addEventListener('submit', async (event) => {
   event.preventDefault();
   if (busy || launchLoading || !launchContext || !navigator.onLine) return;
+  const owner = workspaceEpoch;
   const context = { ...launchContext };
   const modelKey = $('launch-model').value,
     thinkingLevel = $('launch-thinking').disabled ? '' : $('launch-thinking').value;
@@ -1339,6 +1394,7 @@ $('launch-form').addEventListener('submit', async (event) => {
       ))
     )
       return;
+    if (owner !== workspaceEpoch) return;
     if (!navigator.onLine) {
       notify(t('offlineNotice'), true);
       return;
@@ -1357,9 +1413,11 @@ $('launch-form').addEventListener('submit', async (event) => {
     if (!$('operations-dialog').open) $('operations-dialog').showModal();
     await loadOperations();
   } catch (error) {
+    if (owner !== workspaceEpoch) return;
     text('launch-status', t('operationError', error.message));
     notify(t('operationError', error.message), true);
   } finally {
+    if (owner !== workspaceEpoch) return;
     lock(false);
     if ($('launch-dialog').open)
       ($('launch-start').disabled ? $('launch-cancel') : $('launch-start')).focus();
@@ -1367,6 +1425,7 @@ $('launch-form').addEventListener('submit', async (event) => {
 });
 async function operationAction(action, id) {
   if (busy) return;
+  const owner = workspaceEpoch;
   lock(true);
   try {
     if (
@@ -1376,6 +1435,7 @@ async function operationAction(action, id) {
       ))
     )
       return;
+    if (owner !== workspaceEpoch) return;
     const data: any = await invoke('governance.operation', {
       action,
       id,
@@ -1392,12 +1452,14 @@ async function operationAction(action, id) {
       );
     await loadOperations();
   } catch (error) {
+    if (owner !== workspaceEpoch) return;
     text('operations-notice', t('operationError', error.message));
   } finally {
-    lock(false);
+    if (owner === workspaceEpoch) lock(false);
   }
 }
 async function loadOperations() {
+  const owner = workspaceEpoch;
   try {
     const data: any = await invoke('governance.operation', { action: 'list' });
     if (snapshot && data.workspace !== snapshot.workspace) throw Error(t('switched'));
@@ -1441,6 +1503,7 @@ async function loadOperations() {
       $('operation-runs').append(row);
     }
   } catch (error) {
+    if (owner !== workspaceEpoch) return;
     text('operations-notice', t('operationError', error.message));
   }
 }
@@ -1464,4 +1527,64 @@ $('operations-refresh').addEventListener('click', () => {
 });
 $('operations-close').addEventListener('click', () => {
   if (!busy) $('operations-dialog').close();
+});
+
+function retainWorkspaceDrafts() {
+  if (!snapshot?.workspace || !dirtyForms.size) return false;
+  const previous = retainedDrafts.get(snapshot.workspace);
+  const forms = { ...(previous?.forms || {}) };
+  for (const id of dirtyForms) {
+    forms[id] = Array.from($(id).querySelectorAll('input, textarea, select')).map((el: any, index) => ({
+      id: el.id || String(index), value: el.value, ...(el.type === 'checkbox' ? { checked: el.checked } : {})
+    }));
+  }
+  retainedDrafts.set(snapshot.workspace, { workspace: snapshot.workspace, task: snapshot.state?.task || null,
+    itemId: editingItem || selectedItem, at: new Date().toISOString(), forms });
+  return true;
+}
+window.pluginBridge?.on?.('workspace:changed', (workspace) => {
+  const next = workspace && typeof workspace === 'object' && 'path' in workspace && typeof workspace.path === 'string' ? workspace.path : null;
+  if (next && next === observedWorkspace && snapshot?.workspace === next) return;
+  const retained = retainWorkspaceDrafts();
+  const owner = ++workspaceEpoch;
+  loadRevision++;
+  observedWorkspace = next;
+  // Closing a confirmation resolves false under the new epoch. Never send its old intent.
+  document.querySelectorAll<HTMLDialogElement>('dialog[open]').forEach(dialog => dialog.close('cancel'));
+  launchRequest++;
+  launchContext = null;
+  selectedItem = editingItem = null;
+  reviewingItem = null;
+  searchQuery = '';
+  $('board-search').value = '';
+  text('operation-result', '');
+  $('operation-runs').replaceChildren();
+  $('agent-brief').value = '';
+  $('workspace-drafts').hidden = !retainedDrafts.size;
+  $('workspace-switch-notice').hidden = !retained;
+  text('workspace-switch-notice', retained ? t('draftsRetained') : '');
+  text('workspace', next || t('disconnected'));
+  lock(true);
+  void load().finally(() => { if (owner === workspaceEpoch) lock(false); });
+});
+$('workspace-drafts').addEventListener('click', () => {
+  if (busy) return;
+  $('workspace-drafts-text').value = JSON.stringify([...retainedDrafts.values()], null, 2);
+  $('workspace-drafts-dialog').showModal();
+  $('workspace-drafts-text').focus();
+});
+$('workspace-drafts-close').addEventListener('click', () => $('workspace-drafts-dialog').close());
+$('architecture-check').addEventListener('click', async () => {
+  if (busy || !snapshot || !projectSnapshot?.architecture || !navigator.onLine) return;
+  const owner = workspaceEpoch;
+  lock(true);
+  try {
+    const data: any = await invoke('governance.project', { checkSources: true });
+    if (owner !== workspaceEpoch) return;
+    if (data.workspace !== snapshot.workspace) throw Error(t('switched'));
+    projectSnapshot = data;
+    renderBoard();
+    renderProjectGraph();
+  } catch (error) { if (owner === workspaceEpoch) notify(error.message, true); }
+  finally { if (owner === workspaceEpoch) lock(false); }
 });

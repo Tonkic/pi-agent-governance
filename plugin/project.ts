@@ -4,6 +4,11 @@ const digest = (value) => createHash('sha256').update(value).digest('hex');
 const boardFile = '.governance/board.json',
   architectureFile = '.governance/architecture.json';
 const stages = ['todo', 'doing', 'done', 'accepted'];
+const impactValues = ['unassessed', 'none', 'affects'];
+function architectureImpact(value = 'unassessed') {
+  if (!impactValues.includes(value)) throw Error('Invalid architecture impact');
+  return value;
+}
 function itemFingerprint(item) {
   return digest(
     JSON.stringify([
@@ -13,7 +18,9 @@ function itemFingerprint(item) {
       item.blocker,
       item.criteria || [],
       item.taskId,
-      item.gitTaskId
+      item.gitTaskId,
+      // Preserve old acceptance fingerprints for legacy/unassessed items.
+      ...(architectureImpact(item.architectureImpact) === 'unassessed' ? [] : [item.architectureImpact])
     ])
   );
 }
@@ -63,6 +70,7 @@ class ProjectData {
       text(item.description, 'description', 4000, true);
       text(item.blocker, 'blocker', 1000, true);
       itemCriteria(item.criteria);
+      architectureImpact(item.architectureImpact);
       if (item.acceptance != null) {
         const r = item.acceptance;
         if (
@@ -164,7 +172,7 @@ class ProjectData {
     }
     return { workspace: this.g.root, contents, fingerprints };
   }
-  async snapshot() {
+  async snapshot(checkSources = false) {
     const raws = [await this.raw(boardFile), await this.raw(architectureFile)];
     let board = null,
       architecture = null,
@@ -184,9 +192,11 @@ class ProjectData {
           ...(await this.graph(stored)),
           version: 1,
           updatedAt: stored.updatedAt,
-          staleFiles: []
+          staleFiles: [],
+          sourcesChecked: checkSources,
+          checkedAt: checkSources ? new Date().toISOString() : null
         };
-        for (const [file, expected] of Object.entries(architecture.fingerprints)) {
+        if (checkSources) for (const [file, expected] of Object.entries(architecture.fingerprints)) {
           try {
             if (digest(await this.g.read(file)) !== expected) architecture.staleFiles.push(file);
           } catch {
@@ -209,7 +219,7 @@ class ProjectData {
       board: board
         ? {
             ...board,
-            items: board.items.map((item) => ({ ...item, itemFingerprint: itemFingerprint(item) }))
+            items: board.items.map((item) => ({ ...item, architectureImpact: architectureImpact(item.architectureImpact), itemFingerprint: itemFingerprint(item) }))
           }
         : null,
       architecture: architectureError ? null : architecture,
@@ -219,7 +229,7 @@ class ProjectData {
   }
   async run(a) {
     return this.g.locked(async () => {
-      if (a.action === 'project_snapshot') return this.snapshot();
+      if (a.action === 'project_snapshot') return this.snapshot(a.checkSources === true);
       if (a.action === 'architecture_sources') return this.sources(a.files);
       const raws = [await this.raw(boardFile), await this.raw(architectureFile)];
       if (typeof a.expectedRevision !== 'string' || a.expectedRevision !== this.revision(raws))
@@ -252,6 +262,7 @@ class ProjectData {
             stage: 'todo',
             taskId: state.task,
             criteria: itemCriteria(a.criteria),
+            architectureImpact: architectureImpact(a.architectureImpact),
             acceptance: null,
             gitTaskId: a.gitTaskId || null
           });
@@ -293,6 +304,7 @@ class ProjectData {
             item.description = text(a.description ?? '', 'description', 4000, true);
             item.blocker = text(a.blocker ?? '', 'blocker', 1000, true);
             if (a.criteria !== undefined) item.criteria = itemCriteria(a.criteria);
+            if (a.architectureImpact !== undefined) item.architectureImpact = architectureImpact(a.architectureImpact);
             if (before !== itemFingerprint(item) && item.acceptance) {
               item.acceptance.valid = false;
               if (item.stage === 'accepted') item.stage = item.blocker ? 'doing' : 'done';
