@@ -4,8 +4,8 @@
     {
       "id": "host-smoke",
       "title": "真实宿主面板交互验收",
-      "description": "最新只读MCP确认本机0.6.10 ready/enabled。0.6.11居中模态详情、稳定四列、草稿/焦点/验收和模型接口在隔离回归通过；仍须真实宿主验证，不把自动检查或生成截图算作完整验收。",
-      "blocker": "0.6.11未安装/真实宿主复验；现有MCP无安装接口。",
+      "description": "最新只读MCP确认本机0.6.10 ready/enabled。0.6.12源码/包已交付，模态详情、稳定四列、文档入口、草稿/焦点/验收/模型在隔离浏览器回归及目视通过；仍须真实宿主验证，不以生成截图替代。",
+      "blocker": "0.6.12未安装/真实宿主复验；现有MCP无安装或更新接口，遵守用户MCP-only选择。",
       "stage": "todo",
       "taskId": "project-board-release",
       "gitTaskId": null
@@ -13,11 +13,31 @@
     {
       "id": "release-acceptance",
       "title": "汇总真实证据并完成总体验收",
-      "description": "截图布局复核完成，仍依赖隔离项目真实宿主host-smoke；核对全部八条标准后verify/close。窗口拖动done、GitHub交付done，不等于总体完成。",
-      "blocker": "host-smoke未通过；架构CRLF指纹误报仍需处理，不关闭总体任务。",
+      "description": "当前0.6.12六组浏览器目视及74图交互回归已完成，代码/包/记录GitHub同步已核对。仍依赖真实host-smoke、既有源码CRLF指纹及接续执行验收；全部八条标准满足后才verify/close。",
+      "blocker": "host-smoke未通过；既有CRLF源码指纹与接续执行验收未完成，不关闭总体任务。",
       "stage": "todo",
       "taskId": "project-board-release",
       "gitTaskId": null
+    },
+    {
+      "id": "visual-check",
+      "title": "六组尺寸与主题截图目视复核",
+      "description": "0.6.12双语三尺寸/明暗六组目视已实际完成，窄屏详情与设置另看原图。仅修改测试截图为实际视口并断言1000px高度，回归red→green；74图交互/几何回归通过。新证据docs-0.6.12/visual/index.html，旧0.6.11证据原样保留。不把隔离测试当安装验收。",
+      "blocker": "",
+      "stage": "accepted",
+      "taskId": "project-board-release",
+      "gitTaskId": null,
+      "acceptance": {
+        "method": "agent",
+        "passed": true,
+        "accepted": [],
+        "valid": true,
+        "reviewer": "Agent · screenshot review",
+        "conclusion": "本项六组截图与代表性原尺寸图目视通过；只接受浏览器视觉检查范围，非真实宿主验收。",
+        "evidence": "实际运行test:browser生成74图；尺寸断言red：Launch图1606px≠1000px，改fullPage:false后全部green。实际通过BrowserPreview/browser screenshot查看390/768/1280×light/dark六组联系表（每组双语五视图），并打开en-modal-390-light、zh-launch-390-dark原尺寸图。检查列边界/响应式排列、详情遮罩/居中、文本/按钮、导航与架构。证据changes/active/project-board-release/docs-0.6.12/visual/index.html；插件来源2480906，测试截图方式修正，不更改插件。未证明实际宿主、物理触屏或收费模型运行。",
+        "itemFingerprint": "718808f6b6da7af9a21adf70702100a5db342ee4bdc80f9bf95c4cf639c51bbe",
+        "at": "2026-10-09T07:43:59.925Z"
+      }
     },
     {
       "id": "project-continuation-entry",
@@ -58,21 +78,12 @@
     {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
-      "description": "0.6.11列边界/状态标题和居中详情在双语明暗响应式自动几何/无溢出/焦点回归通过，权限不变。预览不可用，新版尚未目视，不能声称主题复验完成。",
-      "blocker": "本机实际安装0.6.10；0.6.11未安装，新版目视及真实主题验收未完成。",
-      "stage": "doing",
-      "taskId": "project-board-release",
-      "gitTaskId": null
-    },
-    {
-      "id": "visual-check",
-      "title": "六组尺寸与主题截图目视复核",
-      "description": "0.6.11居中详情/清晰列边界已生成72张双语/明暗/390/768/1280截图，自动几何不变/居中无溢出/焦点/草稿及78测试通过。BrowserPreview恢复后仍guest不可用，未实际目视，不以旧0.6.10证据替代，已重开本项。证据workbench-0.6.11/index.html。",
-      "blocker": "需恢复浏览器预览后完成0.6.11目视；目前只有自动交互和几何回归。",
+      "description": "0.6.12双语三尺寸/明暗六组浏览器视觉已查看，列边界、导航、弹窗和设置无明显遮挡/溢出；74图几何/交互回归通过。此卡仍要求本机真实主题复验，未由浏览器验收替代。",
+      "blocker": "只读MCP仍为0.6.10 ready/enabled；0.6.12未安装，实际宿主主题验收未完成。",
       "stage": "doing",
       "taskId": "project-board-release",
       "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-08T20:32:19.985Z"
+  "updatedAt": "2026-10-09T07:43:59.945Z"
 }

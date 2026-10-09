@@ -37,15 +37,15 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "0.6.12文档集中与UI更新文档入口已交付。当前说明归docs，简短增删改/结果/踩坑归notes；旧9份Markdown在Git中100%原文迁移，机器记录/截图/.pi/原归档保留。包内说明构建生成，检查链接/锚点/许可证，兼容CRLF并拒绝悬空链接。入口复用模型、确认、独立会话、进度和取消，文档任务不改功能代码或升级/安装插件。干净npm ci、类型/构建、83测试、74截图浏览器回归、i18n 0失败/2既有REVIEW通过；一次审查缺口已red-green修复，新任务两图已目视。PluginCheck/Pack：38文件488354字节，SHA256 656d3247908ddc3a091a142721033295c5bf96344458fb1d2602d4d96ce040ea，权限不变。源码c66d363提交后交付检查通过，main90c5bfa集成重测并推送确认；旧6d7bb35/11ffa4b记录一并同步，原网络阻塞解除。未运行收费任务/安装，不总体close。",
+  "current": "0.6.12文档维护已在main2480906交付。本回合补齐最新双语390/768/1280×明暗六组目视及窄屏详情/设置原图，视觉卡片通过显式Agent证据验收。发现fullPage弹窗截图混入视口外内容，新增1000px尺寸断言复现1606≠1000；改实际视口截图后74图浏览器回归通过。仅测试/证据/Notes/看板与进度变化，插件代码、包、版本/权限不变，旧0.6.11证据保留；证据docs-0.6.12/visual/index.html。只读MCP仍为本机0.6.10 ready/enabled，无安装/更新接口，未安装/收费任务/真实宿主验收。当前记录待提交集成重测同步；不总体close。",
   "next": [
-    "保留并补齐既有专门目视验收记录",
-    "在用户允许的宿主接口可用后安装并完成真实交互/模型/权限验收",
-    "保留CRLF源码指纹和一次启动接续执行验收"
+    "提交并交付本次测试与目视证据记录",
+    "在用户允许的安装接口可用后完成0.6.12真实宿主/主题/模型/权限验收",
+    "保留既有CRLF源码指纹与手动接续执行验收"
   ],
   "blocked": [
-    "本回合仅目视0.6.12新任务两图，既有0.6.11专门目视验收记录未补齐；预览目前已恢复。",
-    "0.6.12未安装或真实宿主验收；用户仅允许MCP更新而MCP无安装接口，保留总体验收阻塞。"
+    "0.6.12真实宿主验收未完成；本机MCP仍为0.6.10且无安装/更新接口，遵守MCP-only授权。",
+    "既有CRLF源码指纹及一次启动接续执行验收未完成；总体任务不能close。"
   ],
   "followUp": null,
   "change": "changes/active/project-board-release",
