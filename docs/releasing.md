@@ -6,9 +6,9 @@ This is repository delivery automation, not a plugin self-updater, background se
 
 ## 开发与交付
 
-1. 调用 governance status/git_status，按 STATE 工作。优先依照 plugin/GIT.md 的 git_create 分配干净协调/worker 工作区；写入委派必须使用返回目录。审查 git_diff → git_commit → 在实际提交上测试 → git_verify；集成后重测。总体 verify/close 与 Git 验证不同，仍有验收阻塞不得关闭。
+1. 调用 governance status/git_status，按 STATE 工作。依照 [Git 协作](git.md) 分配工作区；写入委派使用返回目录。审查 git_diff → git_commit → 提交后测试 → git_verify，集成后重测。总体验收有阻塞不得关闭。
 2. 根工作区有用户改动导致受管创建失败时，保留用户目录并明确报告，不自动 stash/reset/删除/改忽略来绕过，不伪造受管验证。必要的串行普通 Git 提交仅纳入已批准范围并明确记录此限制。
-3. 实际完成构建、typecheck、test、test:browser、差异和敏感信息审查。插件内容变更按 plugin/PUBLISHING.md 执行干净构建、官方 i18n 门禁、PI PluginCheck/PluginPack；不得用 shell 自制 piplug。仅仓库交付脚本变更不重打未变化插件。
+3. 完成构建、typecheck、test、test:browser、差异和敏感信息审查。插件变更按 [发布检查](publishing.md) 执行干净构建、官方 i18n 门禁、PI PluginCheck/PluginPack；不使用 shell 自制 piplug。未改变插件的脚本变更无需重打包。
 4. 提交已审查源码、JS、manifest、匹配包及说明。提交后重测。每次小更新末尾执行 `npm run release:auto`：读取已提交 HEAD，运行 typecheck/test/test:browser，检查工作区、扫描可达历史中的凭据和常见密钥标记，只推 `release/source-VERSION-FULLSHA` 到固定仓库。相同版本的不同更新用不同 SHA 分支，不覆盖旧分支，不推 main。没有市场提交或发布重投记录。
 5. 主/次版本升级需下方证据记录、已提交发布说明和全部发布检查；执行 `npm run release:auto -- FULL_SHA COMMITTED_NOTES_PATH RECEIPT_ABSOLUTE_PATH`。只推 `release/plugin-center-VERSION`，调用 submit_version 后查询状态。发布未确认则停止，后续只读查询，不自动重投。
 
@@ -20,7 +20,7 @@ npm run release:auto -- --plan
 # 小更新：检查后推送源码，不提交市场
 npm run release:auto
 # 主/次版本：三个参数替换成真实值
-npm run release:auto -- FULL_SHA changes/active/TASK/release-notes.md C:\path\to\scratch\release-receipt.json
+npm run release:auto -- FULL_SHA notes/release-notes.md C:\path\to\scratch\release-receipt.json
 # 发布结果不明时只查询，不重投
 node scripts/plugin-center.cjs plugin_status
 ```

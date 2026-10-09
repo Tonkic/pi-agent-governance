@@ -1,3 +1,4 @@
+<!-- Generated from docs/ by scripts/build-docs.cjs. Do not edit. -->
 # 插件中心发布 / Publishing
 
 Community ID: `io.github.tonkic.agent-governance`. Source repository: `Tonkic/pi-agent-governance`.
@@ -33,7 +34,7 @@ node scripts/plugin-center.cjs create_plugin FULL_COMMIT_SHA RELEASE_NOTES_FILE 
 
 The preview sends nothing and lists the payload files. Submission reads plugin files from that exact Git commit, not the mutable working tree. A fixed file allowlist excludes `.secrets`, repository State, old packages, and unrelated files. Manifest fields are copied from the same commit; the platform rebuilds manifest.json. The client sends credentials only to `https://plugins.aiuo.net/mcp`, rejects redirects, redacts token-like response text and never automatically retries mutations. If a request fails or times out, inspect `list_plugins` and platform status before deciding whether another submission is needed. `create_plugin` is for the first release only; later versions use the platform's documented `submit_version` tool, not another create call.
 
-提交前运行 `npm run typecheck`、`npm run build`、`npm test`、浏览器检查、官方 skill.md 国际化门禁和 PI PluginCheck/PluginPack；审查差异、包清单和敏感信息。GitHub 推送与插件中心提交均需要人工授权，不合并 main、不强推。提交成功不等于审核通过或目录已上架；应读取平台状态确认。
+提交前运行 typecheck/build/test、浏览器检查、官方 i18n 门禁和 PI PluginCheck/PluginPack；审查差异、包与敏感信息。已批准更新按 [交付流程](releasing.md) 同步 GitHub、集成 main，主/次升级另提交市场；遵守授权和分支保护，不强推。安装包说明从 docs/ 生成并随已审查 SHA 提交。发布成功仍须读取平台状态确认，不等于真实宿主验收。
 
 ## 更新 / Updates
 

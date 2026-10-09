@@ -16,6 +16,8 @@ en.safetyNotes += ' User-confirmed panel actions use desktop.control to create i
 zh.safetyNotes += ' 经用户确认的面板操作使用desktop.control创建独立分析/验收Agent会话、发送任务、读取有限进度/结果、打开和取消已记录会话，模型运行可能产生费用。不读取本地MCP令牌。验收证据由调用方声明，不是独立证明；Agent对话结束不自动代表验收通过。';
 en.safetyNotes += ' Reads enabled model names and supported thinking levels through models.list; explicit choices apply only to the new task session, never host defaults.';
 zh.safetyNotes += ' 通过models.list只读已启用模型名称和支持的思考强度，显式选择仅作用于新任务会话，不修改宿主默认设置。';
+en.safetyNotes += ' Documentation maintenance may write current-project docs/, notes/ and necessary root entry links. Prompt boundaries are not a security sandbox; host Agent permissions still apply. Canceling a task does not roll back files already written.';
+zh.safetyNotes += ' 文档维护可写当前项目docs/、notes/和必要根入口链接。提示词限制不是安全沙箱，Agent工具权限仍由宿主管理；取消任务不撤销已写入文件。';
 const manifest = {
   schemaVersion: 1, id: 'io.github.tonkic.agent-governance', ...en, version: require('../../package.json').version,
   i18n: { en, 'zh-CN': zh },

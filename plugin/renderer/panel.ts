@@ -70,7 +70,7 @@ function lock(value) {
   document.querySelectorAll<HTMLButtonElement>('.column-add').forEach((button) => {
     button.disabled = value || !snapshot?.state || !navigator.onLine;
   });
-  for (const id of ['analysis-start', 'architecture-analyze'])
+  for (const id of ['analysis-start', 'architecture-analyze', 'documentation-start'])
     $(id).disabled = value || !snapshot?.state?.task || !projectSnapshot || !navigator.onLine;
   document
     .querySelectorAll<HTMLButtonElement>('.review-button, #item-human-review, #item-agent-review')
@@ -1230,7 +1230,9 @@ const operationLabel = (kind): CopyKey =>
     ? 'architectureTask'
     : kind === 'acceptance'
       ? 'acceptanceTask'
-      : 'analysis';
+      : kind === 'documentation'
+        ? 'documentationTask'
+        : 'analysis';
 function launchOption(value, label) {
   const option = document.createElement('option');
   option.value = value;
@@ -1442,6 +1444,9 @@ async function loadOperations() {
     text('operations-notice', t('operationError', error.message));
   }
 }
+$('documentation-start').addEventListener('click', () => {
+  void startOperation('documentation');
+});
 $('analysis-start').addEventListener('click', () => {
   void startOperation('analysis');
 });

@@ -9,6 +9,7 @@ const runtime = path.join(root, 'plugin/runtime');
 for (const dir of [build, runtime]) {
   if (fs.existsSync(dir) && fs.lstatSync(dir).isSymbolicLink()) throw Error('Refusing linked output directory');
 }
+require('./build-docs.cjs').generate(root);
 fs.rmSync(build, { recursive: true, force: true });
 const tsc = path.resolve(path.dirname(require.resolve('typescript/package.json')), require('typescript/package.json').bin.tsc);
 for (const config of ['tsconfig.json', 'plugin/renderer/tsconfig.json']) {

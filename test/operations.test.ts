@@ -409,3 +409,58 @@ test('model lookup reserves submission before awaiting; a duplicate cannot relea
   assert.equal(f.calls.filter((c) => c.operation === 'session/create').length, 1);
   assert.equal(f.calls.filter((c) => c.operation === 'agent/prompt').length, 1);
 });
+
+test('documentation maintenance is project-bound, confirmed and limited to documentation', async (t) => {
+  const f = await fixture(t);
+  const before = await fs.readFile(path.join(f.root, 'STATE.json'), 'utf8');
+  const revision = (await f.g.run({ action: 'project_snapshot' })).revision;
+  await assert.rejects(
+    operationInvoke(f.root, { action: 'start', kind: 'documentation', revision }, f.desktop),
+    /Confirm/
+  );
+  assert.equal(f.calls.length, 0);
+  const run = await f.start('documentation');
+  assert.equal(run.kind, 'documentation');
+  assert.equal(f.calls[0].args[0].projectPath, f.root);
+  const prompt = f.calls.find((c) => c.operation === 'agent/prompt').args[0].content;
+  for (const boundary of [
+    'currently open project',
+    'Write only docs/, notes/',
+    'Do not edit functional source',
+    'Do not upgrade or install plugins',
+    'Microsoft Writing Style Guide',
+    'progressive disclosure',
+    '4–8 lines',
+    'preserve historical evidence unchanged',
+    'no Git mutations'
+  ])
+    assert.ok(prompt.includes(boundary), boundary);
+  assert.ok(prompt.includes(JSON.stringify(f.root)));
+  assert.equal(await fs.readFile(path.join(f.root, 'STATE.json'), 'utf8'), before);
+  assert.equal(
+    (await operationInvoke(f.root, { action: 'list' }, f.desktop)).runs[0].kind,
+    'documentation'
+  );
+  await assert.rejects(f.start('analysis'), /existing/);
+  await operationInvoke(f.root, { action: 'cancel', id: run.id, confirmed: true }, f.desktop);
+  assert.equal(f.calls.at(-1).operation, 'agent/abort');
+  assert.equal(
+    (await operationInvoke(f.root, { action: 'list' }, f.desktop)).runs[0].phase,
+    'canceled'
+  );
+});
+
+test('documentation maintenance refuses stale projects and does not replay ambiguous submissions', async (t) => {
+  const f = await fixture(t);
+  f.onCreate = () => f.g.run({ action: 'progress', current: 'New intent', next: [], blocked: [] });
+  await assert.rejects(f.start('documentation'), /changed before prompt/);
+  assert.equal(
+    f.calls.some((c) => c.operation === 'agent/prompt'),
+    false
+  );
+  const b = await fixture(t);
+  b.failPrompt = true;
+  await assert.rejects(b.start('documentation'), /ambiguous/);
+  await assert.rejects(b.start('documentation'), /existing/);
+  assert.equal(b.calls.filter((c) => c.operation === 'agent/prompt').length, 1);
+});
