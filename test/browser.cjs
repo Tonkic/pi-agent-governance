@@ -944,10 +944,11 @@ const models = {
             await p.locator('#launch-dialog').evaluate((el) => el.scrollWidth <= el.clientWidth),
             'Launch settings must not overflow'
           );
-          await p.screenshot({
+          const launchShot = await p.screenshot({
             path: path.join(output, `${lang}-launch-${width}-${theme}.png`),
-            fullPage: true
+            fullPage: false
           });
+          assert.equal(launchShot.readUInt32BE(20), 1000, 'Launch evidence uses the viewport height');
           shots++;
           await p.locator('#launch-cancel').click();
           await navigate(p, 'board-section');
@@ -979,10 +980,11 @@ const models = {
             }),
             'Details are centered without horizontal overflow'
           );
-          await p.screenshot({
+          const modalShot = await p.screenshot({
             path: path.join(output, `${lang}-modal-${width}-${theme}.png`),
-            fullPage: true
+            fullPage: false
           });
+          assert.equal(modalShot.readUInt32BE(20), 1000, 'Modal evidence uses the viewport height');
           shots++;
           await close(p);
           assert.deepEqual(await geometry(), before, 'Closing modal preserves geometry');
@@ -999,7 +1001,7 @@ const models = {
       await p.setViewportSize({ width: 1280, height: 1000 });
       await navigate(p, 'board-section');
       await card(p, first).click();
-      await p.screenshot({ path: path.join(output, `${lang}-details-1280.png`), fullPage: true });
+      await p.screenshot({ path: path.join(output, `${lang}-details-1280.png`), fullPage: false });
       shots++;
       await close(p);
     }

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>0.6.12 六组目视验收</title>
+<style>body{margin:16px;background:#eceef3;color:#20252c;font:15px system-ui}nav{position:sticky;top:0;background:white;padding:12px}button{margin:4px;padding:8px}img{display:block;max-width:100%;height:auto}p{max-width:1000px;line-height:1.6}</style>
+<h1>0.6.12 六组目视检查</h1>
+<p>插件来源：24809064073bf6c1c303e6dd3a6e73c8d3137c62。本回合仅修正测试截图方式，插件代码和安装包不变。隔离 Chromium 回归生成74张截图，实际目视以下六组联系表和窄屏详情/设置原图。</p>
+<p>每组含中文、英文的看板、详情、架构、Git页和任务设置。联系表只裁取截图顶部1000px，不能当作整页可见范围。弹窗原图已改用真实视口截图，并断言高度为1000px；旧全页截图的局部遮罩不作为视觉证据。</p>
+<p>结果：390px 单列、768px 两列、1280px 四列随视口响应；打开详情不改变背景列几何，文字与控件未见遮挡或横向溢出。明暗主题边界、导航和操作按钮可辨。几何、焦点、草稿、错误/离线守卫另由浏览器回归检查。</p>
+<p>限制：模型和宿主API为模拟，使用真实临时项目后端。不代表实际安装、物理触屏或收费Agent执行验收。只读MCP仍为本机0.6.10 ready/enabled，未提供安装/更新接口。</p>
+<nav id="nav"></nav>
+<h2 id="label"></h2>
+<img id="image" alt="当前选定检查截图">
+<script>
+const names = ['390-light.jpg','390-dark.jpg','768-light.jpg','768-dark.jpg','1280-light.jpg','1280-dark.jpg','en-modal-390-light.png','zh-launch-390-dark.png','zh-board-section-1280-light.png','en-board-section-390-dark.png','zh-modal-1280-dark.png','en-architecture-768-light.png'];
+for (const name of names) {
+  const button = document.createElement('button');
+  button.textContent = name;
+  button.onclick = () => show(name);
+  document.getElementById('nav').append(button);
+}
+function show(name) {
+  document.getElementById('label').textContent = name;
+  document.getElementById('image').src = name;
+  window.scrollTo(0,0);
+}
+show(names[0]);
+</script>
+</html>
