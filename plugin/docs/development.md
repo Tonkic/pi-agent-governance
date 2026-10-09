@@ -1,3 +1,4 @@
+<!-- Generated from docs/ by scripts/build-docs.cjs. Do not edit. -->
 # 开发
 
 修改 `.ts` 源码后运行构建和测试。不要手改生成的 JS 或 `manifest.json`。

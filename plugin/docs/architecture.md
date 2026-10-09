@@ -1,3 +1,4 @@
+<!-- Generated from docs/ by scripts/build-docs.cjs. Do not edit. -->
 # 架构
 
 插件为 PI-Desktop 提供任务状态、项目看板、源码架构和 Git 协作。所有入口复用治理内核，不需要 Web 服务或数据库。

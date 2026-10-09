@@ -37,11 +37,11 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "0.6.11居中工作项详情与四列稳定布局完成代码/包/GitHub main交付。CSS打开态容器压缩/两列联动已移除，几何回归两次red与针对性探针后green；弹窗上一项/下一项、草稿确认、焦点返回、验收/模型逻辑保留。独立列框/标题底色/状态顶边强化区分。源码cf761ec提交后release:auto类型/78测试/72截图/凭据历史扫描通过，main b11b742集成后typecheck/build/78测试/browser重测通过，普通推送与远端SHA一致。包32文件462966字节SHAe16f9b7fa42f9e3af8daf2ce9229825abd1dd9dc524efcd15c87ac35849717ba，权限/后端不变。预览guest不可用，恢复仍失败，新版未实际目视；视觉卡片重开而非沿用旧完成。最新MCP本机0.6.10 ready，0.6.11未安装/真实宿主复验。宿主切其他工作区后仅用本仓库公开校验模块更新，不在另一项目写入。不总体close。 最终进度记录6d7bb35推送未完成：普通推送TLS连接异常断开，只读确认远端仍b11b742后补送一次超时；再次只读确认仍b11b742且无残留Git进程。代码/包已在远端b11b742，最后记录仅本地；停止重推并保留分支，不丢弃或强推。",
+  "current": "0.6.12文档集中与更新文档入口已实现：当前手写说明归docs，简短记录归notes，旧Markdown正文原样归档；安装包说明从docs生成并检查链接/章节/许可证。按钮复用模型、确认、独立会话、进度和取消，不改功能代码/插件版本或安装。83测试、typecheck/build、干净npm ci测试、74截图浏览器检查通过；i18n 0失败/2既有REVIEW。一次只读审查发现悬空链接预检缺口，回归red后修复green。新设置/进度两图已实际目视，待最终包和提交交付。未运行收费任务或安装；保留既有总体宿主/CRLF/接续验收。",
   "next": [
-    "网络恢复后先核对远端main，再同步本地最终记录并仅清理已合并临时分支",
-    "恢复预览后完成0.6.11目视复核，正常安装后真实宿主交互验收",
-    "保留既有CRLF源码指纹与一次启动接续执行验收"
+    "最终打包、审查提交并在提交上复测",
+    "核对远端后按授权同步源码与集成main",
+    "保留总体真实宿主、源码指纹与接续验收"
   ],
   "blocked": [
     "最终记录GitHub同步/分支清理未完成：push连接异常及补送超时，最后只读远端main=b11b742；停止推送并保留本地工作。",

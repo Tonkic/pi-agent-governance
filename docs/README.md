@@ -1,14 +1,23 @@
-# 文档
+# 文档索引
 
-| 需要了解什么 | 文档 |
-| --- | --- |
-| 模块职责与代码入口 | [架构](architecture.md) |
-| 构建、测试和修改源码 | [开发](development.md) |
-| 治理工具及参数 | [工具用法](../plugin/README.md) |
-| 分支、提交与验证 | [Git 协作](../plugin/GIT.md) |
-| 看板和架构数据 | [项目数据](../plugin/PROJECT.md) |
-| GitHub 与市场交付 | [交付流程](../scripts/RELEASING.md) |
+先按问题定位专题，不必顺序读完。每篇先给用途与常用操作，参数和限制在后面的具名章节；可直接搜索动作名。
 
-文档采用 [Microsoft Writing Style Guide](https://learn.microsoft.com/en-us/style-guide/welcome/)，以 [Top 10 tips](https://learn.microsoft.com/en-us/style-guide/top-10-tips-style-voice) 为写作依据：重点在前、用词简洁、动作明确、便于扫读。中文采用这些表达原则，不照搬英文大小写规则。不新增教程或空模板。
+| 要解决的问题 | 先读 | 需要深入时 |
+| --- | --- | --- |
+| 接手目标、更新进度、验证关闭 | [治理用法](governance.md#接手与执行) | 同页“验证与关闭” |
+| 看板、工作项验收、架构重分析 | [项目接口](project.md#工作项) | 同页“项目架构” |
+| 更新当前项目文档 | [文档维护](documentation.md) | [项目 Agent 操作](project.md#项目-agent-操作) |
+| 分支、worktree、提交和集成 | [Git 协作](git.md#原则) | 同页“冲突与恢复” |
+| 代码职责与数据位置 | [架构](architecture.md) | 表中的 TS 入口 |
+| 构建、测试与安装包生成 | [开发](development.md) | 同页“目录” |
+| GitHub 和市场交付 | [交付流程](releasing.md) | [安装与发布](publishing.md) |
+| UI 参考与许可 | [来源](ui-sources.md) | 同页 MIT 许可 |
 
-`docs/` 保存当前用途与用法；`notes/` 和 `changes/` 保存必要决策及验证记录。当前任务以根 `STATE.json` 为准。
+## 写作与位置
+
+采用 [Microsoft Writing Style Guide](https://learn.microsoft.com/en-us/style-guide/welcome/) 和 [Top 10 tips](https://learn.microsoft.com/en-us/style-guide/top-10-tips-style-voice)：结论在前、短句、动作明确、方便扫读。中文不机械套用英文格式。
+
+- `docs/` 是当前说明的唯一手写来源，不写每次测试的长日志。专题原则上不超过 100 行；变长时按独立问题拆分并回链索引，不建空模板。
+- [Notes 索引](../notes/README.md) 提供简短变更、决策和踩坑摘要；只在需要追溯时读取归档。
+- 根 README/AGENTS 仅保留必要入口与执行约束。安装包的 `plugin/README.md` 和 `plugin/docs/` 从这里构建生成，不手改。
+- `changes/` 保留机器关闭记录和截图等证据；`.pi/` 是宿主数据，不迁移。当前授权只看 STATE，不从旧记录猜目标。

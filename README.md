@@ -1,64 +1,40 @@
 # PI Agent Governance
 
-PI-Desktop 本地插件：保存任务目标和进度，展示项目看板与源码架构，管理受管 Git 工作区。项目数据保存在仓库文件中，Agent 可以据此接手工作。
+PI-Desktop 本地插件：保存任务目标和进度，展示项目看板与源码架构，管理受管 Git 工作区。项目数据保存在仓库文件中，Agent 可以据此接手。
 
-社区 ID：`io.github.tonkic.agent-governance`。本地版本 0.6.11；市场已发布版本 0.6.0。
+社区 ID：`io.github.tonkic.agent-governance`。本地版本 0.6.12；市场已发布版本 0.6.0。
 
-## 安装与使用
+## 开始使用
 
-1. 在 PI-Desktop 插件页安装 `plugin/dist/io.github.tonkic.agent-governance-0.6.11.piplug`，确认权限。开发时加载 `plugin/`。任务执行需 `desktop.control`；模型选择需只读 `models.list`。
-2. 打开项目工作区，在命令面板运行 `Agent Governance: 打开治理面板`。
-3. 向 Agent 提出目标与验收条件，例如：`使用 governance 初始化这个项目，保留已有文件。目标是修复搜索功能，验收是相关测试通过。`
+1. 在 PI-Desktop 插件页安装对应的 `plugin/dist/` 包并确认权限；开发时加载 `plugin/`。安装不会由本仓库自动执行。
+2. 打开项目，在命令面板运行 `Agent Governance: 打开治理面板`。
+3. 向 Agent 明确目标与验收条件；已有任务先调用 `status`，按 STATE 接续。
 
-工作台分为待办、正在进行、已完成、已验收四列，列标题色带与边框区分状态。点击工作项打开居中详情弹窗，不压缩或重排看板；弹窗内可上一项/下一项切换，草稿切换或关闭需确认丢弃。宽屏四列横排，窄屏只随视口正常响应式排列。页面级按钮继续置顶分类；Agent任务先选择宿主可用模型/思考强度，再确认运行，仅用于本次新会话。验收证据、修改后失效及项目总体验收守卫保留。[项目接口与限制](plugin/PROJECT.md)、[组件来源及许可](plugin/UI-SOURCES.md)。
+工作台提供四列看板和居中详情。顶部「项目任务 → 更新文档」整理当前项目的 `docs/`、`notes/`，先选模型再确认，不升级插件。Agent 任务需要 `desktop.control`，自选模型使用只读 `models.list`。
 
-已有任务时先调用 `status`，按 `STATE.json` 接续工作。基本流程为 `status → start（需要时）→ 开发与检查 → verify → close`。看板完成不代表总体验收通过。
+## 按问题阅读
 
-本项目已保存手动自动化任务「接续项目：已批准待办」。在 PI-Desktop 自动化中点一次运行，Agent 根据 STATE/看板连续执行可执行项，不需要反复写“继续”。没有活动授权、完成、需要审批或遇真实阻塞时停止；不定时、不自动安装。见 [开发说明](docs/development.md)。
+- [文档索引](docs/README.md)：先定位专题，需要时再读参数和限制。
+- [治理用法](docs/governance.md)、[项目接口](docs/project.md)、[Git 协作](docs/git.md)。
+- [文档维护](docs/documentation.md)：简短 Docs、Git 式 Notes、渐进式披露。
+- [架构](docs/architecture.md)、[开发](docs/development.md)、[交付](docs/releasing.md)、[安装与发布](docs/publishing.md)。
+- [变更记录](notes/README.md)、[Agent 规则](AGENTS.md)。当前授权只以 STATE 为准。
 
-旧 ID `pi.agent-governance` 不会自动迁移。先备份 STATE 与 `.governance/`，停用旧插件，再安装新 ID；不需要删除项目数据。保留旧包供回退。
+## 开发检查
 
-## 代码入口
-
-先看 `plugin/main.ts` 的入口，再看 `plugin/core.ts` 的 `run()` 分派。任务动作在同文件的具名方法中；看板与架构在 `project.ts`，Git 协作在 `git.ts`。界面入口是 `renderer/panel.ts`，面板操作校验在 `panel.ts`。
-
-| 路径 | 内容 |
-| --- | --- |
-| `plugin/*.ts`、`plugin/renderer/` | 插件源码及静态资源 |
-| `plugin/runtime/` | 生成的运行 JS，不手改 |
-| `scripts/`、`test/` | 构建、交付工具与测试源码 |
-| `build/` | Git 忽略的 CLI、测试与编译中间文件 |
-| `docs/` | 稳定用法与架构说明 |
-| `notes/`、`changes/` | 决策、验收证据与历史归档 |
-| `STATE.json`、`.governance/` | 当前任务、看板与项目架构数据 |
-
-## 开发
-
-需要 Node.js 20+。修改 TS 后重新构建，不直接修改 runtime 或 manifest。
+需要 Node.js 20+。修改 TS 或 `docs/` 后重新构建；不手改 runtime、manifest 或安装包说明。
 
 ```powershell
 npm ci
 npm run typecheck
 npm run build
 npm test
-'{"action":"status"}' | node build/scripts/governance.js
 ```
 
-浏览器检查、输出目录及修改定位见 [开发说明](docs/development.md)。宿主只加载 JS；插件没有第三方运行时依赖，不需要 Web 服务或数据库。
+构建不会推送、发布或安装。浏览器检查与生成目录见 [开发](docs/development.md)。
 
-## 文档
+## 必要限制
 
-- [文档入口](docs/README.md)：Microsoft 写作指南、架构和开发说明。
-- [工具用法](plugin/README.md)、[项目数据](plugin/PROJECT.md)、[Git 协作](plugin/GIT.md)：参数、行为与限制。
-- [交付流程](scripts/RELEASING.md)：小更新同步 GitHub并集成 main；主/次版本升级另发布市场。检查后清理已合并临时分支。
-- [市场发布说明](plugin/PUBLISHING.md)：凭据、旧 ID 迁移和提交方式。
-- [Agent 入口](AGENTS.md)：执行规则。当前目标、范围和阻塞只以 STATE 为准。
+面板写入需确认；任务或工作区版本过期时拒绝。工作项完成、会话结束和调用方证据不等于总体真实验收。插件不拦截其他工具；提示词、路径门禁和文件锁不是恶意并发写入的安全沙箱。只用于可信仓库。
 
-## 限制
-
-- 面板写入需确认；版本过期或工作区切换后拒绝写入。刷新不会自动保存表单，也没有后台轮询。
-- 宿主语言决定界面语言，切换后重开面板。用户数据和底层诊断原文不翻译。
-- 架构图保存源码依据和指纹，不是运行时监控；源码变化后须重新核对。
-- 验收证据由调用方声明，不是独立认证。按钮经确认后可发起分析/验收 Agent 会话，不拦截其他工具、不后台轮询；会话结束不自动代表验收通过。
-- Node fs 和 Git execFile 不经过宿主文件/命令网关。仅用于可信仓库；锁和写前比较不能防御恶意并发写入。Git配置、worktree位置与恢复限制见 Git 协作说明。
-- 更新安装由 PI-Desktop 管理。仓库构建不推送、不发布、不安装；发布成功也不代表实际宿主验收完成。
+旧 ID `pi.agent-governance` 不自动迁移：备份 STATE 和 `.governance/`，停用旧插件后安装新 ID，保留旧包供回退。更新和权限由宿主管理。

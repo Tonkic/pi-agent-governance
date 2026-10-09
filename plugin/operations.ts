@@ -36,7 +36,7 @@ async function readRuns(g) {
     if (
       typeof r.id !== 'string' ||
       !/^[a-f0-9-]{36}$/.test(r.id) ||
-      !['analysis', 'architecture', 'acceptance'].includes(r.kind) ||
+      !['analysis', 'architecture', 'acceptance', 'documentation'].includes(r.kind) ||
       ![...activePhases, 'completed', 'canceled', 'failed'].includes(r.phase) ||
       r.workspace !== g.root ||
       (r.sessionId !== null &&
@@ -75,6 +75,11 @@ function taskPrompt(run, state, item) {
     return (
       boundary +
       'Reanalyze the core project architecture. Inspect docs and selected non-sensitive source. Use governance architecture_sources then project_snapshot/architecture_set to save a small source-backed responsibility graph with precise file fingerprints, actual relationships and honest analysis limits. Do not invent dependencies. Only architecture data may be changed, no source/STATE/board edits. Preserve the existing graph on failure. Read a fresh revision before writing.'
+    );
+  if (run.kind === 'documentation')
+    return (
+      boundary +
+      'Update documentation for the currently open project, not this plugin itself. Read AGENTS.md, relevant task/code/docs and existing documentation conventions first. If another writer is active, stop. Write only docs/, notes/ and necessary root README.md/AGENTS.md entry links; preserve unrelated files, historical evidence and existing instructions. Do not edit functional source, generated outputs, package versions, STATE, board or architecture data. Do not upgrade or install plugins. Keep hand-written current explanations in docs/ using Microsoft Writing Style Guide: purpose first, short sentences, concrete actions, essential usage and limits. Use progressive disclosure: a short index, focused topic summaries, then precise details when needed; no empty templates or repetitive tutorials. Keep notes like Git records, usually 4–8 lines per operation: added/deleted/changed features, actual result, brief pitfalls or lessons. Do not invent checks or erase history. For a legacy layout, migrate only current explanations with verified links, preserve historical evidence unchanged, and stop before moving externally required or user-owned files without clear authorization. Review diff and run relevant documentation/link checks. Report changed paths, actual checks and remaining blockers; no Git mutations.'
     );
   return (
     boundary +
@@ -156,7 +161,7 @@ async function operationInvoke(
     return g.locked(async () => ({ workspace: g.root, ...(await readRuns(g)) }));
   if (action === 'start') {
     if (payload.confirmed !== true) throw Error('Confirm Agent task before starting');
-    if (!['analysis', 'architecture', 'acceptance'].includes(payload.kind))
+    if (!['analysis', 'architecture', 'acceptance', 'documentation'].includes(payload.kind))
       throw Error('Unknown project operation');
     if (inFlight.has(g.root)) throw Error('A project operation is already being submitted');
     for (const operation of ['session/create', 'agent/prompt', 'agent/getStatus', 'session/get'])
