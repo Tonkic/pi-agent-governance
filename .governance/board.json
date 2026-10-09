@@ -4,8 +4,8 @@
     {
       "id": "host-smoke",
       "title": "真实宿主面板交互验收",
-      "description": "最新只读MCP确认本机0.6.10 ready/enabled。0.6.12源码/包已交付，模态详情、稳定四列、文档入口、草稿/焦点/验收/模型在隔离浏览器回归及目视通过；仍须真实宿主验证，不以生成截图替代。",
-      "blocker": "0.6.12未安装/真实宿主复验；现有MCP无安装或更新接口，遵守用户MCP-only选择。",
+      "description": "最新只读MCP确认本机0.6.10 ready/enabled，autoUpdate=true。0.7.0已发布市场并同步GitHub，生成固定main.js转接入口；85测试/74图回归通过，原六组UI目视与新版代表图证据保留。仍需实际安装后真实宿主验证，不以市场published替代。",
+      "blocker": "本机仍0.6.10；MCP无插件刷新/安装/更新接口，遵守用户MCP-only授权，0.7.0真实宿主复验未完成。",
       "stage": "todo",
       "taskId": "project-board-release",
       "gitTaskId": null
@@ -13,8 +13,8 @@
     {
       "id": "release-acceptance",
       "title": "汇总真实证据并完成总体验收",
-      "description": "当前0.6.12六组浏览器目视及74图交互回归已完成，代码/包/记录GitHub同步已核对。仍依赖真实host-smoke、既有源码CRLF指纹及接续执行验收；全部八条标准满足后才verify/close。",
-      "blocker": "host-smoke未通过；既有CRLF源码指纹与接续执行验收未完成，不关闭总体任务。",
+      "description": "0.7.0市场published、官方/GitHub目录和公开包核对完成；main9a96f16集成重测/普通推送通过。已保留85测试/74图及视觉证据。仍须host-smoke和既有指纹/接续执行验收，全部八条标准通过后才verify/close。",
+      "blocker": "host-smoke未通过，既有CRLF源码指纹与接续执行验收未完成，不总体close。",
       "stage": "todo",
       "taskId": "project-board-release",
       "gitTaskId": null
@@ -60,7 +60,7 @@
     {
       "id": "github-delivery",
       "title": "同步最新源码并集成main",
-      "description": "0.6.11源码cf761ec提交后release:auto类型/78测试/72截图/凭据历史扫描通过；no-ff集成main b11b742后重跑通过，普通推送并远端SHA核对一致。未发布市场，记录完成后仅清理已合并临时分支。",
+      "description": "0.7.0发布源码a484888提交后类型/构建、85测试、74图及1137对象历史敏感扫描通过；main9a96f16集成后重跑全部通过，普通推送且远端SHA一致。平台published及官方目录/GitHub镜像/公开包核对通过；保留成功发布来源与原失败784e507的追溯，不强推或自动安装。",
       "blocker": "",
       "stage": "done",
       "taskId": "project-board-release",
@@ -78,12 +78,12 @@
     {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
-      "description": "0.6.12双语三尺寸/明暗六组浏览器视觉已查看，列边界、导航、弹窗和设置无明显遮挡/溢出；74图几何/交互回归通过。此卡仍要求本机真实主题复验，未由浏览器验收替代。",
-      "blocker": "只读MCP仍为0.6.10 ready/enabled；0.6.12未安装，实际宿主主题验收未完成。",
+      "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
+      "blocker": "本机0.6.10，0.7.0未安装/真实宿主主题验收未完成。",
       "stage": "doing",
       "taskId": "project-board-release",
       "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-09T07:43:59.945Z"
+  "updatedAt": "2026-10-09T09:52:40.405Z"
 }

@@ -37,14 +37,13 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "0.7.0市场发布已确认：源码a4848881a990b0659e1a6853d518b619920da026，平台publishedAt=2026-10-09T09:41:39Z，blockers=0；没有声明人工审阅。用户批准两项市场增量权限及修正候选提交，自动权限规则未改。首次候选因main必须main.js拒绝；新增生成转接入口，runtime业务导出不变，回归两次red后green。修正源码提交后类型/构建、85测试、74图、1137对象敏感历史扫描通过；干净npm ci及官方/i18n检查通过。官方本地包39文件490126字节SHAed8d44cb947aa7f9961dabbc048f8da478aaf0074e5d866d4c9cc10c3f512128；市场包484687字节SHA824000a1715fd01b5755b83333af8ba65b7a5bb7910922807652d4dc9671703c，公开下载与官方/GitHub目录核对一致，39条目语义一致仅换行/清单序列化差异。旧失败来源/包/尝试和新发布来源保留。README/Notes更新，正在main集成重测推送。宿主查询仍本机0.6.10/旧目录0.6.0，未安装或提权，不总体close。",
+  "current": "0.7.0已完成代码/包/GitHub和市场发布：平台publishedAt=2026-10-09T09:41:39Z，sourceRef=a4848881a990b0659e1a6853d518b619920da026，blockers=0，未声明人工审阅。官方目录/GitHub镜像及公开包均核对，市场包484687字节SHA824000a1715fd01b5755b83333af8ba65b7a5bb7910922807652d4dc9671703c；本地官方包39文件490126字节SHAed8d44cb947aa7f9961dabbc048f8da478aaf0074e5d866d4c9cc10c3f512128，条目语义一致仅换行/清单序列化差异。首次入口拒绝已按用户授权诊断并修复生成main.js转接，导出不变，两次red后green；旧失败来源/包/尝试与成功来源保留不覆盖。干净npm ci、类型/构建、85测试、74图及1137对象历史扫描通过，国际化/官方检查通过；main9a96f163e80ebdc87a7482708bf9082cf312d212集成后全部重测并普通推送，远端一致。六组已检UI源码不变，新代表图已目视。用户批准市场两权限及修正提交，自动规则未改。最新MCP本机仍0.6.10 ready/enabled，无插件刷新/安装/更新接口，本机未更新/真实宿主验收，不总体close。",
   "next": [
-    "完成main集成重测/普通推送并核对远端SHA",
-    "通过用户允许的宿主入口刷新市场并完成0.7.0真实交互/模型/权限验收",
-    "保留既有换行源码指纹与手动接续执行验收"
+    "通过用户允许的宿主入口刷新市场并完成0.7.0真实交互/主题/模型/权限验收",
+    "保留既有CRLF源码指纹与手动接续执行验收"
   ],
   "blocked": [
-    "0.7.0真实宿主验收未完成；本机0.6.10，MCP无插件刷新/安装/更新接口，遵守MCP-only授权。公开市场0.7.0已发布，本机仍返回旧目录。",
+    "市场0.7.0已发布，最新本机仍0.6.10；MCP无插件刷新/安装/更新接口，遵守MCP-only授权，真实宿主验收未完成。",
     "既有CRLF源码指纹及一次启动接续执行验收未完成；总体任务不能close。"
   ],
   "followUp": null,
