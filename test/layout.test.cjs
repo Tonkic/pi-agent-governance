@@ -12,11 +12,12 @@ test('compiled JavaScript is separated and runtime exactly matches compiler outp
     ...sources.map((f) => `${f}.js`),
     ...renderer.map((f) => `renderer/${f}.js`)
   ]) {
-    assert.equal(
-      fs.existsSync(path.join(root, 'plugin', file)),
-      false,
-      `No adjacent output: ${file}`
-    );
+    if (file !== 'main.js')
+      assert.equal(
+        fs.existsSync(path.join(root, 'plugin', file)),
+        false,
+        `No adjacent output: ${file}`
+      );
     assert.deepEqual(
       fs.readFileSync(path.join(root, 'plugin/runtime', file)),
       fs.readFileSync(path.join(root, 'build/plugin', file))
@@ -25,7 +26,7 @@ test('compiled JavaScript is separated and runtime exactly matches compiler outp
   for (const file of ['scripts/build-manifest.js', 'scripts/governance.js', 'test/panel.test.js'])
     assert.equal(fs.existsSync(path.join(root, file)), false);
   const manifest = require('../plugin/manifest.json');
-  assert.equal(manifest.main, 'runtime/main.js');
+  assert.equal(manifest.main, 'main.js');
   assert.equal(typeof require(path.join(root, 'plugin', manifest.main)).onLoad, 'function');
   const html = fs.readFileSync(path.join(root, 'plugin', manifest.ui.panel), 'utf8');
   for (const [, src] of html.matchAll(/<script src="([^"]+)"/g))
@@ -156,4 +157,33 @@ test('documentation generation rejects dangling output links without creating th
   }
   assert.throws(() => generate(temp), /linked/);
   assert.equal(fs.existsSync(path.join(temp, 'unrelated.md')), false);
+});
+test('marketplace package entry is main.js and forwards the unchanged runtime exports', () => {
+  const manifest = require('../plugin/manifest.json');
+  const publisher = require('../scripts/plugin-center.cjs');
+  assert.equal(manifest.main, 'main.js', 'Marketplace requires exactly main.js');
+  assert.ok(publisher.files.includes('main.js'), 'Entry must be in the exact-SHA payload');
+  assert.strictEqual(require('../plugin/main.js'), require('../plugin/runtime/main.js'));
+});
+test('generated entry is deterministic and refuses hand-written or dangling linked files', (t) => {
+  const entry = require('../scripts/build-entry.cjs');
+  assert.equal(fs.readFileSync(path.join(root, 'plugin/main.js'), 'utf8'), entry.content);
+  const temp = fs.mkdtempSync(
+    path.join(process.env.PI_SCRATCH_DIR || require('node:os').tmpdir(), 'entry-generation-')
+  );
+  t.after(() => fs.rmSync(temp, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(temp, 'plugin'));
+  const output = path.join(temp, 'plugin/main.js');
+  entry.generate(temp);
+  fs.writeFileSync(output, entry.content.replace(/\n/g, '\r\n'));
+  entry.generate(temp);
+  assert.equal(fs.readFileSync(output, 'utf8'), entry.content);
+  fs.writeFileSync(output, 'User entry');
+  assert.throws(() => entry.generate(temp), /hand-written/);
+  assert.equal(fs.readFileSync(output, 'utf8'), 'User entry');
+  fs.unlinkSync(output);
+  const target = path.join(temp, 'missing');
+  fs.symlinkSync(target, output, 'junction');
+  assert.throws(() => entry.generate(temp), /linked/);
+  assert.equal(fs.existsSync(target), false);
 });

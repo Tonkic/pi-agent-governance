@@ -8,7 +8,7 @@ A minor release collecting the reviewed improvements since marketplace 0.6.0. Sa
 - Centered modal details keep the board geometry stable. Previous/next navigation, draft-discard confirmation, keyboard focus return, search and contextual actions preserve object-level workflows.
 - Confirmed project analysis, architecture analysis, item review and documentation-maintenance tasks run in dedicated project-bound sessions. Select an enabled host model and supported thinking level for the new session only; inspect, open or cancel recorded tasks without background polling.
 - “Update docs” maintains the currently open project's `docs/`, `notes/` and necessary root entry links, not plugin versions or functional code. Concise Microsoft-style topics use progressive disclosure; Notes summarize additions, removals, changes and lessons. Packaged documentation is generated from the canonical `docs/` sources.
-- Independent light/dark-following palette with optional host colors, clearer column boundaries, native host drag-chrome compatibility, separated TypeScript/runtime outputs and project rendering before slower Git reads.
+- Independent light/dark-following palette with optional host colors, clearer column boundaries, native host drag-chrome compatibility, separated TypeScript/runtime outputs and project rendering before slower Git reads. A generated main.js shim satisfies the marketplace entry convention while runtime code stays under runtime/.
 
 四列看板新增明确证据验收；居中详情不挤压看板，保留对象切换、草稿确认与键盘操作。顶部任务支持独立会话、单次模型设置和运行记录；新增「更新文档」。当前说明集中到 docs，简短变更与踩坑集中到 notes，旧历史原文归档。配色、列边界、宿主拖动兼容、构建目录及加载响应一并整理。
 
@@ -23,9 +23,9 @@ Relative to marketplace 0.6.0, this release adds `desktop.control` and read-only
 
 ## Verification and limits / 验证与限制
 
-The release uses clean dependency-install/type/build checks, 83 regression tests, a real isolated Chromium run producing 74 screenshots, bilingual responsive/theme visual review, i18n validation and official PluginCheck/PluginPack. Browser checks use simulated host/model APIs and a real temporary project backend, not paid Agent execution or full installed-host acceptance. Publication checks and exact package/source evidence are recorded separately; publication is not overall task completion.
+The release uses clean dependency-install/type/build checks, 85 regression tests, a real isolated Chromium run producing 74 screenshots, bilingual responsive/theme visual review, i18n validation and official PluginCheck/PluginPack. Browser checks use simulated host/model APIs and a real temporary project backend, not paid Agent execution or full installed-host acceptance. Publication checks and exact package/source evidence are recorded separately; publication is not overall task completion.
 
-验证覆盖干净构建、83测试、74图隔离浏览器回归和双语三尺寸/明暗目视，另执行国际化及官方安装包检查。真实宿主完整交互、物理触屏和收费模型执行未完成，不以发布成功替代。
+验证覆盖干净构建、85测试、74图隔离浏览器回归和双语三尺寸/明暗目视，另执行国际化及官方安装包检查。真实宿主完整交互、物理触屏和收费模型执行未完成，不以发布成功替代。
 
 Source fingerprints include raw disk bytes and line endings; a CRLF/LF-only change can require rereading and verifying the referenced sources. Prompt restrictions, locks and caller-attested evidence are not a security sandbox. Canceling an Agent task does not roll back files already written.
 

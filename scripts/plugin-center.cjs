@@ -7,7 +7,7 @@ const root = path.resolve(__dirname, '..');
 const endpoint = 'https://plugins.aiuo.net/mcp';
 const tokenPath = path.join(root, '.secrets', 'plugin-center.token');
 const files = [
-  'main.ts', 'runtime/main.js', 'core.ts', 'runtime/core.js', 'git.ts', 'runtime/git.js',
+  'main.js', 'main.ts', 'runtime/main.js', 'core.ts', 'runtime/core.js', 'git.ts', 'runtime/git.js',
   'panel.ts', 'runtime/panel.js', 'project.ts', 'runtime/project.js', 'tool.ts', 'runtime/tool.js',
   'operations.ts', 'runtime/operations.js',
   'README.md', 'docs/README.md', 'docs/governance.md', 'docs/git.md', 'docs/project.md',

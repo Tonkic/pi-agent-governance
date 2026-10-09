@@ -37,11 +37,11 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "用户要求整理并发布0.7.0、同步插件市场，另明确批准市场相对0.6.0新增的desktop.control和models.list；不改全局自动发布权限规则、不自动安装。市场只读状态为0.6.0 published/stable，无待审核/未知版本。按当前已交付0.6.12汇总四列/证据验收、居中详情、独立任务/模型、文档维护及构建/配色改进，版本改0.7.0，双语发布说明在notes/release-0.7.0.md，当前Docs补充换行指纹和宿主MCP更新边界。采用有本次明确权限授权的人工版本提交，仍运行全部检查、绑定SHA/包证据、互斥与持久化尝试、不重投。准备干净构建/测试/打包，尚未提交市场。保留真实宿主/CRLF/接续验收，不总体close。",
+  "current": "0.7.0首次候选784e507完成干净构建/83测试/74图/国际化/包检查及1115对象历史扫描，来源release/plugin-center-0.7.0已推送；平台首次拒绝，状态/版本可用性只读确认无0.7.0。用户另批准一次诊断性原样重发，取得明确错误main must be exactly main.js，无版本产生。已修正本地构建为生成main.js转接runtime/main.js，清单和发布载荷同步；运行导出、业务代码、权限和自动规则不变，新增入口/CRLF/手写与悬空链接回归两次red后green。修正候选干净npm ci、类型/构建、85测试、74图浏览器、i18n 0失败/2REVIEW、PluginCheck/Pack通过；包39文件490126字节SHAed8d44cb947aa7f9961dabbc048f8da478aaf0074e5d866d4c9cc10c3f512128，静态unused提示的实际调用在runtime入口。失败包/来源/原尝试及诊断记录保留不覆盖；整理新SHA后确认修正候选的受控提交。未安装/真实宿主验收，不总体close。",
   "next": [
-    "完成0.7.0干净构建、测试、国际化及PluginCheck/Pack",
-    "审查提交、在提交上重测并按完整SHA推送来源；人工批准提交市场并只读确认发布",
-    "集成main重测/推送，核对公开市场与安装限制"
+    "审查提交修正入口候选，确认一次新候选市场提交",
+    "核对远端无0.7.0，保留旧失败来源并推送新完整SHA来源，复测/持久化后提交并只读确认发布",
+    "集成main重测/推送，保留真实宿主及既有指纹/接续验收"
   ],
   "blocked": [
     "0.6.12真实宿主验收未完成；本机MCP仍为0.6.10且无安装/更新接口，遵守MCP-only授权。",

@@ -9,6 +9,7 @@ const runtime = path.join(root, 'plugin/runtime');
 for (const dir of [build, runtime]) {
   if (fs.existsSync(dir) && fs.lstatSync(dir).isSymbolicLink()) throw Error('Refusing linked output directory');
 }
+require('./build-entry.cjs').check(root);
 require('./build-docs.cjs').generate(root);
 fs.rmSync(build, { recursive: true, force: true });
 const tsc = path.resolve(path.dirname(require.resolve('typescript/package.json')), require('typescript/package.json').bin.tsc);
@@ -18,6 +19,7 @@ for (const config of ['tsconfig.json', 'plugin/renderer/tsconfig.json']) {
 execFileSync(process.execPath, [path.join(build, 'scripts/build-manifest.js')], { cwd: root, stdio: 'inherit' });
 fs.rmSync(runtime, { recursive: true, force: true });
 fs.cpSync(path.join(build, 'plugin'), runtime, { recursive: true });
+require('./build-entry.cjs').generate(root);
 // Test fixtures use the compiled tree; installed HTML uses plugin/runtime scripts.
 fs.cpSync(runtime, path.join(build, 'plugin/runtime'), { recursive: true });
 for (const file of ['renderer/index.html', 'renderer/panel.css', 'renderer/views.css', 'manifest.json']) {
