@@ -37,10 +37,11 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "0.6.12文档维护已在main2480906交付，最新双语390/768/1280×明暗六组目视及窄屏详情/设置原图已实际完成，视觉卡片有显式Agent证据验收。fullPage弹窗截图混入视口外内容的问题通过1000px尺寸断言复现1606≠1000，改实际视口截图后通过。测试/证据/Notes/看板记录源码5b78995提交后typecheck/build、83测试、74图浏览器与历史敏感信息检查通过，补丁源码已同步GitHub；按既有流程集成main并重测。插件代码、包、版本/权限不变，旧0.6.11证据保留，证据docs-0.6.12/visual/index.html。只读MCP仍为本机0.6.10 ready/enabled，无安装/更新接口；不启动收费Agent或安装，不总体close。",
+  "current": "用户要求整理并发布0.7.0、同步插件市场，另明确批准市场相对0.6.0新增的desktop.control和models.list；不改全局自动发布权限规则、不自动安装。市场只读状态为0.6.0 published/stable，无待审核/未知版本。按当前已交付0.6.12汇总四列/证据验收、居中详情、独立任务/模型、文档维护及构建/配色改进，版本改0.7.0，双语发布说明在notes/release-0.7.0.md，当前Docs补充换行指纹和宿主MCP更新边界。采用有本次明确权限授权的人工版本提交，仍运行全部检查、绑定SHA/包证据、互斥与持久化尝试、不重投。准备干净构建/测试/打包，尚未提交市场。保留真实宿主/CRLF/接续验收，不总体close。",
   "next": [
-    "在用户允许的安装接口可用后完成0.6.12真实宿主/主题/模型/权限验收",
-    "保留既有CRLF源码指纹与手动接续执行验收"
+    "完成0.7.0干净构建、测试、国际化及PluginCheck/Pack",
+    "审查提交、在提交上重测并按完整SHA推送来源；人工批准提交市场并只读确认发布",
+    "集成main重测/推送，核对公开市场与安装限制"
   ],
   "blocked": [
     "0.6.12真实宿主验收未完成；本机MCP仍为0.6.10且无安装/更新接口，遵守MCP-only授权。",

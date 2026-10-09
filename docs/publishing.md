@@ -40,3 +40,7 @@ The preview sends nothing and lists the payload files. Submission reads plugin f
 After approval and catalog publication, use PI-Desktop's plugin-page update controls. Updates require the same ID and a higher version; new permissions require confirmation. This plugin does not download or replace itself, and does not bypass host update/permission checks. Enabling the host's auto-update option is not a promise of an unattended background timer.
 
 审核上架后使用宿主插件页检查更新或自动更新选项；同 ID 的更高版本才可更新。新增权限仍须确认。插件不实现自行安装、后台替换或绕过宿主的更新机制。
+
+0.7.0 相比市场0.6.0新增 `desktop.control` 和只读 `models.list`，升级须由宿主确认；开启自动更新不代表可静默扩权。对应发布说明见 [0.7.0](../notes/release-0.7.0.md)。
+
+PI-Desktop 0.16.1 的本地MCP仅开放插件/市场查询，不开放安装、检查插件更新或应用更新；`updates/check` 是应用自身更新。宿主内部安装服务存在，但不能通过未登记operation调用。依据 [官方MCP边界](https://github.com/vastsa/PI-Desktop/blob/104c3613d3037bf0c600151d80e92a5cd73e161c/docs/adr/0203-local-mcp-control-plane.md)。发布到市场和安装到本机是不同动作。

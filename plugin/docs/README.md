@@ -1,7 +1,9 @@
 <!-- Generated from docs/ by scripts/build-docs.cjs. Do not edit. -->
-# 文档索引
+# Agent Governance 文档 / Documentation
 
 先按问题定位专题，不必顺序读完。每篇先给用途与常用操作，参数和限制在后面的具名章节；可直接搜索动作名。
+
+Repository handoff, evidence-bound work-item acceptance, source-backed architecture and isolated Git collaboration. Confirm project Agent tasks with per-session model settings; “Update docs” maintains the current project's documentation, not the plugin installation.
 
 | 要解决的问题 | 先读 | 需要深入时 |
 | --- | --- | --- |
