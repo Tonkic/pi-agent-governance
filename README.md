@@ -2,7 +2,7 @@
 
 PI-Desktop 本地插件：保存任务目标和进度，展示项目看板与源码架构，管理受管 Git 工作区。项目数据保存在仓库文件中，Agent 可以据此接手。
 
-社区 ID：`io.github.tonkic.agent-governance`。本地版本 0.7.0；市场已发布版本 0.6.0，0.7.0 正在发布。累计变化和权限见 [发布说明](notes/release-0.7.0.md)。
+社区 ID：`io.github.tonkic.agent-governance`。仓库版本与市场已发布版本为 0.7.0；本机安装不会自动升级。累计变化和升级权限见 [发布说明](notes/release-0.7.0.md)。
 
 ## 开始使用
 
