@@ -21,7 +21,7 @@ zh.safetyNotes += ' 文档维护可写当前项目docs/、notes/和必要根入�
 const manifest = {
   schemaVersion: 1, id: 'io.github.tonkic.agent-governance', ...en, version: require('../../package.json').version,
   i18n: { en, 'zh-CN': zh },
-  main: 'runtime/main.js', ui: { panel: 'renderer/index.html', title: { en: en.name, 'zh-CN': zh.name } },
+  main: 'main.js', ui: { panel: 'renderer/index.html', title: { en: en.name, 'zh-CN': zh.name } },
   contributes: { agentTools: [tool], commands: [{ id: 'governance.open', title: 'Agent Governance: Open panel / 打开治理面板', keywords: ['governance', '治理', '任务', 'git'] }] },
   permissions: ['agent.tool.register', 'ui.panel', 'desktop.control', 'models.list'],
   engines: { piDesktop: '>=0.1.0' }, activationEvents: ['onStartup', 'onCommand:governance.open']
