@@ -52,6 +52,8 @@ module.exports = {
             description: { type: 'string' },
             blocker: { type: 'string' },
             gitTaskId: { type: 'string' },
+            architectureImpact: { type: 'string', enum: ['unassessed', 'none', 'affects'], description: 'Work-item architecture impact. Mark explicit architecture changes as affects; omitted updates preserve the current value.' },
+            checkSources: { type: 'boolean', description: 'Explicitly check architecture source fingerprints in project_snapshot. Default false: preserve the graph without scanning source.' },
             stage: { type: 'string', enum: ['todo', 'doing', 'done', 'accepted'] },
             method: { type: 'string', enum: ['human', 'agent'] },
             reviewer: {

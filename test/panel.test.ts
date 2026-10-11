@@ -195,3 +195,27 @@ test('item details use a modal and cannot shrink the board through open-state CS
   assert.doesNotMatch(css, /body:has\(#item-sheet/);
   assert.match(css, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
 });
+
+test('real plugin entry rereads workspace and refuses an explicitly bound foreign project', async t => {
+  const a = await fixture(t), b = await fixture(t);
+  await a.mutate({ action: 'init' });
+  const main = path.join(__dirname, '../plugin/main.js');
+  const vm = require('node:vm'), { createRequire } = require('node:module');
+  let workspace = { path: a.root };
+  const module = { exports: {} as any };
+  const context = { require: createRequire(main), module, exports: module.exports,
+    pi: { workspace: { get: async () => workspace }, app: { getLocale: async () => 'en' } } };
+  vm.runInNewContext(await fs.readFile(main, 'utf8'), context);
+  const invoke = module.exports.onPanelInvoke;
+  const old = await invoke('governance.snapshot');
+  assert.equal(old.result.workspace, a.root);
+  workspace = { path: b.root };
+  const fresh = await invoke('governance.snapshot');
+  assert.equal(fresh.result.workspace, b.root);
+  assert.equal(fresh.result.state, null);
+  const refused = await invoke('governance.mutate', { workspace: a.root,
+    args: { action: 'init' }, revision: fresh.result.revision, confirmed: true });
+  assert.equal(refused.ok, false);
+  assert.match(refused.error, /Workspace switched/);
+  assert.deepEqual(await fs.readdir(b.root), []);
+});

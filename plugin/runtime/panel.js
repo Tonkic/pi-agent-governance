@@ -19,14 +19,14 @@ async function panelInvoke(root, channel, payload = {}) {
     if (channel === 'governance.git')
         return { ...(await g.run({ action: 'git_status' })), workspace: g.root };
     if (channel === 'governance.project')
-        return g.run({ action: 'project_snapshot' });
+        return g.run({ action: 'project_snapshot', checkSources: payload.checkSources === true });
     if (channel === 'governance.workitem') {
         if (payload.confirmed !== true)
             throw Error('请先确认写入');
         const input = payload.args || {};
         const allowed = {
-            board_create: ['id', 'title', 'description', 'criteria', 'gitTaskId'],
-            board_update: ['id', 'title', 'description', 'criteria', 'blocker'],
+            board_create: ['id', 'title', 'description', 'criteria', 'gitTaskId', 'architectureImpact'],
+            board_update: ['id', 'title', 'description', 'criteria', 'blocker', 'architectureImpact'],
             board_move: ['id', 'stage', 'position'],
             board_accept: [
                 'id',

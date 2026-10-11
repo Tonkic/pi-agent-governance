@@ -120,14 +120,14 @@ test('two projects keep isolated source-backed graphs across update and reload',
   assert.equal((await b.snapshot()).architecture.title, 'Project B');
   const graph = (await a.snapshot()).architecture;
   await fs.writeFile(path.join(a.root, 'app.ts'), 'export const name = "changed";');
-  assert.deepEqual((await a.snapshot()).architecture.staleFiles, ['app.ts']);
+  assert.deepEqual((await a.g.run({ action: 'project_snapshot', checkSources: true })).architecture.staleFiles, ['app.ts']);
   await assert.rejects(a.mutate({ action: 'architecture_set', graph }), /Source changed/);
   graph.fingerprints = (
     await a.g.run({ action: 'architecture_sources', files: ['app.ts'] })
   ).fingerprints;
   graph.title = 'Project A updated';
   await a.mutate({ action: 'architecture_set', graph });
-  assert.deepEqual((await a.snapshot()).architecture.staleFiles, []);
+  assert.deepEqual((await a.g.run({ action: 'project_snapshot', checkSources: true })).architecture.staleFiles, []);
   assert.equal((await b.snapshot()).architecture.title, 'Project B');
 });
 test('invalid graph and unsafe source paths reject; corrupt persisted data is not replaced by a fake graph', async (t) => {
@@ -313,4 +313,44 @@ test('a reviewed item cannot be accepted after the overall task changes', async 
     /task changed/
   );
   assert.equal(await fs.readFile(path.join(root, '.governance/board.json'), 'utf8'), boardBefore);
+});
+
+test('architecture impact is validated, preserved on omitted update and binds acceptance', async (t) => {
+  const f = await fixture(t);
+  await f.g.run({ action: 'start', id: 'impact', goal: 'Architecture tags', criteria: ['Pass'] });
+  await f.mutate({ action: 'board_create', id: 'one', title: 'One', architectureImpact: 'affects' });
+  assert.equal((await f.snapshot()).board.items[0].architectureImpact, 'affects');
+  await f.mutate({ action: 'board_update', id: 'one', title: 'One' });
+  assert.equal((await f.snapshot()).board.items[0].architectureImpact, 'affects');
+  await assert.rejects(f.mutate({ action: 'board_update', id: 'one', title: 'One', architectureImpact: 'arbitrary' }), /architecture impact/i);
+  await f.mutate({ action: 'board_move', id: 'one', stage: 'doing', position: 0 });
+  await f.mutate({ action: 'board_move', id: 'one', stage: 'done', position: 0 });
+  await f.mutate({ action: 'board_accept', id: 'one', expectedItem: (await f.snapshot()).board.items[0].itemFingerprint,
+    method: 'agent', reviewer: 'Fixture', passed: true, accepted: [], conclusion: 'Checked', evidence: 'Isolated test' });
+  await f.mutate({ action: 'board_update', id: 'one', title: 'One', architectureImpact: 'none' });
+  const item = (await f.snapshot()).board.items[0];
+  assert.equal(item.stage, 'done');
+  assert.equal(item.acceptance.valid, false);
+});
+
+test('architecture snapshots do not scan source until explicitly requested', async (t) => {
+  const f = await fixture(t);
+  await fs.writeFile(path.join(f.root, 'entry.ts'), 'export const x = 1;');
+  const sources = await f.g.run({ action: 'architecture_sources', files: ['entry.ts'] });
+  await f.mutate({ action: 'architecture_set', graph: { title: 'Core', source: 'Read entry',
+    nodes: [{ id: 'entry', title: 'Entry', description: 'Core entry', files: ['entry.ts'] }], edges: [], fingerprints: sources.fingerprints } });
+  const raw = await fs.readFile(path.join(f.root, '.governance/architecture.json'), 'utf8');
+  await fs.writeFile(path.join(f.root, 'entry.ts'), 'export const x = 2;');
+  const read = f.g.read.bind(f.g);
+  let reads = 0;
+  f.g.read = async (file) => { if (file === 'entry.ts') reads++; return read(file); };
+  const passive = await f.snapshot();
+  assert.equal(reads, 0);
+  assert.equal(passive.architecture.sourcesChecked, false);
+  const checked = await f.g.run({ action: 'project_snapshot', checkSources: true });
+  assert.equal(reads, 1);
+  assert.equal(checked.architecture.sourcesChecked, true);
+  assert.deepEqual(checked.architecture.staleFiles, ['entry.ts']);
+  assert.equal(await fs.readFile(path.join(f.root, '.governance/architecture.json'), 'utf8'), raw);
+  await assert.rejects(f.mutate({ action: 'architecture_set', graph: checked.architecture }), /Source changed/);
 });

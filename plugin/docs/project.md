@@ -9,11 +9,13 @@ CLI 在所选工作区执行，向 `node <插件仓库>/build/scripts/governance
 
 ### 工作项
 
-- `board_create`：`id`（小写字母、数字、连字符，最多64字符）、`title`（最多160字符）、可选`description`、`criteria`（最多20条，每条1000字符）、已登记`gitTaskId`。创建时记录总体任务`taskId`，没有活动任务则为null。
-- `board_update`：`id`、`title`、`description`、`blocker`、可选`criteria`。省略criteria保留旧条件；省略描述/阻塞按空字符串处理。内容修改使旧验收失效；已验收项退回done，有阻塞则doing。
+- `board_create`：`id`（小写字母、数字、连字符，最多64字符）、`title`（最多160字符）、可选`description`、`criteria`（最多20条，每条1000字符）、已登记`gitTaskId`、`architectureImpact`。创建时记录总体任务`taskId`，没有活动任务则为null。
+- `board_update`：`id`、`title`、`description`、`blocker`、可选`criteria`与`architectureImpact`。省略条件/架构标识时保留旧值；省略描述/阻塞按空处理。修改内容或标识使旧验收失效；已验收项退回done，有阻塞则doing。
 - `board_move`：`id`、`stage`（todo/doing/done/accepted）、`position`（目标列从0开始，不含被移动项）。同列排序或相邻列迁移；有阻塞不能进入done。不能用迁移进入accepted，必须验收；从accepted退回done使验收失效。
 - `board_accept`：done项的`id`、`expectedItem`（快照itemFingerprint）、`method`（human/agent）、`reviewer`、`passed`、`accepted`、`conclusion`、`evidence`。通过时accepted须逐项为true且数量等于工作项criteria；失败退回doing。保存方式、结论、依据、时间和内容指纹。调用方标签不是身份认证；STATE verify/close不受工作项验收替代。
 - 最多 100 项；序列化数据不得超过 1 MiB，超过时拒绝写入并保留原文件。记录保存在 `.governance/board.json`，不修改 STATE 验收或 Git 登记状态。历史工作项保留创建时关联的总体任务，不随新任务改绑。
+
+`architectureImpact` 为 `unassessed`（未评估）、`none`（不影响）、`affects`（影响架构），旧项缺省按未评估读取，不批量重写。卡片/详情显示标识；当前任务中已完成或已验收且影响架构的项提示手动复核，不启动Agent或强制重画。人提出架构需求时，Agent应评估并明确标记，不能只按关键词自动确定。
 
 面板通道`governance.project`读取快照；`governance.workitem`只允许四个工作项动作，参数`{args, revision, confirmed:true}`。面板board_accept固定为human，不能冒充agent。取消不写入；失败后重读，不以乐观位置假装成功。
 
@@ -22,6 +24,8 @@ CLI 在所选工作区执行，向 `node <插件仓库>/build/scripts/governance
 右键、触屏长按、卡片更多按钮或 Shift+F10 打开菜单。方向键/Home/End 选择，Enter 执行，Escape/Tab 返回卡片。菜单提供详情、编辑、指导、排序与相邻列迁移；「指导 Agent」只生成可复制文本，不启动执行。卡片拖到目标前排序、拖到列空白处放末尾。`/` 聚焦搜索，筛选时暂停拖动；清除搜索后恢复。
 
 所有写入需确认，取消保留草稿和已保存位置；错误不自动重试。切换编辑对象或关闭详情时，未保存草稿须确认丢弃。保存/移动后的刷新会列出其他表单将丢弃的草稿，取消可继续编辑。离线时保留已读取详情，暂停写入；恢复连接不重放操作。刷新未保存表单先提示，再次点击才丢弃重读。
+
+面板订阅宿主`workspace:changed`并切换当前主根，取消旧确认、隔离旧请求。未初始化项目显示顶部「启用当前项目治理」，点击后仍须确认；不存在STATE不会自动创建文件。旧表单草稿按原工作区保留在本面板内存，可从「保留的草稿」查看复制，关闭面板即丢失，不自动恢复或提交到新项目。
 
 ### 项目 Agent 操作
 
@@ -57,11 +61,11 @@ CLI 在所选工作区执行，向 `node <插件仓库>/build/scripts/governance
 
 源码指纹按磁盘原始字节计算，包含换行；仅CRLF/LF切换也可能要求重读核对。不能盲目刷新全部指纹来隐藏警告，应重新检查所引用源码及关系。
 
-`project_snapshot` 返回工作区、revision、board、architecture 及独立错误字段；无架构返回 null，损坏数据返回错误，不提供固定插件图作为替代。架构引用源码变化或丢失时 `staleFiles` 列出需重读的文件。指纹只证明内容一致，不证明关系语义；来源说明应明确覆盖范围。
+`project_snapshot`返回工作区、revision、board、architecture及独立错误；无图返回null，损坏数据不提供固定图替代。默认不扫描架构源码，`sourcesChecked:false`不代表图已核对最新版本。显式`checkSources:true`或点击「手动核对来源」才比较指纹并返回`staleFiles`、`checkedAt`；只读检查不改图/指纹，不证明架构语义变化。
 
 面板可切换「项目架构」和「任务流程」。项目图可查看节点来源与关系、上下游追踪、平移、缩放与适应；更新后点击刷新。流程图显示有效 STATE 当前阶段、阻塞和验证记录，不证明历史阶段已完成，也不替代关闭时的文件指纹检查。
 
-图按依赖方向分层，循环依赖同层放置，长边绕过中间层。选中节点后强调直接关系；完整职责、路径和来源在详情中，失效警告始终显示。
+图按依赖方向分层，循环依赖同层放置，长边绕过中间层。选中节点强调直接关系；职责、路径和来源在详情。手动模式显示上次分析时间；源码变化警告仅在显式核对后显示，正常刷新回到未检查状态。
 编写架构时先从 README、领域说明识别少量核心职责，再用源码核对关系。核心图通常取 3–5 个模块，外部入口和构建工具按需要纳入而非自动穷举；渲染器不按名称隐藏模块。标签需区分代码调用、对象回调和概念关系，不把业务流程伪装成调用图。
 
 点击节点查看详情，使用上下游按钮追踪关系。拖动空白处平移，+/−或Ctrl/⌘+滚轮缩放，「适应画布」恢复全图。聚焦画布后用方向键平移、+/−缩放、0适应，Tab访问节点。

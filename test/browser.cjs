@@ -75,15 +75,17 @@ const models = {
 (async () => {
   const base = process.env.PI_SCRATCH_DIR || os.tmpdir();
   const roots = await Promise.all(
-    [1, 2].map(() => fs.mkdtemp(path.join(base, 'workbench-browser-')))
+    [1, 2, 3].map(() => fs.mkdtemp(path.join(base, 'workbench-browser-')))
   );
   let root = roots[0],
     holdGit = false,
     releaseGit,
     failProject = false,
     failSnapshot = false;
+  let delayedSnapshotRoot = null, releaseSnapshot;
+  let delayedGitRoot = null, releaseDelayedGit;
   const g = new Governance(root);
-  for (const dir of roots) await new Governance(dir).run({ action: 'init' });
+  for (const dir of roots.slice(0, 2)) await new Governance(dir).run({ action: 'init' });
   await g.run({
     action: 'start',
     id: 'overall',
@@ -106,8 +108,21 @@ const models = {
     const p = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
     p.on('pageerror', (e) => errors.push(e.message));
     await p.exposeFunction('hostInvoke', async (channel, payload) => {
+      const requestRoot = root;
       if (channel === 'app.getLocale') return locale;
       if (channel === 'app.getAppearance') return { base: 'light' };
+      if (channel === 'governance.snapshot' && requestRoot === delayedSnapshotRoot) {
+        const result = await panelInvoke(requestRoot, channel, payload);
+        await new Promise(resolve => { releaseSnapshot = resolve; });
+        return { ok: true, result };
+      }
+      if (channel === 'governance.git' && requestRoot === delayedGitRoot) {
+        let response;
+        try { response = { ok: true, result: await panelInvoke(requestRoot, channel, payload) }; }
+        catch (error) { response = { ok: false, error: error.message }; }
+        await new Promise(resolve => { releaseDelayedGit = resolve; });
+        return response;
+      }
       if (channel === 'governance.git' && holdGit)
         await new Promise((resolve) => {
           releaseGit = resolve;
@@ -122,8 +137,8 @@ const models = {
           ok: true,
           result:
             channel === 'governance.operation'
-              ? await operationInvoke(root, payload, desktop, async () => true, models)
-              : await panelInvoke(root, channel, payload)
+              ? await operationInvoke(requestRoot, payload, desktop, async () => root === requestRoot, models)
+              : await panelInvoke(requestRoot, channel, payload)
         };
       } catch (e) {
         return { ok: false, error: e.message };
@@ -135,6 +150,8 @@ const models = {
         on: (event, fn) => {
           if (event === 'appearance:changed')
             window.addEventListener('test-appearance', (e) => fn(e.detail));
+          if (event === 'workspace:changed')
+            window.addEventListener('test-workspace', (e) => fn(e.detail));
         }
       };
     });
@@ -186,6 +203,57 @@ const models = {
     p.locator('html').evaluate((el, key) => el.style.getPropertyValue(key), name);
   try {
     const page = await makePage();
+    root = roots[1];
+    await page.evaluate((path) => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root);
+    await settled(page);
+    assert.equal(await page.locator('#workspace').textContent(), root, 'Workspace event must switch the panel without Refresh');
+    root = roots[0];
+    await page.evaluate((path) => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root);
+    await settled(page);
+    // Switching while a draft confirmation is open must not save or leak it.
+    const switchWorkspace = async (target) => {
+      root = target;
+      await page.evaluate((path) => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root);
+      await settled(page);
+    };
+    await page.locator('#board-new').click();
+    await page.locator('#workitem-title').fill('A retained architecture draft');
+    await page.locator('#workitem-impact').selectOption('affects');
+    await page.locator('#workitem-save').click();
+    await page.waitForFunction(() => document.querySelector('#confirm-dialog').open);
+    await switchWorkspace(roots[1]);
+    assert.equal(await page.locator('#item-sheet').evaluate(el => el.open), false);
+    assert.equal(await page.locator('#confirm-dialog').evaluate(el => el.open), false);
+    assert.equal((await snapshot()).board.items.length, 0);
+    assert.equal((await new Governance(roots[1]).run({ action: 'project_snapshot' })).board.items.length, 0);
+    await page.locator('#workspace-drafts').click();
+    const retained = await page.locator('#workspace-drafts-text').inputValue();
+    assert.ok(retained.includes(roots[0].replace(/\\/g, '\\\\')));
+    assert.match(retained, /A retained architecture draft/);
+    assert.match(retained, /affects/);
+    await capture(page, 'workspace-drafts');
+    await page.locator('#workspace-drafts-close').click();
+    await switchWorkspace(roots[2]);
+    assert.equal(await page.locator('#initialize-workspace').isVisible(), true);
+    assert.equal(await page.locator('#board-new').isDisabled(), true);
+    assert.deepEqual(await fs.readdir(roots[2]), []);
+    await page.locator('#initialize-workspace').click();
+    await confirm(page, false);
+    assert.deepEqual(await fs.readdir(roots[2]), []);
+    await capture(page, 'new-workspace');
+    await switchWorkspace(roots[0]);
+    assert.equal(await page.locator('#initialize-workspace').isVisible(), false);
+    // A delayed A snapshot cannot replace B or unlock B's unfinished load.
+    delayedSnapshotRoot = roots[0];
+    await page.locator('#refresh').click();
+    while (!releaseSnapshot) await page.waitForTimeout(10);
+    await switchWorkspace(roots[1]);
+    delayedSnapshotRoot = null;
+    releaseSnapshot();
+    await page.waitForTimeout(40);
+    assert.equal(await page.locator('#workspace').textContent(), roots[1]);
+    assert.equal(await page.locator('#status').textContent(), '待命');
+    await switchWorkspace(roots[0]);
     // Default is object workbench, with no permanently visible item editor or KPI wall.
     assert.equal(await page.locator('#board-section').isVisible(), true);
     assert.equal(await page.locator('#workitem-form').isVisible(), false);
@@ -351,6 +419,7 @@ const models = {
     }
     const first = await create('Review workspace navigation');
     await page.locator('#workitem-criteria').fill('Keyboard return verified');
+    await page.locator('#workitem-impact').selectOption('affects');
     await capture(page, 'new-item');
     await page
       .locator('#workitem-description')
@@ -362,7 +431,10 @@ const models = {
     await page.locator('#workitem-save').click();
     await confirm(page);
     assert.equal(await card(page, first).count(), 1);
+    assert.equal((await snapshot()).board.items.find(i => i.id === first).architectureImpact, 'affects');
+    assert.match(await card(page, first).locator('.architecture-tag').textContent(), /影响架构/);
     const second = await create('Polish architecture canvas');
+    await page.locator('#workitem-impact').selectOption('none');
     await page.locator('#workitem-save').click();
     await confirm(page);
     await card(page, first).dragTo(card(page, first));
@@ -851,6 +923,10 @@ const models = {
     await page.locator('#show-architecture').click();
     await fs.appendFile(path.join(root, 'app.ts'), '// change\n');
     await refresh(page);
+    assert.equal(await page.locator('#graph-warning').isVisible(), false);
+    assert.match(await page.locator('#graph-check-state').textContent(), /手动模式/);
+    await page.locator('#architecture-check').click();
+    await settled(page);
     assert.equal(await page.locator('#graph-warning').isVisible(), true);
     holdGit = true;
     try {
@@ -1052,6 +1128,46 @@ const models = {
       );
       await race.close();
     }
+    // Saving in A must not update B's notification/focus after a delayed A reload.
+    const raceId = 'save-race';
+    await mutate({ action: 'board_create', id: raceId, title: 'A save race' });
+    const bg = new Governance(roots[1]);
+    await bg.run({ action: 'board_create', id: raceId, title: 'B save race', expectedRevision: (await bg.run({ action: 'project_snapshot' })).revision });
+    const savePanel = await makePage();
+    await card(savePanel, raceId).click();
+    await savePanel.locator('#item-edit').click();
+    await savePanel.locator('#workitem-title').fill('A updated race');
+    delayedGitRoot = roots[0];
+    await savePanel.locator('#workitem-save').click();
+    await savePanel.locator('#confirm-dialog button[value="confirm"]').click();
+    for (let tries = 0; !releaseDelayedGit && tries < 200; tries++) await savePanel.waitForTimeout(10);
+    assert.equal(typeof releaseDelayedGit, 'function', 'A save reload reached delayed Git');
+    root = roots[1];
+    await savePanel.evaluate(path => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root);
+    await settled(savePanel);
+    await savePanel.locator('#board-search').focus();
+    const noticeBeforeOldSave = await savePanel.locator('#notice').textContent();
+    delayedGitRoot = null;
+    releaseDelayedGit();
+    await savePanel.waitForTimeout(80);
+    assert.equal(await savePanel.locator('#notice').textContent(), noticeBeforeOldSave, 'Old save cannot replace B notification');
+    assert.equal(await savePanel.locator('#board-search').evaluate(el => el === document.activeElement), true, 'Old save cannot focus B card with same ID');
+    assert.equal((await bg.run({ action: 'project_snapshot' })).board.items.find(i => i.id === raceId).title, 'B save race');
+    root = roots[0];
+    await savePanel.close();
+    // A continuation created in A must not reopen a dialog after B starts loading.
+    const racePanel = await makePage();
+    root = roots[2];
+    await racePanel.evaluate((path) => {
+      document.querySelector('#board-new').click();
+      window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } }));
+    }, root);
+    await settled(racePanel);
+    assert.equal(await racePanel.locator('#initialize-workspace').isVisible(), true);
+    assert.equal(await racePanel.locator('#item-sheet').evaluate(el => el.open), false,
+      'Old new-item continuation must not reopen its dialog in an uninitialized workspace');
+    root = roots[0];
+    await racePanel.close();
     assert.deepEqual(errors, []);
     console.log(
       `PASS object workbench: menus, search, sheet, drafts, long press, keyboard, offline/error/stale/workspace guards, theme and chrome; ${shots} screenshots: ${output}`

@@ -41,8 +41,13 @@ async function onUnload() {
     await pi.commands.unregister(command.id);
 }
 async function onPanelInvoke(channel, payload) {
-    return execute((root) => channel === 'governance.operation'
-        ? operationInvoke(root, payload, pi.desktop, async () => resolve((await pi.workspace.get())?.path || '') === resolve(root), pi.models)
-        : panelInvoke(root, channel, payload));
+    return execute((root) => {
+        if (payload?.workspace !== undefined &&
+            (typeof payload.workspace !== 'string' || resolve(payload.workspace) !== resolve(root)))
+            throw Error('Workspace switched; refresh before continuing');
+        return channel === 'governance.operation'
+            ? operationInvoke(root, payload, pi.desktop, async () => resolve((await pi.workspace.get())?.path || '') === resolve(root), pi.models)
+            : panelInvoke(root, channel, payload);
+    });
 }
 module.exports = { onLoad, onUnload, onPanelInvoke };

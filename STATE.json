@@ -37,10 +37,11 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "0.7.0已完成代码/包/GitHub和市场发布：平台publishedAt=2026-10-09T09:41:39Z，sourceRef=a4848881a990b0659e1a6853d518b619920da026，blockers=0，未声明人工审阅。官方目录/GitHub镜像及公开包均核对，市场包484687字节SHA824000a1715fd01b5755b83333af8ba65b7a5bb7910922807652d4dc9671703c；本地官方包39文件490126字节SHAed8d44cb947aa7f9961dabbc048f8da478aaf0074e5d866d4c9cc10c3f512128，条目语义一致仅换行/清单序列化差异。首次入口拒绝已按用户授权诊断并修复生成main.js转接，导出不变，两次red后green；旧失败来源/包/尝试与成功来源保留不覆盖。干净npm ci、类型/构建、85测试、74图及1137对象历史扫描通过，国际化/官方检查通过；main9a96f163e80ebdc87a7482708bf9082cf312d212集成后全部重测并普通推送，远端一致。六组已检UI源码不变，新代表图已目视。用户批准市场两权限及修正提交，自动规则未改。最新MCP本机仍0.6.10 ready/enabled，无插件刷新/安装/更新接口，本机未更新/真实宿主验收，不总体close。",
+  "current": "用户要求修复切换问题并合并main；已确认0.7.0此前已在main4bbddfa交付，未合并的是8ba1c20本地WIP而非大版本策略。0.7.1主体保留架构影响三态、完成提醒、手动来源核对及workspace:changed切换/草稿隔离/新项目启用。已修复复核指明两处代次遗漏：openItem在await allowItemSwitch后检查owner，writeWorkitem在await load后检查owner。新增真实夹具迟到刷新用例复现A保存覆盖B提示，原同事件循环新建切换用例复现弹窗重开；修复后两者和完整76图浏览器回归green，类型/build及88测试通过。正在干净构建/官方包检查/目视后审查提交并合并main。补丁只同步GitHub，不覆盖市场0.7.0、不安装，不再广泛审查。旧编辑停止限制已解除；真实宿主等总体标准仍未完成，不close。",
   "next": [
-    "通过用户允许的宿主入口刷新市场并完成0.7.0真实交互/主题/模型/权限验收",
-    "保留既有CRLF源码指纹与手动接续执行验收"
+    "完成0.7.1干净构建、国际化/官方包检查、当前代表图复核",
+    "审查提交，在实际提交上复测/同步，合并main后重测普通推送，清理仅完全合并的临时分支",
+    "保留真实宿主、CRLF源码指纹和一次启动接续验收"
   ],
   "blocked": [
     "市场0.7.0已发布，最新本机仍0.6.10；MCP无插件刷新/安装/更新接口，遵守MCP-only授权，真实宿主验收未完成。",
