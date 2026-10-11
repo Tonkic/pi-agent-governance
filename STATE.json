@@ -37,13 +37,14 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "用户批准一步一步实现文档驱动开发。0.7.2首阶段仅实现可读行为文档→关联场景→实际结果→只读可读状态，工作区切换WS-001/002/003作为试点；不引入框架、不替换STATE授权、不实现新批准工作流。新behaviors模块/面板入口以纯文本读取正文，技术详情折叠，缺失/失败/跳过/旧运行ID/内容或工作区变化不显示通过。固定check:behaviors运行真实隔离浏览器六场景，生成本机Git忽略证据，绑定规范化正文/实现/测试/运行产物指纹、基准提交与工作树状态；实际六场景通过。完整95测试与UI78图先通过。一次限定只读复核发现面板读锁竞争会阻止最新失败回写，新增回归实际red后修复最多五秒等待和启动时运行中记录，八项证据回归green；不删别人的锁、不重跑测试。正在最终全量/干净/国际化/包与目视检查，随后审查提交并按补丁流程同步/集成main，不市场提交/安装/收费Agent/总体close。",
+  "current": "0.7.2文档驱动开发第一阶段已实现并本地提交474f8f4a2dbf651a47bb01582a233b0ebaf007dc，分支feat/document-behavior-evidence。可读Markdown正文与固定测试场景关联，顶部行为文档显示只读状态和折叠证据；工作区切换WS-001/002/003试点，保持Microsoft风格，不变成测试脚本。固定check:behaviors实际运行六场景，证据绑定正文/源码/运行文件/测试规范化指纹、基准提交、工作树状态及本机工作区；提交后真实检查六场景通过且workingTree:false。缺失/跳过/失败/旧运行ID/损坏/内容变化/并发/迟到切换均回归，进行中不显示旧绿色。一次限定复核读锁竞争发现已red→green修复有界等待与启动记录，不删锁或重跑测试。干净npm ci、typecheck/build、96单元测试、78图浏览器、官方i18n0失败/2提示和PluginCheck/Pack通过；正文与两UI代表图已目视，UI通过截图明确为夹具，真实六场景证据独立。包43文件546834字节SHA4506325faf7007641578dd77f746546e31e5c49d102bb3e9afce1ad365d4875b，权限不变，证据Git忽略且不进包；原看板/架构/会话和用户目录未改。release:auto在只读市场基线网络失败，尚未推来源；只读复核plugins.aiuo.net解析超时、GitHub连接重置，不能核对远端，不合并/推送/发布。提交后96测试再次通过，保留本地功能与记录，不总体close。第一阶段范围完成，不自动实现文档提议/批准工作流或新权限。",
   "next": [
-    "完成0.7.2最终全量测试、真实试点检查、干净构建和UI目视/官方包验证",
-    "审查提交并在提交上验证，同步GitHub，集成main后重测推送",
-    "第一阶段完成后停止；文档提议与批准版本绑定留给后续独立批准阶段，保留总体真实宿主等验收"
+    "网络恢复后只读核对市场基线和远端main，再接续源码提交后交付检查/同步/集成main/重测普通推送，保留未合并分支",
+    "第一阶段交付后停止；文档提议/批准版本绑定作为后续单独批准阶段，不从正文猜新授权",
+    "保留真实宿主、既有源码指纹与一次启动接续总体验收"
   ],
   "blocked": [
+    "本次GitHub同步与main集成被网络阻塞：release:auto读取市场基线fetch failed；只读确认市场域名解析超时、GitHub连接重置，未完成远端核对，不盲推/强推或删除分支。",
     "0.7.1真实宿主安装与交互验收未完成，MCP无插件安装/更新接口，遵守既有MCP-only授权；市场保持0.7.0。",
     "手动来源模式不自动修正CRLF/LF语义问题；既有指纹与一次启动接续验收仍未完成，不总体close。"
   ],
