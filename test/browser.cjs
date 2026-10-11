@@ -83,6 +83,7 @@ const models = {
     failProject = false,
     failSnapshot = false;
   let delayedSnapshotRoot = null, releaseSnapshot;
+  let delayedGitRoot = null, releaseDelayedGit;
   const g = new Governance(root);
   for (const dir of roots.slice(0, 2)) await new Governance(dir).run({ action: 'init' });
   await g.run({
@@ -114,6 +115,13 @@ const models = {
         const result = await panelInvoke(requestRoot, channel, payload);
         await new Promise(resolve => { releaseSnapshot = resolve; });
         return { ok: true, result };
+      }
+      if (channel === 'governance.git' && requestRoot === delayedGitRoot) {
+        let response;
+        try { response = { ok: true, result: await panelInvoke(requestRoot, channel, payload) }; }
+        catch (error) { response = { ok: false, error: error.message }; }
+        await new Promise(resolve => { releaseDelayedGit = resolve; });
+        return response;
       }
       if (channel === 'governance.git' && holdGit)
         await new Promise((resolve) => {
@@ -1120,6 +1128,33 @@ const models = {
       );
       await race.close();
     }
+    // Saving in A must not update B's notification/focus after a delayed A reload.
+    const raceId = 'save-race';
+    await mutate({ action: 'board_create', id: raceId, title: 'A save race' });
+    const bg = new Governance(roots[1]);
+    await bg.run({ action: 'board_create', id: raceId, title: 'B save race', expectedRevision: (await bg.run({ action: 'project_snapshot' })).revision });
+    const savePanel = await makePage();
+    await card(savePanel, raceId).click();
+    await savePanel.locator('#item-edit').click();
+    await savePanel.locator('#workitem-title').fill('A updated race');
+    delayedGitRoot = roots[0];
+    await savePanel.locator('#workitem-save').click();
+    await savePanel.locator('#confirm-dialog button[value="confirm"]').click();
+    for (let tries = 0; !releaseDelayedGit && tries < 200; tries++) await savePanel.waitForTimeout(10);
+    assert.equal(typeof releaseDelayedGit, 'function', 'A save reload reached delayed Git');
+    root = roots[1];
+    await savePanel.evaluate(path => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root);
+    await settled(savePanel);
+    await savePanel.locator('#board-search').focus();
+    const noticeBeforeOldSave = await savePanel.locator('#notice').textContent();
+    delayedGitRoot = null;
+    releaseDelayedGit();
+    await savePanel.waitForTimeout(80);
+    assert.equal(await savePanel.locator('#notice').textContent(), noticeBeforeOldSave, 'Old save cannot replace B notification');
+    assert.equal(await savePanel.locator('#board-search').evaluate(el => el === document.activeElement), true, 'Old save cannot focus B card with same ID');
+    assert.equal((await bg.run({ action: 'project_snapshot' })).board.items.find(i => i.id === raceId).title, 'B save race');
+    root = roots[0];
+    await savePanel.close();
     // A continuation created in A must not reopen a dialog after B starts loading.
     const racePanel = await makePage();
     root = roots[2];

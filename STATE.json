@@ -37,14 +37,13 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "用户批准添加架构影响并修复切换文件夹面板不切换，开发分支feat/architecture-impact-workspace-switch。主体已实现：architectureImpact三态/卡片详情/完成提醒，标识改变使验收失效；默认project_snapshot不读取源码内容或算指纹，显式checkSources/手动按钮才检查，保存仍严格指纹校验。接workspace:changed，旧响应/确认失效，草稿按工作区保留只读内存副本，新项目显式确认初始化；主进程拒绝旧工作区绑定。88单元测试、类型/build、扩展76图浏览器通过，三代表图已目视。唯一只读复核发现P2 openItem等待后缺代次检查、P3 writeWorkitem刷新后缺检查；已新增同事件循环新建+切换测试并实际复现弹窗迟到重开true≠false，最新浏览器测试失败，未完成。renderer/panel.ts本回合三次Edit失败触发停止，最后EDIT_RANGE_INVALID two ops target the same insert gap(index697)，停止该文件修改不绕过。保留WIP和失败测试，下回合只补具体守卫后重测；不打包/发布/合并main/安装/总体close。已发布0.7.0及既有用户目录/架构/运行数据保留。",
+  "current": "用户要求修复切换问题并合并main；已确认0.7.0此前已在main4bbddfa交付，未合并的是8ba1c20本地WIP而非大版本策略。0.7.1主体保留架构影响三态、完成提醒、手动来源核对及workspace:changed切换/草稿隔离/新项目启用。已修复复核指明两处代次遗漏：openItem在await allowItemSwitch后检查owner，writeWorkitem在await load后检查owner。新增真实夹具迟到刷新用例复现A保存覆盖B提示，原同事件循环新建切换用例复现弹窗重开；修复后两者和完整76图浏览器回归green，类型/build及88测试通过。正在干净构建/官方包检查/目视后审查提交并合并main。补丁只同步GitHub，不覆盖市场0.7.0、不安装，不再广泛审查。旧编辑停止限制已解除；真实宿主等总体标准仍未完成，不close。",
   "next": [
-    "读取plugin/renderer/panel.ts当前锚点，在openItem入口记录workspaceEpoch并在await allowItemSwitch之后检查；writeWorkitem在await load之后检查owner，不需要再做广泛审查",
-    "让test/browser.cjs末尾同事件循环切换回归转green，补保存迟到刷新测试；再做类型/build/unit/browser、文档/包和交付检查",
-    "完成后使用新补丁版本打包/审查提交/同步并集成main，保留原0.7.0发布追溯；真实宿主/指纹/接续验收仍独立"
+    "完成0.7.1干净构建、国际化/官方包检查、当前代表图复核",
+    "审查提交，在实际提交上复测/同步，合并main后重测普通推送，清理仅完全合并的临时分支",
+    "保留真实宿主、CRLF源码指纹和一次启动接续验收"
   ],
   "blocked": [
-    "本回合plugin/renderer/panel.ts编辑已达到三次失败停止规则；两个明确异步代次遗漏未修，最新同事件循环切换浏览器回归失败，不得交付。",
     "市场0.7.0已发布，最新本机仍0.6.10；MCP无插件刷新/安装/更新接口，遵守MCP-only授权，真实宿主验收未完成。",
     "既有CRLF源码指纹及一次启动接续执行验收未完成；总体任务不能close。"
   ],

@@ -628,10 +628,11 @@ async function allowItemSwitch() {
     }
 }
 async function openItem(id = null, edit = false, origin) {
+    const owner = workspaceEpoch;
     if (!id &&
         (!snapshot?.state || !projectSnapshot || projectSnapshot.boardError || !navigator.onLine))
         return;
-    if (!(await allowItemSwitch()))
+    if (!(await allowItemSwitch()) || owner !== workspaceEpoch)
         return;
     const item = id ? itemById(id) : null;
     if (id && !item)
@@ -720,6 +721,8 @@ async function writeWorkitem(args) {
         }
         await invoke('governance.workitem', { args, revision, confirmed: true });
         await load();
+        if (owner !== workspaceEpoch)
+            return;
         if (projectSnapshot && !projectSnapshot.boardError)
             notify(t('itemSaved'));
         document.querySelector(`[data-workitem="${args.id}"]`)?.focus();

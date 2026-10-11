@@ -631,12 +631,13 @@ async function allowItemSwitch() {
   }
 }
 async function openItem(id: string = null, edit = false, origin?: HTMLElement) {
+  const owner = workspaceEpoch;
   if (
     !id &&
     (!snapshot?.state || !projectSnapshot || projectSnapshot.boardError || !navigator.onLine)
   )
     return;
-  if (!(await allowItemSwitch())) return;
+  if (!(await allowItemSwitch()) || owner !== workspaceEpoch) return;
   const item = id ? itemById(id) : null;
   if (id && !item) return;
   resetWorkitem();
@@ -737,6 +738,7 @@ async function writeWorkitem(args) {
     }
     await invoke('governance.workitem', { args, revision, confirmed: true });
     await load();
+    if (owner !== workspaceEpoch) return;
     if (projectSnapshot && !projectSnapshot.boardError) notify(t('itemSaved'));
     document.querySelector<HTMLElement>(`[data-workitem="${args.id}"]`)?.focus();
   } catch (error) {
