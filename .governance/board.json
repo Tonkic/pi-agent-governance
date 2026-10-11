@@ -4,8 +4,8 @@
     {
       "id": "host-smoke",
       "title": "真实宿主面板交互验收",
-      "description": "最新只读MCP确认本机0.6.10 ready/enabled，autoUpdate=true。0.7.0已发布市场并同步GitHub，生成固定main.js转接入口；85测试/74图回归通过，原六组UI目视与新版代表图证据保留。仍需实际安装后真实宿主验证，不以市场published替代。",
-      "blocker": "本机仍0.6.10；MCP无插件刷新/安装/更新接口，遵守用户MCP-only授权，0.7.0真实宿主复验未完成。",
+      "description": "0.7.1工作项架构影响/手动来源核对与工作区切换在隔离浏览器通过；新增同事件循环弹窗与保存迟到刷新回归red→green，88测试/76图回归及五代表图已实际检查。代码/包已合并GitHub main，但模拟宿主事件不证明本机实际切换验收。",
+      "blocker": "当前未通过受支持宿主安装/真实交互验收；MCP无插件安装/更新接口，遵守既有MCP-only授权。0.7.1未安装。",
       "stage": "todo",
       "taskId": "project-board-release",
       "gitTaskId": null
@@ -60,7 +60,7 @@
     {
       "id": "github-delivery",
       "title": "同步最新源码并集成main",
-      "description": "0.7.0发布源码a484888提交后类型/构建、85测试、74图及1137对象历史敏感扫描通过；main9a96f16集成后重跑全部通过，普通推送且远端SHA一致。平台published及官方目录/GitHub镜像/公开包核对通过；保留成功发布来源与原失败784e507的追溯，不强推或自动安装。",
+      "description": "0.7.1源码dd5e421提交后类型/构建、88测试、76图与敏感历史扫描通过，补丁源码已同步；main ef7830f集成后重测并普通推送，远端一致。包含架构影响及安全工作区切换，WIP8ba1c20原历史保留；市场仍0.7.0，不自动安装。",
       "blocker": "",
       "stage": "done",
       "taskId": "project-board-release",
@@ -85,5 +85,5 @@
       "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-09T09:52:40.405Z"
+  "updatedAt": "2026-10-11T07:12:16.067Z"
 }

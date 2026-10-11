@@ -37,15 +37,14 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "用户要求修复切换问题并合并main；已确认0.7.0此前已在main4bbddfa交付，未合并的是8ba1c20本地WIP而非大版本策略。0.7.1主体保留架构影响三态、完成提醒、手动来源核对及workspace:changed切换/草稿隔离/新项目启用。已修复复核指明两处代次遗漏：openItem在await allowItemSwitch后检查owner，writeWorkitem在await load后检查owner。新增真实夹具迟到刷新用例复现A保存覆盖B提示，原同事件循环新建切换用例复现弹窗重开；修复后两者和完整76图浏览器回归green，类型/build及88测试通过。正在干净构建/官方包检查/目视后审查提交并合并main。补丁只同步GitHub，不覆盖市场0.7.0、不安装，不再广泛审查。旧编辑停止限制已解除；真实宿主等总体标准仍未完成，不close。",
+  "current": "0.7.1架构影响与工作区切换已合并并同步main ef7830f9d5a5e5a0deeac6609df9b3b9f4e2da5a；0.7.0此前也已在main交付，未合并的是测试失败WIP。修复openItem等待后的owner检查、writeWorkitem刷新后的owner检查，旧新建不得重开新项目弹窗，旧保存不得覆盖新项目提示或焦点；两竞争回归已red→green。工作项unassessed/none/affects、完成提醒/手动来源核对、普通快照不读源码内容/算指纹、严格保存指纹及旧验收兼容保留。workspace:changed自动加载主根，旧请求/确认失效，旧草稿只读内存隔离，新项目显式确认启用。干净npm ci、typecheck/build、88测试、76图浏览器、国际化0失败/2既有REVIEW和官方PluginCheck/Pack通过；五代表图已实际目视，不扩张为真实宿主/SSH或完整人工六组验收。官方包39文件515389字节SHA59e94a9545344e85d6d58342d9c788e16866f1d32d30f15677a4dee1368035df，权限不变。源码dd5e421提交后完整交付检查/历史扫描通过，集成后全量重测再普通推送核对一致；旧WIP历史/发布追溯/用户目录保留，未安装或收费Agent，不总体close。",
   "next": [
-    "完成0.7.1干净构建、国际化/官方包检查、当前代表图复核",
-    "审查提交，在实际提交上复测/同步，合并main后重测普通推送，清理仅完全合并的临时分支",
-    "保留真实宿主、CRLF源码指纹和一次启动接续验收"
+    "通过用户允许的宿主入口安装并验证0.7.1真实工作区切换/主题/模型/权限交互",
+    "保留既有CRLF源码指纹与一次启动接续验收"
   ],
   "blocked": [
-    "市场0.7.0已发布，最新本机仍0.6.10；MCP无插件刷新/安装/更新接口，遵守MCP-only授权，真实宿主验收未完成。",
-    "既有CRLF源码指纹及一次启动接续执行验收未完成；总体任务不能close。"
+    "0.7.1真实宿主安装与交互验收未完成，MCP无插件安装/更新接口，遵守既有MCP-only授权；市场保持0.7.0。",
+    "手动来源模式不自动修正CRLF/LF语义问题；既有指纹与一次启动接续验收仍未完成，不总体close。"
   ],
   "followUp": null,
   "change": "changes/active/project-board-release",
