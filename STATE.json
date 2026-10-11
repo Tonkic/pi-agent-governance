@@ -37,10 +37,11 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards"
   ],
-  "current": "0.7.1架构影响与工作区切换已合并并同步main ef7830f9d5a5e5a0deeac6609df9b3b9f4e2da5a；0.7.0此前也已在main交付，未合并的是测试失败WIP。修复openItem等待后的owner检查、writeWorkitem刷新后的owner检查，旧新建不得重开新项目弹窗，旧保存不得覆盖新项目提示或焦点；两竞争回归已red→green。工作项unassessed/none/affects、完成提醒/手动来源核对、普通快照不读源码内容/算指纹、严格保存指纹及旧验收兼容保留。workspace:changed自动加载主根，旧请求/确认失效，旧草稿只读内存隔离，新项目显式确认启用。干净npm ci、typecheck/build、88测试、76图浏览器、国际化0失败/2既有REVIEW和官方PluginCheck/Pack通过；五代表图已实际目视，不扩张为真实宿主/SSH或完整人工六组验收。官方包39文件515389字节SHA59e94a9545344e85d6d58342d9c788e16866f1d32d30f15677a4dee1368035df，权限不变。源码dd5e421提交后完整交付检查/历史扫描通过，集成后全量重测再普通推送核对一致；旧WIP历史/发布追溯/用户目录保留，未安装或收费Agent，不总体close。",
+  "current": "用户批准一步一步实现文档驱动开发。0.7.2首阶段仅实现可读行为文档→关联场景→实际结果→只读可读状态，工作区切换WS-001/002/003作为试点；不引入框架、不替换STATE授权、不实现新批准工作流。新behaviors模块/面板入口以纯文本读取正文，技术详情折叠，缺失/失败/跳过/旧运行ID/内容或工作区变化不显示通过。固定check:behaviors运行真实隔离浏览器六场景，生成本机Git忽略证据，绑定规范化正文/实现/测试/运行产物指纹、基准提交与工作树状态；实际六场景通过。完整95测试与UI78图先通过。一次限定只读复核发现面板读锁竞争会阻止最新失败回写，新增回归实际red后修复最多五秒等待和启动时运行中记录，八项证据回归green；不删别人的锁、不重跑测试。正在最终全量/干净/国际化/包与目视检查，随后审查提交并按补丁流程同步/集成main，不市场提交/安装/收费Agent/总体close。",
   "next": [
-    "通过用户允许的宿主入口安装并验证0.7.1真实工作区切换/主题/模型/权限交互",
-    "保留既有CRLF源码指纹与一次启动接续验收"
+    "完成0.7.2最终全量测试、真实试点检查、干净构建和UI目视/官方包验证",
+    "审查提交并在提交上验证，同步GitHub，集成main后重测推送",
+    "第一阶段完成后停止；文档提议与批准版本绑定留给后续独立批准阶段，保留总体真实宿主等验收"
   ],
   "blocked": [
     "0.7.1真实宿主安装与交互验收未完成，MCP无插件安装/更新接口，遵守既有MCP-only授权；市场保持0.7.0。",

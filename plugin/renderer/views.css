@@ -931,3 +931,11 @@ select {
 #workspace-drafts-text { width: 100%; box-sizing: border-box; white-space: pre-wrap; }
 #workitem-impact { width: 100%; padding: 8px; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
 @media (forced-colors: active) { .architecture-tag { border-color: CanvasText; } }
+
+.behavior-document { padding: 16px 0; border-top: 1px solid var(--line); }
+.behavior-prose { white-space: pre-wrap; line-height: 1.65; }
+.behavior-document pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; }
+.behavior-status { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.behavior-status[data-result="passed"] { color: var(--success); }
+.behavior-status[data-result="failed"] { color: var(--error); }
+.behavior-document details { color: var(--muted); overflow-wrap: anywhere; }

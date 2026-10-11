@@ -53,6 +53,7 @@ npm run test:browser
 | 界面与语言 | `plugin/renderer/`、`plugin/panel.ts` | `test/panel.test.ts`、`test/browser.cjs` |
 | Agent 任务与模型 | `plugin/operations.ts` | `test/operations.test.ts` |
 | 说明与生成规则 | `docs/`、`scripts/build-docs.cjs` | `test/layout.test.cjs` |
+| 行为文档与场景证据 | `plugin/behaviors.ts`、`scripts/check-behaviors.cjs` | `test/behaviors.test.cjs`、`npm run check:behaviors` |
 | 构建路径 | `tsconfig.json`、`scripts/build.cjs` | `test/layout.test.cjs` |
 | 发布载荷 | `scripts/plugin-center.cjs` | `test/release.test.cjs`、发布预览 |
 

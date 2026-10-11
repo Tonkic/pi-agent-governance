@@ -1,12 +1,14 @@
 'use strict';
 const { Governance } = require('./core');
 const { createHash } = require('node:crypto');
+const { behaviorSnapshot } = require('./behaviors');
 const fingerprint = (g, raw) =>
   createHash('sha256')
     .update(JSON.stringify([g.root, raw ?? null]))
     .digest('hex');
 async function panelInvoke(root: string, channel: string, payload: any = {}) {
   const g = new Governance(root);
+  if (channel === 'governance.behaviors') return g.locked(() => behaviorSnapshot(g));
   if (channel === 'governance.snapshot') {
     return g.locked(async () => {
       const raw = g.expected;
