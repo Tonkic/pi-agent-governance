@@ -126,8 +126,25 @@ test('MCP response parsing selects request id and preserves errors and notificat
 });
 test('publisher redaction strips credentials and keeps tool refusal conservative', () => {
   const { sanitizeToolResult } = require('../scripts/plugin-center.cjs');
-  const token = 'pi_pat_fixtureCredential123';
-  assert.deepEqual(sanitizeToolResult({ content: [{ text: token + ' pi_pat_otherCredential123' }] }, token),
+  const token = 'pi_pat_' + 'fixtureCredential123';
+  assert.deepEqual(sanitizeToolResult({ content: [{ text: token + ' ' + 'pi_pat_' + 'otherCredential123' }] }, token),
     { content: [{ text: '[REDACTED] [REDACTED]' }] });
   assert.throws(() => sanitizeToolResult({ isError: true, content: [] }, token), /tool refused/);
+});
+
+
+test('reviewed historical fixtures do not exempt other blobs or actual credentials', () => {
+  const { containsCredential } = require('../scripts/release-auto.cjs');
+  const object = 'd2c45515b924a1f69d92ef00b771e77b7318bbfe';
+  const fixture = 'pi_pat_' + 'fixtureCredential123';
+  const second = 'pi_pat_' + 'otherCredential123';
+  const token = 'pi_pat_' + 'realCredentialForTest';
+  const bytes = Buffer.from(fixture + ' ' + second);
+  assert.equal(containsCredential(object, bytes, token), false);
+  assert.equal(containsCredential('unknown', bytes, token), true);
+  assert.equal(containsCredential(object, bytes, fixture), true);
+  assert.equal(containsCredential(object, Buffer.from(token), token), true);
+  assert.equal(containsCredential(object, Buffer.from('pi_pat_' + 'anotherCredential123'), token), true);
+  const privateKey = '-----BEGIN ' + 'PRIVATE KEY-----';
+  assert.equal(containsCredential(object, Buffer.from(privateKey), token), true);
 });

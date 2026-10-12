@@ -36,7 +36,8 @@
     "User authorizes completed updates to merge into main after review/tests, retest the integrated commit, normally push main and delete only fully merged temporary branches. Preserve release provenance and unfinished branches; do not bypass branch protection, force push or discard user data.",
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "2026-10-12用户批准Clean Code修复与经用途核查的无用代码清理，并明确批准.gitignore仅新增/.pi/与/changes/archive/redesign-governance-panel/。保留目录文件、不提交其内容；不改变dirty门禁、不忽略其他源码、不删除发布回退包。工作项clean-code-repair-cleanup；保留既有总体阻塞。",
-    "No bypassing host permissions, test evidence, confirmation or Git safeguards"
+    "No bypassing host permissions, test evidence, confirmation or Git safeguards",
+    "2026-10-12用户明确批准仅对历史测试blob d2c45515b924a1f69d92ef00b771e77b7318bbfe的两条合成令牌作扫描例外；真实本机令牌、其他blob/令牌/私钥与敏感路径继续拦截。不重写历史、不关闭扫描。"
   ],
   "current": "0.7.2文档驱动开发第一阶段已实现并本地提交474f8f4a2dbf651a47bb01582a233b0ebaf007dc，分支feat/document-behavior-evidence。可读Markdown正文与固定测试场景关联，顶部行为文档显示只读状态和折叠证据；工作区切换WS-001/002/003试点，保持Microsoft风格，不变成测试脚本。固定check:behaviors实际运行六场景，证据绑定正文/源码/运行文件/测试规范化指纹、基准提交、工作树状态及本机工作区；提交后真实检查六场景通过且workingTree:false。缺失/跳过/失败/旧运行ID/损坏/内容变化/并发/迟到切换均回归，进行中不显示旧绿色。一次限定复核读锁竞争发现已red→green修复有界等待与启动记录，不删锁或重跑测试。干净npm ci、typecheck/build、96单元测试、78图浏览器、官方i18n0失败/2提示和PluginCheck/Pack通过；正文与两UI代表图已目视，UI通过截图明确为夹具，真实六场景证据独立。包43文件546834字节SHA4506325faf7007641578dd77f746546e31e5c49d102bb3e9afce1ad365d4875b，权限不变，证据Git忽略且不进包；原看板/架构/会话和用户目录未改。release:auto在只读市场基线网络失败，尚未推来源；只读复核plugins.aiuo.net解析超时、GitHub连接重置，不能核对远端，不合并/推送/发布。提交后96测试再次通过，保留本地功能与记录，不总体close。第一阶段范围完成，不自动实现文档提议/批准工作流或新权限。 本次追加获批Clean Code工作项已启动，精确忽略本机目录解决受管创建阻塞且文件保留；脚本整理和后端回归完成，前端与最终检查进行中。",
   "next": [

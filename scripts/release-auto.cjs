@@ -97,6 +97,18 @@ function clean(sourceRef) {
   if (git('rev-parse', 'HEAD').trim() !== sourceRef || git('status', '--porcelain', '--untracked-files=no').trim()) fail('HEAD changed or tracked worktree is dirty');
   untrackedGuard(git('ls-files', '-z', '--others', '--exclude-standard'));
 }
+function containsCredential(object, bytes, token) {
+  // Never exempt the actual local credential, even if it equals a fixture value.
+  if (bytes.includes(Buffer.from(token))) return true;
+  let text = bytes.toString('utf8');
+  // User-approved 2026-10-12: immutable release.test.cjs blob from e65789c.
+  // Only these two synthetic fixtures are excluded; all other markers still fail.
+  if (object === 'd2c45515b924a1f69d92ef00b771e77b7318bbfe') {
+    for (const fixture of ['fixtureCredential123', 'otherCredential123'])
+      text = text.split('pi_pat_' + fixture).join('');
+  }
+  return /pi_pat_[A-Za-z0-9_-]{16,}|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/.test(text);
+}
 function secretScan(sourceRef) {
   const token = fs.readFileSync(path.join(root, '.secrets/plugin-center.token'), 'utf8').trim();
   if (!/^pi_pat_[A-Za-z0-9_-]+$/.test(token)) fail('Invalid credential');
@@ -105,7 +117,7 @@ function secretScan(sourceRef) {
     if (/\s(?:.*\/)?\.secrets\//.test(row)) fail('Secret path found in reachable history');
     const object = row.split(' ')[0];
     const bytes = execFileSync('git', ['cat-file', '-p', object], { cwd: root, maxBuffer: 32 * 1024 * 1024 });
-    if (bytes.includes(Buffer.from(token)) || /pi_pat_[A-Za-z0-9_-]{16,}|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/.test(bytes.toString('utf8'))) fail('Credential-like content found in reachable history');
+    if (containsCredential(object, bytes, token)) fail('Credential-like content found in reachable history');
   }
 }
 function runChecks() {
@@ -189,7 +201,7 @@ async function main() {
     return result;
   } finally { fs.rmdirSync(lock); }
 }
-module.exports = { stable, compare, decision, validatePolicy, permissionGuard, receiptGuard, execute, executeSourceSync, untrackedGuard, validatePushRemote };
+module.exports = { stable, compare, decision, validatePolicy, permissionGuard, receiptGuard, execute, executeSourceSync, untrackedGuard, validatePushRemote, containsCredential };
 if (require.main === module) main().catch(error => {
   // Do not print arbitrary subprocess output/remote payloads or credentials.
   console.error(error.code || error.status ? 'Release blocked by local command/IO failure; inspect checks and remote status. No mutation retry.' : String(error.message).replace(/pi_pat_[A-Za-z0-9_-]+/g, '[REDACTED]'));
