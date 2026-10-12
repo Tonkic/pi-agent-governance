@@ -193,7 +193,7 @@ test('item details use a modal and cannot shrink the board through open-state CS
   const css = await fs.readFile(path.join(__dirname, '../../plugin/renderer/views.css'), 'utf8');
   assert.match(script, /\$\('item-sheet'\)\.showModal\(\)/);
   assert.doesNotMatch(css, /body:has\(#item-sheet/);
-  assert.match(css, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
+  assert.match(css, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
 });
 
 test('real plugin entry rereads workspace and refuses an explicitly bound foreign project', async t => {
@@ -286,4 +286,30 @@ test('workflow graph clears architecture source-check status on repeated switchi
     context.graphView = 'architecture'; render(); assert.equal(values.get('graph-check-state'), 'sourcesChecked');
     context.graphView = 'workflow'; render(); assert.equal(values.get('graph-check-state'), '');
   }
+});
+
+test('three-stage renderer folds accepted snapshots into done without mutating history', async () => {
+  const script = await fs.readFile(path.join(__dirname, '../plugin/renderer/panel.js'), 'utf8');
+  const from = script.indexOf('const boardStages ='), to = script.indexOf('const boardLabels =', from);
+  assert.ok(from >= 0 && to > from);
+  const { stages, effective } = require('node:vm').runInNewContext(script.slice(from, to) + ';({stages: boardStages, effective: effectiveStage})');
+  assert.deepEqual(Array.from(stages), ['todo', 'doing', 'done']);
+  for (const stage of ['todo', 'doing', 'done', 'accepted']) {
+    const item = Object.freeze({ stage, acceptance: Object.freeze({ evidence: 'Legacy fixture only' }) });
+    assert.equal(effective(item), stage === 'accepted' ? 'done' : stage);
+    assert.equal(item.stage, stage, 'Effective display must not rewrite the snapshot');
+  }
+  assert.doesNotMatch(script, /board_accept|accept-form|accept-dialog|humanAcceptance|agentAcceptance|openHumanReview|card-review-actions/);
+  assert.match(script, /legacyAcceptanceTask/);
+  const html = await fs.readFile(path.join(__dirname, '../plugin/renderer/index.html'), 'utf8');
+  assert.match(html, /<details id="item-history" hidden>/);
+  assert.match(html, /id="item-checks"><h3 data-i18n="checks"/);
+  assert.doesNotMatch(html, /accept-dialog|accept-form|item-human-review|item-agent-review/);
+  const css = await fs.readFile(path.join(__dirname, '../../plugin/renderer/views.css'), 'utf8');
+  assert.doesNotMatch(css, /data-stage=['"]accepted|card-review-actions|review-button|accept-dialog|criterion-check/);
+});
+test('renderer cannot launch new acceptance operations, even programmatically', async () => {
+  const start = await rendererSeam('async function startOperation(', "$('launch-model').addEventListener", {});
+  // No DOM or bridge context: a legacy kind must return before touching either.
+  await start('acceptance');
 });
