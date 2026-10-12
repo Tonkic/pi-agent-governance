@@ -45,16 +45,7 @@ async function panelInvoke(root, channel, payload = {}) {
         const allowed = {
             board_create: ['id', 'title', 'description', 'criteria', 'gitTaskId', 'architectureImpact'],
             board_update: ['id', 'title', 'description', 'criteria', 'blocker', 'architectureImpact'],
-            board_move: ['id', 'stage', 'position'],
-            board_accept: [
-                'id',
-                'passed',
-                'reviewer',
-                'conclusion',
-                'evidence',
-                'accepted',
-                'expectedItem'
-            ]
+            board_move: ['id', 'stage', 'position']
         };
         if (!Object.hasOwn(allowed, input.action))
             throw Error('Panel action not allowed');
@@ -62,8 +53,6 @@ async function panelInvoke(root, channel, payload = {}) {
         for (const key of allowed[input.action])
             if (input[key] !== undefined)
                 args[key] = input[key];
-        if (input.action === 'board_accept')
-            args['method'] = 'human';
         return g.run(args);
     }
     if (channel !== 'governance.mutate')
