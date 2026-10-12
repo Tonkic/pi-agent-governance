@@ -726,6 +726,7 @@ const models = {
     await page.locator('#operations-open').click();
     await settled(page);
     const historyRow = page.locator('.operation-run').filter({ hasText: '历史工作项验收（旧版）' });
+    await historyRow.waitFor({ state: 'visible', timeout: 5000 });
     assert.equal(await historyRow.count(), 1);
     assert.equal(await fs.readFile(path.join(root, '.governance/operations.json'), 'utf8'), historyRaw);
     await historyRow.getByRole('button', { name: '打开 Agent 会话', exact: true }).click();
