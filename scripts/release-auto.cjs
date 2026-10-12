@@ -67,9 +67,17 @@ async function executeSourceSync(ops) {
   await ops.push();
   return { published: false, sourceSynced: true };
 }
+function validatePushRemote(remote) {
+  const allowed = [
+    'https://github.com/Tonkic/pi-agent-governance.git',
+    'https://github.com/Tonkic/pi-agent-governance',
+    'git@github.com:Tonkic/pi-agent-governance.git'
+  ];
+  if (!allowed.includes(remote)) fail('Unexpected push remote');
+}
 function pushSource(sourceRef, branch) {
   const origin = git('remote', 'get-url', '--push', '--all', 'origin').trim();
-  if (!['https://github.com/Tonkic/pi-agent-governance.git', 'https://github.com/Tonkic/pi-agent-governance', 'git@github.com:Tonkic/pi-agent-governance.git'].includes(origin)) fail('Unexpected push remote');
+  validatePushRemote(origin);
   if (!/^refs\/heads\/release\/(?:source-|plugin-center-)[A-Za-z0-9.-]+$/.test(branch)) fail('Unexpected release branch');
   clean(sourceRef);
   const existing = git('ls-remote', '--heads', 'origin', branch).trim();
@@ -143,7 +151,7 @@ async function main() {
   const packageBytes = execFileSync('git', ['show', `${sourceRef}:${packagePath}`], { cwd: root, maxBuffer: 32 * 1024 * 1024 });
   receiptGuard(JSON.parse(fs.readFileSync(receiptPath, 'utf8')), sourceRef, sha256(packageBytes));
   const origin = git('remote', 'get-url', '--push', '--all', 'origin').trim();
-  if (!['https://github.com/Tonkic/pi-agent-governance.git', 'https://github.com/Tonkic/pi-agent-governance', 'git@github.com:Tonkic/pi-agent-governance.git'].includes(origin)) fail('Unexpected push remote');
+  validatePushRemote(origin);
   const common = path.resolve(root, git('rev-parse', '--git-common-dir').trim());
   const journalDir = path.join(common, 'pi-governance', 'releases');
   fs.mkdirSync(journalDir, { recursive: true });
@@ -181,7 +189,7 @@ async function main() {
     return result;
   } finally { fs.rmdirSync(lock); }
 }
-module.exports = { stable, compare, decision, validatePolicy, permissionGuard, receiptGuard, execute, executeSourceSync, untrackedGuard };
+module.exports = { stable, compare, decision, validatePolicy, permissionGuard, receiptGuard, execute, executeSourceSync, untrackedGuard, validatePushRemote };
 if (require.main === module) main().catch(error => {
   // Do not print arbitrary subprocess output/remote payloads or credentials.
   console.error(error.code || error.status ? 'Release blocked by local command/IO failure; inspect checks and remote status. No mutation retry.' : String(error.message).replace(/pi_pat_[A-Za-z0-9_-]+/g, '[REDACTED]'));
