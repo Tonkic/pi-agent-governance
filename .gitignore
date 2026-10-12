@@ -11,3 +11,7 @@ node_modules/
 # Generated local behavior verification; re-run in each workspace, never publish.
 /.governance/behavior-evidence.json
 /.governance/behavior-check.lock/
+
+# User-approved local host goals and pre-existing redesign evidence; preserve on disk.
+/.pi/
+/changes/archive/redesign-governance-panel/

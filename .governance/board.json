@@ -83,7 +83,24 @@
       "stage": "doing",
       "taskId": "project-board-release",
       "gitTaskId": null
+    },
+    {
+      "id": "clean-code-repair-cleanup",
+      "title": "Clean Code 修复与无用文件清理",
+      "description": "用户批准按全仓审查修复具体问题，核查并清理失效代码/无用文件。先处理离线变更守卫、流程图残留状态、浏览器无界等待与损坏记录校验，再保持行为地消除重复及职责混杂。不删除仍引用的目标契约、历史验收或发布回退包；目录处理规则变化需明确批准。当前未跟踪.pi/及redesign历史目录导致受管git_create拒绝，尚未修改功能代码。",
+      "blocker": "",
+      "stage": "todo",
+      "taskId": "project-board-release",
+      "criteria": [
+        "确认的行为问题修复并具有针对性回归测试",
+        "清理项有引用/用途核查，保留用户数据、有效运行文件及发布追溯",
+        "typecheck、build、npm test及相关浏览器测试通过",
+        "diff审查、提交后测试及插件检查/打包具有真实证据"
+      ],
+      "architectureImpact": "unassessed",
+      "acceptance": null,
+      "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-11T07:12:16.067Z"
+  "updatedAt": "2026-10-12T07:34:52.824Z"
 }
