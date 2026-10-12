@@ -72,6 +72,38 @@
       "gitTaskId": null
     },
     {
+      "id": "architecture-design-baseline",
+      "title": "架构设计Skill与稳定基线",
+      "description": "按用户批准接入Architecture Copilot，复用画板展示可读设计；独立草案/人工确认基线/显式修订/历史，不替代源码事实或STATE实施授权。新增agent.prompt.inject已明确获批；不自动安装或提交市场。",
+      "blocker": "",
+      "stage": "accepted",
+      "taskId": "project-board-release",
+      "criteria": [
+        "Skill固定来源、许可和批准权限正确；设计与源码/STATE独立",
+        "草案、确认、显式修订、历史及跨项目/任务/草案ID回归通过",
+        "类型/构建、单元/浏览器/关联行为、干净安装与官方包门禁实际通过",
+        "差异审查、提交后重测和main集成普通推送核对完成"
+      ],
+      "architectureImpact": "affects",
+      "acceptance": {
+        "method": "agent",
+        "passed": true,
+        "accepted": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "valid": true,
+        "reviewer": "Agent",
+        "conclusion": "本次批准的架构设计功能和受检交付通过；不代表真实宿主、模型质量或总体任务通过。",
+        "evidence": "源码48bf88b30c367ce52c0b3ac409b3d620a93338c5提交后release:auto类型/120测试/86图通过并来源同步；main7f8fd90e5d82c439124fc2ecf889193105e979e9集成后类型/构建/120测试、固定浏览器及六行为九场景通过，普通main推送远端SHA一致。干净npm ci检查通过，i18n0失败/2既有提示；PluginCheck/Pack60文件687060字节SHA6207b00d250ee0e1e917d8edc53dce49f9879e52799f6408a75d88acdd872eab。源码/diff/包条目已核对，限定只读复核无具体问题。changes/active/project-board-release/architecture-design/index.html保留六组总览和确认弹窗目视证据；审阅人/模型/宿主事件均有夹具边界。新增权限获明确批准；未安装或提交市场。",
+        "itemFingerprint": "b0af90bf0de27a58f4e9272af4696dc87839dd19f9965657ee31563e9e74ccbf",
+        "at": "2026-10-12T11:32:22.765Z"
+      },
+      "gitTaskId": null
+    },
+    {
       "id": "project-continuation-entry",
       "title": "配置一次启动接续入口",
       "description": "原生手动自动化已创建并列表核对：接续项目：已批准待办，Agent/perRun/当前项目；无定时、递归对话、自动安装或提权。配置完成不等于已启动自动执行。",
@@ -108,23 +140,6 @@
       "gitTaskId": null
     },
     {
-      "id": "architecture-design-baseline",
-      "title": "架构设计Skill与稳定基线",
-      "description": "按用户批准接入Architecture Copilot，复用画板展示可读设计；独立草案/人工确认基线/显式修订/历史，不替代源码事实或STATE实施授权。新增agent.prompt.inject已明确获批；不自动安装或提交市场。",
-      "blocker": "",
-      "stage": "doing",
-      "taskId": "project-board-release",
-      "criteria": [
-        "Skill固定来源、许可和批准权限正确；设计与源码/STATE独立",
-        "草案、确认、显式修订、历史及跨项目/任务/草案ID回归通过",
-        "类型/构建、单元/浏览器/关联行为、干净安装与官方包门禁实际通过",
-        "差异审查、提交后重测和main集成普通推送核对完成"
-      ],
-      "architectureImpact": "affects",
-      "acceptance": null,
-      "gitTaskId": null
-    },
-    {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
       "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
@@ -134,5 +149,5 @@
       "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-12T11:18:43.291Z"
+  "updatedAt": "2026-10-12T11:32:22.765Z"
 }
