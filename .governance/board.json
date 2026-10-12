@@ -76,20 +76,11 @@
       "gitTaskId": null
     },
     {
-      "id": "host-theme-adaptation",
-      "title": "独立配色与宿主模式界面复验",
-      "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
-      "blocker": "本机0.6.10，0.7.0未安装/真实宿主主题验收未完成。",
-      "stage": "doing",
-      "taskId": "project-board-release",
-      "gitTaskId": null
-    },
-    {
       "id": "clean-code-repair-cleanup",
       "title": "Clean Code 修复与无用文件清理",
-      "description": "用户批准按全仓审查修复具体问题，核查并清理失效代码/无用文件。先处理离线变更守卫、流程图残留状态、浏览器无界等待与损坏记录校验，再保持行为地消除重复及职责混杂。不删除仍引用的目标契约、历史验收或发布回退包；目录处理规则变化需明确批准。当前未跟踪.pi/及redesign历史目录导致受管git_create拒绝，尚未修改功能代码。",
+      "description": "用户明确批准两条本机目录忽略规则，目录文件保留，元数据提交0ebe001；受管协调/worker工作区创建成功，不改dirty门禁。发布脚本边界整理15离线测试通过；后端持久化坏记录red→green，提交2e715ba后102测试通过并受控合并。前端回归/失效CSS核查和最终集成检查进行中。保留原总体验收阻塞、运行产物及历史发布包。",
       "blocker": "",
-      "stage": "todo",
+      "stage": "doing",
       "taskId": "project-board-release",
       "criteria": [
         "确认的行为问题修复并具有针对性回归测试",
@@ -100,7 +91,16 @@
       "architectureImpact": "unassessed",
       "acceptance": null,
       "gitTaskId": null
+    },
+    {
+      "id": "host-theme-adaptation",
+      "title": "独立配色与宿主模式界面复验",
+      "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
+      "blocker": "本机0.6.10，0.7.0未安装/真实宿主主题验收未完成。",
+      "stage": "doing",
+      "taskId": "project-board-release",
+      "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-12T07:34:52.824Z"
+  "updatedAt": "2026-10-12T07:55:55.273Z"
 }

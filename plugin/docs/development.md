@@ -41,6 +41,8 @@ npm run test:browser
 | `scripts/`、`test/` | 工具与测试源码；`.cjs` 为手写文件 |
 | `build/` | Git 忽略的编译中间文件、CLI 和测试 JS |
 
+本机宿主目标 `/.pi/` 与既有 `/changes/archive/redesign-governance-panel/` 经用户批准由 Git 忽略；文件保留，不纳入源码提交。其他历史验收与安装包不因此删除。
+
 `build.cjs` 清理 `build/`、`plugin/runtime/`；`build-docs.cjs` 和 `build-entry.cjs` 只替换带生成标记的说明/入口，拒绝链接或未知手写文件。不要在生成目录放手写内容。构建不防恶意并发修改，运行期间保持目录可信、独占。
 
 ## 修改入口
