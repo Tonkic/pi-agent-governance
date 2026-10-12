@@ -212,7 +212,7 @@ textarea:focus-visible {
   display: none;
 }
 .board-columns {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-top: 20px;
   gap: 16px;
   align-items: stretch;
@@ -231,12 +231,6 @@ textarea:focus-visible {
 }
 .board-column[data-stage='done'] {
   --column-tone: var(--success);
-}
-.board-column[data-stage='accepted'] {
-  --column-tone: #805baa;
-}
-:root[data-base='dark'] .board-column[data-stage='accepted'] {
-  --column-tone: #c5a4ef;
 }
 .board-column > header {
   display: flex;
@@ -703,27 +697,6 @@ footer {
   border: 0;
 }
 
-.board-column[data-stage='accepted'] > header::before {
-  background: var(--column-tone);
-  border-radius: 2px;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--column-tone) 12%, transparent);
-}
-.card-review-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 12px;
-  border-top: 1px solid var(--line);
-  padding-top: 10px;
-}
-.review-button {
-  font-size: 11px;
-  padding: 5px 8px;
-  min-height: 30px;
-  color: var(--accent);
-  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
-  background: var(--selected);
-}
 dialog.action-dialog {
   width: min(820px, calc(100vw - 28px));
   max-width: none;
@@ -754,20 +727,7 @@ dialog.action-dialog {
   border: 0;
   font-size: 22px;
 }
-#accept-dialog {
-  width: min(560px, calc(100vw - 28px));
-}
-.criterion-check {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 8px 0;
-}
-.criterion-check input {
-  width: auto;
-  margin: 3px 0 0;
-}
-#item-acceptance {
+#item-checks {
   border-top: 1px solid var(--line);
   padding-top: 20px;
   margin-top: 24px;
@@ -822,8 +782,7 @@ select {
   }
 }
 @media (forced-colors: active) {
-  .action-dialog,
-  .review-button {
+  .action-dialog {
     border: 1px solid CanvasText;
   }
 }

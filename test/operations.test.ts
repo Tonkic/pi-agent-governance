@@ -182,31 +182,26 @@ test('stale workspace and human intent changes before prompting preserve session
   );
 });
 
-test('Agent acceptance launches only for active-task done items and pins reviewed content', async (t) => {
+test('new acceptance sessions are removed, but old owned sessions remain readable and cancelable', async t => {
   const f = await fixture(t);
-  const mutate = async (a) =>
-    f.g.run({ ...a, expectedRevision: (await f.g.run({ action: 'project_snapshot' })).revision });
-  await mutate({
-    action: 'board_create',
-    id: 'one',
-    title: 'Review me',
-    criteria: ['Actual check']
-  });
-  await assert.rejects(f.start('acceptance', { itemId: 'one' }), /completed/);
+  await assert.rejects(f.start('acceptance'), /Unknown project operation/);
   assert.equal(f.calls.length, 0);
-  await mutate({ action: 'board_move', id: 'one', stage: 'doing', position: 0 });
-  await mutate({ action: 'board_move', id: 'one', stage: 'done', position: 0 });
-  const item = (await f.g.run({ action: 'project_snapshot' })).board.items[0];
-  const run = await f.start('acceptance', { itemId: 'one' });
-  assert.equal(run.itemFingerprint, item.itemFingerprint);
-  assert.match(f.calls[1].args[0].content, /board_accept/);
-  assert.match(f.calls[1].args[0].content, /Do not fix source code/);
-  assert.equal((await f.g.run({ action: 'project_snapshot' })).board.items[0].stage, 'done');
-  await assert.rejects(
-    operationInvoke(f.root, { action: 'start', kind: 'unknown', confirmed: true }, f.desktop),
-    /Unknown/
-  );
-  await assert.rejects(operationInvoke(f.root, { action: 'list' }, {}), /unavailable/);
+  const run = await f.start('analysis');
+  const file = path.join(f.root, '.governance/operations.json');
+  const history = JSON.parse(await fs.readFile(file, 'utf8'));
+  history.runs[0].kind = 'acceptance'; history.runs[0].itemId = 'old';
+  await fs.writeFile(file, JSON.stringify(history));
+  const raw = await fs.readFile(file, 'utf8');
+  const list = await operationInvoke(f.root, { action: 'list' }, f.desktop);
+  assert.equal(list.runs[0].kind, 'acceptance');
+  assert.equal(await fs.readFile(file, 'utf8'), raw);
+  await operationInvoke(f.root, { action: 'open', id: run.id }, f.desktop);
+  await operationInvoke(f.root, { action: 'status', id: run.id }, f.desktop);
+  const canceled = await operationInvoke(f.root, { action: 'cancel', id: run.id, confirmed: true }, f.desktop);
+  assert.equal(canceled.phase, 'canceled');
+  assert.equal(canceled.kind, 'acceptance');
+  assert.equal(f.calls.filter(c => c.operation === 'agent/prompt').length, 1, 'No old acceptance prompt replayed');
+  assert.equal(f.calls.filter(c => c.operation === 'agent/abort').length, 1);
 });
 
 test('sessionless creation failures can be explicitly resolved without replay', async (t) => {

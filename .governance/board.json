@@ -140,6 +140,21 @@
       "gitTaskId": null
     },
     {
+      "id": "three-column-simplification",
+      "title": "三栏与可选架构简化",
+      "description": "用户要求删独立验收、保留三栏；架构可选，功能基于分层文档实现及测试。保留旧历史，不引入新开发流程。",
+      "blocker": "",
+      "stage": "doing",
+      "taskId": "project-board-release",
+      "criteria": [
+        "三栏与无新验收路径回归通过",
+        "历史兼容和源码/权限/切换安全保留",
+        "实际构建测试、包检查和GitHub/main交付完成"
+      ],
+      "architectureImpact": "none",
+      "gitTaskId": null
+    },
+    {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
       "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
@@ -149,5 +164,5 @@
       "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-12T11:32:22.765Z"
+  "updatedAt": "2026-10-12T18:48:17.692Z"
 }
