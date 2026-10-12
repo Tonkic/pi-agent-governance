@@ -182,155 +182,78 @@ test('oversized UTF-8 board write is rejected without corrupting saved data', as
   assert.equal(rejected, true);
 });
 
-test('four stages require evidence; acceptance binds item content and never closes State', async (t) => {
-  const { root, g, snapshot, mutate } = await fixture(t);
-  await g.run({
-    action: 'start',
-    id: 'approved',
-    goal: 'Check acceptance',
-    criteria: ['Overall remains separate']
-  });
-  const state = await fs.readFile(path.join(root, 'STATE.json'), 'utf8');
-  await mutate({
-    action: 'board_create',
-    id: 'review',
-    title: 'Review',
-    criteria: ['Test passes']
-  });
-  await mutate({ action: 'board_move', id: 'review', stage: 'doing', position: 0 });
-  await mutate({ action: 'board_move', id: 'review', stage: 'done', position: 0 });
-  const original = (await snapshot()).board.items[0].itemFingerprint;
-  await assert.rejects(
-    mutate({ action: 'board_move', id: 'review', stage: 'accepted', position: 0 }),
-    /board_accept/
-  );
-  const args = {
-    action: 'board_accept',
-    id: 'review',
-    method: 'human',
-    reviewer: 'Reviewer',
-    conclusion: 'Checked',
-    evidence: 'Actual test log',
-    expectedItem: original,
-    passed: true,
-    accepted: [true]
-  };
-  await assert.rejects(mutate({ ...args, evidence: '' }), /evidence/);
-  await assert.rejects(mutate({ ...args, accepted: [] }), /criterion/);
-  await mutate(args);
-  let item = (await snapshot()).board.items[0];
-  assert.equal(item.stage, 'accepted');
-  assert.equal(item.acceptance.valid, true);
-  assert.equal(item.acceptance.method, 'human');
-  await mutate({ action: 'board_move', id: 'review', stage: 'accepted', position: 0 });
-  assert.equal((await snapshot()).board.items[0].acceptance.valid, true);
-  await mutate({
-    action: 'board_update',
-    id: 'review',
-    title: 'Changed',
-    criteria: ['Different check']
-  });
-  item = (await snapshot()).board.items[0];
-  assert.equal(item.stage, 'done');
-  assert.equal(item.acceptance.valid, false);
-  await assert.rejects(mutate(args), /item changed/);
-  await mutate({
-    ...args,
-    expectedItem: item.itemFingerprint,
-    method: 'agent',
-    passed: false,
-    accepted: []
-  });
-  item = (await snapshot()).board.items[0];
-  assert.equal(item.stage, 'doing');
-  assert.equal(item.acceptance.passed, false);
-  assert.equal(await fs.readFile(path.join(root, 'STATE.json'), 'utf8'), state);
-});
-
-test('old boards remain readable and panel acceptance cannot impersonate an Agent', async (t) => {
-  const { root, snapshot, mutate } = await fixture(t);
-  await mutate({ action: 'board_create', id: 'old', title: 'Old' });
-  const file = path.join(root, '.governance/board.json');
-  const old = JSON.parse(await fs.readFile(file, 'utf8'));
-  delete old.items[0].criteria;
-  delete old.items[0].acceptance;
-  await fs.writeFile(file, JSON.stringify(old));
-  const raw = await fs.readFile(file, 'utf8');
-  await snapshot();
-  assert.equal(await fs.readFile(file, 'utf8'), raw);
-  await mutate({ action: 'board_move', id: 'old', stage: 'doing', position: 0 });
-  await mutate({ action: 'board_move', id: 'old', stage: 'done', position: 0 });
-  const s = await snapshot();
-  await panelInvoke(root, 'governance.workitem', {
-    confirmed: true,
-    revision: s.revision,
-    args: {
-      action: 'board_accept',
-      id: 'old',
-      method: 'agent',
-      expectedItem: s.board.items[0].itemFingerprint,
-      reviewer: 'Me',
-      passed: true,
-      accepted: [],
-      conclusion: 'Checked',
-      evidence: 'Manual review'
-    }
-  });
-  assert.equal((await snapshot()).board.items[0].acceptance.method, 'human');
-});
-
-test('a reviewed item cannot be accepted after the overall task changes', async (t) => {
-  const { root, g, snapshot, mutate } = await fixture(t);
-  await g.run({
-    action: 'start',
-    id: 'original-task',
-    goal: 'Review this task',
-    criteria: ['Evidence']
-  });
-  await mutate({ action: 'board_create', id: 'one', title: 'Completed item' });
-  await mutate({ action: 'board_move', id: 'one', stage: 'doing', position: 0 });
-  await mutate({ action: 'board_move', id: 'one', stage: 'done', position: 0 });
-  const item = (await snapshot()).board.items[0];
-  const stateFile = path.join(root, 'STATE.json');
-  const state = JSON.parse(await fs.readFile(stateFile, 'utf8'));
-  state.task = 'new-task';
-  state.change = 'changes/active/new-task';
-  state.goal = 'Different approved goal';
-  await fs.writeFile(stateFile, JSON.stringify(state));
-  const boardBefore = await fs.readFile(path.join(root, '.governance/board.json'), 'utf8');
-  await assert.rejects(
-    mutate({
-      action: 'board_accept',
-      id: 'one',
-      expectedItem: item.itemFingerprint,
-      method: 'agent',
-      reviewer: 'Agent',
-      passed: true,
-      accepted: [],
-      conclusion: 'Checked earlier',
-      evidence: 'Old task evidence'
-    }),
-    /task changed/
-  );
-  assert.equal(await fs.readFile(path.join(root, '.governance/board.json'), 'utf8'), boardBefore);
-});
-
-test('architecture impact is validated, preserved on omitted update and binds acceptance', async (t) => {
+test('three stages complete directly without acceptance actions and do not change State', async t => {
   const f = await fixture(t);
-  await f.g.run({ action: 'start', id: 'impact', goal: 'Architecture tags', criteria: ['Pass'] });
+  await f.g.run({ action: 'start', id: 'three-stages', goal: 'Documented feature', criteria: ['Tests pass'] });
+  const state = await fs.readFile(path.join(f.root, 'STATE.json'), 'utf8');
+  await f.mutate({ action: 'board_create', id: 'one', title: 'Implement documented feature', criteria: ['Actual checks'] });
+  await f.mutate({ action: 'board_move', id: 'one', stage: 'doing', position: 0 });
+  await f.mutate({ action: 'board_move', id: 'one', stage: 'done', position: 0 });
+  assert.equal((await f.snapshot()).board.items[0].stage, 'done');
+  const before = await fs.readFile(path.join(f.root, '.governance/board.json'), 'utf8');
+  await assert.rejects(f.mutate({ action: 'board_move', id: 'one', stage: 'accepted', position: 0 }), /adjacent|stage/i);
+  await assert.rejects(f.mutate({ action: 'board_accept', id: 'one' }), /Unknown/);
+  await assert.rejects(panelInvoke(f.root, 'governance.workitem', { confirmed: true, revision: (await f.snapshot()).revision, args: { action: 'board_accept', id: 'one' } }), /not allowed/);
+  assert.equal(await fs.readFile(path.join(f.root, '.governance/board.json'), 'utf8'), before);
+  await f.mutate({ action: 'board_move', id: 'one', stage: 'doing', position: 0 });
+  await f.mutate({ action: 'board_move', id: 'one', stage: 'done', position: 0 });
+  assert.equal(await fs.readFile(path.join(f.root, 'STATE.json'), 'utf8'), state);
+});
+async function seedLegacy(f, ids) {
+  for (const id of ids) await f.mutate({ action: 'board_create', id, title: id });
+  const file = path.join(f.root, '.governance/board.json');
+  const board = JSON.parse(await fs.readFile(file, 'utf8'));
+  const items = (await f.snapshot()).board.items;
+  for (const item of board.items) if (ids.includes(item.id)) {
+    item.stage = 'accepted';
+    item.acceptance = { method: 'human', passed: true, valid: true, accepted: [], reviewer: 'Historical fixture', conclusion: 'Old review only', evidence: 'Preserved old fixture, not a current check', itemFingerprint: items.find(i => i.id === item.id).itemFingerprint, at: new Date().toISOString() };
+  }
+  await fs.writeFile(file, JSON.stringify(board));
+  return { file, board };
+}
+test('legacy accepted items render completed without writes or loss and only targeted items normalize', async t => {
+  const f = await fixture(t);
+  const { file, board } = await seedLegacy(f, ['old-a', 'old-b']);
+  const raw = await fs.readFile(file, 'utf8');
+  const s = await f.snapshot();
+  assert.deepEqual(s.board.items.map(i => i.stage), ['done', 'done']);
+  assert.deepEqual(s.board.items.map(i => i.legacyStage), ['accepted', 'accepted']);
+  assert.deepEqual(s.board.items[0].acceptance, board.items[0].acceptance);
+  assert.equal(await fs.readFile(file, 'utf8'), raw);
+  await f.mutate({ action: 'board_create', id: 'ordinary', title: 'No migration' });
+  let saved = JSON.parse(await fs.readFile(file, 'utf8'));
+  assert.deepEqual(saved.items.slice(0,2), board.items);
+  await f.mutate({ action: 'board_move', id: 'old-a', stage: 'doing', position: 0 });
+  saved = JSON.parse(await fs.readFile(file, 'utf8'));
+  assert.deepEqual(saved.items.find(i => i.id === 'old-b'), board.items[1]);
+  assert.equal(saved.items.find(i => i.id === 'old-a').acceptance.evidence, board.items[0].acceptance.evidence);
+  assert.equal(saved.items.find(i => i.id === 'old-a').acceptance.valid, false);
+  await f.mutate({ action: 'board_move', id: 'old-a', stage: 'done', position: 1 });
+  assert.equal((await f.snapshot()).board.items.filter(i => i.stage === 'done').length, 2);
+  assert.equal(JSON.parse(await fs.readFile(file, 'utf8')).items.find(i => i.id === 'old-b').stage, 'accepted');
+});
+test('legacy edits invalidate old checks without adding a review stage and enforce normal revision guards', async t => {
+  const f = await fixture(t), foreign = await fixture(t);
+  const { file } = await seedLegacy(f, ['old']);
+  const old = await f.snapshot();
+  await assert.rejects(foreign.g.run({ action: 'board_move', id: 'old', stage: 'doing', position: 0, expectedRevision: old.revision }), /stale|switched/);
+  await f.mutate({ action: 'board_update', id: 'old', title: 'Updated' });
+  const item = (await f.snapshot()).board.items[0];
+  assert.equal(item.stage, 'done'); assert.equal(item.acceptance.valid, false);
+  await assert.rejects(f.g.run({ action: 'board_move', id: 'old', stage: 'doing', position: 0, expectedRevision: old.revision }), /stale/);
+  assert.equal(JSON.parse(await fs.readFile(file, 'utf8')).items[0].stage, 'done');
+});
+test('architecture impact is optional, validated and preserved without requiring a separate review', async t => {
+  const f = await fixture(t);
   await f.mutate({ action: 'board_create', id: 'one', title: 'One', architectureImpact: 'affects' });
-  assert.equal((await f.snapshot()).board.items[0].architectureImpact, 'affects');
   await f.mutate({ action: 'board_update', id: 'one', title: 'One' });
   assert.equal((await f.snapshot()).board.items[0].architectureImpact, 'affects');
   await assert.rejects(f.mutate({ action: 'board_update', id: 'one', title: 'One', architectureImpact: 'arbitrary' }), /architecture impact/i);
   await f.mutate({ action: 'board_move', id: 'one', stage: 'doing', position: 0 });
   await f.mutate({ action: 'board_move', id: 'one', stage: 'done', position: 0 });
-  await f.mutate({ action: 'board_accept', id: 'one', expectedItem: (await f.snapshot()).board.items[0].itemFingerprint,
-    method: 'agent', reviewer: 'Fixture', passed: true, accepted: [], conclusion: 'Checked', evidence: 'Isolated test' });
   await f.mutate({ action: 'board_update', id: 'one', title: 'One', architectureImpact: 'none' });
-  const item = (await f.snapshot()).board.items[0];
-  assert.equal(item.stage, 'done');
-  assert.equal(item.acceptance.valid, false);
+  assert.equal((await f.snapshot()).board.items[0].stage, 'done');
+  assert.equal((await f.snapshot()).architecture, null);
 });
 
 test('architecture snapshots do not scan source until explicitly requested', async (t) => {

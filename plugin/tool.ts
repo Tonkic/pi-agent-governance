@@ -43,8 +43,7 @@ module.exports = {
           'architecture_design_save',
           'board_create',
           'board_update',
-          'board_move',
-          'board_accept'
+          'board_move'
         ]
       },
       expectedRevision: {
@@ -58,18 +57,7 @@ module.exports = {
       gitTaskId: { type: 'string' },
       architectureImpact: { type: 'string', enum: ['unassessed', 'none', 'affects'], description: 'Work-item architecture impact. Mark explicit architecture changes as affects; omitted updates preserve the current value.' },
       checkSources: { type: 'boolean', description: 'Explicitly check architecture source fingerprints in project_snapshot. Default false: preserve the graph without scanning source.' },
-      stage: { type: 'string', enum: ['todo', 'doing', 'done', 'accepted'] },
-      method: { type: 'string', enum: ['human', 'agent'] },
-      reviewer: {
-        type: 'string',
-        description: 'Reviewer label; caller-attested, not identity authentication.'
-      },
-      conclusion: { type: 'string' },
-      expectedItem: {
-        type: 'string',
-        description:
-          'itemFingerprint from project_snapshot; binds acceptance to the reviewed work item.'
-      },
+      stage: { type: 'string', enum: ['todo', 'doing', 'done'] },
       position: { type: 'integer', minimum: 0 },
       proposal: {
         type: 'object',
