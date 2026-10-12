@@ -77,7 +77,7 @@ test('renderer leads with architecture, removes promotional guide and keeps vali
 });
 test('browser bundle starts without Node globals and reports static preview', async () => {
   const vm = require('node:vm');
-  const script = await fs.readFile(path.join(__dirname, '../plugin/renderer/i18n.js'), 'utf8') + '\n' + await fs.readFile(path.join(__dirname, '../plugin/renderer/panel.js'), 'utf8');
+  const script = await fs.readFile(path.join(__dirname, '../plugin/renderer/i18n.js'), 'utf8') + '\n' + await fs.readFile(path.join(__dirname, '../plugin/renderer/design.js'), 'utf8') + '\n' + await fs.readFile(path.join(__dirname, '../plugin/renderer/panel.js'), 'utf8');
   const elements = new Map();
   const document = {
     addEventListener() {}, documentElement: { dataset: {} }, querySelectorAll: () => [], querySelector: () => ({ hidden: false }),
@@ -259,7 +259,7 @@ test('renderer operation buttons honor offline state both on render and on unloc
   const context = { $, document, busy: false, workspaceEpoch: 1, navigator: { onLine: false },
     snapshot: { workspace: 'fixture' }, projectSnapshot: null, editingItem: null,
     searchQuery: '', t: key => key, operationLabel: key => key, labels: {}, text() {},
-    updateLaunchControls() {}, updateItemNavigation() {},
+    updateLaunchControls() {}, updateItemNavigation() {}, updateDesignControls() {},
     invoke: async () => ({ workspace: 'fixture', runs: [
       { id: 'unknown', kind: 'analysis', phase: 'unknown' },
       { id: 'running', kind: 'analysis', phase: 'running', sessionId: 'session' }
@@ -280,7 +280,7 @@ test('workflow graph clears architecture source-check status on repeated switchi
     projectSnapshot: { architecture: { title: 'fixture', sourcesChecked: true, checkedAt: 'today', nodes: [], edges: [] } },
     text: (id, value) => values.set(id, value), t: key => key, labels: {},
     $: id => { if (!elements.has(id)) elements.set(id, { setAttribute() {} }); return elements.get(id); },
-    window: { dispatchEvent() {} }, CustomEvent: class {} };
+    renderDesign() {}, window: { dispatchEvent() {} }, CustomEvent: class {} };
   const render = await rendererSeam('function renderProjectGraph(', "$('show-architecture').addEventListener", context);
   for (let i = 0; i < 2; i++) {
     context.graphView = 'architecture'; render(); assert.equal(values.get('graph-check-state'), 'sourcesChecked');

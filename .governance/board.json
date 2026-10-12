@@ -108,6 +108,23 @@
       "gitTaskId": null
     },
     {
+      "id": "architecture-design-baseline",
+      "title": "架构设计Skill与稳定基线",
+      "description": "按用户批准接入Architecture Copilot，复用画板展示可读设计；独立草案/人工确认基线/显式修订/历史，不替代源码事实或STATE实施授权。新增agent.prompt.inject已明确获批；不自动安装或提交市场。",
+      "blocker": "",
+      "stage": "doing",
+      "taskId": "project-board-release",
+      "criteria": [
+        "Skill固定来源、许可和批准权限正确；设计与源码/STATE独立",
+        "草案、确认、显式修订、历史及跨项目/任务/草案ID回归通过",
+        "类型/构建、单元/浏览器/关联行为、干净安装与官方包门禁实际通过",
+        "差异审查、提交后重测和main集成普通推送核对完成"
+      ],
+      "architectureImpact": "affects",
+      "acceptance": null,
+      "gitTaskId": null
+    },
+    {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
       "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
@@ -117,5 +134,5 @@
       "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-12T09:30:02.206Z"
+  "updatedAt": "2026-10-12T11:18:43.291Z"
 }

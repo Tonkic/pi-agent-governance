@@ -493,3 +493,27 @@ test('persisted operation history rejects non-record roots and runs before host 
   await fs.writeFile(file, JSON.stringify({ version: 1, runs: [] }));
   assert.equal((await f.start()).phase, 'running');
 });
+test('design sessions require an explicit current draft and never confirm it', async t => {
+  const f = await fixture(t);
+  await assert.rejects(f.start('design'), /draft/);
+  await f.g.run({ action: 'architecture_design_begin', reason: 'First design', expectedRevision: (await f.g.run({ action: 'architecture_design_snapshot' })).revision });
+  const d = await f.g.run({ action: 'architecture_design_snapshot' });
+  await assert.rejects(f.start('design', { designRevision: '0'.repeat(64) }), /Design changed/);
+  await f.start('design', { designRevision: d.revision });
+  const prompt = f.calls.find(c => c.operation === 'agent/prompt').args[0].content;
+  assert.match(prompt, /io.github.tonkic.agent-governance\/architecture-copilot/);
+  assert.match(prompt, /Never confirm a baseline/);
+  assert.match(prompt, /Only the current draft may change/);
+  assert.equal((await f.g.run({ action: 'architecture_design_snapshot' })).baseline, null);
+});
+test('design changed during session creation prevents the stale prompt without replay', async t => {
+  const f = await fixture(t);
+  await f.g.run({ action: 'architecture_design_begin', reason: 'First design', expectedRevision: (await f.g.run({ action: 'architecture_design_snapshot' })).revision });
+  const d = await f.g.run({ action: 'architecture_design_snapshot' });
+  f.onCreate = async () => {
+    const { panelInvoke } = require('../plugin/panel');
+    await panelInvoke(f.root, 'governance.design', { action: 'discard', revision: d.revision, confirmed: true });
+  };
+  await assert.rejects(f.start('design', { designRevision: d.revision }), /Project changed/);
+  assert.equal(f.calls.filter(c => c.operation === 'agent/prompt').length, 0);
+});

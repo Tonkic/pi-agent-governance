@@ -19,7 +19,9 @@ function discardWarning(submitted?: string) {
     'progress-form': t('draftProgress'),
     'start-form': t('draftTask'),
     'workitem-form': t('draftItem'),
-    'accept-form': t('draftReview')
+    'accept-form': t('draftReview'),
+    'design-begin-form': t('designTitle'),
+    'design-confirm-form': t('designReview')
   };
   const drafts = [...dirtyForms].filter((id) => id !== submitted).map((id) => names[id] || id);
   return drafts.length ? t('discard', drafts.join(' / ')) : '';
@@ -87,6 +89,7 @@ function lock(value) {
   });
   updateLaunchControls();
   updateItemNavigation();
+  updateDesignControls();
 }
 async function invoke(channel, payload: any = {}) {
   if (!window.pluginBridge?.invoke) throw Error(t('staticPreview'));
@@ -185,6 +188,7 @@ async function load(checkSources = false) {
   const owner = workspaceEpoch, request = ++loadRevision;
   const current = () => owner === workspaceEpoch && request === loadRevision;
   snapshot = null;
+  resetDesign();
   $('initialize-workspace').hidden = true;
   dirtyForms.clear();
   launchRequest++;
@@ -236,6 +240,7 @@ async function load(checkSources = false) {
       notify(t('boardReadError', error.message), true);
     }
   } else text('board-status', t('boardDisconnected'));
+  if (snapshot && current()) await loadDesign(owner, current);
   if (!current()) return;
   renderProjectGraph();
   if (busy) lock(true);
@@ -314,7 +319,7 @@ $('refresh').addEventListener('click', async () => {
   }
 });
 for (const form of document.querySelectorAll(
-  'main form, #project-dialog form, #workitem-form, #accept-form'
+  'main form, #project-dialog form, #workitem-form, #accept-form, #design-begin-form, #design-confirm-form'
 ))
   form.addEventListener('input', () => {
     edited = true;
@@ -396,6 +401,8 @@ function renderProjectGraph() {
         ]
       };
     }
+  } else if (graphView === 'design') {
+    const view = designGraphView(); graph = view.graph; message = view.message;
   } else {
     text('architecture-title', t('architecture'));
     graph = projectSnapshot?.architecture;
@@ -429,6 +436,7 @@ function renderProjectGraph() {
   text('graph-count', t('graphCount', graph?.nodes?.length || 0, graph?.edges?.length || 0));
   $('show-architecture').setAttribute('aria-pressed', String(graphView === 'architecture'));
   $('show-workflow').setAttribute('aria-pressed', String(graphView === 'workflow'));
+  renderDesign();
   window.dispatchEvent(new CustomEvent('project-graph', { detail: graph }));
 }
 $('show-architecture').addEventListener('click', () => {
@@ -1286,6 +1294,7 @@ $('item-agent-review').addEventListener('click', () => {
   void startOperation('acceptance', selectedItem);
 });
 const operationLabel = (kind): CopyKey =>
+  kind === 'design' ? 'designTask' :
   kind === 'architecture'
     ? 'architectureTask'
     : kind === 'acceptance'
@@ -1334,10 +1343,12 @@ function closeLaunch() {
 async function startOperation(kind, itemId?) {
   if (busy || !projectSnapshot || !snapshot?.state?.task || !navigator.onLine) return;
   if ($('launch-dialog').open) return;
+  if (kind === 'design' && (!designSnapshot?.draft || designSnapshot.error || designSnapshot.draft.taskId !== snapshot.state.task)) return;
   const request = ++launchRequest;
   launchContext = {
     kind,
     itemId,
+    ...(kind === 'design' ? { designRevision: designSnapshot.revision } : {}),
     revision: projectSnapshot.revision,
     workspace: snapshot.workspace
   };

@@ -10,6 +10,21 @@ async function panelInvoke(root, channel, payload = {}) {
     const g = new Governance(root);
     if (channel === 'governance.behaviors')
         return g.locked(() => behaviorSnapshot(g));
+    if (channel === 'governance.design') {
+        const { ArchitectureDesign } = require('./design');
+        const design = new ArchitectureDesign(g);
+        if (payload.action === 'snapshot')
+            return design.run({ action: 'architecture_design_snapshot' });
+        if (payload.confirmed !== true)
+            throw Error('请先确认设计操作 / Confirm design action');
+        const fields = { begin: ['reason'], confirm: ['expectedProposal', 'reviewer', 'conclusion'], discard: [] };
+        if (!Object.hasOwn(fields, payload.action))
+            throw Error('Design panel action not allowed');
+        const args = { action: 'architecture_design_' + payload.action, expectedRevision: payload.revision };
+        for (const key of fields[payload.action])
+            args[key] = payload[key];
+        return design.run(args);
+    }
     if (channel === 'governance.snapshot') {
         return g.locked(async () => {
             const raw = g.expected;

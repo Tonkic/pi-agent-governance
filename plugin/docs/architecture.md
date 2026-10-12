@@ -17,6 +17,7 @@
 | `git.ts` | 管理 worktree、范围和提交验证 | `GitGovernance.run` |
 | `operations.ts` | 创建独立任务会话，校验模型、记录状态和取消 | `operationInvoke`、`taskPrompt` |
 | `behaviors.ts` | 安全读取行为正文、关联与本机验证状态 | `behaviorSnapshot`、`behaviorState` |
+| `design.ts`、`renderer/design.ts` | 管理独立设计草案、追加基线及画板交互 | `ArchitectureDesign.run`、`designWrite` |
 | `renderer/panel.ts` | 加载数据、展示状态、提交表单 | `load`、`mutate` |
 | `renderer/graph-model.ts`、`graph.ts` | 计算图布局、绘制与交互 | 布局与渲染函数 |
 | `renderer/i18n.ts` | 提供中英文界面文字 | 语言表 |
@@ -41,6 +42,7 @@ core.ts → git.ts → Git common directory
 | `STATE.json` | 总目标、范围、验收、进度和阻塞 |
 | `.governance/board.json` | 工作项 |
 | `.governance/architecture.json` | 模块关系、源码指纹及更新时间 |
+| `.governance/architecture-design.json` | 独立设计正文/画板、当前草案和人工确认历史，不是源码事实 |
 | `.governance/operations.json` | 项目 Agent 会话 ID、模型选择与运行状态 |
 | `docs/behavior-bindings.json`、对应Markdown | 当前行为正文与场景/文件关联 |
 | `.governance/behavior-evidence.json` | Git忽略的本机检查证据；不是获批任务或整体通过记录 |
@@ -55,3 +57,5 @@ core.ts → git.ts → Git common directory
 - 外层窗口与安装更新由 PI-Desktop 管理。
 
 构建与修改方法见 [开发](development.md)。动作参数见 [治理用法](governance.md)、[项目接口](project.md)，文档整理见 [文档维护](documentation.md)。
+
+按需架构设计Skill及稳定基线流程见 [架构设计](architecture-design.md)。设计与源码图分开，普通源码更新不会触发修订。
