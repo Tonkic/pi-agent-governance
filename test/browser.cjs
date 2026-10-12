@@ -11,6 +11,7 @@ const { panelInvoke } = require('../plugin/runtime/panel');
 const { operationInvoke } = require('../plugin/runtime/operations');
 const behaviorReport = require('./behavior-reporter.cjs').reporter();
 const hostCalls = [];
+const operationWrites = [];
 let hostStreaming = true,
   sessionCounter = 0,
   failCreation = false;
@@ -111,6 +112,8 @@ const models = {
     p.on('pageerror', (e) => errors.push(e.message));
     await p.exposeFunction('hostInvoke', async (channel, payload) => {
       const requestRoot = root;
+      if (channel === 'governance.operation' && ['cancel', 'resolve'].includes(payload.action))
+        operationWrites.push(payload);
       if (channel === 'app.getLocale') return locale;
       if (channel === 'app.getAppearance') return { base: 'light' };
       if (channel === 'governance.behaviors' && requestRoot === delayedBehaviorRoot) {
@@ -256,7 +259,9 @@ const models = {
     // A delayed A snapshot cannot replace B or unlock B's unfinished load.
     delayedSnapshotRoot = roots[0];
     await page.locator('#refresh').click();
-    while (!releaseSnapshot) await page.waitForTimeout(10);
+    const snapshotDeadline = Date.now() + 5000;
+    while (!releaseSnapshot && Date.now() < snapshotDeadline) await page.waitForTimeout(10);
+    assert.equal(typeof releaseSnapshot, 'function', 'Timed out after 5s waiting for delayed governance.snapshot to reach the host bridge');
     await switchWorkspace(roots[1]);
     delayedSnapshotRoot = null;
     releaseSnapshot();
@@ -319,6 +324,13 @@ const models = {
     assert.equal(await page.locator('.workspace-nav a').count(), 3);
     assert.equal(await page.locator('#project-dialog').evaluate((el) => el.open), false);
     assert.equal(await page.locator('.board-column').count(), 4);
+    // CSS cascade must keep four/two/one columns, including the old 700px breakpoint.
+    for (const [width, columns] of [[1280, 4], [1000, 2], [680, 2], [600, 1]]) {
+      await page.setViewportSize({ width, height: 1000 });
+      assert.equal(await page.locator('#board-columns').evaluate(el =>
+        getComputedStyle(el).gridTemplateColumns.split(' ').length), columns);
+    }
+    await page.setViewportSize({ width: 1280, height: 1000 });
     assert.equal(await page.locator('#board-section #task-section').count(), 0);
     for (const id of ['architecture', 'git-section', 'board-section']) {
       await navigate(page, id);
@@ -731,9 +743,27 @@ const models = {
       hostCalls.findLast((c) => c.operation === 'agent/prompt').args[0].content,
       /do not edit project files/
     );
+    const writesBeforeCancel = operationWrites.length;
+    await page.context().setOffline(true);
+    await page.waitForFunction(() => document.querySelector('[data-operation-write]').disabled);
+    assert.equal(await page.getByRole('button', { name: '取消任务', exact: true }).isDisabled(), true);
+    assert.equal(await page.getByRole('button', { name: '查看进度 / 结果', exact: true }).first().isEnabled(), true);
+    assert.equal(await page.getByRole('button', { name: '打开 Agent 会话', exact: true }).first().isEnabled(), true);
+    await page.getByRole('button', { name: '查看进度 / 结果', exact: true }).first().click();
+    await settled(page);
+    assert.equal(await page.getByRole('button', { name: '取消任务', exact: true }).isDisabled(), true);
+    await page.context().setOffline(false);
+    await page.waitForFunction(() => !document.querySelector('[data-operation-write]').disabled);
+    await page.getByRole('button', { name: '取消任务', exact: true }).click();
+    await page.context().setOffline(true);
+    await confirm(page);
+    assert.equal(operationWrites.length, writesBeforeCancel, 'Disconnect during cancel confirmation must not invoke the bridge');
+    await page.context().setOffline(false);
+    await page.waitForFunction(() => !document.querySelector('[data-operation-write]').disabled);
+    const callsBeforeCancelDismiss = hostCalls.length;
     await page.getByRole('button', { name: '取消任务', exact: true }).click();
     await confirm(page, false);
-    assert.equal(hostCalls.at(-1).operation, 'agent/prompt');
+    assert.equal(hostCalls.length, callsBeforeCancelDismiss);
     await page.getByRole('button', { name: '取消任务', exact: true }).click();
     await confirm(page);
     assert.equal(hostCalls.at(-1).operation, 'agent/abort');
@@ -794,6 +824,18 @@ const models = {
     await page.locator('#launch-cancel').click();
     await page.locator('#operations-open').click();
     await page.waitForSelector('.operation-run');
+    const writesBeforeResolve = operationWrites.length;
+    await page.context().setOffline(true);
+    await page.waitForFunction(() => document.querySelector('[data-operation-write]').disabled);
+    assert.equal(await page.getByRole('button', { name: '已核对 — 解除创建阻塞', exact: true }).isDisabled(), true);
+    await page.context().setOffline(false);
+    await page.waitForFunction(() => !document.querySelector('[data-operation-write]').disabled);
+    await page.getByRole('button', { name: '已核对 — 解除创建阻塞', exact: true }).click();
+    await page.context().setOffline(true);
+    await confirm(page);
+    assert.equal(operationWrites.length, writesBeforeResolve, 'Disconnect during resolve confirmation must not invoke the bridge');
+    await page.context().setOffline(false);
+    await page.waitForFunction(() => !document.querySelector('[data-operation-write]').disabled);
     await page.getByRole('button', { name: '已核对 — 解除创建阻塞', exact: true }).click();
     await confirm(page, false);
     assert.equal(
@@ -969,6 +1011,7 @@ const models = {
     await page.keyboard.press('0');
     await page.locator('#show-workflow').click();
     assert.equal(await page.locator('.architecture-node').count(), 4);
+    assert.equal(await page.locator('#graph-check-state').textContent(), '', 'Workflow must not show architecture source-check status');
     await page.locator('#module-jump').click();
     await page.waitForFunction(
       () =>
@@ -986,6 +1029,13 @@ const models = {
     await page.locator('#architecture-check').click();
     await settled(page);
     assert.equal(await page.locator('#graph-warning').isVisible(), true);
+    const checkedState = await page.locator('#graph-check-state').textContent();
+    assert.ok(checkedState.length > 0);
+    await page.locator('#show-workflow').click();
+    assert.equal(await page.locator('#graph-check-state').textContent(), '');
+    assert.equal(await page.locator('#graph-warning').isVisible(), false);
+    await page.locator('#show-architecture').click();
+    assert.equal(await page.locator('#graph-check-state').textContent(), checkedState);
     holdGit = true;
     try {
       await page.locator('#refresh').click();
