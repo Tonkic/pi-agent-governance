@@ -39,8 +39,8 @@ core.ts → git.ts → Git common directory
 
 | 位置 | 保存内容 |
 | --- | --- |
-| `STATE.json` | 总目标、范围、验收、进度和阻塞 |
-| `.governance/board.json` | 工作项 |
+| `STATE.json` | 总目标、范围、检查条件、进度和阻塞 |
+| `.governance/board.json` | 三栏工作项与保留的旧检查历史 |
 | `.governance/architecture.json` | 模块关系、源码指纹及更新时间 |
 | `.governance/architecture-design.json` | 独立设计正文/画板、当前草案和人工确认历史，不是源码事实 |
 | `.governance/operations.json` | 项目 Agent 会话 ID、模型选择与运行状态 |
@@ -50,7 +50,7 @@ core.ts → git.ts → Git common directory
 
 ## 限制
 
-- 工作项完成不代表总体验收通过。
+- 已完成表示工作项结束，不自动证明覆盖范围外的检查；没有独立验收阶段。
 - 测试由调用方运行，证据由调用方提交；插件不独立证明测试结果。
 - 插件不拦截其他工具；仅在用户确认后发起固定 Agent 任务，不后台轮询。
 - 锁和写前比较不能防御恶意并发修改。
@@ -58,4 +58,4 @@ core.ts → git.ts → Git common directory
 
 构建与修改方法见 [开发](development.md)。动作参数见 [治理用法](governance.md)、[项目接口](project.md)，文档整理见 [文档维护](documentation.md)。
 
-按需架构设计Skill及稳定基线流程见 [架构设计](architecture-design.md)。设计与源码图分开，普通源码更新不会触发修订。
+可选架构Skill及画板见 [架构设计](architecture-design.md)。功能按分层文档开发和测试，不强制先画图；没有额外流程协调器。
