@@ -6,6 +6,7 @@ const evidenceFile = '.governance/behavior-evidence.json';
 const textHash = (text) => createHash('sha256').update(text.replace(/\r\n/g, '\n')).digest('hex');
 const hash = (value) => textHash(JSON.stringify(value));
 const caseId = (id) => typeof id === 'string' && /^[a-z][a-z0-9-]{0,79}$/.test(id);
+const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 function pathCheck(file, document = false) {
     if (typeof file !== 'string' ||
         file.length > 240 ||
@@ -15,14 +16,15 @@ function pathCheck(file, document = false) {
         throw Error('Invalid behavior source path');
 }
 function validateBindings(value) {
-    if (value?.version !== 1 ||
+    if (!isRecord(value) ||
+        value.version !== 1 ||
         !Array.isArray(value.behaviors) ||
         !value.behaviors.length ||
         value.behaviors.length > 50)
         throw Error('Invalid behavior bindings');
     const ids = new Set();
     for (const item of value.behaviors) {
-        if (!/^[A-Z][A-Z0-9]*-[0-9]{3,6}$/.test(item.id || '') || ids.has(item.id))
+        if (!isRecord(item) || !/^[A-Z][A-Z0-9]*-[0-9]{3,6}$/.test(item.id || '') || ids.has(item.id))
             throw Error('Invalid or duplicate behavior ID');
         ids.add(item.id);
         pathCheck(item.document, true);
@@ -98,7 +100,8 @@ async function behaviorContract(g) {
     return { bindings, behaviors, fingerprints, fingerprint: hash({ bindings, fingerprints }) };
 }
 function validateEvidence(value) {
-    if (value?.version !== 1 ||
+    if (!isRecord(value) ||
+        value.version !== 1 ||
         typeof value.workspace !== 'string' ||
         !/^[a-f0-9]{64}$/.test(value.contractFingerprint || '') ||
         !/^[a-f0-9]{40}$/.test(value.sourceCommit || '') ||
@@ -112,7 +115,8 @@ function validateEvidence(value) {
         throw Error('Invalid behavior evidence');
     const seen = new Set();
     for (const row of value.cases) {
-        if (!caseId(row.id) ||
+        if (!isRecord(row) ||
+            !caseId(row.id) ||
             seen.has(row.id) ||
             !['passed', 'failed', 'skipped'].includes(row.status))
             throw Error('Invalid or duplicate behavior evidence case');
@@ -155,7 +159,7 @@ async function behaviorSnapshot(g) {
     if (!contract)
         return { workspace: g.root, behaviors: [], configured: false };
     const raw = await optional(g, evidenceFile);
-    const evidence = raw === null ? null : JSON.parse(raw);
+    const evidence = raw === null ? null : validateEvidence(JSON.parse(raw));
     const result = behaviorState(contract, evidence, g.root);
     // Refuse a mixed snapshot if the document, bindings, source, tests or evidence changed while reading.
     const fresh = await behaviorContract(g);
