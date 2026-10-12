@@ -38,6 +38,9 @@ module.exports = {
           'project_snapshot',
           'architecture_sources',
           'architecture_set',
+          'architecture_design_snapshot',
+          'architecture_design_begin',
+          'architecture_design_save',
           'board_create',
           'board_update',
           'board_move',
@@ -46,8 +49,9 @@ module.exports = {
       },
       expectedRevision: {
         type: 'string',
-        description: 'Revision from project_snapshot; binds workspace, STATE and project data.'
+        description: 'Revision from project_snapshot for project data, or architecture_design_snapshot for design drafts. Binds workspace, STATE and reviewed data.'
       },
+      expectedDraft: { type: 'string', description: 'Exact draftId from the explicitly started architecture design draft; required by architecture_design_save. Stop if the draft was replaced.' },
       title: { type: 'string' },
       description: { type: 'string' },
       blocker: { type: 'string' },
@@ -67,6 +71,20 @@ module.exports = {
           'itemFingerprint from project_snapshot; binds acceptance to the reviewed work item.'
       },
       position: { type: 'integer', minimum: 0 },
+      proposal: {
+        type: 'object',
+        required: ['title', 'document', 'nodes', 'edges'],
+        properties: {
+          title: { type: 'string' },
+          document: { type: 'string', description: 'Readable design intent, constraints, alternatives, decisions, tradeoffs and limitations. Not implementation evidence.' },
+          nodes: { type: 'array', items: { type: 'object', required: ['id', 'title', 'description', 'files'], properties: {
+            id: { type: 'string' }, title: { type: 'string' }, description: { type: 'string' }, files: { type: 'array', items: { type: 'string' } }
+          } } },
+          edges: { type: 'array', items: { type: 'object', required: ['from', 'to', 'label'], properties: {
+            from: { type: 'string' }, to: { type: 'string' }, label: { type: 'string' }
+          } } }
+        }
+      },
       graph: {
         type: 'object',
         required: ['title', 'source', 'nodes', 'edges', 'fingerprints'],

@@ -41,6 +41,8 @@ CLI 在所选工作区执行，向 `node <插件仓库>/build/scripts/governance
 
 旧三列卡片直接可读，读取不重写数据、不自动验收。旧插件不认识accepted阶段；回退前备份新数据，并使用对应的旧备份，不删除用户数据。
 
+架构共创独立于源码重分析：只保存设计草案，人工审阅形成稳定基线；普通更新不替换，显式修订追加历史。操作和接口见 [架构设计](architecture-design.md)。
+
 ### 项目架构
 
 1. `architecture_sources` 携带明确选定的 `files`，返回源码文本和 SHA-256 `fingerprints`。一次最多 60 个文件、180000 字符，单文件沿用内核 1 MiB 限制。

@@ -87,6 +87,7 @@ const models = {
   let delayedSnapshotRoot = null, releaseSnapshot;
   let delayedGitRoot = null, releaseDelayedGit;
   let delayedBehaviorRoot = null, releaseBehavior;
+  let delayedDesignRoot = null, releaseDesign;
   const g = new Governance(root);
   for (const dir of roots.slice(0, 2)) await new Governance(dir).run({ action: 'init' });
   await g.run({
@@ -119,6 +120,11 @@ const models = {
       if (channel === 'governance.behaviors' && requestRoot === delayedBehaviorRoot) {
         const result = await panelInvoke(requestRoot, channel, payload);
         await new Promise(resolve => { releaseBehavior = resolve; });
+        return { ok: true, result };
+      }
+      if (channel === 'governance.design' && payload.action === 'snapshot' && requestRoot === delayedDesignRoot) {
+        const result = await panelInvoke(requestRoot, channel, payload);
+        await new Promise(resolve => { releaseDesign = resolve; });
         return { ok: true, result };
       }
       if (channel === 'governance.snapshot' && requestRoot === delayedSnapshotRoot) {
@@ -1278,6 +1284,118 @@ const models = {
     root = roots[0];
     await racePanel.close();
     behaviorReport.passed('new-item-continuation');
+    // Real design backend + visual canvas; no actual model invocation or host acceptance.
+    const designPage = await makePage();
+    await navigate(designPage, 'architecture');
+    await designPage.locator('#show-design').click();
+    const designSnapshot = () => g.run({ action: 'architecture_design_snapshot' });
+    const saveProposal = async proposal => { const s = await designSnapshot(); await g.run({ action: 'architecture_design_save', proposal, expectedDraft: s.draft.draftId, expectedRevision: s.revision }); };
+    assert.equal((await designSnapshot()).baseline, null);
+    const callsBeforeDraft = hostCalls.length;
+    await designPage.locator('#design-begin').click();
+    await designPage.locator('#design-reason').fill('Local-first project governance; no server or diagram editor dependency.');
+    await designPage.locator('#design-begin-submit').click();
+    await confirm(designPage, false);
+    assert.equal((await designSnapshot()).draft, null, 'Canceled creation writes nothing');
+    await designPage.locator('#design-begin-submit').click();
+    await confirm(designPage);
+    assert.equal(hostCalls.length, callsBeforeDraft, 'Creating draft must not start Agent');
+    await designPage.locator('#design-start').click();
+    assert.match(await designPage.locator('#launch-title').textContent(), /架构共创/);
+    await designPage.locator('#launch-cancel').click();
+    assert.equal(hostCalls.length, callsBeforeDraft, 'Canceled launch creates no session');
+    const designProposal = {
+      title: '本地项目治理设计',
+      document: '## 用途\n人确认意图，Agent执行获批范围。\n## 决定\n复用本地文件与画板，不引入服务。代价：不提供多机实时协作。\n## 边界\n设计不是源码现状。<img src=x onerror="window.designInjected=true">',
+      nodes: [{ id: 'intent', title: '项目意图', description: 'STATE保存获批范围；设计说明理由和取舍。', files: [] }, { id: 'canvas', title: '可视化画板', description: '查看职责和关系，不自动重画设计基线。', files: [] }],
+      edges: [{ from: 'canvas', to: 'intent', label: '展示计划职责' }]
+    };
+    await saveProposal(designProposal);
+    await refresh(designPage);
+    assert.equal(await designPage.locator('.architecture-node').count(), 2);
+    await designPage.locator('.design-document-details summary').click();
+    assert.match(await designPage.locator('#design-document').textContent(), /<img/);
+    assert.equal(await designPage.locator('#design-document img').count(), 0);
+    assert.equal(await designPage.evaluate(() => window.designInjected), undefined);
+    await designPage.locator('#design-review').click();
+    await designPage.locator('#design-reviewer').fill('Human browser fixture');
+    await designPage.locator('#design-conclusion').fill('已审阅方案、图和范围；确认不代表代码实施授权。');
+    await designPage.locator('#design-reviewed').check();
+    await designPage.screenshot({ path: path.join(output, 'state-design-confirm.png'), fullPage: false }); shots++;
+    await designPage.locator('#design-confirm-submit').click();
+    await confirm(designPage, false);
+    assert.equal((await designSnapshot()).baseline, null);
+    await designPage.locator('#design-confirm-submit').click();
+    await confirm(designPage);
+    const firstBaseline = (await designSnapshot()).baseline;
+    assert.equal(firstBaseline.number, 1);
+    assert.equal(await designPage.locator('#design-version').inputValue(), 'baseline');
+    behaviorReport.passed('design-first-baseline');
+    const storedDesign = await fs.readFile(path.join(roots[0], '.governance/architecture-design.json'), 'utf8');
+    await refresh(designPage);
+    await mutate({ action: 'board_update', id: raceId, title: 'Ordinary internal update' });
+    await refresh(designPage);
+    assert.equal(await fs.readFile(path.join(roots[0], '.governance/architecture-design.json'), 'utf8'), storedDesign);
+    await designPage.locator('#design-begin').click();
+    await designPage.locator('#design-reason').fill('职责调整：证据模块独立，不改变项目授权。');
+    await designPage.locator('#design-begin-submit').click();
+    await confirm(designPage);
+    assert.deepEqual((await designSnapshot()).baseline, firstBaseline);
+    const revised = JSON.parse(JSON.stringify(designProposal));
+    revised.document = '## 用途\n保留稳定设计，显式修订关键职责。\n## 决定\n证据职责独立，代价是增加一个模块；不增加网络服务。';
+    revised.nodes.push({ id: 'evidence', title: '验证证据', description: '只报告实际场景结果，不自动批准或认证身份。', files: [] });
+    revised.edges.push({ from: 'canvas', to: 'evidence', label: '展示实际结果' });
+    await saveProposal(revised); await refresh(designPage);
+    assert.equal(await designPage.locator('#design-version').inputValue(), 'baseline', 'Revision cannot silently replace baseline canvas');
+    assert.equal(await designPage.locator('.architecture-node').count(), 2);
+    await designPage.locator('#design-version').selectOption('draft');
+    assert.equal(await designPage.locator('.architecture-node').count(), 3);
+    await designPage.locator('#design-diff-details > summary').click();
+    assert.match(await designPage.locator('#design-diff').textContent(), /evidence/);
+    await capture(designPage, 'design-revision');
+    await designPage.locator('#design-review').click();
+    await designPage.locator('#design-reviewer').fill('Human browser fixture');
+    await designPage.locator('#design-conclusion').fill('明确确认第二版，保留第一版。');
+    await designPage.locator('#design-reviewed').check();
+    await designPage.locator('#design-confirm-submit').click(); await confirm(designPage);
+    assert.equal((await designSnapshot()).baseline.number, 2);
+    assert.deepEqual((await designSnapshot()).history[0], firstBaseline);
+    await designPage.locator('#design-version').selectOption('1');
+    assert.equal(await designPage.locator('.architecture-node').count(), 2);
+    assert.equal(await designPage.locator('#design-review').isDisabled(), true);
+    await designPage.locator('#design-version').selectOption('baseline');
+    for (const width of [390, 768, 1280]) for (const theme of ['light', 'dark']) {
+      await designPage.setViewportSize({ width, height: 1000 }); await sendAppearance(designPage, { base: theme });
+      assert.equal(await designPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'Design must fit narrow screens');
+      await capture(designPage, `design-${width}-${theme}`);
+    }
+    behaviorReport.passed('design-explicit-revision');
+    await designPage.setViewportSize({ width: 1280, height: 1000 });
+    await designPage.locator('#design-begin').click();
+    await designPage.locator('#design-reason').fill('This draft must remain in project A.');
+    root = roots[1];
+    await designPage.evaluate(path => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root);
+    await settled(designPage);
+    assert.equal(await designPage.locator('#design-begin-dialog').evaluate(el => el.open), false);
+    assert.equal(await designPage.locator('.architecture-node').count(), 0);
+    assert.equal((await new Governance(root).run({ action: 'architecture_design_snapshot' })).baseline, null);
+    root = roots[0];
+    await designPage.evaluate(path => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root);
+    await settled(designPage);
+    delayedDesignRoot = roots[0];
+    await designPage.locator('#refresh').click();
+    const designDeadline = Date.now() + 5000;
+    while (!releaseDesign && Date.now() < designDeadline) await designPage.waitForTimeout(10);
+    assert.equal(typeof releaseDesign, 'function');
+    root = roots[1];
+    await designPage.evaluate(path => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root);
+    await settled(designPage); delayedDesignRoot = null; releaseDesign();
+    await designPage.waitForTimeout(80);
+    assert.equal(await designPage.locator('.architecture-node').count(), 0, 'Late A design cannot populate B canvas');
+    assert.equal(await designPage.locator('#design-review').isDisabled(), true);
+    assert.deepEqual((await new Governance(roots[0]).run({ action: 'architecture_design_snapshot' })).baseline.number, 2);
+    root = roots[0]; await designPage.close();
+    behaviorReport.passed('design-workspace-isolation');
     assert.deepEqual(errors, []);
     behaviorReport.finish(true);
     console.log(

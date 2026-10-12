@@ -10,6 +10,7 @@ const docFiles = [
   'doc-driven.md',
   'behavior-workspace.md',
   'architecture.md',
+  'architecture-design.md',
   'development.md',
   'publishing.md',
   'releasing.md',

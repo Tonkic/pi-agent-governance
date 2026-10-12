@@ -37,16 +37,17 @@
     "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
     "2026-10-12用户批准Clean Code修复与经用途核查的无用代码清理，并明确批准.gitignore仅新增/.pi/与/changes/archive/redesign-governance-panel/。保留目录文件、不提交其内容；不改变dirty门禁、不忽略其他源码、不删除发布回退包。工作项clean-code-repair-cleanup；保留既有总体阻塞。",
     "No bypassing host permissions, test evidence, confirmation or Git safeguards",
-    "2026-10-12用户明确批准仅对历史测试blob d2c45515b924a1f69d92ef00b771e77b7318bbfe的两条合成令牌作扫描例外；真实本机令牌、其他blob/令牌/私钥与敏感路径继续拦截。不重写历史、不关闭扫描。"
+    "2026-10-12用户明确批准仅对历史测试blob d2c45515b924a1f69d92ef00b771e77b7318bbfe的两条合成令牌作扫描例外；真实本机令牌、其他blob/令牌/私钥与敏感路径继续拦截。不重写历史、不关闭扫描。",
+    "用户批准Architecture Copilot作为架构设计Skill，采用稳定基线＋显式修订、复用可视化画板；另明确批准agent.prompt.inject用于宿主按需提供该Skill，不批准自动安装或市场提交。草案不是实现证据，Skill不能自动确认基线或授权代码变更，旧基线保留。"
   ],
-  "current": "已完成本轮Clean Code具体修复与核实清理。受管来源be8e5e6已通过源码同步；main58a2d10合并后类型/构建、110测试与78图浏览器重测通过，普通推送且远端核对一致。包43文件549908字节SHAfb0c52c294428885b295dee6c733f40806e7db7853e82329ba41b9bc14d10316，版本/权限不变，未安装或发布市场。用户目录及历史包保留；精确目录忽略和历史假令牌例外均明确获批。同内容输出stat问题已实际修复，真实/staged/未知内容仍拒绝。工作项clean-code-repair-cleanup已验收；大型拆分/锁上下文/类型化仍为后续机会。原文档驱动第一阶段一并交付，不自动实施提议/批准阶段。总体真实宿主等旧标准未完成，不close。",
+  "current": "0.7.3架构设计与稳定基线已实现并通过本地门禁：固定上游462c8c5的精简按需Skill，用户明确批准agent.prompt.inject；现有画板展示设计草案/当前基线/历史，显式修订保留旧版，确认绑定内容、工作区、任务和草案ID。与源码现状和STATE授权独立，不自动实现代码。干净npm ci、类型/构建、120测试、86图浏览器回归、六行为九场景、i18n0失败/2既有提示通过；六组总览和确认弹窗已目视，限定复核无具体问题。PluginCheck/Pack60文件687060字节SHA6207b00d250ee0e1e917d8edc53dce49f9879e52799f6408a75d88acdd872eab，60条目逐字节匹配，无本机设计/证据数据。待本次提交后重测、来源同步与main集成交付；不安装、不提交市场，不总体close。",
   "next": [
-    "本轮具体修复已交付；后续大规模架构拆分/完整类型化需另定范围，不为满足清洁度机械改写",
-    "保留并完成原真实宿主、源码换行指纹和一次启动接续验收；全部总体标准实际通过后才能verify/close"
+    "审查并提交本次功能、包、文档和证据；提交后重测",
+    "按0.7.0只读基线完成0.7.3来源同步、main集成重测/普通推送",
+    "保留原真实宿主、源码换行指纹和一次启动接续总体验收"
   ],
   "blocked": [
-    "0.7.1真实宿主安装与交互验收未完成，MCP无插件安装/更新接口，遵守既有MCP-only授权；市场保持0.7.0。",
-    "手动来源模式不自动修正CRLF/LF语义问题；既有指纹与一次启动接续验收仍未完成，不总体close。"
+    "原真实宿主、源码换行指纹和一次启动接续总体验收仍未完成，不close"
   ],
   "followUp": null,
   "change": "changes/active/project-board-release",

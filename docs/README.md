@@ -8,6 +8,7 @@ Repository handoff, evidence-bound work-item acceptance, source-backed architect
 | --- | --- | --- |
 | 接手目标、更新进度、验证关闭 | [治理用法](governance.md#接手与执行) | 同页“验证与关闭” |
 | 看板、工作项验收、架构重分析 | [项目接口](project.md#工作项) | 同页“项目架构” |
+| 架构共创、确认基线与显式修订 | [架构设计](architecture-design.md) | 同页“数据与接口” |
 | 更新当前项目文档 | [文档维护](documentation.md) | [项目 Agent 操作](project.md#项目-agent-操作) |
 | 读行为说明、查看关联测试证据 | [文档驱动开发](doc-driven.md) | [切换项目说明](behavior-workspace.md) |
 | 分支、worktree、提交和集成 | [Git 协作](git.md#原则) | 同页“冲突与恢复” |

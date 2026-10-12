@@ -18,6 +18,18 @@
       "document": "docs/behavior-workspace.md",
       "cases": ["draft-isolation"],
       "files": ["plugin/renderer/panel.ts", "plugin/runtime/renderer/panel.js", "plugin/renderer/index.html", "test/browser.cjs"]
+    },
+    {
+      "id": "AD-001", "document": "docs/architecture-design.md", "cases": ["design-first-baseline"],
+      "files": ["plugin/design.ts", "plugin/runtime/design.js", "plugin/core.ts", "plugin/runtime/core.js", "plugin/panel.ts", "plugin/runtime/panel.js", "plugin/renderer/design.ts", "plugin/runtime/renderer/design.js", "plugin/renderer/panel.ts", "plugin/runtime/renderer/panel.js", "plugin/renderer/index.html", "test/browser.cjs", "test/behavior-reporter.cjs", "scripts/check-behaviors.cjs", "plugin/skills/architecture-copilot/SKILL.md", "plugin/operations.ts", "plugin/runtime/operations.js", "plugin/behaviors.ts", "plugin/runtime/behaviors.js"]
+    },
+    {
+      "id": "AD-002", "document": "docs/architecture-design.md", "cases": ["design-explicit-revision"],
+      "files": ["plugin/design.ts", "plugin/runtime/design.js", "plugin/renderer/design.ts", "plugin/runtime/renderer/design.js", "plugin/renderer/panel.ts", "plugin/runtime/renderer/panel.js", "test/browser.cjs"]
+    },
+    {
+      "id": "AD-003", "document": "docs/architecture-design.md", "cases": ["design-workspace-isolation"],
+      "files": ["plugin/design.ts", "plugin/runtime/design.js", "plugin/main.ts", "plugin/runtime/main.js", "plugin/renderer/design.ts", "plugin/runtime/renderer/design.js", "plugin/renderer/panel.ts", "plugin/runtime/renderer/panel.js", "test/browser.cjs"]
     }
   ]
 }

@@ -18,12 +18,14 @@ en.safetyNotes += ' Reads enabled model names and supported thinking levels thro
 zh.safetyNotes += ' 通过models.list只读已启用模型名称和支持的思考强度，显式选择仅作用于新任务会话，不修改宿主默认设置。';
 en.safetyNotes += ' Documentation maintenance may write current-project docs/, notes/ and necessary root entry links. Prompt boundaries are not a security sandbox; host Agent permissions still apply. Canceling a task does not roll back files already written.';
 zh.safetyNotes += ' 文档维护可写当前项目docs/、notes/和必要根入口链接。提示词限制不是安全沙箱，Agent工具权限仍由宿主管理；取消任务不撤销已写入文件。';
+en.safetyNotes += ' Provides an opt-in architecture design Skill through agent.prompt.inject. Design drafts and confirmed baselines are separate from source architecture; confirmation is caller-attested, not authentication or implementation approval.';
+zh.safetyNotes += ' 通过agent.prompt.inject提供按需架构设计Skill；设计草案和确认基线独立于源码架构。确认记录由调用方声明，不是身份认证或代码实施授权。';
 const manifest = {
   schemaVersion: 1, id: 'io.github.tonkic.agent-governance', ...en, version: require('../../package.json').version,
   i18n: { en, 'zh-CN': zh },
   main: 'main.js', ui: { panel: 'renderer/index.html', title: { en: en.name, 'zh-CN': zh.name } },
-  contributes: { agentTools: [tool], commands: [{ id: 'governance.open', title: 'Agent Governance: Open panel / 打开治理面板', keywords: ['governance', '治理', '任务', 'git'] }] },
-  permissions: ['agent.tool.register', 'ui.panel', 'desktop.control', 'models.list'],
+  contributes: { agentTools: [tool], skills: [{ id: 'architecture-copilot', path: 'skills/architecture-copilot/SKILL.md' }], commands: [{ id: 'governance.open', title: 'Agent Governance: Open panel / 打开治理面板', keywords: ['governance', '治理', '任务', 'git'] }] },
+  permissions: ['agent.tool.register', 'ui.panel', 'desktop.control', 'models.list', 'agent.prompt.inject'],
   engines: { piDesktop: '>=0.1.0' }, activationEvents: ['onStartup', 'onCommand:governance.open']
 };
 fs.writeFileSync(path.join(__dirname, '../../plugin/manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
