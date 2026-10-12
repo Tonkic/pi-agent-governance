@@ -9,6 +9,8 @@ const assert = require('node:assert/strict');
 const { Governance } = require('../plugin/runtime/core');
 const { panelInvoke } = require('../plugin/runtime/panel');
 const { operationInvoke } = require('../plugin/runtime/operations');
+const { itemFingerprint } = require('../plugin/runtime/project');
+const { randomUUID } = require('node:crypto');
 const behaviorReport = require('./behavior-reporter.cjs').reporter();
 const hostCalls = [];
 const operationWrites = [];
@@ -329,9 +331,10 @@ const models = {
     assert.equal(await page.locator('.metrics').count(), 0);
     assert.equal(await page.locator('.workspace-nav a').count(), 3);
     assert.equal(await page.locator('#project-dialog').evaluate((el) => el.open), false);
-    assert.equal(await page.locator('.board-column').count(), 4);
-    // CSS cascade must keep four/two/one columns, including the old 700px breakpoint.
-    for (const [width, columns] of [[1280, 4], [1000, 2], [680, 2], [600, 1]]) {
+    assert.equal(await page.locator('.board-column').count(), 3);
+    assert.deepEqual(await page.locator('.board-column').evaluateAll(rows => rows.map(el => el.dataset.stage)), ['todo', 'doing', 'done']);
+    // CSS cascade must keep three/two/one columns, including the old 700px breakpoint.
+    for (const [width, columns] of [[1280, 3], [1000, 2], [680, 2], [600, 1]]) {
       await page.setViewportSize({ width, height: 1000 });
       assert.equal(await page.locator('#board-columns').evaluate(el =>
         getComputedStyle(el).gridTemplateColumns.split(' ').length), columns);
@@ -532,14 +535,16 @@ const models = {
     assert.equal(
       new Set(beforeDetails.map((r) => r.y)).size,
       1,
-      'Desktop board starts as one row of four columns'
+      'Desktop board starts as one row of three columns'
     );
+    assert.equal(beforeDetails.length, 3);
+    assert.ok(Math.max(...beforeDetails.map(r => r.width)) - Math.min(...beforeDetails.map(r => r.width)) <= 1, 'Wide columns are equal width');
     await card(page, first).click();
     const openedGeometry = await boardGeometry();
     assert.deepEqual(
       openedGeometry,
       beforeDetails,
-      'Opening item details must not resize or reflow the four-column board'
+      'Opening item details must not resize or reflow the three-column board'
     );
     assert.equal(
       await page.locator('#item-sheet').evaluate((el) => el.matches(':modal')),
@@ -558,6 +563,9 @@ const models = {
     await page.locator('#item-guide').click();
     assert.match(await page.locator('#agent-brief').inputValue(), new RegExp(first));
     assert.match(await page.locator('#agent-brief').inputValue(), /governance/);
+    assert.match(await page.locator('#agent-brief').inputValue(), /分层文档/);
+    assert.match(await page.locator('#agent-brief').inputValue(), /运行相关检查/);
+    assert.match(await page.locator('#agent-brief').inputValue(), /架构设计可选/);
     await close(page);
     assert.equal(await card(page, first).evaluate((el) => el === document.activeElement), true);
     // Menu keys and focus recovery.
@@ -647,98 +655,92 @@ const models = {
     await confirm(page);
     assert.equal((await snapshot()).board.items.find((i) => i.id === first).stage, 'done');
     assert.equal(await fs.readFile(path.join(root, 'STATE.json'), 'utf8'), stateBefore);
-    // Human review records criteria/evidence; cancellation retains the form, edits invalidate acceptance.
-    await card(page, first).getByRole('button', { name: '人工验收', exact: true }).click();
-    await page.locator('#accept-reviewer').fill('Fixture human');
-    await page.locator('#accept-conclusion').fill('Keyboard return checked');
-    await page.locator('#accept-evidence').fill('Real browser focus assertions passed');
+    // The browser checks above actually ran before done; no additional review form or Agent task.
+    assert.equal((await snapshot()).board.items.find(i => i.id === first).acceptance ?? null, null);
+    assert.equal(await page.locator('#accept-dialog, #accept-form, #item-human-review, #item-agent-review, .card-review-actions').count(), 0);
+    assert.equal(await page.getByRole('button', { name: /^(人工验收|Agent 验收)$/ }).count(), 0);
+    const callsBeforeDone = hostCalls.length;
+    await card(page, first).click({ button: 'right' });
+    assert.doesNotMatch(await page.locator('#item-menu').textContent(), /验收/);
     await page.keyboard.press('Escape');
-    await confirm(page, false);
-    assert.equal(await page.locator('#accept-dialog').evaluate((el) => el.open), true);
-    assert.equal(await page.locator('#item-sheet').evaluate((el) => el.open), true);
-    assert.equal(
-      await page.locator('#accept-evidence').inputValue(),
-      'Real browser focus assertions passed'
-    );
-    await page.locator('#accept-form button[type="submit"]').click();
-    assert.equal(
-      await page.locator('#confirm-dialog').evaluate((el) => el.open),
-      false,
-      'Unchecked criteria block passing review'
-    );
-    await page.locator('#accept-criteria input').check();
-    await capture(page, 'human-review');
-    await page.locator('#accept-form button[type="submit"]').click();
-    await confirm(page, false);
-    assert.equal(
-      await page.locator('#accept-evidence').inputValue(),
-      'Real browser focus assertions passed'
-    );
-    assert.equal((await snapshot()).board.items.find((i) => i.id === first).stage, 'done');
-    await page.locator('#accept-form button[type="submit"]').click();
-    await confirm(page);
-    assert.equal((await snapshot()).board.items.find((i) => i.id === first).stage, 'accepted');
     await card(page, first).click();
-    assert.match(await page.locator('#item-review-record').textContent(), /Fixture human/);
+    assert.match(await page.locator('#item-checks h3').textContent(), /检查条件/);
+    assert.equal(await page.locator('#item-history').isVisible(), false);
     await close(page);
-    await menu(page, first, '编辑');
-    await page
-      .locator('#workitem-description')
-      .fill('Check search, object details and keyboard return. Revised.');
-    await page.locator('#workitem-save').click();
+    await menu(page, first, '移至正在进行');
     await confirm(page);
-    let reviewItem = (await snapshot()).board.items.find((i) => i.id === first);
-    assert.equal(reviewItem.stage, 'done');
-    assert.equal(reviewItem.acceptance.valid, false);
-    await card(page, first).getByRole('button', { name: '人工验收', exact: true }).click();
-    await page.locator('#accept-result').selectOption('fail');
-    await page.locator('#accept-reviewer').fill('Fixture human');
-    await page.locator('#accept-conclusion').fill('Need another check');
-    await page.locator('#accept-evidence').fill('A criterion was not verified');
-    await page.locator('#accept-form button[type="submit"]').click();
-    await confirm(page);
-    assert.equal((await snapshot()).board.items.find((i) => i.id === first).stage, 'doing');
+    assert.equal((await snapshot()).board.items.find(i => i.id === first).stage, 'doing');
     await menu(page, first, '移至已完成');
     await confirm(page);
-    // Public desktop operations are simulated. Settled turns alone never mutate board acceptance.
-    const beforeAgent = hostCalls.length;
-    await card(page, first).getByRole('button', { name: 'Agent 验收', exact: true }).click();
-    await confirm(page, false);
-    assert.equal(hostCalls.length, beforeAgent);
-    await card(page, first).getByRole('button', { name: 'Agent 验收', exact: true }).click();
-    await confirm(page);
-    await page.waitForSelector('.operation-run');
-    await capture(page, 'agent-progress');
-    assert.match(
-      hostCalls.findLast((c) => c.operation === 'agent/prompt').args[0].content,
-      /board_accept/
-    );
-    await page.getByRole('button', { name: '查看进度 / 结果', exact: true }).click();
+    assert.equal((await snapshot()).board.items.find(i => i.id === first).stage, 'done');
+    assert.equal(hostCalls.length, callsBeforeDone, 'Done/reopen does not launch an Agent');
+    await capture(page, 'direct-done');
+
+    // Seed an explicitly historical fixture on disk; read it through the actual backend.
+    // This is old-format compatibility data, not current-run test evidence or a live review action.
+    const legacyId = 'legacy-accepted';
+    await mutate({ action: 'board_create', id: legacyId, title: 'Historical completed work', criteria: ['Historical fixture check'] });
+    const legacyBoardPath = path.join(root, '.governance/board.json');
+    const legacyBoard = JSON.parse(await fs.readFile(legacyBoardPath, 'utf8'));
+    const legacyItem = legacyBoard.items.find(i => i.id === legacyId);
+    legacyItem.stage = 'accepted';
+    legacyItem.acceptance = { method: 'human', passed: true, valid: true,
+      itemFingerprint: itemFingerprint(legacyItem), at: '2020-01-01T00:00:00.000Z',
+      reviewer: 'Legacy fixture reviewer', conclusion: 'Archived fixture conclusion',
+      evidence: 'Historical fixture only; not evidence for this test run' };
+    await g.write('.governance/board.json', JSON.stringify(legacyBoard, null, 2) + '\n');
+    const legacyRaw = await fs.readFile(legacyBoardPath, 'utf8');
+    const legacyRevision = (await snapshot()).revision;
+    await refresh(page);
+    assert.equal(await page.locator(`[data-stage="done"] [data-workitem="${legacyId}"]`).count(), 1);
+    assert.equal(await page.locator('[data-stage="accepted"]').count(), 0);
+    assert.match(await card(page, legacyId).locator('.item-meta').textContent(), /已完成/);
+    await card(page, legacyId).click();
+    assert.match(await page.locator('#item-sheet-meta').textContent(), /已完成/);
+    assert.equal(await page.locator('#item-history').evaluate(el => el.open), false);
+    await page.locator('#item-history summary').click();
+    assert.match(await page.locator('#item-history summary').textContent(), /历史检查记录.*旧版.*只读/);
+    assert.match(await page.locator('#item-review-record').textContent(), /旧版人工验收记录.*Legacy fixture reviewer/);
+    assert.match(await page.locator('#item-review-record').textContent(), /not evidence for this test run/);
+    await capture(page, 'legacy-history');
+    await close(page);
+    await card(page, legacyId).click({ button: 'right' });
+    assert.doesNotMatch(await page.locator('#item-menu').textContent(), /验收/);
+    assert.equal(await page.locator('#item-menu').getByRole('menuitem', { name: '移至正在进行', exact: true }).count(), 1);
+    await page.keyboard.press('Escape');
+    await refresh(page);
+    assert.equal(await fs.readFile(legacyBoardPath, 'utf8'), legacyRaw, 'Reading legacy history must not migrate/write board data');
+    assert.equal((await snapshot()).revision, legacyRevision);
+
+    // Old review sessions remain readable/open/status/cancel, but are never newly launched.
+    const legacyRun = { id: randomUUID(), kind: 'acceptance', phase: 'running', workspace: root,
+      taskId: 'overall', itemId: legacyId, sessionId: 'legacy-fixture-session',
+      createdAt: '2020-01-01T00:00:00.000Z', updatedAt: '2020-01-01T00:00:00.000Z' };
+    let historicalRuns = { version: 1, runs: [] };
+    try { historicalRuns = JSON.parse(await fs.readFile(path.join(root, '.governance/operations.json'), 'utf8')); }
+    catch (error) { if (error.code !== 'ENOENT') throw error; }
+    historicalRuns.runs.push(legacyRun);
+    await g.write('.governance/operations.json', JSON.stringify(historicalRuns, null, 2) + '\n');
+    const historyRaw = await fs.readFile(path.join(root, '.governance/operations.json'), 'utf8');
+    const promptsBeforeHistory = hostCalls.filter(c => ['session/create', 'agent/prompt'].includes(c.operation)).length;
+    await page.locator('#operations-open').click();
+    await settled(page);
+    const historyRow = page.locator('.operation-run').filter({ hasText: '历史工作项验收（旧版）' });
+    assert.equal(await historyRow.count(), 1);
+    assert.equal(await fs.readFile(path.join(root, '.governance/operations.json'), 'utf8'), historyRaw);
+    await historyRow.getByRole('button', { name: '打开 Agent 会话', exact: true }).click();
+    await settled(page);
+    assert.equal(hostCalls.at(-1).operation, 'session/open');
+    await historyRow.getByRole('button', { name: '查看进度 / 结果', exact: true }).click();
     await settled(page);
     assert.match(await page.locator('#operation-result').textContent(), /Fixture analysis output/);
-    hostStreaming = false;
-    await page.getByRole('button', { name: '查看进度 / 结果', exact: true }).click();
-    await settled(page);
-    assert.equal((await snapshot()).board.items.find((i) => i.id === first).stage, 'done');
+    await capture(page, 'legacy-agent-progress');
+    await historyRow.getByRole('button', { name: '取消任务', exact: true }).click();
+    await confirm(page);
+    assert.equal(hostCalls.at(-1).operation, 'agent/abort');
+    assert.equal(hostCalls.filter(c => ['session/create', 'agent/prompt'].includes(c.operation)).length, promptsBeforeHistory);
+    assert.equal(await fs.readFile(legacyBoardPath, 'utf8'), legacyRaw, 'Legacy session management cannot change the board');
     await page.locator('#operations-close').click();
-    // Simulate the Agent's explicit evidence submission, rather than a frontend auto-pass.
-    reviewItem = (await snapshot()).board.items.find((i) => i.id === first);
-    await mutate({
-      action: 'board_accept',
-      id: first,
-      expectedItem: reviewItem.itemFingerprint,
-      method: 'agent',
-      passed: true,
-      accepted: [true],
-      reviewer: 'Fixture Agent',
-      conclusion: 'Criterion checked',
-      evidence: 'Isolated browser checks, no physical-host claim'
-    });
-    await refresh(page);
-    assert.equal(
-      await page.locator(`[data-stage="accepted"] [data-workitem="${first}"]`).count(),
-      1
-    );
     await page.locator('#analysis-start').click();
     await confirm(page, false);
     hostStreaming = true;
@@ -870,7 +872,7 @@ const models = {
     assert.equal(await page.locator('#board-empty').isVisible(), true);
     await capture(page, 'no-results');
     await page.locator('#search-clear').click();
-    assert.equal(await page.locator('[data-workitem]').count(), 2);
+    assert.equal(await page.locator('[data-workitem]').count(), 3);
     // Synthetic touch PointerEvents exercise the long-press handler; not physical-device acceptance.
     await card(page, first).dispatchEvent('pointerdown', {
       pointerType: 'touch',
@@ -1154,6 +1156,9 @@ const models = {
               })
             );
           const before = await geometry();
+          assert.equal(before.length, 3, `${lang}/${width}/${theme}: exactly three stages`);
+          assert.equal(await p.locator('#board-columns').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length), width > 1100 ? 3 : width > 650 ? 2 : 1);
+          assert.equal(await p.getByRole('button', { name: /^(人工验收|Agent 验收|Human review|Agent review)$/ }).count(), 0);
           await card(p, first).click();
           assert.deepEqual(
             await geometry(),

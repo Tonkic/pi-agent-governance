@@ -19,14 +19,15 @@ function discardWarning(submitted?: string) {
     'progress-form': t('draftProgress'),
     'start-form': t('draftTask'),
     'workitem-form': t('draftItem'),
-    'accept-form': t('draftReview'),
     'design-begin-form': t('designTitle'),
     'design-confirm-form': t('designReview')
   };
   const drafts = [...dirtyForms].filter((id) => id !== submitted).map((id) => names[id] || id);
   return drafts.length ? t('discard', drafts.join(' / ')) : '';
 }
-const boardStages = ['todo', 'doing', 'done', 'accepted'];
+const boardStages = ['todo', 'doing', 'done'];
+// Old snapshots remain readable without migrating their persisted record.
+const effectiveStage = (item) => item.stage === 'accepted' ? 'done' : item.stage;
 const boardLabels = new Proxy({}, { get: (_, key: CopyKey) => t(key) });
 const labels = new Proxy(
   {},
@@ -60,7 +61,7 @@ function lock(value) {
   $('architecture-check').disabled = value || !projectSnapshot?.architecture || !navigator.onLine;
   document
     .querySelectorAll<HTMLButtonElement>(
-      '#project-dialog button[type="submit"], #accept-form button[type="submit"]'
+      '#project-dialog button[type="submit"]'
     )
     .forEach((button) => {
       button.disabled = value || !navigator.onLine;
@@ -79,11 +80,6 @@ function lock(value) {
   });
   for (const id of ['analysis-start', 'architecture-analyze', 'documentation-start'])
     $(id).disabled = value || !snapshot?.state?.task || !projectSnapshot || !navigator.onLine;
-  document
-    .querySelectorAll<HTMLButtonElement>('.review-button, #item-human-review, #item-agent-review')
-    .forEach((button) => {
-      button.disabled = value || !navigator.onLine;
-    });
   document.querySelectorAll<HTMLButtonElement>('[data-operation-write]').forEach((button) => {
     button.disabled = value || !navigator.onLine;
   });
@@ -195,8 +191,6 @@ async function load(checkSources = false) {
   launchContext = null;
   launchLoading = false;
   if ($('launch-dialog').open) $('launch-dialog').close();
-  if ($('accept-dialog').open) $('accept-dialog').close();
-  $('accept-form').reset();
   projectSnapshot = null;
   resetWorkitem();
   $('workitem-form').hidden = true;
@@ -319,7 +313,7 @@ $('refresh').addEventListener('click', async () => {
   }
 });
 for (const form of document.querySelectorAll(
-  'main form, #project-dialog form, #workitem-form, #accept-form, #design-begin-form, #design-confirm-form'
+  'main form, #project-dialog form, #workitem-form, #design-begin-form, #design-confirm-form'
 ))
   form.addEventListener('input', () => {
     edited = true;
@@ -658,9 +652,9 @@ async function openItem(id: string = null, edit = false, origin?: HTMLElement) {
   itemOrigin = origin || (document.activeElement as HTMLElement);
   $('item-guidance').hidden = true;
   $('item-read').hidden = !item || edit;
-  $('item-acceptance').hidden = !item || edit;
+  $('item-checks').hidden = !item || edit;
   text('item-sheet-title', item ? item.title : t('newItem'));
-  text('item-sheet-meta', item ? boardLabels[item.stage] : t('newItem'));
+  text('item-sheet-meta', item ? boardLabels[effectiveStage(item)] : t('newItem'));
   text('item-impact', `${t('architectureImpact')}: ${t(impactLabel(item?.architectureImpact))}`);
   if (item) {
     text('item-description', item.description || t('noDescription'));
@@ -671,21 +665,22 @@ async function openItem(id: string = null, edit = false, origin?: HTMLElement) {
     text('item-record-git', item.gitTaskId || t('none'));
     list('item-criteria', item.criteria);
     const r = item.acceptance;
+    $('item-history').hidden = !r;
+    $('item-history').open = false;
     text(
       'item-review-record',
       r
         ? t(
             'reviewRecord',
-            t(r.method === 'human' ? 'humanAcceptance' : 'agentAcceptance'),
+            t(r.method === 'human' ? 'legacyHuman' : 'legacyAgent'),
             r.reviewer,
             t(r.valid ? 'reviewValid' : 'reviewInvalid'),
             r.at,
             r.conclusion,
             r.evidence
           )
-        : t('noReview')
+        : ''
     );
-    $('item-human-review').hidden = $('item-agent-review').hidden = item.stage !== 'done';
   }
   if (edit || !item) {
     editingItem = item?.id || null;
@@ -733,13 +728,7 @@ async function writeWorkitem(args) {
     if (
       !(await confirmWrite(
         t('itemConfirm', args.id, args.stage ? ` → ${boardLabels[args.stage]}` : '') +
-          discardWarning(
-            args.action === 'board_accept'
-              ? 'accept-form'
-              : args.action === 'board_move'
-                ? undefined
-                : 'workitem-form'
-          )
+          discardWarning(args.action === 'board_move' ? undefined : 'workitem-form')
       ))
     )
       return;
@@ -765,7 +754,8 @@ function moveWorkitem(id, stage, position) {
 }
 function menuActions(item) {
   const all = projectSnapshot.board.items;
-  const siblings = all.filter((i) => i.stage === item.stage);
+  const stageNow = effectiveStage(item);
+  const siblings = all.filter((i) => effectiveStage(i) === stageNow);
   const index = siblings.findIndex((i) => i.id === item.id);
   const actions = [
     { label: t('itemDetails'), run: () => openItem(item.id, false, menuOrigin) },
@@ -778,21 +768,17 @@ function menuActions(item) {
       }
     }
   ];
-  if (item.stage === 'done') {
-    actions.push({ label: t('humanAcceptance'), run: () => openHumanReview(item.id, menuOrigin) });
-    actions.push({ label: t('agentAcceptance'), run: () => startOperation('acceptance', item.id) });
-  }
   if (index > 0)
-    actions.push({ label: t('moveUp'), run: () => moveWorkitem(item.id, item.stage, index - 1) });
+    actions.push({ label: t('moveUp'), run: () => moveWorkitem(item.id, stageNow, index - 1) });
   if (index < siblings.length - 1)
-    actions.push({ label: t('moveDown'), run: () => moveWorkitem(item.id, item.stage, index + 1) });
+    actions.push({ label: t('moveDown'), run: () => moveWorkitem(item.id, stageNow, index + 1) });
   for (const stage of boardStages.filter(
     (s) =>
-      s !== 'accepted' && Math.abs(boardStages.indexOf(s) - boardStages.indexOf(item.stage)) === 1
+      Math.abs(boardStages.indexOf(s) - boardStages.indexOf(stageNow)) === 1
   ))
     actions.push({
       label: t('moveTo', boardLabels[stage]),
-      run: () => moveWorkitem(item.id, stage, all.filter((i) => i.stage === stage).length)
+      run: () => moveWorkitem(item.id, stage, all.filter((i) => effectiveStage(i) === stage).length)
     });
   return actions;
 }
@@ -831,6 +817,7 @@ function showGuidance() {
     item.description,
     item.blocker || t('none')
   );
+  $('agent-brief').value += '\n' + t('checks') + ':\n' + (item.criteria || []).join('\n');
   $('agent-brief').value += '\n' + t('impactGuidance', t(impactLabel(item.architectureImpact)));
   text('brief-status', '');
   $('agent-brief').focus();
@@ -855,7 +842,7 @@ function renderBoard() {
     );
     return;
   }
-  const affected = data.board.items.filter(item => item.taskId === snapshot?.state?.task && item.architectureImpact === 'affects' && ['done', 'accepted'].includes(item.stage));
+  const affected = data.board.items.filter(item => item.taskId === snapshot?.state?.task && item.architectureImpact === 'affects' && effectiveStage(item) === 'done');
   text('architecture-reminder', affected.length ? t('architectureReminder', affected.length) : '');
   $('architecture-reminder').hidden = !affected.length;
   const matches = (item) =>
@@ -870,7 +857,7 @@ function renderBoard() {
     const column = document.createElement('section');
     column.className = 'board-column';
     column.dataset.stage = stage;
-    const all = data.board.items.filter((item) => item.stage === stage);
+    const all = data.board.items.filter((item) => effectiveStage(item) === stage);
     const items = all.filter(matches);
     const header = document.createElement('header');
     const heading = document.createElement('h3');
@@ -928,7 +915,7 @@ function renderBoard() {
       const meta = document.createElement('div');
       meta.className = 'item-meta';
       const status = document.createElement('span');
-      status.textContent = item.blocker ? t('blocked') : boardLabels[item.stage];
+      status.textContent = item.blocker ? t('blocked') : boardLabels[effectiveStage(item)];
       const more = document.createElement('button');
       more.type = 'button';
       more.className = 'item-more';
@@ -949,26 +936,6 @@ function renderBoard() {
       tag.dataset.impact = item.architectureImpact || 'unassessed';
       tag.textContent = t(impactLabel(item.architectureImpact));
       card.append(tag);
-      if (item.stage === 'done') {
-        const actions = document.createElement('div');
-        actions.className = 'card-review-actions';
-        for (const [key, run] of [
-          ['humanAcceptance', () => openHumanReview(item.id, card)],
-          ['agentAcceptance', () => startOperation('acceptance', item.id)]
-        ] as const) {
-          const button = document.createElement('button');
-          button.type = 'button';
-          button.className = 'review-button';
-          button.textContent = t(key);
-          button.disabled = busy || !navigator.onLine;
-          button.addEventListener('click', (event) => {
-            event.stopPropagation();
-            void run();
-          });
-          actions.append(button);
-        }
-        card.append(actions);
-      }
       card.addEventListener('click', (event) => {
         if ((event.target as Element).closest('button')) return;
         if (longPressConsumed?.id === item.id && Date.now() < longPressConsumed.until) {
@@ -1147,7 +1114,7 @@ document.addEventListener('keydown', (event) => {
     event.key === 'Escape' &&
     $('item-sheet').open &&
     !$('confirm-dialog').open &&
-    !['project-dialog', 'accept-dialog', 'operations-dialog', 'launch-dialog'].some(
+    !['project-dialog', 'operations-dialog', 'launch-dialog'].some(
       (id) => $(id).open
     ) &&
     $('item-menu').hidden
@@ -1201,7 +1168,6 @@ localeReady
     if (owner === workspaceEpoch) lock(false);
   });
 
-let reviewingItem: any = null;
 function openProjectControls() {
   closeItemMenu(false);
   if (!$('project-dialog').open) $('project-dialog').showModal();
@@ -1210,95 +1176,12 @@ $('project-open').addEventListener('click', openProjectControls);
 $('project-close').addEventListener('click', () => {
   if (!busy) $('project-dialog').close();
 });
-async function openHumanReview(id, origin) {
-  const owner = workspaceEpoch;
-  if (!navigator.onLine || !(await openItem(id, false, origin))) return;
-  const item = itemById(id);
-  if (!item || item.stage !== 'done') return;
-  if (dirtyForms.has('accept-form')) {
-    lock(true);
-    try {
-      if (!(await confirmWrite(t('switchDraft')))) return;
-    } finally {
-      if (owner !== workspaceEpoch) return;
-      lock(false);
-    }
-  }
-  reviewingItem = { id, fingerprint: item.itemFingerprint };
-  $('accept-form').reset();
-  dirtyForms.delete('accept-form');
-  text('accept-item-title', item.title);
-  $('accept-criteria').replaceChildren(
-    ...(item.criteria || []).map((criterion) => {
-      const label = document.createElement('label');
-      label.className = 'criterion-check';
-      const box = document.createElement('input');
-      box.type = 'checkbox';
-      box.required = true;
-      label.append(box, document.createTextNode(criterion));
-      return label;
-    })
-  );
-  $('accept-dialog').showModal();
-  $('accept-reviewer').focus();
-}
-async function closeHumanReview() {
-  const owner = workspaceEpoch;
-  if (busy) return;
-  if (dirtyForms.has('accept-form')) {
-    lock(true);
-    try {
-      if (!(await confirmWrite(t('switchDraft')))) return;
-    } finally {
-      if (owner !== workspaceEpoch) return;
-      lock(false);
-    }
-  }
-  $('accept-dialog').close();
-  $('accept-form').reset();
-  dirtyForms.delete('accept-form');
-  edited = dirtyForms.size > 0;
-}
-$('accept-close').addEventListener('click', closeHumanReview);
-$('accept-dialog').addEventListener('cancel', (event) => {
-  event.preventDefault();
-  void closeHumanReview();
-});
-$('accept-result').addEventListener('change', () => {
-  $('accept-criteria')
-    .querySelectorAll('input')
-    .forEach((box) => {
-      box.required = $('accept-result').value === 'pass';
-    });
-});
-$('accept-form').addEventListener('submit', (event) => {
-  event.preventDefault();
-  if (!reviewingItem) return;
-  void writeWorkitem({
-    action: 'board_accept',
-    id: reviewingItem.id,
-    expectedItem: reviewingItem.fingerprint,
-    passed: $('accept-result').value === 'pass',
-    reviewer: $('accept-reviewer').value.trim(),
-    conclusion: $('accept-conclusion').value.trim(),
-    evidence: $('accept-evidence').value.trim(),
-    accepted: Array.from(
-      $('accept-criteria').querySelectorAll('input') as NodeListOf<HTMLInputElement>
-    ).map((box) => box.checked)
-  });
-});
-$('item-human-review').addEventListener('click', () => {
-  void openHumanReview(selectedItem, itemOrigin);
-});
-$('item-agent-review').addEventListener('click', () => {
-  void startOperation('acceptance', selectedItem);
-});
 const operationLabel = (kind): CopyKey =>
   kind === 'design' ? 'designTask' :
   kind === 'architecture'
     ? 'architectureTask'
     : kind === 'acceptance'
-      ? 'acceptanceTask'
+      ? 'legacyAcceptanceTask'
       : kind === 'documentation'
         ? 'documentationTask'
         : 'analysis';
@@ -1340,14 +1223,14 @@ function closeLaunch() {
   $('launch-dialog').close();
   updateLaunchControls();
 }
-async function startOperation(kind, itemId?) {
+async function startOperation(kind) {
+  if (!['analysis', 'architecture', 'documentation', 'design'].includes(kind)) return;
   if (busy || !projectSnapshot || !snapshot?.state?.task || !navigator.onLine) return;
   if ($('launch-dialog').open) return;
   if (kind === 'design' && (!designSnapshot?.draft || designSnapshot.error || designSnapshot.draft.taskId !== snapshot.state.task)) return;
   const request = ++launchRequest;
   launchContext = {
     kind,
-    itemId,
     ...(kind === 'design' ? { designRevision: designSnapshot.revision } : {}),
     revision: projectSnapshot.revision,
     workspace: snapshot.workspace
@@ -1359,7 +1242,7 @@ async function startOperation(kind, itemId?) {
   text('launch-title', `${t('launchSettings')} · ${t(operationLabel(kind))}`);
   text(
     'launch-scope',
-    `${snapshot.workspace}${itemId ? '\n' + (itemById(itemId)?.title || itemId) : ''}`
+    snapshot.workspace
   );
   text('launch-status', t('modelsLoading'));
   $('launch-dialog').showModal();
@@ -1579,7 +1462,6 @@ window.pluginBridge?.on?.('workspace:changed', (workspace) => {
   launchRequest++;
   launchContext = null;
   selectedItem = editingItem = null;
-  reviewingItem = null;
   searchQuery = '';
   $('board-search').value = '';
   text('operation-result', '');
