@@ -82,6 +82,9 @@ function lock(value) {
     .forEach((button) => {
       button.disabled = value || !navigator.onLine;
     });
+  document.querySelectorAll<HTMLButtonElement>('[data-operation-write]').forEach((button) => {
+    button.disabled = value || !navigator.onLine;
+  });
   updateLaunchControls();
   updateItemNavigation();
 }
@@ -352,6 +355,7 @@ function renderProjectGraph() {
   const s = snapshot?.state;
   text('graph-warning', '');
   $('graph-warning').hidden = true;
+  text('graph-check-state', '');
   if (graphView === 'workflow') {
     text('architecture-title', t('workflow'));
     text('graph-source', t('workflowSource'));
@@ -1426,22 +1430,28 @@ $('launch-form').addEventListener('submit', async (event) => {
   }
 });
 async function operationAction(action, id) {
-  if (busy) return;
+  const write = ['cancel', 'resolve'].includes(action);
+  const offlineWrite = () => {
+    if (!write || navigator.onLine) return false;
+    notify(t('offlineNotice'), true);
+    return true;
+  };
+  if (busy || offlineWrite()) return;
   const owner = workspaceEpoch;
   lock(true);
   try {
     if (
-      ['cancel', 'resolve'].includes(action) &&
+      write &&
       !(await confirmWrite(
         t(action === 'resolve' ? 'resolveOperationConfirm' : 'operationCancelConfirm')
       ))
     )
       return;
-    if (owner !== workspaceEpoch) return;
+    if (owner !== workspaceEpoch || offlineWrite()) return;
     const data: any = await invoke('governance.operation', {
       action,
       id,
-      confirmed: ['cancel', 'resolve'].includes(action)
+      confirmed: write
     });
     if (action === 'status')
       text(
@@ -1486,7 +1496,8 @@ async function loadOperations() {
           const button = document.createElement('button');
           button.type = 'button';
           button.textContent = t(key as CopyKey);
-          button.disabled = busy;
+          if (action === 'cancel') button.dataset.operationWrite = 'true';
+          button.disabled = busy || (action === 'cancel' && !navigator.onLine);
           button.addEventListener('click', () => {
             void operationAction(action, run.id);
           });
@@ -1496,7 +1507,8 @@ async function loadOperations() {
         const button = document.createElement('button');
         button.type = 'button';
         button.textContent = t('resolveOperation');
-        button.disabled = busy;
+        button.dataset.operationWrite = 'true';
+        button.disabled = busy || !navigator.onLine;
         button.addEventListener('click', () => {
           void operationAction('resolve', run.id);
         });

@@ -19,7 +19,6 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.6 "Seg
 .nav-label { display: block; font-size: 11px; color: var(--muted); padding: 4px 0; }
 .workspace-nav .nav-label { padding-left: 10px; }
 .workspace-nav a { color: var(--muted); text-decoration: none; padding: 9px 11px; border-radius: 6px; }
-.workspace-nav a[aria-current="location"] { background: var(--selected); color: var(--accent); font-weight: 600; }
 .nav-note { margin-top: auto; color: var(--muted); font-size: 11px; padding: 12px; }
 .topbar, .brand-lockup, .topbar-actions, .section-head, .detail-heading, .actions, .git-summary-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .topbar { min-height: 82px; }
@@ -141,7 +140,7 @@ section[id] { scroll-margin-top: calc(var(--pi-plugin-titlebar-height, 0px) + 12
   .form-row, .detail-columns { grid-template-columns: 1fr; gap: 0; } .git-summary-row { align-items: flex-start; } .git-legend { display: none; }
 }
 @media (prefers-reduced-motion:reduce) { button:active { transform: none; } }
-.board-columns { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:18px; }
+.board-columns { display:grid; }
 .board-column { min-width:0; min-height:150px; background:var(--subtle); border:1px solid var(--line); border-radius:8px; padding:12px; }
 .board-column.drop-target { outline:2px solid var(--accent); background:var(--selected); }
 .workitem { margin-top:10px; padding:12px; border:1px solid var(--line); background:var(--surface); border-radius:6px; overflow-wrap:anywhere; cursor:grab; }
@@ -151,5 +150,4 @@ section[id] { scroll-margin-top: calc(var(--pi-plugin-titlebar-height, 0px) + 12
 .workitem-controls button { font-size:11px; padding:5px 8px; }
 #workitem-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
 #board-status { overflow-wrap:anywhere; color:var(--muted); }
-@media(max-width:700px) { .board-columns,#workitem-form { grid-template-columns:minmax(0,1fr); } }
-[hidden] { display:none !important; }
+@media(max-width:700px) { #workitem-form { grid-template-columns:minmax(0,1fr); } }
