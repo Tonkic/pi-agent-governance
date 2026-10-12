@@ -148,3 +148,30 @@ test('reviewed historical fixtures do not exempt other blobs or actual credentia
   const privateKey = '-----BEGIN ' + 'PRIVATE KEY-----';
   assert.equal(containsCredential(object, Buffer.from(privateKey), token), true);
 });
+
+
+test('generated output index refresh only accepts identical unstaged build outputs', () => {
+  const { refreshGeneratedIndex } = require('../scripts/release-auto.cjs');
+  function fixture(status, actual = 'same', index = 'same') {
+    const calls = [];
+    const run = (...args) => {
+      calls.push(args);
+      if (args[0] === 'status') return status;
+      if (args[0] === 'rev-parse') return args[1].startsWith('HEAD:') ? 'same' : index;
+      if (args[0] === 'hash-object') return actual;
+      return '';
+    };
+    return { calls, run };
+  }
+  const valid = fixture(' M plugin/runtime/main.js\n M plugin/docs/README.md\n');
+  refreshGeneratedIndex(valid.run);
+  assert.deepEqual(valid.calls.at(-1), ['add', '--', 'plugin/runtime/main.js', 'plugin/docs/README.md']);
+  for (const invalid of [fixture('M  plugin/runtime/main.js\n'), fixture(' M plugin/main.ts\n'),
+    fixture(' M plugin/runtime/main.js\n', 'changed'), fixture(' M plugin/runtime/main.js\n', 'same', 'staged')]) {
+    assert.throws(() => refreshGeneratedIndex(invalid.run), /inspect before release/);
+    assert.equal(invalid.calls.some(args => args[0] === 'add'), false);
+  }
+  const clean = fixture('');
+  refreshGeneratedIndex(clean.run);
+  assert.equal(clean.calls.some(args => args[0] === 'add'), false);
+});

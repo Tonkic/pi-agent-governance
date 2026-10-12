@@ -50,6 +50,7 @@ node scripts/plugin-center.cjs plugin_status
 - 市场提交互斥锁和持久化 attempted 记录在 Git common directory 的 pi-governance/releases/。提交前持久化；超时、断网、崩溃不得盲目重试、supersede 或删除记录。人工检查远端状态及存活进程后恢复。
 - 只允许保留既有无关未跟踪 `.pi/` 与 redesign archive；不纳入提交。其他未跟踪内容或已跟踪修改均停止交付。密钥扫描只是辅助，不代替人工敏感内容审查。
 - 2026-10-12用户批准唯一历史测试夹具例外：blob `d2c45515b924a1f69d92ef00b771e77b7318bbfe` 的两条合成令牌。真实本机令牌优先拦截；其他blob/令牌/私钥及敏感路径检查不变。当前测试在运行时拼接假令牌，不重写历史。
+- Windows构建若仅产生换行/文件stat状态，发布前仅对已知生成目录逐个核对规范化内容、HEAD和索引哈希，全部相同才刷新索引stat；真实内容/已暂存/未知路径仍拒绝，不改dirty检查或工作区文件。
 - 发布成功不等于真实宿主/目视验收完成，也不等于本机自动安装成功。保留未完成的总体标准。
 - 首次 create_plugin 和手动 submit_version 仍需要对应授权与完整检查。
 

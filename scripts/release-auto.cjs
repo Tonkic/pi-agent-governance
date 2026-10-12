@@ -120,11 +120,30 @@ function secretScan(sourceRef) {
     if (containsCredential(object, bytes, token)) fail('Credential-like content found in reachable history');
   }
 }
+function refreshGeneratedIndex(runGit = git) {
+  const outputs = ['plugin/runtime/', 'plugin/docs/', 'plugin/main.js', 'plugin/manifest.json', 'plugin/README.md'];
+  const rows = runGit('status', '--porcelain=v1', '--untracked-files=no', '--', ...outputs).split(/\r?\n/).filter(Boolean);
+  const files = [];
+  // Preflight all outputs; do not stage real changes or touch user-staged content.
+  for (const row of rows) {
+    const file = row.slice(3);
+    const generated = outputs.some(output => output.endsWith('/') ? file.startsWith(output) : file === output);
+    if (!row.startsWith(' M ') || !generated) fail('Unexpected generated-output status; inspect before release');
+    const head = runGit('rev-parse', 'HEAD:' + file).trim();
+    const index = runGit('rev-parse', ':' + file).trim();
+    const actual = runGit('hash-object', '--path=' + file, '--', file).trim();
+    if (actual !== head || index !== head) fail('Generated output differs from HEAD/index; inspect before release');
+    files.push(file);
+  }
+  // Content is unchanged. Refresh Git's cached output stat without rewriting files.
+  if (files.length) runGit('add', '--', ...files);
+}
 function runChecks() {
   // npm is invoked via Node, avoiding shell quoting and npm.cmd portability issues.
   const npm = process.env.npm_execpath;
   if (!npm || !fs.existsSync(npm)) fail('Run through npm run release:auto');
   for (const script of ['typecheck', 'test', 'test:browser']) execFileSync(process.execPath, [npm, 'run', script], { cwd: root, stdio: 'inherit' });
+  refreshGeneratedIndex();
 }
 async function main() {
   const args = process.argv.slice(2);
@@ -201,7 +220,7 @@ async function main() {
     return result;
   } finally { fs.rmdirSync(lock); }
 }
-module.exports = { stable, compare, decision, validatePolicy, permissionGuard, receiptGuard, execute, executeSourceSync, untrackedGuard, validatePushRemote, containsCredential };
+module.exports = { stable, compare, decision, validatePolicy, permissionGuard, receiptGuard, execute, executeSourceSync, untrackedGuard, validatePushRemote, containsCredential, refreshGeneratedIndex };
 if (require.main === module) main().catch(error => {
   // Do not print arbitrary subprocess output/remote payloads or credentials.
   console.error(error.code || error.status ? 'Release blocked by local command/IO failure; inspect checks and remote status. No mutation retry.' : String(error.message).replace(/pi_pat_[A-Za-z0-9_-]+/g, '[REDACTED]'));
