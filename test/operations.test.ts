@@ -464,3 +464,32 @@ test('documentation maintenance refuses stale projects and does not replay ambig
   await assert.rejects(b.start('documentation'), /existing/);
   assert.equal(b.calls.filter((c) => c.operation === 'agent/prompt').length, 1);
 });
+
+test('persisted operation history rejects non-record roots and runs before host side effects', async (t) => {
+  const f = await fixture(t);
+  const file = path.join(f.root, '.governance/operations.json');
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  for (const entry of [null, false, 42, 'bad', []]) {
+    for (const [value, message] of [
+      [entry, 'Invalid project operation history'],
+      [{ version: 1, runs: [entry] }, 'Invalid project operation record']
+    ]) {
+      const raw = JSON.stringify(value);
+      await fs.writeFile(file, raw);
+      for (const invoke of [
+        () => operationInvoke(f.root, { action: 'list' }, f.desktop),
+        () => f.start()
+      ]) {
+        await assert.rejects(invoke(), (error) => {
+          assert.equal(error instanceof TypeError, false);
+          assert.equal(error.message, message);
+          return true;
+        });
+      }
+      assert.equal(f.calls.length, 0);
+      assert.equal(await fs.readFile(file, 'utf8'), raw);
+    }
+  }
+  await fs.writeFile(file, JSON.stringify({ version: 1, runs: [] }));
+  assert.equal((await f.start()).phase, 'running');
+});

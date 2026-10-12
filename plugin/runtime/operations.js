@@ -6,6 +6,7 @@ const { randomUUID } = require('node:crypto');
 const operationFile = '.governance/operations.json';
 const activePhases = ['creating', 'created', 'running', 'unknown'];
 const inFlight = new Set();
+const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 function result(value) {
     if (value?.ok === false ||
         value?.success === false ||
@@ -26,10 +27,11 @@ async function readRuns(g) {
         throw e;
     }
     const data = JSON.parse(raw);
-    if (data.version !== 1 || !Array.isArray(data.runs) || data.runs.length > 30)
+    if (!isRecord(data) || data.version !== 1 || !Array.isArray(data.runs) || data.runs.length > 30)
         throw Error('Invalid project operation history');
     for (const r of data.runs) {
-        if (typeof r.id !== 'string' ||
+        if (!isRecord(r) ||
+            typeof r.id !== 'string' ||
             !/^[a-f0-9-]{36}$/.test(r.id) ||
             !['analysis', 'architecture', 'acceptance', 'documentation'].includes(r.kind) ||
             ![...activePhases, 'completed', 'canceled', 'failed'].includes(r.phase) ||

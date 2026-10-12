@@ -226,3 +226,48 @@ test('a failed rerun overlapping a panel read must replace the previous pass', a
   assert.equal(result, false);
   assert.equal((await behaviorSnapshot(f.g)).behaviors[0].status, 'failed');
 });
+
+test('persisted behavior bindings reject non-record entries with domain errors', async (t) => {
+  const f = await fixture(t);
+  for (const entry of [null, false, 42, 'bad', []]) {
+    const raw = JSON.stringify({ ...f.bindings, behaviors: [entry] });
+    await f.g.write('docs/behavior-bindings.json', raw);
+    await assert.rejects(behaviorSnapshot(f.g), (error) => {
+      assert.equal(error instanceof TypeError, false);
+      assert.equal(error.message, 'Invalid or duplicate behavior ID');
+      return true;
+    });
+    assert.equal(await f.g.read('docs/behavior-bindings.json'), raw);
+  }
+});
+
+test('persisted behavior evidence rejects non-record cases and roots without rewriting', async (t) => {
+  const f = await fixture(t);
+  for (const entry of [null, false, 42, 'bad', []]) {
+    for (const [value, message] of [
+      [{ ...f.evidence, cases: [entry] }, 'Invalid or duplicate behavior evidence case'],
+      [entry, 'Invalid behavior evidence']
+    ]) {
+      const raw = JSON.stringify(value);
+      await f.g.write(evidenceFile, raw);
+      await assert.rejects(behaviorSnapshot(f.g), (error) => {
+        assert.equal(error instanceof TypeError, false);
+        assert.equal(error.message, message);
+        return true;
+      });
+      assert.equal(await f.g.read(evidenceFile), raw);
+    }
+  }
+});
+
+test('persisted behavior bindings reject non-record roots with a schema error', async (t) => {
+  const f = await fixture(t);
+  for (const value of [null, false, 42, 'bad', []]) {
+    await f.g.write('docs/behavior-bindings.json', JSON.stringify(value));
+    await assert.rejects(behaviorSnapshot(f.g), (error) => {
+      assert.equal(error instanceof TypeError, false);
+      assert.equal(error.message, 'Invalid behavior bindings');
+      return true;
+    });
+  }
+});
