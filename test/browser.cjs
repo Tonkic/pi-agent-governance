@@ -9,7 +9,9 @@ const assert = require('node:assert/strict');
 const { Governance } = require('../plugin/runtime/core');
 const { panelInvoke } = require('../plugin/runtime/panel');
 const { operationInvoke } = require('../plugin/runtime/operations');
+const behaviorReport = require('./behavior-reporter.cjs').reporter();
 const hostCalls = [];
+const operationWrites = [];
 let hostStreaming = true,
   sessionCounter = 0,
   failCreation = false;
@@ -84,6 +86,7 @@ const models = {
     failSnapshot = false;
   let delayedSnapshotRoot = null, releaseSnapshot;
   let delayedGitRoot = null, releaseDelayedGit;
+  let delayedBehaviorRoot = null, releaseBehavior;
   const g = new Governance(root);
   for (const dir of roots.slice(0, 2)) await new Governance(dir).run({ action: 'init' });
   await g.run({
@@ -109,8 +112,15 @@ const models = {
     p.on('pageerror', (e) => errors.push(e.message));
     await p.exposeFunction('hostInvoke', async (channel, payload) => {
       const requestRoot = root;
+      if (channel === 'governance.operation' && ['cancel', 'resolve'].includes(payload.action))
+        operationWrites.push(payload);
       if (channel === 'app.getLocale') return locale;
       if (channel === 'app.getAppearance') return { base: 'light' };
+      if (channel === 'governance.behaviors' && requestRoot === delayedBehaviorRoot) {
+        const result = await panelInvoke(requestRoot, channel, payload);
+        await new Promise(resolve => { releaseBehavior = resolve; });
+        return { ok: true, result };
+      }
       if (channel === 'governance.snapshot' && requestRoot === delayedSnapshotRoot) {
         const result = await panelInvoke(requestRoot, channel, payload);
         await new Promise(resolve => { releaseSnapshot = resolve; });
@@ -210,6 +220,7 @@ const models = {
     root = roots[0];
     await page.evaluate((path) => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root);
     await settled(page);
+    behaviorReport.passed('workspace-switch');
     // Switching while a draft confirmation is open must not save or leak it.
     const switchWorkspace = async (target) => {
       root = target;
@@ -233,6 +244,7 @@ const models = {
     assert.match(retained, /affects/);
     await capture(page, 'workspace-drafts');
     await page.locator('#workspace-drafts-close').click();
+    behaviorReport.passed('draft-isolation');
     await switchWorkspace(roots[2]);
     assert.equal(await page.locator('#initialize-workspace').isVisible(), true);
     assert.equal(await page.locator('#board-new').isDisabled(), true);
@@ -243,16 +255,67 @@ const models = {
     await capture(page, 'new-workspace');
     await switchWorkspace(roots[0]);
     assert.equal(await page.locator('#initialize-workspace').isVisible(), false);
+    behaviorReport.passed('explicit-initialization');
     // A delayed A snapshot cannot replace B or unlock B's unfinished load.
     delayedSnapshotRoot = roots[0];
     await page.locator('#refresh').click();
-    while (!releaseSnapshot) await page.waitForTimeout(10);
+    const snapshotDeadline = Date.now() + 5000;
+    while (!releaseSnapshot && Date.now() < snapshotDeadline) await page.waitForTimeout(10);
+    assert.equal(typeof releaseSnapshot, 'function', 'Timed out after 5s waiting for delayed governance.snapshot to reach the host bridge');
     await switchWorkspace(roots[1]);
     delayedSnapshotRoot = null;
     releaseSnapshot();
     await page.waitForTimeout(40);
     assert.equal(await page.locator('#workspace').textContent(), roots[1]);
     assert.equal(await page.locator('#status').textContent(), '待命');
+    await switchWorkspace(roots[0]);
+    behaviorReport.passed('delayed-snapshot');
+    // Readable docs and real backend status projection; this evidence is only a UI fixture.
+    await page.locator('#behavior-docs-open').click();
+    await settled(page);
+    assert.match(await page.locator('#behavior-docs-status').textContent(), /未配置行为关联/);
+    await page.locator('#behavior-docs-close').click();
+    await g.write('docs/ui-behavior.md', '# 说明\n\n### UI-001 — 易读说明\n\n切换项目后，旧请求不更新新项目。\n<img src=x onerror=alert(1)>\n');
+    await g.write('src/fixture.ts', 'export const value = 1;\n');
+    await g.write('docs/behavior-bindings.json', JSON.stringify({ version: 1, behaviors: [{ id: 'UI-001', document: 'docs/ui-behavior.md', cases: ['ui-case'], files: ['src/fixture.ts'] }] }));
+    await page.locator('#behavior-docs-open').click();
+    await settled(page);
+    assert.match(await page.locator('.behavior-prose').textContent(), /旧请求不更新新项目/);
+    assert.equal(await page.locator('.behavior-prose img').count(), 0);
+    assert.equal(await page.locator('.behavior-status').getAttribute('data-result'), 'unverified');
+    await capture(page, 'behavior-docs-unverified');
+    await page.locator('#behavior-docs-close').click();
+    const { behaviorContract } = require('../plugin/runtime/behaviors');
+    const { makeEvidence } = require('../scripts/check-behaviors.cjs');
+    const contractFixture = await behaviorContract(g);
+    await g.write('.governance/behavior-evidence.json', JSON.stringify(makeEvidence(contractFixture,
+      { version: 1, runId: 'fixture', completed: true, cases: [{ id: 'ui-case', status: 'passed' }] }, 'fixture', true, root, 'a'.repeat(40), true)));
+    await page.locator('#behavior-docs-open').click();
+    await settled(page);
+    assert.equal(await page.locator('.behavior-status').getAttribute('data-result'), 'passed');
+    assert.equal(await page.locator('.behavior-document details').evaluate(el => el.open), false);
+    await page.locator('.behavior-document summary').click();
+    assert.match(await page.locator('.behavior-document details').textContent(), /工作树快照/);
+    await capture(page, 'behavior-docs-fixture-evidence');
+    await page.locator('#behavior-docs-close').click();
+    await g.write('src/fixture.ts', 'export const value = 2;\n');
+    await page.locator('#behavior-docs-open').click();
+    await settled(page);
+    assert.equal(await page.locator('.behavior-status').getAttribute('data-result'), 'stale');
+    await page.locator('#behavior-docs-close').click();
+    delayedBehaviorRoot = roots[0];
+    await page.locator('#behavior-docs-open').click();
+    for (let i = 0; !releaseBehavior && i < 100; i++) await page.waitForTimeout(10);
+    assert.equal(typeof releaseBehavior, 'function');
+    await switchWorkspace(roots[1]);
+    delayedBehaviorRoot = null; releaseBehavior();
+    await page.waitForTimeout(30);
+    assert.equal(await page.locator('#behavior-docs-dialog').evaluate(el => el.open), false);
+    await page.locator('#behavior-docs-open').click();
+    await settled(page);
+    assert.match(await page.locator('#behavior-docs-status').textContent(), /未配置行为关联/);
+    assert.equal(await page.locator('.behavior-document').count(), 0);
+    await page.locator('#behavior-docs-close').click();
     await switchWorkspace(roots[0]);
     // Default is object workbench, with no permanently visible item editor or KPI wall.
     assert.equal(await page.locator('#board-section').isVisible(), true);
@@ -261,6 +324,13 @@ const models = {
     assert.equal(await page.locator('.workspace-nav a').count(), 3);
     assert.equal(await page.locator('#project-dialog').evaluate((el) => el.open), false);
     assert.equal(await page.locator('.board-column').count(), 4);
+    // CSS cascade must keep four/two/one columns, including the old 700px breakpoint.
+    for (const [width, columns] of [[1280, 4], [1000, 2], [680, 2], [600, 1]]) {
+      await page.setViewportSize({ width, height: 1000 });
+      assert.equal(await page.locator('#board-columns').evaluate(el =>
+        getComputedStyle(el).gridTemplateColumns.split(' ').length), columns);
+    }
+    await page.setViewportSize({ width: 1280, height: 1000 });
     assert.equal(await page.locator('#board-section #task-section').count(), 0);
     for (const id of ['architecture', 'git-section', 'board-section']) {
       await navigate(page, id);
@@ -673,9 +743,27 @@ const models = {
       hostCalls.findLast((c) => c.operation === 'agent/prompt').args[0].content,
       /do not edit project files/
     );
+    const writesBeforeCancel = operationWrites.length;
+    await page.context().setOffline(true);
+    await page.waitForFunction(() => document.querySelector('[data-operation-write]').disabled);
+    assert.equal(await page.getByRole('button', { name: '取消任务', exact: true }).isDisabled(), true);
+    assert.equal(await page.getByRole('button', { name: '查看进度 / 结果', exact: true }).first().isEnabled(), true);
+    assert.equal(await page.getByRole('button', { name: '打开 Agent 会话', exact: true }).first().isEnabled(), true);
+    await page.getByRole('button', { name: '查看进度 / 结果', exact: true }).first().click();
+    await settled(page);
+    assert.equal(await page.getByRole('button', { name: '取消任务', exact: true }).isDisabled(), true);
+    await page.context().setOffline(false);
+    await page.waitForFunction(() => !document.querySelector('[data-operation-write]').disabled);
+    await page.getByRole('button', { name: '取消任务', exact: true }).click();
+    await page.context().setOffline(true);
+    await confirm(page);
+    assert.equal(operationWrites.length, writesBeforeCancel, 'Disconnect during cancel confirmation must not invoke the bridge');
+    await page.context().setOffline(false);
+    await page.waitForFunction(() => !document.querySelector('[data-operation-write]').disabled);
+    const callsBeforeCancelDismiss = hostCalls.length;
     await page.getByRole('button', { name: '取消任务', exact: true }).click();
     await confirm(page, false);
-    assert.equal(hostCalls.at(-1).operation, 'agent/prompt');
+    assert.equal(hostCalls.length, callsBeforeCancelDismiss);
     await page.getByRole('button', { name: '取消任务', exact: true }).click();
     await confirm(page);
     assert.equal(hostCalls.at(-1).operation, 'agent/abort');
@@ -736,6 +824,18 @@ const models = {
     await page.locator('#launch-cancel').click();
     await page.locator('#operations-open').click();
     await page.waitForSelector('.operation-run');
+    const writesBeforeResolve = operationWrites.length;
+    await page.context().setOffline(true);
+    await page.waitForFunction(() => document.querySelector('[data-operation-write]').disabled);
+    assert.equal(await page.getByRole('button', { name: '已核对 — 解除创建阻塞', exact: true }).isDisabled(), true);
+    await page.context().setOffline(false);
+    await page.waitForFunction(() => !document.querySelector('[data-operation-write]').disabled);
+    await page.getByRole('button', { name: '已核对 — 解除创建阻塞', exact: true }).click();
+    await page.context().setOffline(true);
+    await confirm(page);
+    assert.equal(operationWrites.length, writesBeforeResolve, 'Disconnect during resolve confirmation must not invoke the bridge');
+    await page.context().setOffline(false);
+    await page.waitForFunction(() => !document.querySelector('[data-operation-write]').disabled);
     await page.getByRole('button', { name: '已核对 — 解除创建阻塞', exact: true }).click();
     await confirm(page, false);
     assert.equal(
@@ -911,6 +1011,7 @@ const models = {
     await page.keyboard.press('0');
     await page.locator('#show-workflow').click();
     assert.equal(await page.locator('.architecture-node').count(), 4);
+    assert.equal(await page.locator('#graph-check-state').textContent(), '', 'Workflow must not show architecture source-check status');
     await page.locator('#module-jump').click();
     await page.waitForFunction(
       () =>
@@ -928,6 +1029,13 @@ const models = {
     await page.locator('#architecture-check').click();
     await settled(page);
     assert.equal(await page.locator('#graph-warning').isVisible(), true);
+    const checkedState = await page.locator('#graph-check-state').textContent();
+    assert.ok(checkedState.length > 0);
+    await page.locator('#show-workflow').click();
+    assert.equal(await page.locator('#graph-check-state').textContent(), '');
+    assert.equal(await page.locator('#graph-warning').isVisible(), false);
+    await page.locator('#show-architecture').click();
+    assert.equal(await page.locator('#graph-check-state').textContent(), checkedState);
     holdGit = true;
     try {
       await page.locator('#refresh').click();
@@ -1155,6 +1263,7 @@ const models = {
     assert.equal((await bg.run({ action: 'project_snapshot' })).board.items.find(i => i.id === raceId).title, 'B save race');
     root = roots[0];
     await savePanel.close();
+    behaviorReport.passed('delayed-save');
     // A continuation created in A must not reopen a dialog after B starts loading.
     const racePanel = await makePage();
     root = roots[2];
@@ -1168,7 +1277,9 @@ const models = {
       'Old new-item continuation must not reopen its dialog in an uninitialized workspace');
     root = roots[0];
     await racePanel.close();
+    behaviorReport.passed('new-item-continuation');
     assert.deepEqual(errors, []);
+    behaviorReport.finish(true);
     console.log(
       `PASS object workbench: menus, search, sheet, drafts, long press, keyboard, offline/error/stale/workspace guards, theme and chrome; ${shots} screenshots: ${output}`
     );
@@ -1181,6 +1292,7 @@ const models = {
     );
   }
 })().catch((e) => {
+  behaviorReport.finish(false);
   console.error(e);
   process.exitCode = 1;
 });

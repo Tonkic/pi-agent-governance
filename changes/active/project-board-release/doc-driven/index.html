@@ -1,0 +1,34 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>0.7.2 文档—测试闭环检查</title><style>body{font:15px system-ui;background:#f5f6f8;color:#263045;margin:24px}main{max-width:1100px;margin:auto}article{background:white;border:1px solid #d9dee8;border-radius:12px;padding:20px;margin:16px 0}p{line-height:1.65}.prose,pre{white-space:pre-wrap;overflow-wrap:anywhere}.result{color:#25694a}img{max-width:100%;border:1px solid #d9dee8;border-radius:12px}</style><main><h1>0.7.2 文档驱动开发第一阶段</h1><p>下面的正文与结果从当前项目behaviorSnapshot生成；实际check:behaviors执行6个工作区场景，3条规则通过。这是测试范围内的本机内容快照，不是人工语义认证或真实宿主验收，不代表文档审批工作流已实现。</p><article><h2>WS-001 · 切换后显示新项目</h2><p class="prose">打开另一个项目后，面板显示新项目的路径和数据。旧项目尚未返回的读取结果，不得覆盖新项目。
+
+新项目尚未启用治理时，选择「启用当前项目治理」，再确认初始化。取消确认不会创建治理文件。切换项目不会自动初始化。</p><p class="result">本次关联隔离浏览器场景通过 · 3个场景</p><details><summary>覆盖范围与版本</summary><p>测试基准提交 07eef7be369822b323c9d71339fd6ffbbdee16ef · 工作树快照 · 2026-10-11T18:38:55.463Z</p><pre>[
+  {
+    &quot;id&quot;: &quot;workspace-switch&quot;,
+    &quot;status&quot;: &quot;passed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;delayed-snapshot&quot;,
+    &quot;status&quot;: &quot;passed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;explicit-initialization&quot;,
+    &quot;status&quot;: &quot;passed&quot;
+  }
+]</pre></details></article><article><h2>WS-002 · 旧保存不影响新项目</h2><p class="prose">切换项目后，旧项目保存产生的迟到结果，不得改变新项目的提示、焦点或工作项内容。旧项目的「新建工作项」动作，也不得在新项目重新打开弹窗。
+
+这不表示已经提交的保存会被撤销；保存结果属于原项目，不会自动在新项目重放。</p><p class="result">本次关联隔离浏览器场景通过 · 2个场景</p><details><summary>覆盖范围与版本</summary><p>测试基准提交 07eef7be369822b323c9d71339fd6ffbbdee16ef · 工作树快照 · 2026-10-11T18:38:55.463Z</p><pre>[
+  {
+    &quot;id&quot;: &quot;delayed-save&quot;,
+    &quot;status&quot;: &quot;passed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;new-item-continuation&quot;,
+    &quot;status&quot;: &quot;passed&quot;
+  }
+]</pre></details></article><article><h2>WS-003 · 草稿按原项目隔离</h2><p class="prose">切换项目时，旧确认窗口关闭，未保存的表单草稿按原项目隔离保留。选择「保留的草稿」可查看并复制内容，手动恢复。
+
+草稿不自动保存到磁盘，不自动恢复或提交到新项目。关闭面板后，内存中的草稿不再保留。本阶段关联的测试检查切换时隔离和取消确认，不单独证明关闭进程后的生命周期。</p><p class="result">本次关联隔离浏览器场景通过 · 1个场景</p><details><summary>覆盖范围与版本</summary><p>测试基准提交 07eef7be369822b323c9d71339fd6ffbbdee16ef · 工作树快照 · 2026-10-11T18:38:55.463Z</p><pre>[
+  {
+    &quot;id&quot;: &quot;draft-isolation&quot;,
+    &quot;status&quot;: &quot;passed&quot;
+  }
+]</pre></details></article><h2>UI：没有证据</h2><p>真实临时项目后端与模拟宿主桥接的界面截图。</p><img src="ui-unverified.png" alt="易读正文和未验证状态"><h2>UI：折叠技术详情</h2><p>此图的通过记录为专门的UI测试夹具，不是上面六场景的执行证明；用于检验布局、纯文本和工作树标记。</p><img src="ui-fixture-evidence.png" alt="UI测试夹具的展开证据与基准版本说明"></main></html>

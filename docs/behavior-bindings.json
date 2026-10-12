@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "behaviors": [
+    {
+      "id": "WS-001",
+      "document": "docs/behavior-workspace.md",
+      "cases": ["workspace-switch", "delayed-snapshot", "explicit-initialization"],
+      "files": ["plugin/main.ts", "plugin/core.ts", "plugin/panel.ts", "plugin/project.ts", "plugin/renderer/panel.ts", "plugin/runtime/main.js", "plugin/runtime/core.js", "plugin/runtime/panel.js", "plugin/runtime/project.js", "plugin/runtime/renderer/panel.js", "plugin/renderer/index.html", "test/browser.cjs", "test/behavior-reporter.cjs", "scripts/check-behaviors.cjs", "plugin/behaviors.ts", "plugin/runtime/behaviors.js"]
+    },
+    {
+      "id": "WS-002",
+      "document": "docs/behavior-workspace.md",
+      "cases": ["delayed-save", "new-item-continuation"],
+      "files": ["plugin/renderer/panel.ts", "plugin/runtime/renderer/panel.js", "test/browser.cjs", "test/behavior-reporter.cjs"]
+    },
+    {
+      "id": "WS-003",
+      "document": "docs/behavior-workspace.md",
+      "cases": ["draft-isolation"],
+      "files": ["plugin/renderer/panel.ts", "plugin/runtime/renderer/panel.js", "plugin/renderer/index.html", "test/browser.cjs"]
+    }
+  ]
+}

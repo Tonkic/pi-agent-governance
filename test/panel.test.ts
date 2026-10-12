@@ -219,3 +219,71 @@ test('real plugin entry rereads workspace and refuses an explicitly bound foreig
   assert.match(refused.error, /Workspace switched/);
   assert.deepEqual(await fs.readdir(b.root), []);
 });
+
+// Exercise the compiled renderer functions, not the backend mutation seam.
+async function rendererSeam(start: string, end: string, context: any) {
+  const script = await fs.readFile(path.join(__dirname, '../plugin/renderer/panel.js'), 'utf8');
+  const from = script.indexOf(start), to = script.indexOf(end, from + start.length);
+  assert.ok(from >= 0 && to > from, 'Renderer seam boundaries must exist');
+  return require('node:vm').runInNewContext(script.slice(from, to) + `;(${start.match(/function (\w+)/)[1]})`, context);
+}
+test('renderer operation writes reject offline entry and offline confirmation; reads remain available', async () => {
+  for (const action of ['cancel', 'resolve', 'status', 'open']) {
+    for (const offlineAtConfirmation of [false, true]) {
+      const calls = [], prompts = [];
+      const navigator = { onLine: offlineAtConfirmation };
+      const context = { busy: false, workspaceEpoch: 1, navigator, lock() {}, t: key => key,
+        notify() {}, text() {}, loadOperations: async () => {},
+        confirmWrite: async () => { prompts.push(action); navigator.onLine = false; return true; },
+        invoke: async (_channel, payload) => { calls.push(payload); return { run: {}, runtime: {}, session: {} }; } };
+      const operation = await rendererSeam('async function operationAction(', 'async function loadOperations(', context);
+      await operation(action, 'fixture');
+      const write = ['cancel', 'resolve'].includes(action);
+      assert.equal(calls.length, write ? 0 : 1, `${action}: offline writes must never reach the bridge`);
+      assert.equal(prompts.length, write && offlineAtConfirmation ? 1 : 0, 'Offline entry must not prompt');
+    }
+  }
+});
+test('renderer operation buttons honor offline state both on render and on unlock', async () => {
+  const elements = new Map();
+  const element = () => ({ disabled: false, children: [], append(...children) { this.children.push(...children); },
+    addEventListener() {}, replaceChildren() { this.children = []; } });
+  const $ = id => { if (!elements.has(id)) elements.set(id, element()); return elements.get(id); };
+  const document = { createElement: element, querySelectorAll: selector => {
+    const buttons = $('operation-runs').children.flatMap(row => row.children.filter(child => child.type === 'button'));
+    return selector.includes('data-operation-write') ? buttons.filter(button => button.dataset?.operationWrite) :
+      selector.startsWith('main button') ? buttons : [];
+  } };
+  // Real DOM buttons have a dataset; keep that property on this minimal seam too.
+  document.createElement = () => ({ ...element(), dataset: {} });
+  const context = { $, document, busy: false, workspaceEpoch: 1, navigator: { onLine: false },
+    snapshot: { workspace: 'fixture' }, projectSnapshot: null, editingItem: null,
+    searchQuery: '', t: key => key, operationLabel: key => key, labels: {}, text() {},
+    updateLaunchControls() {}, updateItemNavigation() {},
+    invoke: async () => ({ workspace: 'fixture', runs: [
+      { id: 'unknown', kind: 'analysis', phase: 'unknown' },
+      { id: 'running', kind: 'analysis', phase: 'running', sessionId: 'session' }
+    ] }) };
+  const load = await rendererSeam('async function loadOperations(', "$('documentation-start')", context);
+  await load();
+  const buttons = $('operation-runs').children.flatMap(row => row.children.filter(child => child.type === 'button'));
+  const assertButtons = () => assert.deepEqual(buttons.map(button => !!button.disabled), [false, false, true, true]);
+  assertButtons();
+  const lock = await rendererSeam('function lock(', 'async function invoke(', context);
+  lock(true); assert.ok(buttons.every(button => button.disabled));
+  lock(false); assertButtons();
+  context.navigator.onLine = true; lock(false); assert.ok(buttons.every(button => !button.disabled));
+});
+test('workflow graph clears architecture source-check status on repeated switching', async () => {
+  const values = new Map(), elements = new Map();
+  const context = { snapshot: { state: { status: 'working' } }, graphView: 'architecture',
+    projectSnapshot: { architecture: { title: 'fixture', sourcesChecked: true, checkedAt: 'today', nodes: [], edges: [] } },
+    text: (id, value) => values.set(id, value), t: key => key, labels: {},
+    $: id => { if (!elements.has(id)) elements.set(id, { setAttribute() {} }); return elements.get(id); },
+    window: { dispatchEvent() {} }, CustomEvent: class {} };
+  const render = await rendererSeam('function renderProjectGraph(', "$('show-architecture').addEventListener", context);
+  for (let i = 0; i < 2; i++) {
+    context.graphView = 'architecture'; render(); assert.equal(values.get('graph-check-state'), 'sourcesChecked');
+    context.graphView = 'workflow'; render(); assert.equal(values.get('graph-check-state'), '');
+  }
+});

@@ -82,6 +82,9 @@ function lock(value) {
     .forEach((button) => {
       button.disabled = value || !navigator.onLine;
     });
+  document.querySelectorAll<HTMLButtonElement>('[data-operation-write]').forEach((button) => {
+    button.disabled = value || !navigator.onLine;
+  });
   updateLaunchControls();
   updateItemNavigation();
 }
@@ -352,6 +355,7 @@ function renderProjectGraph() {
   const s = snapshot?.state;
   text('graph-warning', '');
   $('graph-warning').hidden = true;
+  text('graph-check-state', '');
   if (graphView === 'workflow') {
     text('architecture-title', t('workflow'));
     text('graph-source', t('workflowSource'));
@@ -1426,22 +1430,28 @@ $('launch-form').addEventListener('submit', async (event) => {
   }
 });
 async function operationAction(action, id) {
-  if (busy) return;
+  const write = ['cancel', 'resolve'].includes(action);
+  const offlineWrite = () => {
+    if (!write || navigator.onLine) return false;
+    notify(t('offlineNotice'), true);
+    return true;
+  };
+  if (busy || offlineWrite()) return;
   const owner = workspaceEpoch;
   lock(true);
   try {
     if (
-      ['cancel', 'resolve'].includes(action) &&
+      write &&
       !(await confirmWrite(
         t(action === 'resolve' ? 'resolveOperationConfirm' : 'operationCancelConfirm')
       ))
     )
       return;
-    if (owner !== workspaceEpoch) return;
+    if (owner !== workspaceEpoch || offlineWrite()) return;
     const data: any = await invoke('governance.operation', {
       action,
       id,
-      confirmed: ['cancel', 'resolve'].includes(action)
+      confirmed: write
     });
     if (action === 'status')
       text(
@@ -1486,7 +1496,8 @@ async function loadOperations() {
           const button = document.createElement('button');
           button.type = 'button';
           button.textContent = t(key as CopyKey);
-          button.disabled = busy;
+          if (action === 'cancel') button.dataset.operationWrite = 'true';
+          button.disabled = busy || (action === 'cancel' && !navigator.onLine);
           button.addEventListener('click', () => {
             void operationAction(action, run.id);
           });
@@ -1496,7 +1507,8 @@ async function loadOperations() {
         const button = document.createElement('button');
         button.type = 'button';
         button.textContent = t('resolveOperation');
-        button.disabled = busy;
+        button.dataset.operationWrite = 'true';
+        button.disabled = busy || !navigator.onLine;
         button.addEventListener('click', () => {
           void operationAction('resolve', run.id);
         });
@@ -1590,3 +1602,47 @@ $('architecture-check').addEventListener('click', async () => {
   } catch (error) { if (owner === workspaceEpoch) notify(error.message, true); }
   finally { if (owner === workspaceEpoch) lock(false); }
 });
+
+$('behavior-docs-open').addEventListener('click', async () => {
+  if (busy || !snapshot) return;
+  const owner = workspaceEpoch;
+  lock(true);
+  $('behavior-docs-content').replaceChildren();
+  text('behavior-docs-status', t('waiting'));
+  $('behavior-docs-dialog').showModal();
+  try {
+    const data: any = await invoke('governance.behaviors');
+    if (owner !== workspaceEpoch) return;
+    if (data.workspace !== snapshot.workspace) throw Error(t('switched'));
+    text('behavior-docs-status', data.behaviors.length ? '' : t('behaviorEmpty'));
+    const statusKeys = { passed: 'behaviorPassed', unverified: 'behaviorUnverified', stale: 'behaviorStale', incomplete: 'behaviorIncomplete', failed: 'behaviorFailed', checking: 'behaviorChecking' };
+    for (const item of data.behaviors) {
+      const article = document.createElement('article');
+      article.className = 'behavior-document';
+      const title = document.createElement('h3');
+      title.textContent = `${item.id} · ${item.title}`;
+      const prose = document.createElement('p');
+      prose.className = 'behavior-prose';
+      prose.textContent = item.prose;
+      const status = document.createElement('p');
+      status.className = 'behavior-status';
+      status.dataset.result = item.status;
+      status.textContent = t((statusKeys[item.status] || 'behaviorUnverified') as CopyKey);
+      const details = document.createElement('details');
+      const summary = document.createElement('summary');
+      summary.textContent = t('behaviorDetails');
+      const evidence = document.createElement('pre');
+      evidence.textContent = JSON.stringify({ document: item.document, cases: item.cases, sources: item.files }, null, 2);
+      details.append(summary, evidence);
+      if (item.sourceCommit) {
+        const meta = document.createElement('p');
+        meta.textContent = t('behaviorCommit', item.sourceCommit, t(item.workingTree ? 'behaviorDirty' : 'behaviorClean'), item.at);
+        details.append(meta);
+      }
+      article.append(title, prose, status, details);
+      $('behavior-docs-content').append(article);
+    }
+  } catch (error) { if (owner === workspaceEpoch) text('behavior-docs-status', error.message); }
+  finally { if (owner === workspaceEpoch) { lock(false); if ($('behavior-docs-dialog').open) $('behavior-docs-close').focus(); } }
+});
+$('behavior-docs-close').addEventListener('click', () => { if (!busy) $('behavior-docs-dialog').close(); });

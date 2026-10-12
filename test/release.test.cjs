@@ -101,3 +101,77 @@ test('NUL-separated Chinese and newline paths preserve exact untracked boundarie
   assert.throws(() => untrackedGuard('.pi/goal/中文.md\0unexpected.txt\0'), /Unexpected/);
   assert.throws(() => untrackedGuard('unexpected\n.pi/goal/中文.md\0'), /Unexpected/);
 });
+
+
+test('push remote validation preserves exact repository allowlist', () => {
+  const { validatePushRemote } = require('../scripts/release-auto.cjs');
+  for (const remote of [
+    'https://github.com/Tonkic/pi-agent-governance.git',
+    'https://github.com/Tonkic/pi-agent-governance',
+    'git@github.com:Tonkic/pi-agent-governance.git'
+  ]) assert.doesNotThrow(() => validatePushRemote(remote));
+  for (const remote of ['', 'https://github.com/other/repository.git',
+    'https://github.com/Tonkic/pi-agent-governance.git\nhttps://example.com/repo.git'])
+    assert.throws(() => validatePushRemote(remote), /Unexpected push remote/);
+});
+test('MCP response parsing selects request id and preserves errors and notifications', () => {
+  const { parseRpcReply } = require('../scripts/plugin-center.cjs');
+  assert.deepEqual(parseRpcReply('{"id":2,"result":{"ok":true}}', false, 2, false), { ok: true });
+  const stream = 'event: message\ndata: {"id":1,"result":"old"}\n\ndata: {"id":2,"result":"current"}\n';
+  assert.equal(parseRpcReply(stream, true, 2, false), 'current');
+  assert.equal(parseRpcReply('', false, undefined, true), null);
+  assert.equal(parseRpcReply('', false, 2, false), null);
+  assert.throws(() => parseRpcReply('{"id":1,"result":{}}', false, 2, false), /response missing/);
+  assert.throws(() => parseRpcReply('{"id":2,"error":{"code":-1}}', false, 2, false), /RPC error -1/);
+});
+test('publisher redaction strips credentials and keeps tool refusal conservative', () => {
+  const { sanitizeToolResult } = require('../scripts/plugin-center.cjs');
+  const token = 'pi_pat_' + 'fixtureCredential123';
+  assert.deepEqual(sanitizeToolResult({ content: [{ text: token + ' ' + 'pi_pat_' + 'otherCredential123' }] }, token),
+    { content: [{ text: '[REDACTED] [REDACTED]' }] });
+  assert.throws(() => sanitizeToolResult({ isError: true, content: [] }, token), /tool refused/);
+});
+
+
+test('reviewed historical fixtures do not exempt other blobs or actual credentials', () => {
+  const { containsCredential } = require('../scripts/release-auto.cjs');
+  const object = 'd2c45515b924a1f69d92ef00b771e77b7318bbfe';
+  const fixture = 'pi_pat_' + 'fixtureCredential123';
+  const second = 'pi_pat_' + 'otherCredential123';
+  const token = 'pi_pat_' + 'realCredentialForTest';
+  const bytes = Buffer.from(fixture + ' ' + second);
+  assert.equal(containsCredential(object, bytes, token), false);
+  assert.equal(containsCredential('unknown', bytes, token), true);
+  assert.equal(containsCredential(object, bytes, fixture), true);
+  assert.equal(containsCredential(object, Buffer.from(token), token), true);
+  assert.equal(containsCredential(object, Buffer.from('pi_pat_' + 'anotherCredential123'), token), true);
+  const privateKey = '-----BEGIN ' + 'PRIVATE KEY-----';
+  assert.equal(containsCredential(object, Buffer.from(privateKey), token), true);
+});
+
+
+test('generated output index refresh only accepts identical unstaged build outputs', () => {
+  const { refreshGeneratedIndex } = require('../scripts/release-auto.cjs');
+  function fixture(status, actual = 'same', index = 'same') {
+    const calls = [];
+    const run = (...args) => {
+      calls.push(args);
+      if (args[0] === 'status') return status;
+      if (args[0] === 'rev-parse') return args[1].startsWith('HEAD:') ? 'same' : index;
+      if (args[0] === 'hash-object') return actual;
+      return '';
+    };
+    return { calls, run };
+  }
+  const valid = fixture(' M plugin/runtime/main.js\n M plugin/docs/README.md\n');
+  refreshGeneratedIndex(valid.run);
+  assert.deepEqual(valid.calls.at(-1), ['add', '--', 'plugin/runtime/main.js', 'plugin/docs/README.md']);
+  for (const invalid of [fixture('M  plugin/runtime/main.js\n'), fixture(' M plugin/main.ts\n'),
+    fixture(' M plugin/runtime/main.js\n', 'changed'), fixture(' M plugin/runtime/main.js\n', 'same', 'staged')]) {
+    assert.throws(() => refreshGeneratedIndex(invalid.run), /inspect before release/);
+    assert.equal(invalid.calls.some(args => args[0] === 'add'), false);
+  }
+  const clean = fixture('');
+  refreshGeneratedIndex(clean.run);
+  assert.equal(clean.calls.some(args => args[0] === 'add'), false);
+});

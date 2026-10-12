@@ -67,9 +67,17 @@ async function executeSourceSync(ops) {
   await ops.push();
   return { published: false, sourceSynced: true };
 }
+function validatePushRemote(remote) {
+  const allowed = [
+    'https://github.com/Tonkic/pi-agent-governance.git',
+    'https://github.com/Tonkic/pi-agent-governance',
+    'git@github.com:Tonkic/pi-agent-governance.git'
+  ];
+  if (!allowed.includes(remote)) fail('Unexpected push remote');
+}
 function pushSource(sourceRef, branch) {
   const origin = git('remote', 'get-url', '--push', '--all', 'origin').trim();
-  if (!['https://github.com/Tonkic/pi-agent-governance.git', 'https://github.com/Tonkic/pi-agent-governance', 'git@github.com:Tonkic/pi-agent-governance.git'].includes(origin)) fail('Unexpected push remote');
+  validatePushRemote(origin);
   if (!/^refs\/heads\/release\/(?:source-|plugin-center-)[A-Za-z0-9.-]+$/.test(branch)) fail('Unexpected release branch');
   clean(sourceRef);
   const existing = git('ls-remote', '--heads', 'origin', branch).trim();
@@ -89,6 +97,18 @@ function clean(sourceRef) {
   if (git('rev-parse', 'HEAD').trim() !== sourceRef || git('status', '--porcelain', '--untracked-files=no').trim()) fail('HEAD changed or tracked worktree is dirty');
   untrackedGuard(git('ls-files', '-z', '--others', '--exclude-standard'));
 }
+function containsCredential(object, bytes, token) {
+  // Never exempt the actual local credential, even if it equals a fixture value.
+  if (bytes.includes(Buffer.from(token))) return true;
+  let text = bytes.toString('utf8');
+  // User-approved 2026-10-12: immutable release.test.cjs blob from e65789c.
+  // Only these two synthetic fixtures are excluded; all other markers still fail.
+  if (object === 'd2c45515b924a1f69d92ef00b771e77b7318bbfe') {
+    for (const fixture of ['fixtureCredential123', 'otherCredential123'])
+      text = text.split('pi_pat_' + fixture).join('');
+  }
+  return /pi_pat_[A-Za-z0-9_-]{16,}|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/.test(text);
+}
 function secretScan(sourceRef) {
   const token = fs.readFileSync(path.join(root, '.secrets/plugin-center.token'), 'utf8').trim();
   if (!/^pi_pat_[A-Za-z0-9_-]+$/.test(token)) fail('Invalid credential');
@@ -97,14 +117,33 @@ function secretScan(sourceRef) {
     if (/\s(?:.*\/)?\.secrets\//.test(row)) fail('Secret path found in reachable history');
     const object = row.split(' ')[0];
     const bytes = execFileSync('git', ['cat-file', '-p', object], { cwd: root, maxBuffer: 32 * 1024 * 1024 });
-    if (bytes.includes(Buffer.from(token)) || /pi_pat_[A-Za-z0-9_-]{16,}|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/.test(bytes.toString('utf8'))) fail('Credential-like content found in reachable history');
+    if (containsCredential(object, bytes, token)) fail('Credential-like content found in reachable history');
   }
+}
+function refreshGeneratedIndex(runGit = git) {
+  const outputs = ['plugin/runtime/', 'plugin/docs/', 'plugin/main.js', 'plugin/manifest.json', 'plugin/README.md'];
+  const rows = runGit('status', '--porcelain=v1', '--untracked-files=no', '--', ...outputs).split(/\r?\n/).filter(Boolean);
+  const files = [];
+  // Preflight all outputs; do not stage real changes or touch user-staged content.
+  for (const row of rows) {
+    const file = row.slice(3);
+    const generated = outputs.some(output => output.endsWith('/') ? file.startsWith(output) : file === output);
+    if (!row.startsWith(' M ') || !generated) fail('Unexpected generated-output status; inspect before release');
+    const head = runGit('rev-parse', 'HEAD:' + file).trim();
+    const index = runGit('rev-parse', ':' + file).trim();
+    const actual = runGit('hash-object', '--path=' + file, '--', file).trim();
+    if (actual !== head || index !== head) fail('Generated output differs from HEAD/index; inspect before release');
+    files.push(file);
+  }
+  // Content is unchanged. Refresh Git's cached output stat without rewriting files.
+  if (files.length) runGit('add', '--', ...files);
 }
 function runChecks() {
   // npm is invoked via Node, avoiding shell quoting and npm.cmd portability issues.
   const npm = process.env.npm_execpath;
   if (!npm || !fs.existsSync(npm)) fail('Run through npm run release:auto');
   for (const script of ['typecheck', 'test', 'test:browser']) execFileSync(process.execPath, [npm, 'run', script], { cwd: root, stdio: 'inherit' });
+  refreshGeneratedIndex();
 }
 async function main() {
   const args = process.argv.slice(2);
@@ -143,7 +182,7 @@ async function main() {
   const packageBytes = execFileSync('git', ['show', `${sourceRef}:${packagePath}`], { cwd: root, maxBuffer: 32 * 1024 * 1024 });
   receiptGuard(JSON.parse(fs.readFileSync(receiptPath, 'utf8')), sourceRef, sha256(packageBytes));
   const origin = git('remote', 'get-url', '--push', '--all', 'origin').trim();
-  if (!['https://github.com/Tonkic/pi-agent-governance.git', 'https://github.com/Tonkic/pi-agent-governance', 'git@github.com:Tonkic/pi-agent-governance.git'].includes(origin)) fail('Unexpected push remote');
+  validatePushRemote(origin);
   const common = path.resolve(root, git('rev-parse', '--git-common-dir').trim());
   const journalDir = path.join(common, 'pi-governance', 'releases');
   fs.mkdirSync(journalDir, { recursive: true });
@@ -181,7 +220,7 @@ async function main() {
     return result;
   } finally { fs.rmdirSync(lock); }
 }
-module.exports = { stable, compare, decision, validatePolicy, permissionGuard, receiptGuard, execute, executeSourceSync, untrackedGuard };
+module.exports = { stable, compare, decision, validatePolicy, permissionGuard, receiptGuard, execute, executeSourceSync, untrackedGuard, validatePushRemote, containsCredential, refreshGeneratedIndex };
 if (require.main === module) main().catch(error => {
   // Do not print arbitrary subprocess output/remote payloads or credentials.
   console.error(error.code || error.status ? 'Release blocked by local command/IO failure; inspect checks and remote status. No mutation retry.' : String(error.message).replace(/pi_pat_[A-Za-z0-9_-]+/g, '[REDACTED]'));

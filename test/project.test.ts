@@ -354,3 +354,58 @@ test('architecture snapshots do not scan source until explicitly requested', asy
   assert.equal(await fs.readFile(path.join(f.root, '.governance/architecture.json'), 'utf8'), raw);
   await assert.rejects(f.mutate({ action: 'architecture_set', graph: checked.architecture }), /Source changed/);
 });
+
+test('persisted boards reject non-record roots, items and acceptance without replacing data', async (t) => {
+  const f = await fixture(t);
+  await f.mutate({ action: 'board_create', id: 'one', title: 'One' });
+  const file = path.join(f.root, '.governance/board.json');
+  const board = JSON.parse(await fs.readFile(file, 'utf8'));
+  for (const entry of [null, false, 42, 'bad', []]) {
+    const cases = [
+      [entry, 'Invalid board schema'],
+      [{ ...board, items: [entry] }, 'Invalid board item'],
+      ...(entry === null ? [] : [[{ ...board, items: [{ ...board.items[0], acceptance: entry }] }, 'Invalid acceptance record']])
+    ];
+    for (const [value, message] of cases) {
+      const raw = JSON.stringify(value);
+      await fs.writeFile(file, raw);
+      const snapshot = await f.snapshot();
+      assert.equal(snapshot.board, null);
+      assert.equal(snapshot.boardError, message);
+      await assert.rejects(f.g.run({ action: 'board_create', id: 'two', title: 'Two', expectedRevision: snapshot.revision }), (error) => {
+        assert.equal(error instanceof TypeError, false);
+        assert.equal(error.message, message);
+        return true;
+      });
+      assert.equal(await fs.readFile(file, 'utf8'), raw);
+    }
+  }
+});
+
+test('persisted architecture rejects non-record roots, nodes and edges with domain errors', async (t) => {
+  const f = await fixture(t);
+  await fs.writeFile(path.join(f.root, 'app.ts'), 'export const app = 1;');
+  const sources = await f.g.run({ action: 'architecture_sources', files: ['app.ts'] });
+  const graph = {
+    version: 1, updatedAt: new Date().toISOString(), title: 'App', source: 'Read app.ts',
+    nodes: [{ id: 'app', title: 'App', description: 'Entry', files: ['app.ts'] }],
+    edges: [], fingerprints: sources.fingerprints
+  };
+  const file = path.join(f.root, '.governance/architecture.json');
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  for (const entry of [null, false, 42, 'bad', []]) {
+    for (const [value, message] of [
+      [entry, 'Invalid architecture schema'],
+      [{ ...graph, nodes: [entry] }, 'Invalid or duplicate graph node'],
+      [{ ...graph, edges: [entry] }, 'Invalid or duplicate graph edge'],
+      [{ ...graph, fingerprints: entry }, 'Source fingerprints required; call architecture_sources first']
+    ]) {
+      const raw = JSON.stringify(value);
+      await fs.writeFile(file, raw);
+      const snapshot = await f.snapshot();
+      assert.equal(snapshot.architecture, null);
+      assert.equal(snapshot.architectureError, message);
+      assert.equal(await fs.readFile(file, 'utf8'), raw);
+    }
+  }
+});

@@ -5,6 +5,7 @@ const digest = (value) => createHash('sha256').update(value).digest('hex');
 const boardFile = '.governance/board.json', architectureFile = '.governance/architecture.json';
 const stages = ['todo', 'doing', 'done', 'accepted'];
 const impactValues = ['unassessed', 'none', 'affects'];
+const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 function architectureImpact(value = 'unassessed') {
     if (!impactValues.includes(value))
         throw Error('Invalid architecture impact');
@@ -61,11 +62,11 @@ class ProjectData {
         if (raw === null)
             return { version: 1, items: [], updatedAt: null };
         const b = JSON.parse(raw);
-        if (b.version !== 1 || !Array.isArray(b.items) || b.items.length > 100)
+        if (!isRecord(b) || b.version !== 1 || !Array.isArray(b.items) || b.items.length > 100)
             throw Error('Invalid board schema');
         const ids = new Set();
         for (const item of b.items) {
-            if (!identifier(item.id) || ids.has(item.id) || !stages.includes(item.stage))
+            if (!isRecord(item) || !identifier(item.id) || ids.has(item.id) || !stages.includes(item.stage))
                 throw Error('Invalid board item');
             ids.add(item.id);
             text(item.title, 'title', 160);
@@ -75,7 +76,8 @@ class ProjectData {
             architectureImpact(item.architectureImpact);
             if (item.acceptance != null) {
                 const r = item.acceptance;
-                if (!['human', 'agent'].includes(r.method) ||
+                if (!isRecord(r) ||
+                    !['human', 'agent'].includes(r.method) ||
                     typeof r.passed !== 'boolean' ||
                     typeof r.valid !== 'boolean' ||
                     !/^[a-f0-9]{64}$/.test(r.itemFingerprint || '') ||
@@ -99,7 +101,7 @@ class ProjectData {
         return b;
     }
     async graph(value) {
-        if (!value ||
+        if (!isRecord(value) ||
             !Array.isArray(value.nodes) ||
             !value.nodes.length ||
             value.nodes.length > 40 ||
@@ -110,7 +112,7 @@ class ProjectData {
         const ids = new Set(), files = new Set();
         const nodes = [];
         for (const node of value.nodes) {
-            if (!identifier(node.id) || ids.has(node.id))
+            if (!isRecord(node) || !identifier(node.id) || ids.has(node.id))
                 throw Error('Invalid or duplicate graph node');
             ids.add(node.id);
             if (!Array.isArray(node.files) || !node.files.length || node.files.length > 10)
@@ -130,7 +132,8 @@ class ProjectData {
             throw Error('Graph references at most 60 files');
         const seen = new Set();
         const edges = value.edges.map((edge) => {
-            if (!ids.has(edge.from) ||
+            if (!isRecord(edge) ||
+                !ids.has(edge.from) ||
                 !ids.has(edge.to) ||
                 edge.from === edge.to ||
                 seen.has(`${edge.from}:${edge.to}`))
@@ -138,8 +141,7 @@ class ProjectData {
             seen.add(`${edge.from}:${edge.to}`);
             return { from: edge.from, to: edge.to, label: text(edge.label, 'edge label', 100) };
         });
-        if (!value.fingerprints ||
-            typeof value.fingerprints !== 'object' ||
+        if (!isRecord(value.fingerprints) ||
             Object.keys(value.fingerprints).length !== files.size)
             throw Error('Source fingerprints required; call architecture_sources first');
         const fingerprints = {};
@@ -178,7 +180,7 @@ class ProjectData {
         try {
             if (raws[1] !== null) {
                 const stored = JSON.parse(raws[1]);
-                if (stored.version !== 1 || typeof stored.updatedAt !== 'string')
+                if (!isRecord(stored) || stored.version !== 1 || typeof stored.updatedAt !== 'string')
                     throw Error('Invalid architecture schema');
                 architecture = {
                     ...(await this.graph(stored)),

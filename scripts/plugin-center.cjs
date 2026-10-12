@@ -10,8 +10,10 @@ const files = [
   'main.js', 'main.ts', 'runtime/main.js', 'core.ts', 'runtime/core.js', 'git.ts', 'runtime/git.js',
   'panel.ts', 'runtime/panel.js', 'project.ts', 'runtime/project.js', 'tool.ts', 'runtime/tool.js',
   'operations.ts', 'runtime/operations.js',
+  'behaviors.ts', 'runtime/behaviors.js',
   'README.md', 'docs/README.md', 'docs/governance.md', 'docs/git.md', 'docs/project.md',
   'docs/documentation.md', 'docs/architecture.md', 'docs/development.md',
+  'docs/doc-driven.md', 'docs/behavior-workspace.md',
   'docs/publishing.md', 'docs/releasing.md', 'docs/ui-sources.md',
   'renderer/index.html', 'renderer/panel.css', 'renderer/views.css', 'renderer/panel.ts', 'runtime/renderer/panel.js',
   'renderer/graph.ts', 'runtime/renderer/graph.js', 'renderer/graph-model.ts', 'runtime/renderer/graph-model.js',
@@ -34,6 +36,22 @@ function versionPayload(payload) {
   const { id, repository, readme, ...version } = payload;
   return { ...version, pluginId: id };
 }
+function parseRpcReply(body, eventStream, requestId, notify) {
+  if (!body) return null;
+  const replies = eventStream
+    ? body.split(/\r?\n/).filter(line => line.startsWith('data:')).map(line => JSON.parse(line.slice(5)))
+    : [JSON.parse(body)];
+  const reply = replies.find(item => item.id === requestId);
+  if (!notify && !reply) throw Error('MCP response missing; inspect remote status before retrying');
+  if (reply?.error) throw Error('MCP RPC error ' + reply.error.code);
+  return reply?.result;
+}
+function sanitizeToolResult(result, token) {
+  const serialized = JSON.stringify(result).split(token).join('[REDACTED]');
+  const clean = JSON.parse(serialized.replace(/pi_pat_[A-Za-z0-9_-]+/g, '[REDACTED]'));
+  if (clean?.isError) throw Error('Plugin-center tool refused request; inspect remote status before retrying');
+  return clean;
+}
 async function connect() {
   git('check-ignore', '--', '.secrets/plugin-center.token');
   if (git('ls-files', '--', '.secrets').trim()) throw Error('Secret directory is tracked; refusing authentication');
@@ -46,20 +64,13 @@ async function connect() {
     if (!response.ok) throw Error(`MCP HTTP ${response.status}`);
     session = response.headers.get('mcp-session-id') || session;
     const body = await response.text();
-    if (!body) return null;
-    const replies = response.headers.get('content-type')?.includes('text/event-stream') ? body.split(/\r?\n/).filter(line => line.startsWith('data:')).map(line => JSON.parse(line.slice(5))) : [JSON.parse(body)];
-    const reply = replies.find(item => item.id === requestId);
-    if (!notify && !reply) throw Error('MCP response missing; inspect remote status before retrying');
-    if (reply?.error) throw Error(`MCP RPC error ${reply.error.code}`);
-    return reply?.result;
+    return parseRpcReply(body, response.headers.get('content-type')?.includes('text/event-stream'), requestId, notify);
   }
   await rpc('initialize', { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'governance-publisher', version: '0.6.0' } });
   await rpc('notifications/initialized', {}, true);
   return async (name, args = {}) => {
     const result = name === 'tools' ? await rpc('tools/list', {}) : await rpc('tools/call', { name, arguments: args });
-    const clean = JSON.parse(JSON.stringify(result).split(token).join('[REDACTED]').replace(/pi_pat_[A-Za-z0-9_-]+/g, '[REDACTED]'));
-    if (clean?.isError) throw Error('Plugin-center tool refused request; inspect remote status before retrying');
-    return clean;
+    return sanitizeToolResult(result, token);
   };
 }
 function unwrap(result) {
@@ -84,5 +95,5 @@ async function main() {
   const call = await connect();
   console.log(JSON.stringify(await call(mode, payload), null, 2));
 }
-module.exports = { buildPayload, files, versionPayload, connect, unwrap };
+module.exports = { buildPayload, files, versionPayload, connect, unwrap, parseRpcReply, sanitizeToolResult };
 if (require.main === module) main().catch(() => { console.error('Publisher failed. Check local inputs, permissions, and remote status before retrying; no automatic retry performed.'); process.exitCode = 1; });

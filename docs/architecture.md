@@ -15,6 +15,7 @@
 | `project.ts` | 保存看板、架构和源码指纹 | `ProjectData.run` |
 | `git.ts` | 管理 worktree、范围和提交验证 | `GitGovernance.run` |
 | `operations.ts` | 创建独立任务会话，校验模型、记录状态和取消 | `operationInvoke`、`taskPrompt` |
+| `behaviors.ts` | 安全读取行为正文、关联与本机验证状态 | `behaviorSnapshot`、`behaviorState` |
 | `renderer/panel.ts` | 加载数据、展示状态、提交表单 | `load`、`mutate` |
 | `renderer/graph-model.ts`、`graph.ts` | 计算图布局、绘制与交互 | 布局与渲染函数 |
 | `renderer/i18n.ts` | 提供中英文界面文字 | 语言表 |
@@ -40,6 +41,8 @@ core.ts → git.ts → Git common directory
 | `.governance/board.json` | 工作项 |
 | `.governance/architecture.json` | 模块关系、源码指纹及更新时间 |
 | `.governance/operations.json` | 项目 Agent 会话 ID、模型选择与运行状态 |
+| `docs/behavior-bindings.json`、对应Markdown | 当前行为正文与场景/文件关联 |
+| `.governance/behavior-evidence.json` | Git忽略的本机检查证据；不是获批任务或整体通过记录 |
 | Git common directory 下的 `pi-governance/` | 本机受管任务、worktree 与提交验证登记 |
 
 ## 限制
