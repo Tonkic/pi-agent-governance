@@ -20,6 +20,21 @@
       "gitTaskId": null
     },
     {
+      "id": "three-column-simplification",
+      "title": "三栏与可选架构简化",
+      "description": "用户要求删独立验收、保留三栏；架构可选，功能基于分层文档实现及测试。保留旧历史，不引入新开发流程。\n实际结果：类型/构建、122测试、87图浏览器、干净安装和包检查通过；源码b95dbe4与测试修复bace43b已同步，main远端核对一致。无独立验收步骤。",
+      "blocker": "",
+      "stage": "done",
+      "taskId": "project-board-release",
+      "criteria": [
+        "三栏与无新验收路径回归通过",
+        "历史兼容和源码/权限/切换安全保留",
+        "实际构建测试、包检查和GitHub/main交付完成"
+      ],
+      "architectureImpact": "none",
+      "gitTaskId": null
+    },
+    {
       "id": "visual-check",
       "title": "六组尺寸与主题截图目视复核",
       "description": "0.6.12双语三尺寸/明暗六组目视已实际完成，窄屏详情与设置另看原图。仅修改测试截图为实际视口并断言1000px高度，回归red→green；74图交互/几何回归通过。新证据docs-0.6.12/visual/index.html，旧0.6.11证据原样保留。不把隔离测试当安装验收。",
@@ -140,21 +155,6 @@
       "gitTaskId": null
     },
     {
-      "id": "three-column-simplification",
-      "title": "三栏与可选架构简化",
-      "description": "用户要求删独立验收、保留三栏；架构可选，功能基于分层文档实现及测试。保留旧历史，不引入新开发流程。",
-      "blocker": "",
-      "stage": "doing",
-      "taskId": "project-board-release",
-      "criteria": [
-        "三栏与无新验收路径回归通过",
-        "历史兼容和源码/权限/切换安全保留",
-        "实际构建测试、包检查和GitHub/main交付完成"
-      ],
-      "architectureImpact": "none",
-      "gitTaskId": null
-    },
-    {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
       "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
@@ -164,5 +164,5 @@
       "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-12T18:48:17.692Z"
+  "updatedAt": "2026-10-12T19:00:32.612Z"
 }
