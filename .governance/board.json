@@ -20,6 +20,21 @@
       "gitTaskId": null
     },
     {
+      "id": "operation-state-sync",
+      "title": "结束会话状态同步与新任务放行",
+      "description": "启动新操作和打开进度自动核对旧running会话；明确空闲才同步，查询失败/未知保留，不重发/删除或后台轮询。\n实际结果：原场景red→green，130测试/89图/超时与并发保护、包检查通过；来源075d82b及main64d1072普通推送核对完成。真实旧会话读取未成功，未伪造完成或安装新版。",
+      "blocker": "",
+      "stage": "done",
+      "taskId": "project-board-release",
+      "criteria": [
+        "实际操作回归复现并修复旧running阻塞",
+        "异常/超时/取消和项目变化安全、完整测试通过",
+        "包检查、提交后测试及main同步通过"
+      ],
+      "architectureImpact": "none",
+      "gitTaskId": null
+    },
+    {
       "id": "ascii-architecture",
       "title": "同源ASCII架构与可视化",
       "description": "架构仍可选；同一设计生成ASCII正文和现有画板，保留旧历史，未新增绘图依赖或验收。\n实际结果：125测试/88图/十场景、干净构建及包门禁通过，90a86a4来源/main9d77fc5同步核对完成。代表截图人工目视未完成，未声称真实宿主或模型测试通过。",
@@ -170,21 +185,6 @@
       "gitTaskId": null
     },
     {
-      "id": "operation-state-sync",
-      "title": "结束会话状态同步与新任务放行",
-      "description": "启动新操作和打开进度自动核对旧running会话；明确空闲才同步，查询失败/未知保留，不重发/删除或后台轮询。",
-      "blocker": "",
-      "stage": "doing",
-      "taskId": "project-board-release",
-      "criteria": [
-        "实际操作回归复现并修复旧running阻塞",
-        "异常/超时/取消和项目变化安全、完整测试通过",
-        "包检查、提交后测试及main同步通过"
-      ],
-      "architectureImpact": "none",
-      "gitTaskId": null
-    },
-    {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
       "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
@@ -194,5 +194,5 @@
       "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-13T10:28:01.330Z"
+  "updatedAt": "2026-10-13T10:33:16.002Z"
 }
