@@ -332,3 +332,22 @@ test('persisted architecture rejects non-record roots, nodes and edges with doma
     }
   }
 });
+test('completion dates record actual transitions only, clear on reopen and do not migrate old items',async t=>{
+  const f=await fixture(t);await f.mutate({action:'board_create',id:'dated',title:'Date'});
+  assert.equal((await f.snapshot()).board.items[0].completedAt,undefined);
+  await f.mutate({action:'board_move',id:'dated',stage:'doing',position:0});
+  await f.mutate({action:'board_move',id:'dated',stage:'done',position:0});
+  const date=(await f.snapshot()).board.items[0].completedAt;
+  assert.ok(typeof date==='string'&&Number.isFinite(Date.parse(date)));
+  await f.mutate({action:'board_move',id:'dated',stage:'done',position:0});
+  assert.equal((await f.snapshot()).board.items[0].completedAt,date);
+  await f.mutate({action:'board_move',id:'dated',stage:'doing',position:0});
+  assert.equal((await f.snapshot()).board.items[0].completedAt,null);
+  await f.mutate({action:'board_move',id:'dated',stage:'done',position:0});
+  const file=path.join(f.root,'.governance/board.json');
+  const data=JSON.parse(await fs.readFile(file,'utf8'));delete data.items[0].completedAt;
+  const raw=JSON.stringify(data);await fs.writeFile(file,raw);await f.snapshot();
+  assert.equal(await fs.readFile(file,'utf8'),raw);
+  data.items[0].completedAt='not-a-date';await fs.writeFile(file,JSON.stringify(data));
+  assert.match((await f.snapshot()).boardError,/completion date/i);
+});

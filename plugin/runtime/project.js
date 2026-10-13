@@ -75,6 +75,8 @@ class ProjectData {
             text(item.description, 'description', 4000, true);
             text(item.blocker, 'blocker', 1000, true);
             itemCriteria(item.criteria);
+            if (item.completedAt !== undefined && item.completedAt !== null && (typeof item.completedAt !== 'string' || !Number.isFinite(Date.parse(item.completedAt))))
+                throw Error('Invalid completion date');
             architectureImpact(item.architectureImpact);
             if (item.acceptance != null) {
                 const r = item.acceptance;
@@ -300,6 +302,8 @@ class ProjectData {
                         const column = remaining.filter((i) => effectiveStage(i) === a.stage);
                         if (a.position > column.length)
                             throw Error('Position outside column');
+                        if (item.stage !== a.stage)
+                            item.completedAt = a.stage === 'done' ? new Date().toISOString() : null;
                         item.stage = a.stage;
                         const anchor = column[a.position];
                         remaining.splice(anchor ? remaining.indexOf(anchor) : remaining.length, 0, item);

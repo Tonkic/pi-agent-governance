@@ -67,6 +67,8 @@ test('renderer leads with architecture, removes promotional guide and keeps vali
   assert.ok(html.indexOf('id="architecture"') < html.indexOf('id="task-section"'));
   const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]);
   assert.equal(ids.length, new Set(ids).size, 'IDs must be unique');
+  assert.match(script, /history\.id = 'completed-history-open'/, 'The history opener is created with the done column');
+  ids.push('completed-history-open');
   for (const match of script.matchAll(/(?:\$|text|list)\('([^']+)'/g)) assert.ok(ids.includes(match[1]), `Missing element ${match[1]}`);
   for (const match of html.matchAll(/href="#([^"]+)"/g)) assert.ok(ids.includes(match[1]), `Missing navigation target ${match[1]}`);
   assert.equal([...html.matchAll(/data-module="/g)].length, 0, 'No fixed plugin graph may masquerade as project data');
@@ -312,4 +314,39 @@ test('renderer cannot launch new acceptance operations, even programmatically', 
   const start = await rendererSeam('async function startOperation(', "$('launch-model').addEventListener", {});
   // No DOM or bridge context: a legacy kind must return before touching either.
   await start('acceptance');
+});
+
+test('completed history sorts dated records descending and leaves untimed history in saved order without mutation', async () => {
+  const script = await fs.readFile(path.join(__dirname, '../plugin/renderer/panel.js'), 'utf8');
+  const from = script.indexOf('function completedDate('), to = script.indexOf('const boardLabels =', from);
+  assert.ok(from >= 0 && to > from);
+  const { date, sorted } = require('node:vm').runInNewContext(script.slice(from, to) + ';({date: completedDate, sorted: completedItems})', {
+    effectiveStage: item => item.stage === 'accepted' ? 'done' : item.stage
+  });
+  const items = [
+    { id: 'untimed-a', stage: 'done', updatedAt: '2099-01-01T00:00:00Z' },
+    { id: 'old', stage: 'done', completedAt: '2020-01-01T00:00:00Z' },
+    { id: 'untimed-b', stage: 'done', completedAt: 'not a date', acceptance: { at: 'also invalid' } },
+    { id: 'legacy', stage: 'accepted', acceptance: { at: '2021-01-01T00:00:00Z' } },
+    { id: 'new', stage: 'done', completedAt: '2022-01-01T00:00:00Z', acceptance: { at: '2030-01-01T00:00:00Z' } },
+    { id: 'doing', stage: 'doing', completedAt: '2099-01-01T00:00:00Z' },
+    { id: 'tie', stage: 'done', completedAt: '2022-01-01T00:00:00Z' }
+  ];
+  const before = JSON.stringify(items);
+  items.forEach(Object.freeze); Object.freeze(items);
+  assert.deepEqual(Array.from(sorted(items), (item: any) => item.id), ['new', 'tie', 'legacy', 'old', 'untimed-a', 'untimed-b']);
+  assert.equal(date(items[0]), null, 'Never infer completed time from updatedAt');
+  assert.equal(date(items[2]), null, 'Invalid dates stay untimed');
+  assert.equal(date(items[3]).legacy, true, 'Acceptance fallback must be explicitly historical');
+  assert.equal(date(items[4]).value, items[4].completedAt, 'Completion timestamp takes precedence');
+  assert.equal(JSON.stringify(items), before);
+});
+test('history table rendering/search is text-only and has no write or bridge calls', async () => {
+  const script = await fs.readFile(path.join(__dirname, '../plugin/renderer/panel.js'), 'utf8');
+  const from = script.indexOf('function renderCompletedHistory('), to = script.indexOf('function openCompletedHistory(', from);
+  const render = script.slice(from, to);
+  assert.match(render, /textContent = value/);
+  assert.match(render, /historyOwner !== workspaceEpoch/);
+  assert.match(render, /closeCompletedHistory\(false\)/);
+  assert.doesNotMatch(render, /innerHTML|invoke\(|writeWorkitem|moveWorkitem/);
 });

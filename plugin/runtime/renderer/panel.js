@@ -21,6 +21,21 @@ function discardWarning(submitted) {
 const boardStages = ['todo', 'doing', 'done'];
 // Old snapshots remain readable without migrating their persisted record.
 const effectiveStage = (item) => item.stage === 'accepted' ? 'done' : item.stage;
+// Dates are display-only: never synthesize completion from the board update time.
+function completedDate(item) {
+    const timestamp = (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) && Number.isFinite(Date.parse(value));
+    if (timestamp(item.completedAt))
+        return { value: item.completedAt, time: Date.parse(item.completedAt), legacy: false };
+    if (timestamp(item.acceptance?.at))
+        return { value: item.acceptance.at, time: Date.parse(item.acceptance.at), legacy: true };
+    return null;
+}
+function completedItems(items) {
+    return items.filter(item => effectiveStage(item) === 'done')
+        .map((item, index) => ({ item, index, date: completedDate(item) }))
+        .sort((a, b) => (b.date?.time ?? -Infinity) - (a.date?.time ?? -Infinity) || a.index - b.index)
+        .map(entry => entry.item);
+}
 const boardLabels = new Proxy({}, { get: (_, key) => t(key) });
 const labels = new Proxy({}, { get: (_, key) => (copy[locale][key] ? t(key) : String(key)) });
 const text = (id, value) => {
@@ -68,6 +83,13 @@ function lock(value) {
     document.querySelectorAll('[data-operation-write]').forEach((button) => {
         button.disabled = value || !navigator.onLine;
     });
+    // History is a local, read-only view and remains usable while writes are locked/offline.
+    const historyButton = $('completed-history-open');
+    if (historyButton)
+        historyButton.disabled = !projectSnapshot?.board || !!projectSnapshot.boardError;
+    if ($('workitem-form').hidden && !dirtyForms.has('workitem-form')) {
+        $('item-back').disabled = $('item-close').disabled = false;
+    }
     updateLaunchControls();
     updateItemNavigation();
     updateDesignControls();
@@ -186,6 +208,7 @@ async function load(checkSources = false) {
     launchLoading = false;
     if ($('launch-dialog').open)
         $('launch-dialog').close();
+    resetCompletedHistory(false);
     projectSnapshot = null;
     resetWorkitem();
     $('workitem-form').hidden = true;
@@ -598,6 +621,82 @@ window.pluginBridge
 })
     .catch(() => { });
 let selectedItem = null, itemOrigin = null, searchQuery = '';
+let historyQuery = '', historyOwner = -1, historyOrigin = null;
+let historyItemIds = null;
+function resetCompletedHistory(resetSearch = true) {
+    historyOwner = -1;
+    historyItemIds = null;
+    historyOrigin = null;
+    if ($('completed-history-dialog').open)
+        $('completed-history-dialog').close('cancel');
+    $('completed-history-body').replaceChildren();
+    if (resetSearch)
+        historyQuery = $('completed-history-search').value = '';
+}
+function closeCompletedHistory(restore = true) {
+    const valid = historyOwner === workspaceEpoch;
+    $('completed-history-dialog').close();
+    if (restore && valid)
+        (historyOrigin?.isConnected ? historyOrigin : $('completed-history-open'))?.focus();
+}
+function renderCompletedHistory() {
+    if (historyOwner !== workspaceEpoch || !projectSnapshot?.board || projectSnapshot.boardError)
+        return;
+    const all = completedItems(projectSnapshot.board.items);
+    const items = all.filter(item => !historyQuery || [item.id, item.title, item.description,
+        ...(item.criteria || []), t(impactLabel(item.architectureImpact)), completedDate(item)?.value]
+        .some(value => value?.toLocaleLowerCase().includes(historyQuery)));
+    text('completed-history-status', t('historyCount', items.length, all.length));
+    $('completed-history-empty').hidden = items.length > 0;
+    $('completed-history-body').replaceChildren(...items.map(item => {
+        const row = document.createElement('tr');
+        row.dataset.historyItem = item.id;
+        const date = completedDate(item);
+        const values = [item.title, date ? `${date.value}${date.legacy ? ' · ' + t('historicalDate') : ''}` : t('dateUnrecorded'),
+            `${t('count', item.criteria?.length || 0)} · ${(item.criteria || []).join(' / ') || t('none')}`,
+            t(impactLabel(item.architectureImpact))];
+        for (const value of values) {
+            const cell = document.createElement('td');
+            cell.textContent = value;
+            row.append(cell);
+        }
+        const action = document.createElement('td'), button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = t('itemDetails');
+        button.setAttribute('aria-label', t('historyDetailsFor', item.title));
+        button.addEventListener('click', () => {
+            if (historyOwner !== workspaceEpoch)
+                return;
+            historyItemIds = items.map(entry => entry.id);
+            closeCompletedHistory(false);
+            // The row is in a closed dialog: restore to the connected board opener, not the row.
+            void openItem(item.id, false, $('completed-history-open') || historyOrigin);
+        });
+        action.append(button);
+        row.append(action);
+        return row;
+    }));
+}
+function openCompletedHistory(origin) {
+    if (!projectSnapshot?.board || projectSnapshot.boardError || document.querySelector('dialog[open]'))
+        return;
+    closeItemMenu(false);
+    historyOwner = workspaceEpoch;
+    historyOrigin = origin;
+    historyItemIds = null;
+    renderCompletedHistory();
+    $('completed-history-dialog').showModal();
+    $('completed-history-search').focus();
+}
+$('completed-history-search').addEventListener('input', () => {
+    historyQuery = $('completed-history-search').value.trim().toLocaleLowerCase();
+    renderCompletedHistory();
+});
+$('completed-history-close').addEventListener('click', () => closeCompletedHistory());
+$('completed-history-dialog').addEventListener('cancel', event => {
+    event.preventDefault();
+    closeCompletedHistory();
+});
 let menuOrigin = null, longPress = null;
 let longPressConsumed = null;
 function itemById(id) {
@@ -618,10 +717,10 @@ function closeItemMenu(restore = true) {
     if (restore && menuOrigin?.isConnected)
         menuOrigin.focus();
 }
-async function allowItemSwitch() {
+async function allowItemSwitch(readOnly = false) {
     const owner = workspaceEpoch;
     if (busy)
-        return false;
+        return readOnly && !dirtyForms.has('workitem-form');
     if (!dirtyForms.has('workitem-form'))
         return true;
     lock(true);
@@ -641,11 +740,13 @@ async function openItem(id = null, edit = false, origin) {
     if (!id &&
         (!snapshot?.state || !projectSnapshot || projectSnapshot.boardError || !navigator.onLine))
         return;
-    if (!(await allowItemSwitch()) || owner !== workspaceEpoch)
+    if (!(await allowItemSwitch(!!id && !edit)) || owner !== workspaceEpoch)
         return;
     const item = id ? itemById(id) : null;
     if (id && !item)
         return;
+    if (origin?.closest('[data-workitem]') || !id)
+        historyItemIds = null;
     resetWorkitem();
     closeItemMenu(false);
     selectedItem = id;
@@ -694,7 +795,7 @@ async function openItem(id = null, edit = false, origin) {
     return true;
 }
 async function closeItemSheet() {
-    if (!(await allowItemSwitch()))
+    if (!(await allowItemSwitch(true)))
         return;
     resetWorkitem();
     $('item-sheet').close();
@@ -763,9 +864,9 @@ function menuActions(item) {
             }
         }
     ];
-    if (index > 0)
+    if (stageNow !== 'done' && index > 0)
         actions.push({ label: t('moveUp'), run: () => moveWorkitem(item.id, stageNow, index - 1) });
-    if (index < siblings.length - 1)
+    if (stageNow !== 'done' && index < siblings.length - 1)
         actions.push({ label: t('moveDown'), run: () => moveWorkitem(item.id, stageNow, index + 1) });
     for (const stage of boardStages.filter((s) => Math.abs(boardStages.indexOf(s) - boardStages.indexOf(stageNow)) === 1))
         actions.push({
@@ -840,13 +941,14 @@ function renderBoard() {
         column.className = 'board-column';
         column.dataset.stage = stage;
         const all = data.board.items.filter((item) => effectiveStage(item) === stage);
-        const items = all.filter(matches);
+        const matched = (stage === 'done' ? completedItems(all) : all).filter(matches);
+        const items = stage === 'done' && !searchQuery ? matched.slice(0, 5) : matched;
         const header = document.createElement('header');
         const heading = document.createElement('h3');
         heading.textContent = boardLabels[stage];
         const count = document.createElement('span');
         count.className = 'column-count';
-        count.textContent = String(items.length);
+        count.textContent = String(stage === 'done' ? all.length : items.length);
         const add = document.createElement('button');
         add.type = 'button';
         add.className = 'column-add';
@@ -860,8 +962,22 @@ function renderBoard() {
         if (stage === 'todo')
             header.append(add);
         column.append(header);
+        if (stage === 'done') {
+            const summary = document.createElement('p'), history = document.createElement('button');
+            summary.className = 'completed-summary';
+            summary.textContent = t('recentCompleted', items.length, all.length);
+            history.type = 'button';
+            history.id = 'completed-history-open';
+            history.textContent = t('viewAllCompleted', all.length);
+            history.setAttribute('aria-haspopup', 'dialog');
+            history.addEventListener('click', () => openCompletedHistory(history));
+            const hint = document.createElement('p');
+            hint.className = 'completed-summary';
+            hint.textContent = t('completedDragHint');
+            column.append(summary, history, hint);
+        }
         column.addEventListener('dragover', (event) => {
-            if (draggedItem && !busy && !searchQuery) {
+            if (draggedItem && !busy && !searchQuery && navigator.onLine && !(stage === 'done' && effectiveStage(itemById(draggedItem)) === 'done')) {
                 event.preventDefault();
                 column.classList.add('drop-target');
             }
@@ -875,8 +991,14 @@ function renderBoard() {
             column.classList.remove('drop-target');
             const id = draggedItem;
             draggedItem = null;
-            if (!id || busy || searchQuery)
+            if (!id || busy || searchQuery || !navigator.onLine)
                 return;
+            // Recent completion order is not persisted order. Never reorder done against hidden cards.
+            if (stage === 'done') {
+                if (effectiveStage(itemById(id)) !== 'done')
+                    void moveWorkitem(id, stage, all.length);
+                return;
+            }
             const target = event.target.closest('[data-workitem]');
             if (target?.dataset.workitem === id)
                 return;
@@ -1024,6 +1146,8 @@ for (const id of ['item-back', 'item-close', 'workitem-cancel'])
         void closeItemSheet();
     });
 function displayedItemIds() {
+    if (historyItemIds)
+        return historyItemIds.filter(id => !!itemById(id));
     return Array.from(document.querySelectorAll('[data-workitem]')).map((card) => card.dataset.workitem);
 }
 function updateItemNavigation() {
@@ -1037,7 +1161,7 @@ async function browseItem(direction) {
     const ids = displayedItemIds(), index = ids.indexOf(selectedItem), id = ids[index + direction];
     if (index < 0 || !id)
         return;
-    await openItem(id, false, document.querySelector(`[data-workitem="${id}"]`));
+    await openItem(id, false, historyItemIds ? $('completed-history-open') : document.querySelector(`[data-workitem="${id}"]`));
 }
 $('item-previous').addEventListener('click', () => {
     void browseItem(-1);
@@ -1107,6 +1231,7 @@ document.addEventListener('keydown', (event) => {
     if (event.key === '/' &&
         !event.target.closest('input, textarea, [contenteditable]') &&
         !$('item-sheet').open &&
+        !$('completed-history-dialog').open &&
         !$('confirm-dialog').open) {
         event.preventDefault();
         location.hash = '#board-section';
@@ -1446,6 +1571,8 @@ window.pluginBridge?.on?.('workspace:changed', (workspace) => {
     selectedItem = editingItem = null;
     searchQuery = '';
     $('board-search').value = '';
+    resetCompletedHistory();
+    itemOrigin = menuOrigin = null;
     text('operation-result', '');
     $('operation-runs').replaceChildren();
     $('agent-brief').value = '';

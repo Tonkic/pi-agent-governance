@@ -130,6 +130,36 @@ async function launchSelection(payload, models) {
         ...(level !== undefined && level !== '' ? { thinkingLevel: level } : {})
     };
 }
+// PI-Desktop native/remote agentGetStatus returns {status:{...}}; old bridges used flat flags.
+function runtimeBusy(value, sessionId) {
+    if (!isRecord(value) || (Object.hasOwn(value, 'status') && !isRecord(value.status)))
+        throw Error('Host returned an invalid running status');
+    const rows = Object.hasOwn(value, 'status') ? [value, value.status] : [value];
+    const flags = [];
+    let waiting = false;
+    for (const row of rows) {
+        if (row.sessionId !== undefined && row.sessionId !== sessionId)
+            throw Error('Host status belongs to another session');
+        for (const key of ['isStreaming', 'isRunning'])
+            if (Object.hasOwn(row, key)) {
+                if (typeof row[key] !== 'boolean')
+                    throw Error('Host did not return a definite running status');
+                flags.push(row[key]);
+            }
+        if (row.pendingToolConfirmations !== undefined) {
+            if (!Number.isSafeInteger(row.pendingToolConfirmations) || row.pendingToolConfirmations < 0)
+                throw Error('Host returned invalid pending confirmations');
+            waiting ||= row.pendingToolConfirmations > 0;
+        }
+        if (row.currentTurnId !== undefined && row.currentTurnId !== null) {
+            if (typeof row.currentTurnId !== 'string')
+                throw Error('Host returned an invalid active turn');
+        }
+    }
+    if (!flags.length)
+        throw Error('Host did not return a definite running status');
+    return waiting || flags.some((flag) => flag === true);
+}
 async function reconcileRunning(g, call, isCurrent) {
     const { runs, expected } = await g.locked(async () => ({
         expected: g.expected,
@@ -159,10 +189,7 @@ async function reconcileRunning(g, call, isCurrent) {
         let status, session;
         try {
             status = await probe('agent/getStatus', [run.sessionId]);
-            const flags = [status?.isStreaming, status?.isRunning].filter((value) => value !== undefined);
-            if (!flags.length || flags.some((value) => typeof value !== 'boolean'))
-                throw Error('Host did not return a definite running status');
-            if (flags.some((value) => value === true)) {
+            if (runtimeBusy(status, run.sessionId)) {
                 await checkOwner();
                 continue;
             }
@@ -362,8 +389,10 @@ async function operationInvoke(root, payload, desktop, isCurrent = async () => t
             { id: run.sessionId, messageLimit: 12, contentLimit: 16000 }
         ]);
         // Unknown submissions do not become completed merely because the Agent is idle.
-        const streaming = status?.isStreaming ?? status?.isRunning;
-        if (run.phase === 'running' && streaming === false)
+        const busy = runtimeBusy(status, run.sessionId);
+        if (session?.session?.id !== run.sessionId)
+            throw Error('Previous session cannot be confirmed; inspect its recorded session');
+        if (run.phase === 'running' && !busy)
             await updateRun(g.root, run.id, { phase: 'completed' }, 'running');
         const latest = await g.locked(() => readRuns(g));
         return {
@@ -375,4 +404,4 @@ async function operationInvoke(root, payload, desktop, isCurrent = async () => t
     }
     throw Error('Unsupported project operation action');
 }
-module.exports = { operationInvoke };
+module.exports = { operationInvoke, runtimeBusy };

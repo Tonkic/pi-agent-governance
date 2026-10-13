@@ -187,3 +187,15 @@ test('generated entry is deterministic and refuses hand-written or dangling link
   assert.throws(() => entry.generate(temp), /linked/);
   assert.equal(fs.existsSync(target), false);
 });
+test('completed history has its own accessible modal, semantic table and horizontal scrolling region', () => {
+  const html = fs.readFileSync(path.join(root, 'plugin/renderer/index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(root, 'plugin/renderer/views.css'), 'utf8');
+  assert.match(html, /<dialog id="completed-history-dialog"[^>]*aria-labelledby="completed-history-title"/);
+  assert.match(html, /<input id="completed-history-search" type="search"/);
+  assert.match(html, /class="completed-table-scroll" tabindex="0" role="region"/);
+  assert.match(html, /<table class="completed-table"><caption/);
+  assert.equal((html.match(/<th scope="col"/g) || []).length, 5);
+  assert.match(css, /\.completed-table-scroll \{ overflow: auto/);
+  assert.match(css, /\.completed-history-dialog \{[\s\S]*?margin: auto/);
+  assert.match(css, /max-height: calc\(100dvh - 32px\)/);
+});

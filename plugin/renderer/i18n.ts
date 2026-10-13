@@ -2,6 +2,17 @@
 // Plugin-owned copy only. Never translate project data or error payloads by matching text.
 const copy = {
   en: {
+    completedHistory: 'All completed items',
+    viewAllCompleted: 'View all ({0})',
+    recentCompleted: 'Showing {0} of {1} · most recent first',
+    completedDragHint: 'Recent view: completed reordering is paused. Drop incoming cards to append in saved order; drag completed cards to Doing to reopen.',
+    historyHint: 'Read-only cached history. Refresh the board to reload. Historical record dates are not completion timestamps; missing dates stay unrecorded.',
+    searchCompleted: 'Search completed history',
+    historyCount: '{0} matching / {1} completed',
+    completedDateLabel: 'Completion / historical date',
+    historicalDate: 'Historical record date',
+    dateUnrecorded: 'Not recorded',
+    historyDetailsFor: 'View details: {0}',
     sourceArchitecture: 'Source architecture',
     designAsciiTitle: 'ASCII architecture diagram',
     designAsciiHint: 'ASCII and canvas are generated from the same responsibilities and relationships. Saved diagrams are included in the document; older designs get a read-only text view without rewriting history.',
@@ -350,6 +361,17 @@ const copy = {
     viewRelations: 'View responsibility and relationships'
   },
   'zh-CN': {
+    completedHistory: '全部已完成',
+    viewAllCompleted: '查看全部 ({0})',
+    recentCompleted: '显示 {0} / 共 {1} 项 · 近期优先',
+    completedDragHint: '近期视图暂停已完成栏内排序。移入项追加到保存顺序末尾；拖回进行中可重新打开。',
+    historyHint: '只读缓存历史，刷新看板可重新读取。历史记录日期不是完成时间；未记录日期的项目不补造时间。',
+    searchCompleted: '搜索全部已完成',
+    historyCount: '匹配 {0} / 共 {1} 项已完成',
+    completedDateLabel: '完成 / 历史日期',
+    historicalDate: '历史记录日期',
+    dateUnrecorded: '未记录',
+    historyDetailsFor: '查看详情：{0}',
     sourceArchitecture: '源码现状',
     designAsciiTitle: 'ASCII架构图',
     designAsciiHint: 'ASCII与画板来自同一份职责和关系。新保存方案的图写入正文；旧设计仅提供只读文本视图，不改写历史。',
