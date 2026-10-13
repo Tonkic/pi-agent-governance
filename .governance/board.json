@@ -20,6 +20,21 @@
       "gitTaskId": null
     },
     {
+      "id": "ascii-architecture",
+      "title": "同源ASCII架构与可视化",
+      "description": "架构仍可选；同一设计生成ASCII正文和现有画板，保留旧历史，未新增绘图依赖或验收。\n实际结果：125测试/88图/十场景、干净构建及包门禁通过，90a86a4来源/main9d77fc5同步核对完成。代表截图人工目视未完成，未声称真实宿主或模型测试通过。",
+      "blocker": "",
+      "stage": "done",
+      "taskId": "project-board-release",
+      "criteria": [
+        "节点/关系与ASCII对应，重复保存/旧基线/特殊文本回归通过",
+        "类型/构建/单元/浏览器/干净安装/包检查实际完成",
+        "提交后检查和来源/main同步实际完成"
+      ],
+      "architectureImpact": "none",
+      "gitTaskId": null
+    },
+    {
       "id": "three-column-simplification",
       "title": "三栏与可选架构简化",
       "description": "用户要求删独立验收、保留三栏；架构可选，功能基于分层文档实现及测试。保留旧历史，不引入新开发流程。\n实际结果：类型/构建、122测试、87图浏览器、干净安装和包检查通过；源码b95dbe4与测试修复bace43b已同步，main远端核对一致。无独立验收步骤。",
@@ -155,21 +170,6 @@
       "gitTaskId": null
     },
     {
-      "id": "ascii-architecture",
-      "title": "同源ASCII架构与可视化",
-      "description": "架构仍可选；同一设计生成ASCII正文和现有画板，保留旧历史，未新增绘图依赖或验收。",
-      "blocker": "",
-      "stage": "doing",
-      "taskId": "project-board-release",
-      "criteria": [
-        "节点/关系与ASCII对应，重复保存/旧基线/特殊文本回归通过",
-        "类型/构建/单元/浏览器/干净安装/包检查实际完成",
-        "提交后检查和来源/main同步实际完成"
-      ],
-      "architectureImpact": "none",
-      "gitTaskId": null
-    },
-    {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
       "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
@@ -179,5 +179,5 @@
       "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-13T06:09:35.716Z"
+  "updatedAt": "2026-10-13T06:16:26.821Z"
 }
