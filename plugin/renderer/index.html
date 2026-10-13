@@ -99,6 +99,16 @@
 </dialog>
 <dialog id="operations-dialog" class="action-dialog" aria-labelledby="operations-title"><header class="dialog-header"><h2 id="operations-title" data-i18n="analysisProgress"></h2><button id="operations-close" type="button" data-i18n-aria-label="closeDetails">×</button></header><button id="operations-refresh" type="button" data-i18n="refreshProgress"></button><p id="operations-notice" role="status"></p><div id="operation-runs"></div><pre id="operation-result" tabindex="0"></pre></dialog>
 <dialog id="behavior-docs-dialog" class="action-dialog" aria-labelledby="behavior-docs-title"><header class="dialog-header"><h2 id="behavior-docs-title" data-i18n="behaviorDocs"></h2><button id="behavior-docs-close" type="button" data-i18n-aria-label="closeDetails">×</button></header><p data-i18n="behaviorScope"></p><p id="behavior-docs-status" role="status"></p><div id="behavior-docs-content"></div></dialog>
+<dialog id="completed-history-dialog" class="completed-history-dialog" aria-labelledby="completed-history-title" aria-describedby="completed-history-hint">
+  <header class="dialog-header"><h2 id="completed-history-title" data-i18n="completedHistory"></h2><button id="completed-history-close" type="button" data-i18n-aria-label="closeDetails">×</button></header>
+  <p id="completed-history-hint" class="muted" data-i18n="historyHint"></p>
+  <label><span data-i18n="searchCompleted"></span><input id="completed-history-search" type="search" maxlength="200" autocomplete="off" data-i18n-placeholder="searchCompleted"></label>
+  <p id="completed-history-status" role="status" aria-live="polite"></p>
+  <div class="completed-table-scroll" tabindex="0" role="region" data-i18n-aria-label="completedHistory">
+    <table class="completed-table"><caption class="sr-only" data-i18n="completedHistory"></caption><thead><tr><th scope="col" data-i18n="title"></th><th scope="col" data-i18n="completedDateLabel"></th><th scope="col" data-i18n="checks"></th><th scope="col" data-i18n="architectureImpact"></th><th scope="col" data-i18n="itemDetails"></th></tr></thead><tbody id="completed-history-body"></tbody></table>
+  </div>
+  <p id="completed-history-empty" data-i18n="noResults" hidden></p>
+</dialog>
 <dialog id="item-sheet" class="item-sheet" aria-labelledby="item-sheet-title">
   <div class="sheet-header"><button id="item-back" type="button" data-i18n="backToBoard"></button><div class="sheet-navigation" role="group" data-i18n-aria-label="browseItems"><button id="item-previous" type="button" data-i18n-aria-label="previousItem">‹</button><button id="item-next" type="button" data-i18n-aria-label="nextItem">›</button></div><button id="item-close" class="icon-button" type="button" data-i18n-aria-label="closeDetails">×</button></div>
   <div class="sheet-body"><p id="item-sheet-meta" class="eyebrow"></p><h2 id="item-sheet-title" data-i18n="itemDetails"></h2>
