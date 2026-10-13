@@ -20,6 +20,22 @@
       "gitTaskId": null
     },
     {
+      "id": "status-format-completed-history",
+      "title": "宿主状态兼容与近期完成历史",
+      "description": "0.7.7真实嵌套status兼容及近期5项/全部完成表格；历史不删除。c2f446f提交后、main6a3a06b集成136测试/95截图和原10行为场景通过；干净构建/官方包检查、来源同步、普通main推送和远端SHA核对完成。真实旧会话已通过公开MCP恢复completed；未重发/创建/abort，不自动安装。",
+      "blocker": "",
+      "stage": "done",
+      "taskId": "project-board-release",
+      "criteria": [
+        "官方格式与安全边界回归通过",
+        "近期5项/全部表格/真实完成时间且历史不删除",
+        "实际组合/干净检查/包及GitHub main交付"
+      ],
+      "architectureImpact": "none",
+      "gitTaskId": null,
+      "completedAt": "2026-10-13T12:44:27.313Z"
+    },
+    {
       "id": "operation-state-sync",
       "title": "结束会话状态同步与新任务放行",
       "description": "启动新操作和打开进度自动核对旧running会话；明确空闲才同步，查询失败/未知保留，不重发/删除或后台轮询。\n实际结果：原场景red→green，130测试/89图/超时与并发保护、包检查通过；来源075d82b及main64d1072普通推送核对完成。真实旧会话读取未成功，未伪造完成或安装新版。",
@@ -185,22 +201,6 @@
       "gitTaskId": null
     },
     {
-      "id": "status-format-completed-history",
-      "title": "宿主状态兼容与近期完成历史",
-      "description": "兼容真实嵌套status，近期5项＋可搜索全部完成表格；历史不删除。组合136测试/95图与原10行为场景及官方包检查通过，待交付。",
-      "blocker": "",
-      "stage": "doing",
-      "taskId": "project-board-release",
-      "criteria": [
-        "官方格式与安全边界回归通过",
-        "近期5项/全部表格/真实完成时间且历史不删除",
-        "实际组合/干净检查/包及GitHub main交付"
-      ],
-      "architectureImpact": "none",
-      "gitTaskId": null,
-      "completedAt": null
-    },
-    {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
       "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
@@ -210,5 +210,5 @@
       "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-13T12:32:31.819Z"
+  "updatedAt": "2026-10-13T12:44:27.313Z"
 }

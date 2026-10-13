@@ -93,4 +93,4 @@
 - 改：只有真实迁入done才记录completedAt；同栏移动不改时间，重开清除。近期排序不等于保存顺序，暂停完成栏内重排，跨栏使用完整位置。
 - 检查：组合及干净npm ci/typecheck/build、136测试、Edge95图与原10行为场景通过；i18n0失败/2既有提示。官方包60文件706250字节SHA11d77dbd060304acf05c09edd517a3a530357f0c7c4c64447ea7fa5bdea83a30，内容/权限核对通过。
 - 实例：公开本机MCP确认原会话空闲，旧记录安全改completed，保留ID/历史；没有提示重发、创建或abort。格式与闲置turn回归先失败后通过。
-- 边界：市场仍0.7.0；不自动安装，无新权限，不把模拟桥回归当真实宿主完整检查。提交后及main交付待接续，证据见changes/active/project-board-release/status-completed/。
+- 交付：c2f446f提交后完整检查/来源同步与受管验证通过，main6a3a06b集成重测/普通推送和远端SHA核对完成。本项直接done；市场仍0.7.0，无新权限、不自动安装。Browser未前台，截图目视未完成，不把模拟桥当完整宿主检查；证据见changes/active/project-board-release/status-completed/。
