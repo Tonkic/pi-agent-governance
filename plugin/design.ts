@@ -14,6 +14,78 @@ function timestamp(value) {
     throw Error('Invalid design timestamp');
   return value;
 }
+const asciiStart = '<!-- governance:architecture-ascii:start -->';
+const asciiEnd = '<!-- governance:architecture-ascii:end -->';
+// Single-line literal labels cannot break the Markdown fence or ASCII box layout.
+const asciiLabel = (value) =>
+  value.replace(
+    /[\u0000-\u001f\u007f`<>]/g,
+    (c) => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0')
+  );
+function cellWidth(value) {
+  return [...value].reduce((width, c) => {
+    if (/\p{Mark}/u.test(c)) return width;
+    const n = c.codePointAt(0);
+    return (
+      width +
+      (n >= 0x1100 &&
+      (n <= 0x115f ||
+        (n >= 0x2e80 && n <= 0xa4cf) ||
+        (n >= 0xac00 && n <= 0xd7a3) ||
+        (n >= 0xf900 && n <= 0xfaff) ||
+        (n >= 0xfe10 && n <= 0xfe6f) ||
+        (n >= 0xff01 && n <= 0xff60) ||
+        n >= 0x1f300)
+        ? 2
+        : 1)
+    );
+  }, 0);
+}
+function architectureAscii(proposal) {
+  const boxes = proposal.nodes.map((n) => {
+    const lines = [`[${n.id}]`, asciiLabel(n.title)];
+    const width = Math.max(...lines.map(cellWidth));
+    const border = '+' + '-'.repeat(width + 2) + '+';
+    return [
+      border,
+      ...lines.map((line) => '| ' + line + ' '.repeat(width - cellWidth(line)) + ' |'),
+      border
+    ].join('\n');
+  });
+  const arrows = proposal.edges.map((e) => `[${e.from}] -- ${asciiLabel(e.label)} --> [${e.to}]`);
+  return (
+    'Nodes\n\n' + boxes.join('\n\n') + '\n\nRelationships\n\n' + (arrows.join('\n') || '(none)')
+  );
+}
+function asciiDocument(document) {
+  const start = document.indexOf(asciiStart),
+    end = document.indexOf(asciiEnd);
+  if (start === -1 && end === -1) return { body: document, block: null };
+  if (
+    start === -1 ||
+    end < start ||
+    document.indexOf(asciiStart, start + 1) !== -1 ||
+    document.indexOf(asciiEnd, end + 1) !== -1
+  )
+    throw Error('Invalid managed ASCII block; keep one complete block');
+  return {
+    body: (
+      document.slice(0, start).trimEnd() +
+      '\n\n' +
+      document.slice(end + asciiEnd.length).trimStart()
+    ).trim(),
+    block: document.slice(start, end + asciiEnd.length).replace(/\r\n/g, '\n')
+  };
+}
+const asciiBlock = (diagram) => `${asciiStart}\n\`\`\`text\n${diagram}\n\`\`\`\n${asciiEnd}`;
+const designView = (entry) =>
+  entry
+    ? {
+        ...entry,
+        ascii: entry.proposal ? architectureAscii(entry.proposal) : '',
+        documentBody: entry.proposal ? asciiDocument(entry.proposal.document).body : ''
+      }
+    : null;
 function designDiff(before, after) {
   const oldNodes = new Map((before?.nodes || []).map((n) => [n.id, n]));
   const nextNodes = new Map((after?.nodes || []).map((n) => [n.id, n]));
@@ -34,7 +106,9 @@ function designDiff(before, after) {
     removedEdges: edges.removed,
     changedEdges: edges.changed,
     titleChanged: before?.title !== after?.title,
-    documentChanged: before?.document !== after?.document
+    documentChanged:
+      asciiDocument(before?.document || '').body !== asciiDocument(after?.document || '').body,
+    asciiChanged: before ? architectureAscii(before) !== architectureAscii(after) : true
   };
 }
 class ArchitectureDesign {
@@ -53,7 +127,7 @@ class ArchitectureDesign {
   revision(raw) {
     return digest([this.g.root, this.g.expected ?? null, raw]);
   }
-  async proposal(value) {
+  async proposal(value, forSave = false) {
     if (
       !record(value) ||
       !Array.isArray(value.nodes) ||
@@ -103,9 +177,16 @@ class ArchitectureDesign {
       pairs.add(`${e.from}:${e.to}`);
       return { from: e.from, to: e.to, label: designText(e.label, 'edge label', 100) };
     });
+    const document = designText(value.document, 'document', 20000);
+    const parts = asciiDocument(document),
+      diagram = architectureAscii({ nodes, edges });
+    if (!forSave && parts.block !== null && parts.block !== asciiBlock(diagram))
+      throw Error('ASCII block differs from design nodes or relationships');
     return {
       title: designText(value.title, 'title', 160),
-      document: designText(value.document, 'document', 20000),
+      document: forSave
+        ? designText(parts.body + '\n\n' + asciiBlock(diagram), 'document including ASCII', 20000)
+        : document,
       nodes,
       edges
     };
@@ -167,13 +248,14 @@ class ArchitectureDesign {
     }
     if ((await this.raw()) !== raw || (await this.stateRaw()) !== (this.g.expected ?? null))
       throw Error('Design changed while reading; refresh');
-    const baseline = d?.history.at(-1) || null;
+    const history = (d?.history || []).map(designView);
+    const baseline = history.at(-1) || null;
     return {
       workspace: this.g.root,
       revision: this.revision(raw),
       baseline,
-      history: d?.history || [],
-      draft: d?.draft || null,
+      history,
+      draft: designView(d?.draft),
       diff: d?.draft?.proposal ? designDiff(baseline?.proposal, d.draft.proposal) : null,
       error
     };
@@ -222,7 +304,7 @@ class ArchitectureDesign {
         if (a.action === 'architecture_design_save') {
           if (a.expectedDraft !== d.draft.draftId)
             throw Error('Design draft replaced; stop the old design session');
-          d.draft.proposal = await this.proposal(a.proposal);
+          d.draft.proposal = await this.proposal(a.proposal, true);
           d.draft.proposalFingerprint = digest(d.draft.proposal);
           d.draft.updatedAt = now;
         } else if (a.action === 'architecture_design_confirm') {
@@ -252,4 +334,4 @@ class ArchitectureDesign {
     });
   }
 }
-module.exports = { ArchitectureDesign, designFile, designDiff };
+module.exports = { ArchitectureDesign, designFile, designDiff, architectureAscii };

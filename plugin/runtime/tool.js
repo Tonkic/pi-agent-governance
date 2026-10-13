@@ -64,7 +64,7 @@ module.exports = {
                 required: ['title', 'document', 'nodes', 'edges'],
                 properties: {
                     title: { type: 'string' },
-                    document: { type: 'string', description: 'Readable design intent, constraints, alternatives, decisions, tradeoffs and limitations. Not implementation evidence.' },
+                    document: { type: 'string', description: 'Readable design intent and tradeoffs. On save, a canonical ASCII diagram is generated in a managed Markdown block from the same nodes/edges as the canvas; do not maintain a separate diagram. Not implementation evidence.' },
                     nodes: { type: 'array', items: { type: 'object', required: ['id', 'title', 'description', 'files'], properties: {
                                 id: { type: 'string' }, title: { type: 'string' }, description: { type: 'string' }, files: { type: 'array', items: { type: 'string' } }
                             } } },

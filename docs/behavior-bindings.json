@@ -30,6 +30,10 @@
     {
       "id": "AD-003", "document": "docs/architecture-design.md", "cases": ["design-workspace-isolation"],
       "files": ["plugin/design.ts", "plugin/runtime/design.js", "plugin/main.ts", "plugin/runtime/main.js", "plugin/renderer/design.ts", "plugin/runtime/renderer/design.js", "plugin/renderer/panel.ts", "plugin/runtime/renderer/panel.js", "test/browser.cjs"]
+    },
+    {
+      "id": "AD-004", "document": "docs/architecture-design.md", "cases": ["design-ascii-view"],
+      "files": ["plugin/design.ts", "plugin/runtime/design.js", "plugin/renderer/design.ts", "plugin/runtime/renderer/design.js", "plugin/renderer/index.html", "plugin/renderer/panel.css", "plugin/operations.ts", "plugin/runtime/operations.js", "plugin/skills/architecture-copilot/SKILL.md", "test/browser.cjs", "test/design.test.cjs", "test/behavior-reporter.cjs", "scripts/check-behaviors.cjs", "plugin/behaviors.ts", "plugin/runtime/behaviors.js"]
     }
   ]
 }
