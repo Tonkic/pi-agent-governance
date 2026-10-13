@@ -641,19 +641,79 @@ test('reconciliation never overwrites a concurrent cancellation or changed proje
     }
   }
 });
-test('status timeout retains the old run and sends no new prompt', async t => {
-  const f = await fixture(t); await f.start();
-  const file = path.join(f.root, '.governance/operations.json'), before = await fs.readFile(file, 'utf8');
-  let reached; const querying = new Promise(resolve => { reached = resolve; });
+test('status timeout retains the old run and sends no new prompt', async (t) => {
+  const f = await fixture(t);
+  await f.start();
+  const file = path.join(f.root, '.governance/operations.json'),
+    before = await fs.readFile(file, 'utf8');
+  let reached;
+  const querying = new Promise((resolve) => {
+    reached = resolve;
+  });
   const invoke = f.desktop.invoke;
-  f.desktop.invoke = async request => {
-    if(request.operation === 'agent/getStatus') { reached(); return new Promise(() => {}); }
+  f.desktop.invoke = async (request) => {
+    if (request.operation === 'agent/getStatus') {
+      reached();
+      return new Promise(() => {});
+    }
     return invoke(request);
   };
-  t.mock.timers.enable({apis:['setTimeout']});
+  t.mock.timers.enable({ apis: ['setTimeout'] });
   const pending = f.start();
-  await querying; t.mock.timers.tick(10000);
+  await querying;
+  t.mock.timers.tick(10000);
   await assert.rejects(pending, /timed out/);
   assert.equal(await fs.readFile(file, 'utf8'), before);
-  assert.equal(f.calls.filter(c => c.operation === 'agent/prompt').length, 1);
+  assert.equal(f.calls.filter((c) => c.operation === 'agent/prompt').length, 1);
+});
+test('official desktop status envelope supports idle reconciliation and manual status inspection', async (t) => {
+  for (const action of ['list', 'status', 'start']) {
+    const f = await fixture(t);
+    const old = await f.start();
+    const invoke = f.desktop.invoke;
+    f.desktop.invoke = async (request) =>
+      request.operation === 'agent/getStatus'
+        ? {
+            status: {
+              sessionId: old.sessionId,
+              isRunning: false,
+              pendingToolConfirmations: 0,
+              currentTurnId: 'last-finished-turn'
+            }
+          }
+        : invoke(request);
+    if (action === 'start') await f.start('architecture');
+    else await operationInvoke(f.root, { action, id: old.id }, f.desktop);
+    const data = JSON.parse(
+      await fs.readFile(path.join(f.root, '.governance/operations.json'), 'utf8')
+    );
+    assert.equal(data.runs.find((r) => r.id === old.id).phase, 'completed');
+    assert.equal(
+      f.calls.filter((c) => c.operation === 'agent/prompt').length,
+      action === 'start' ? 2 : 1
+    );
+  }
+});
+test('official status envelope keeps running and waiting permissions busy and rejects malformed identity/status', async (t) => {
+  for (const status of [
+    { sessionId: 'owned-session', isRunning: true, pendingToolConfirmations: 0 },
+    { sessionId: 'owned-session', isRunning: false, pendingToolConfirmations: 1 },
+    { sessionId: 'owned-session', isRunning: true, currentTurnId: 'active-turn' },
+    { sessionId: 'foreign-session', isRunning: false },
+    { sessionId: 'owned-session', isRunning: 'false' },
+    { sessionId: 'owned-session', isRunning: false, pendingToolConfirmations: -1 },
+    { sessionId: 'owned-session', isRunning: false, pendingToolConfirmations: '0' },
+    { sessionId: 'owned-session' }
+  ]) {
+    const f = await fixture(t);
+    await f.start();
+    const invoke = f.desktop.invoke;
+    f.desktop.invoke = async (request) =>
+      request.operation === 'agent/getStatus' ? { status } : invoke(request);
+    const file = path.join(f.root, '.governance/operations.json'),
+      raw = await fs.readFile(file, 'utf8');
+    await assert.rejects(f.start());
+    assert.equal(await fs.readFile(file, 'utf8'), raw);
+    assert.equal(f.calls.filter((c) => c.operation === 'agent/prompt').length, 1);
+  }
 });
