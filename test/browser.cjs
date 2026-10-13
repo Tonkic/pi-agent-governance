@@ -79,7 +79,7 @@ const models = {
 (async () => {
   const base = process.env.PI_SCRATCH_DIR || os.tmpdir();
   const roots = await Promise.all(
-    [1, 2, 3].map(() => fs.mkdtemp(path.join(base, 'workbench-browser-')))
+    [1, 2, 3, 4].map(() => fs.mkdtemp(path.join(base, 'workbench-browser-')))
   );
   let root = roots[0],
     holdGit = false,
@@ -90,6 +90,7 @@ const models = {
   let delayedGitRoot = null, releaseDelayedGit;
   let delayedBehaviorRoot = null, releaseBehavior;
   let delayedDesignRoot = null, releaseDesign;
+  const boardWrites = [];
   const g = new Governance(root);
   for (const dir of roots.slice(0, 2)) await new Governance(dir).run({ action: 'init' });
   await g.run({
@@ -115,6 +116,7 @@ const models = {
     p.on('pageerror', (e) => errors.push(e.message));
     await p.exposeFunction('hostInvoke', async (channel, payload) => {
       const requestRoot = root;
+      if (channel === 'governance.workitem') boardWrites.push(payload);
       if (channel === 'governance.operation' && ['cancel', 'resolve'].includes(payload.action))
         operationWrites.push(payload);
       if (channel === 'app.getLocale') return locale;
@@ -1438,6 +1440,166 @@ const models = {
     assert.deepEqual((await new Governance(roots[0]).run({ action: 'architecture_design_snapshot' })).baseline.number, 2);
     root = roots[0]; await designPage.close();
     behaviorReport.passed('design-workspace-isolation');
+    // Independent history fixture: the existing three-done scenarios above stay unchanged.
+    {
+    root = roots[3];
+    const historyGovernance = new Governance(root);
+    await historyGovernance.run({ action: 'init' });
+    await historyGovernance.run({ action: 'start', id: 'history', goal: 'Completed history fixture', criteria: ['History stays intact'] });
+    const historySnapshot = () => historyGovernance.run({ action: 'project_snapshot' });
+    for (let index = 0; index < 10; index++) {
+      await historyGovernance.run({ action: 'board_create', id: `history-${index}`,
+        title: index === 0 ? 'Older <img src=x onerror=alert(1)> record' : `Completed fixture ${index}`,
+        description: `History fixture ${index}`, criteria: [`criterion-${index}`, 'Second check'],
+        architectureImpact: index % 2 ? 'affects' : 'none', expectedRevision: (await historySnapshot()).revision });
+    }
+    const historyBoardPath = path.join(root, '.governance/board.json');
+    const historyBoard = JSON.parse(await fs.readFile(historyBoardPath, 'utf8'));
+    const dates = ['2019-01-01T00:00:00.000Z', '2025-01-01T00:00:00.000Z', '2022-01-01T00:00:00.000Z',
+      '2024-01-01T00:00:00.000Z', '2023-01-01T00:00:00.000Z'];
+    historyBoard.updatedAt = '2030-01-01T00:00:00.000Z';
+    historyBoard.items.forEach((item, index) => {
+      item.stage = index === 9 ? 'doing' : index === 5 ? 'accepted' : 'done';
+      if (index < dates.length) item.completedAt = dates[index];
+      if (index === 5) item.acceptance = { method: 'human', passed: true, valid: true,
+        itemFingerprint: itemFingerprint(item), at: '2021-01-01T00:00:00.000Z',
+        reviewer: 'Historical fixture', conclusion: 'Old record', evidence: 'Fixture only', criteria: item.criteria };
+    });
+    await historyGovernance.write('.governance/board.json', JSON.stringify(historyBoard, null, 2) + '\n');
+    const historyRaw = await fs.readFile(historyBoardPath, 'utf8'), historyRevision = (await historySnapshot()).revision;
+    const writesBeforeHistory = boardWrites.length;
+    const historyPage = await makePage();
+    await settled(historyPage);
+    await historyPage.locator('a[href="#board-section"]').click();
+    const doneIds = () => historyPage.locator('[data-stage="done"] [data-workitem]').evaluateAll(cards => cards.map(card => card.dataset.workitem));
+    const rowIds = () => historyPage.locator('#completed-history-body tr').evaluateAll(rows => rows.map(row => row.dataset.historyItem));
+    assert.deepEqual(await doneIds(), ['history-1', 'history-3', 'history-4', 'history-2', 'history-5']);
+    assert.equal(await historyPage.locator('[data-stage="done"] .column-count').textContent(), '9');
+    assert.match(await historyPage.locator('[data-stage="done"] .completed-summary').first().textContent(), /5.*9/);
+    await card(historyPage, 'history-1').click();
+    await historyPage.locator('#item-next').click();
+    assert.equal(await historyPage.locator('#item-record-id').textContent(), 'history-3', 'Card navigation follows displayed recent order');
+    await historyPage.keyboard.press('Escape');
+    await historyPage.locator('#completed-history-open').focus();
+    await historyPage.keyboard.press('Enter');
+    assert.equal(await historyPage.locator('#completed-history-search').evaluate(el => el === document.activeElement), true);
+    assert.deepEqual(await rowIds(), ['history-1', 'history-3', 'history-4', 'history-2', 'history-5', 'history-0', 'history-6', 'history-7', 'history-8']);
+    assert.match(await historyPage.locator('[data-history-item="history-5"] td').nth(1).textContent(), /2021.*历史记录日期/);
+    for (const id of ['history-6', 'history-7', 'history-8'])
+      assert.equal(await historyPage.locator(`[data-history-item="${id}"] td`).nth(1).textContent(), '未记录');
+    assert.equal(await historyPage.locator('#completed-history-body img').count(), 0, 'Titles render as text, never HTML');
+    assert.match(await historyPage.locator('[data-history-item="history-0"] td').nth(2).textContent(), /2.*criterion-0/);
+    assert.match(await historyPage.locator('[data-history-item="history-1"] td').nth(3).textContent(), /影响架构/);
+    assert.equal((await historyPage.locator('#completed-history-body').textContent()).includes('2030'), false);
+    await historyPage.locator('#completed-history-search').fill('criterion-0');
+    assert.deepEqual(await rowIds(), ['history-0']);
+    await historyPage.locator('[data-history-item="history-0"] button').click();
+    assert.equal(await historyPage.locator('dialog[open]').count(), 1, 'History closes before details open');
+    assert.equal(await historyPage.locator('#item-record-id').textContent(), 'history-0');
+    assert.equal(await historyPage.locator('#item-next').isDisabled(), true, 'Details navigation uses table search results');
+    await historyPage.keyboard.press('Escape');
+    assert.equal(await historyPage.locator('#completed-history-open').evaluate(el => el === document.activeElement), true);
+    await historyPage.locator('#board-search').fill('Completed fixture');
+    assert.equal((await doneIds()).length, 8, 'Global board search bypasses the recent-five limit');
+    assert.equal(await card(historyPage, 'history-8').getAttribute('draggable'), 'false');
+    await historyPage.locator('#completed-history-open').click();
+    assert.deepEqual(await rowIds(), ['history-0'], 'Table search is independent of global search');
+    await historyPage.locator('#completed-history-search').fill('');
+    await historyPage.locator('[data-history-item="history-0"] button').click();
+    await historyPage.locator('#item-next').click();
+    assert.equal(await historyPage.locator('#item-record-id').textContent(), 'history-6');
+    await historyPage.keyboard.press('Escape');
+    await historyPage.locator('#board-search').fill('');
+    await historyPage.locator('#completed-history-open').click();
+    for (const width of [390, 768, 1280]) for (const theme of ['light', 'dark']) {
+      await historyPage.setViewportSize({ width, height: 1000 });
+      await sendAppearance(historyPage, { base: theme });
+      const bounds = await historyPage.locator('#completed-history-dialog').boundingBox();
+      assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= width + 1 && bounds.y >= 0);
+      assert.ok(Math.abs(bounds.x + bounds.width / 2 - width / 2) < 2, 'History modal is centered');
+      assert.equal(await historyPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      if (width === 390) assert.equal(await historyPage.locator('.completed-table-scroll').evaluate(el => el.scrollWidth > el.clientWidth), true);
+      await capture(historyPage, `completed-history-${width}-${theme}`);
+    }
+    await historyPage.keyboard.press('Tab');
+    assert.equal(await historyPage.evaluate(() => !!document.activeElement.closest('#completed-history-dialog')), true, 'Keyboard focus stays in the dialog');
+    await historyPage.keyboard.press('Escape');
+    await historyPage.setViewportSize({ width: 1280, height: 1000 });
+    await historyPage.evaluate(() => lock(true));
+    assert.equal(await historyPage.locator('#completed-history-open').isDisabled(), false);
+    await historyPage.locator('#completed-history-open').click();
+    await historyPage.locator('#completed-history-search').fill('Older');
+    await historyPage.locator('[data-history-item="history-0"] button').click();
+    await historyPage.keyboard.press('Escape');
+    await historyPage.evaluate(() => lock(false));
+    await historyPage.context().setOffline(true);
+    await historyPage.locator('#completed-history-open').click();
+    assert.equal(await historyPage.locator('#completed-history-search').isDisabled(), false);
+    await historyPage.locator('[data-history-item="history-0"] button').click();
+    assert.equal(await historyPage.locator('#item-edit').isDisabled(), true);
+    await historyPage.keyboard.press('Escape');
+    await historyPage.context().setOffline(false);
+    await historyPage.waitForFunction(() => navigator.onLine);
+    assert.equal(await fs.readFile(historyBoardPath, 'utf8'), historyRaw, 'Rendering/search/view/offline cannot write or migrate history');
+    assert.equal((await historySnapshot()).revision, historyRevision);
+    assert.equal(boardWrites.length, writesBeforeHistory);
+    await historyPage.locator('#completed-history-open').click();
+    await historyPage.locator('[data-history-item="history-0"] button').click();
+    await historyPage.locator('#item-edit').click();
+    await historyPage.locator('#workitem-title').fill('Older edited record');
+    await historyPage.locator('#workitem-save').click(); await confirm(historyPage);
+    assert.equal((await historySnapshot()).board.items.find(item => item.id === 'history-0').title, 'Older edited record');
+    await historyPage.locator('#board-search').fill('Older edited');
+    await card(historyPage, 'history-0').click({ button: 'right' });
+    await historyPage.locator('#item-menu').getByRole('menuitem', { name: '移至正在进行', exact: true }).click();
+    await confirm(historyPage);
+    assert.equal((await historySnapshot()).board.items.find(item => item.id === 'history-0').stage, 'doing');
+    await historyPage.locator('#board-search').fill('');
+    const dragWrites = boardWrites.length;
+    await card(historyPage, 'history-1').dragTo(card(historyPage, 'history-3'));
+    assert.equal(boardWrites.length, dragWrites, 'Sorted done view cannot send ambiguous reordering positions');
+    assert.equal(await historyPage.locator('#confirm-dialog').evaluate(el => el.open), false);
+    const countBeforeDrop = (await historySnapshot()).board.items.filter(item => item.stage === 'done').length;
+    await card(historyPage, 'history-9').dragTo(card(historyPage, 'history-3'));
+    await confirm(historyPage);
+    assert.equal(boardWrites.at(-1).args.position, countBeforeDrop, 'Incoming done drop appends against the whole saved column');
+    assert.equal((await historySnapshot()).board.items.filter(item => item.stage === 'done').at(-1).id, 'history-9');
+    await card(historyPage, 'history-1').dragTo(historyPage.locator('[data-stage="doing"]'), { targetPosition: { x: 30, y: 30 } });
+    await confirm(historyPage);
+    assert.equal((await historySnapshot()).board.items.find(item => item.id === 'history-1').stage, 'doing', JSON.stringify(boardWrites.at(-1)) + ' · ' + await historyPage.locator('#notice-message').textContent());
+    await historyPage.locator('#board-search').fill('Completed fixture');
+    await historyPage.evaluate(() => {
+      draggedItem = 'history-3';
+      document.querySelector('[data-stage="doing"]').dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true }));
+    });
+    assert.equal(await historyPage.locator('#confirm-dialog').evaluate(el => el.open), false, 'Filtered drop has no hidden-anchor writes');
+    await historyPage.locator('#board-search').fill('');
+    await historyPage.locator('#completed-history-open').click();
+    await historyPage.locator('#completed-history-search').fill('criterion-5');
+    root = roots[1];
+    await historyPage.evaluate(path => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root);
+    await settled(historyPage);
+    assert.equal(await historyPage.locator('#completed-history-dialog').evaluate(el => el.open), false);
+    assert.equal(await historyPage.locator('#completed-history-search').inputValue(), '');
+    assert.equal(await historyPage.locator('#completed-history-body tr').count(), 0);
+    root = roots[3];
+    await historyPage.evaluate(path => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root);
+    await settled(historyPage);
+    delayedSnapshotRoot = roots[3];
+    releaseSnapshot = null;
+    await historyPage.locator('#refresh').click();
+    const historyDeadline = Date.now() + 5000;
+    while (!releaseSnapshot && Date.now() < historyDeadline) await historyPage.waitForTimeout(10);
+    assert.equal(typeof releaseSnapshot, 'function');
+    root = roots[1];
+    await historyPage.evaluate(path => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root);
+    await settled(historyPage); delayedSnapshotRoot = null; releaseSnapshot();
+    await historyPage.waitForTimeout(80);
+    await historyPage.locator('#completed-history-open').click();
+    assert.equal((await historyPage.locator('#completed-history-body').textContent()).includes('Completed fixture'), false, 'Late foreign results cannot repopulate history');
+    await historyPage.keyboard.press('Escape');
+    await historyPage.close(); root = roots[0];
+    }
     assert.deepEqual(errors, []);
     behaviorReport.finish(true);
     console.log(
