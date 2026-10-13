@@ -731,7 +731,7 @@ const models = {
     assert.equal(await fs.readFile(path.join(root, '.governance/operations.json'), 'utf8'), historyRaw);
     await historyRow.getByRole('button', { name: '打开 Agent 会话', exact: true }).click();
     await settled(page);
-    assert.equal(hostCalls.at(-1).operation, 'session/open');
+    assert.equal(hostCalls.findLast(c => c.operation === 'session/open').args[0], 'legacy-fixture-session');
     await historyRow.getByRole('button', { name: '查看进度 / 结果', exact: true }).click();
     await settled(page);
     assert.match(await page.locator('#operation-result').textContent(), /Fixture analysis output/);
@@ -803,6 +803,23 @@ const models = {
     await confirm(page);
     assert.equal(hostCalls.at(-1).operation, 'agent/abort');
     await page.locator('#operations-close').click();
+    // Completed runtime, stale local running record: starting the next operation must reconcile it.
+    hostStreaming = true;
+    await page.locator('#analysis-start').click(); await confirm(page);
+    const staleRun = JSON.parse(await fs.readFile(path.join(root, '.governance/operations.json'), 'utf8')).runs.at(-1);
+    await page.locator('#operations-close').click(); hostStreaming = false;
+    const promptsBeforeAutoSync = hostCalls.filter(c => c.operation === 'agent/prompt').length;
+    await page.locator('#documentation-start').click(); await confirm(page);
+    let autoSynced = JSON.parse(await fs.readFile(path.join(root, '.governance/operations.json'), 'utf8'));
+    assert.equal(autoSynced.runs.find(r => r.id === staleRun.id).phase, 'completed');
+    assert.equal(hostCalls.filter(c => c.operation === 'agent/prompt').length, promptsBeforeAutoSync + 1, 'Only the new prompt is sent');
+    // Opening the progress list also reconciles the next finished run without an Inspect click.
+    await page.locator('#operations-close').click(); await page.locator('#operations-open').click();
+    await page.waitForFunction(() => !document.querySelector('#operation-runs')?.textContent.includes('运行中'));
+    autoSynced = JSON.parse(await fs.readFile(path.join(root, '.governance/operations.json'), 'utf8'));
+    assert.equal(autoSynced.runs.at(-1).phase, 'completed');
+    await capture(page, 'operations-auto-sync');
+    await page.locator('#operations-close').click(); hostStreaming = true;
     await navigate(page, 'architecture');
     await page.locator('#architecture-analyze').click();
     await page.waitForFunction(() => !document.querySelector('#launch-model').disabled);

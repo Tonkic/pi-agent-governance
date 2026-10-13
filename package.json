@@ -1,6 +1,6 @@
 {
   "name": "pi-agent-governance",
-  "version": "0.7.5",
+  "version": "0.7.6",
   "private": true,
   "description": "Repository-level agent engineering governance for PI-Desktop",
   "scripts": {
