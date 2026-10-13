@@ -232,3 +232,99 @@ test('late proposals cannot write into a replacement draft even with a fresh rev
   );
   assert.equal((await f.snapshot()).draft.proposal, null);
 });
+test('saved ASCII and canvas share node identities and directed relationships without duplicate blocks', async (t) => {
+  const f = await fixture(t);
+  await f.mutate('architecture_design_begin', { reason: 'ASCII and canvas' });
+  const p = proposal();
+  p.nodes.push({ id: 'isolated', title: '独立职责', description: 'No links', files: [] });
+  p.edges.push({ from: 'governance', to: 'view', label: 'callback' });
+  await f.mutate('architecture_design_save', { proposal: p });
+  let s = await f.snapshot();
+  assert.match(s.draft.ascii, /\+[-]+\+/);
+  for (const n of p.nodes) assert.ok(s.draft.ascii.includes(`[${n.id}]`));
+  for (const e of p.edges)
+    assert.ok(s.draft.ascii.includes(`[${e.from}] -- ${e.label} --> [${e.to}]`));
+  assert.equal(s.draft.documentBody, p.document);
+  assert.ok(s.draft.proposal.document.includes('```text\n' + s.draft.ascii));
+  const fingerprint = s.draft.proposalFingerprint;
+  await f.mutate('architecture_design_save', { proposal: s.draft.proposal });
+  s = await f.snapshot();
+  assert.equal(s.draft.proposalFingerprint, fingerprint);
+  assert.equal(
+    s.draft.proposal.document.split('<!-- governance:architecture-ascii:start -->').length,
+    2
+  );
+  await f.confirm();
+  await f.mutate('architecture_design_begin', { reason: 'Change relationship' });
+  const next = structuredClone((await f.snapshot()).baseline.proposal);
+  next.edges[0].label = 'new link';
+  await f.mutate('architecture_design_save', { proposal: next });
+  s = await f.snapshot();
+  assert.match(s.draft.ascii, /-- new link -->/);
+  assert.equal(
+    s.diff.documentChanged,
+    false,
+    'Generated ASCII does not masquerade as prose changes'
+  );
+  assert.equal(s.diff.asciiChanged, true);
+  assert.match(s.baseline.ascii, /-- reads intent -->/);
+});
+test('old design fingerprints and files remain unchanged while ASCII is a derived read-only view', async (t) => {
+  const f = await fixture(t);
+  const p = proposal();
+  const hash = require('node:crypto').createHash('sha256').update(JSON.stringify(p)).digest('hex');
+  const baseline = {
+    number: 1,
+    baseVersion: 0,
+    taskId: 'approved',
+    reason: 'Old design',
+    proposal: p,
+    proposalFingerprint: hash,
+    method: 'human',
+    reviewer: 'Old fixture',
+    conclusion: 'Historical',
+    confirmedAt: '2020-01-01T00:00:00Z'
+  };
+  await fs.mkdir(path.join(f.root, '.governance'), { recursive: true });
+  const raw = JSON.stringify({
+    version: 1,
+    history: [baseline],
+    draft: null,
+    updatedAt: baseline.confirmedAt
+  });
+  await fs.writeFile(path.join(f.root, file), raw);
+  const s = await f.snapshot();
+  assert.equal(s.error, null);
+  assert.equal(s.baseline.proposalFingerprint, hash);
+  assert.equal(s.baseline.documentBody, p.document);
+  assert.match(s.baseline.ascii, /\[view\] -- reads intent --> \[governance\]/);
+  assert.equal(await fs.readFile(path.join(f.root, file), 'utf8'), raw);
+});
+test('ASCII rejects malformed managed blocks and keeps unsafe text literal and budgets bounded', async (t) => {
+  const f = await fixture(t);
+  await f.mutate('architecture_design_begin', { reason: 'Safe text' });
+  const p = proposal();
+  p.nodes[0].title = '中文界面\n```<img src=x>';
+  p.edges[0].label = 'line\n```<!-- governance:architecture-ascii:start -->';
+  await f.mutate('architecture_design_save', { proposal: p });
+  const before = await fs.readFile(path.join(f.root, file), 'utf8');
+  const s = await f.snapshot();
+  assert.ok(!s.draft.ascii.includes('```'));
+  assert.ok(s.draft.ascii.includes('\\u000a'));
+  await assert.rejects(
+    f.mutate('architecture_design_save', {
+      proposal: {
+        ...proposal(),
+        document: 'Text\n<!-- governance:architecture-ascii:start -->\nBroken'
+      }
+    }),
+    /ASCII block/
+  );
+  await assert.rejects(
+    f.mutate('architecture_design_save', {
+      proposal: { ...proposal(), document: 'x'.repeat(20000) }
+    }),
+    /document/
+  );
+  assert.equal(await fs.readFile(path.join(f.root, file), 'utf8'), before);
+});

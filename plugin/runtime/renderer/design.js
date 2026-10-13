@@ -73,7 +73,9 @@ function renderDesign() {
     select.replaceChildren(...options);
     select.value = designSelection;
     const selected = selectedDesign();
-    text('design-document', selected?.proposal?.document || t('designAwaitingProposal'));
+    text('design-document', selected?.documentBody ?? selected?.proposal?.document ?? t('designAwaitingProposal'));
+    text('design-ascii', selected?.ascii || t('designAwaitingProposal'));
+    designElement('design-ascii-section').hidden = graphView !== 'design' || !selected?.proposal;
     text('design-scope-note', t('designScope'));
     text('design-record', selected
         ? designSelection === 'draft'
@@ -85,11 +87,14 @@ function renderDesign() {
         ? [
             t('designNodeDiff', diff.addedNodes.join(' / ') || t('none'), diff.removedNodes.join(' / ') || t('none'), diff.changedNodes.join(' / ') || t('none')),
             t('designEdgeDiff', diff.addedEdges.join(' / ') || t('none'), diff.removedEdges.join(' / ') || t('none'), diff.changedEdges.join(' / ') || t('none')),
-            t(diff.documentChanged || diff.titleChanged ? 'designTextChanged' : 'designTextUnchanged')
+            t(diff.documentChanged || diff.titleChanged ? 'designTextChanged' : 'designTextUnchanged'),
+            t(diff.asciiChanged ? 'designAsciiChanged' : 'designAsciiUnchanged')
         ]
         : [t('designNoDiff')];
     text('design-diff', lines.join('\n'));
-    text('design-previous-document', designSnapshot?.baseline?.proposal?.document || t('none'));
+    text('design-previous-document', designSnapshot?.baseline?.documentBody ??
+        designSnapshot?.baseline?.proposal?.document ??
+        t('none'));
     designElement('design-diff-details').hidden = !diff;
     text('design-begin', t(designSnapshot?.baseline ? 'designRevise' : 'designFirst'));
     updateDesignControls();

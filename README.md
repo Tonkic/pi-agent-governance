@@ -2,7 +2,7 @@
 
 PI-Desktop 本地插件：保存任务目标和进度，展示项目看板与源码架构，管理受管 Git 工作区。项目数据保存在仓库文件中，Agent 可以据此接手。
 
-社区 ID：`io.github.tonkic.agent-governance`。仓库版本 0.7.4；市场已发布版本 0.7.0。本机安装不会自动升级。累计变化和权限见 [发布说明](notes/release-0.7.0.md)。
+社区 ID：`io.github.tonkic.agent-governance`。仓库版本 0.7.5；市场已发布版本 0.7.0。本机安装不会自动升级。累计变化和权限见 [发布说明](notes/release-0.7.0.md)。
 
 ## 开始使用
 
@@ -14,7 +14,7 @@ PI-Desktop 本地插件：保存任务目标和进度，展示项目看板与源
 
 工作项可标记架构影响，默认不扫描源码或自动重分析；需要时手动核对来源。面板跟随宿主主工作区切换，旧草稿只读隔离保留，新项目须确认启用。规则见 [项目接口](docs/project.md)。
 
-架构设计是可选的。需要明确开发方向或架构可视化时，用Architecture Copilot与现有画板；确定后沿用基线，普通功能更新不重设计。Skill使用已批准的agent.prompt.inject，图不替代源码事实或授权范围。见 [可选架构设计](docs/architecture-design.md)。
+架构设计可选，需要方向或可视化时用Architecture Copilot。「项目架构→设计方案」用同一份节点/关系显示画板和可展开ASCII图，新保存方案的正文也包含图；确定后沿用基线，普通功能不重设计。Skill使用已批准的agent.prompt.inject。见 [架构设计](docs/architecture-design.md)。
 
 「行为文档」保留可读正文并展示关联场景的实际结果。完成依赖实际检查，不依赖单独验收；移动卡片不自动证明测试通过。本仓库运行 `npm run check:behaviors` 生成本机证据。
 

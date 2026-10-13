@@ -3,6 +3,10 @@
 const copy = {
   en: {
     sourceArchitecture: 'Source architecture',
+    designAsciiTitle: 'ASCII architecture diagram',
+    designAsciiHint: 'ASCII and canvas are generated from the same responsibilities and relationships. Saved diagrams are included in the document; older designs get a read-only text view without rewriting history.',
+    designAsciiChanged: 'ASCII diagram updated from the changed responsibilities or relationships.',
+    designAsciiUnchanged: 'ASCII diagram unchanged.',
     designTitle: 'Design proposal',
     designTask: 'Architecture co-design',
     designEmpty: 'No confirmed design. Create a draft when architecture design is needed.',
@@ -347,6 +351,10 @@ const copy = {
   },
   'zh-CN': {
     sourceArchitecture: '源码现状',
+    designAsciiTitle: 'ASCII架构图',
+    designAsciiHint: 'ASCII与画板来自同一份职责和关系。新保存方案的图写入正文；旧设计仅提供只读文本视图，不改写历史。',
+    designAsciiChanged: 'ASCII图已随职责或关系更新。',
+    designAsciiUnchanged: 'ASCII图未改。',
     designTitle: '设计方案',
     designTask: '架构共创',
     designEmpty: '尚无确认的设计；需要架构设计时再创建草案。',

@@ -1319,6 +1319,19 @@ const models = {
     await saveProposal(designProposal);
     await refresh(designPage);
     assert.equal(await designPage.locator('.architecture-node').count(), 2);
+    const savedAscii = (await designSnapshot()).draft.ascii;
+    assert.ok((await designSnapshot()).draft.proposal.document.includes('```text\n' + savedAscii));
+    await designPage.locator('#design-ascii-section > summary').click();
+    assert.equal(await designPage.locator('#design-ascii').textContent(), savedAscii);
+    for (const n of designProposal.nodes) assert.ok(savedAscii.includes(`[${n.id}]`));
+    assert.ok(savedAscii.includes('[canvas] -- 展示计划职责 --> [intent]'));
+    assert.equal(await designPage.locator('#design-ascii img').count(), 0);
+    assert.equal(await designPage.locator('#design-ascii').evaluate(el => getComputedStyle(el).whiteSpace), 'pre');
+    await designPage.locator('#show-workflow').click();
+    assert.equal(await designPage.locator('#design-ascii-section').isVisible(), false);
+    await designPage.locator('#show-design').click();
+    assert.equal(await designPage.locator('#design-ascii').textContent(), savedAscii);
+    await capture(designPage, 'ascii-design-draft');
     await designPage.locator('.design-document-details summary').click();
     assert.match(await designPage.locator('#design-document').textContent(), /<img/);
     assert.equal(await designPage.locator('#design-document img').count(), 0);
@@ -1356,6 +1369,8 @@ const models = {
     assert.equal(await designPage.locator('.architecture-node').count(), 2);
     await designPage.locator('#design-version').selectOption('draft');
     assert.equal(await designPage.locator('.architecture-node').count(), 3);
+    assert.ok((await designPage.locator('#design-ascii').textContent()).includes('[canvas] -- 展示实际结果 --> [evidence]'));
+    assert.equal((await designPage.locator('#design-document').textContent()).includes('governance:architecture-ascii:'), false);
     await designPage.locator('#design-diff-details > summary').click();
     assert.match(await designPage.locator('#design-diff').textContent(), /evidence/);
     await capture(designPage, 'design-revision');
@@ -1368,6 +1383,7 @@ const models = {
     assert.deepEqual((await designSnapshot()).history[0], firstBaseline);
     await designPage.locator('#design-version').selectOption('1');
     assert.equal(await designPage.locator('.architecture-node').count(), 2);
+    assert.equal(await designPage.locator('#design-ascii').textContent(), firstBaseline.ascii);
     assert.equal(await designPage.locator('#design-review').isDisabled(), true);
     await designPage.locator('#design-version').selectOption('baseline');
     for (const width of [390, 768, 1280]) for (const theme of ['light', 'dark']) {
@@ -1375,6 +1391,7 @@ const models = {
       assert.equal(await designPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'Design must fit narrow screens');
       await capture(designPage, `design-${width}-${theme}`);
     }
+    behaviorReport.passed('design-ascii-view');
     behaviorReport.passed('design-explicit-revision');
     await designPage.setViewportSize({ width: 1280, height: 1000 });
     await designPage.locator('#design-begin').click();
@@ -1384,6 +1401,8 @@ const models = {
     await settled(designPage);
     assert.equal(await designPage.locator('#design-begin-dialog').evaluate(el => el.open), false);
     assert.equal(await designPage.locator('.architecture-node').count(), 0);
+    assert.equal(await designPage.locator('#design-ascii-section').isVisible(), false);
+    assert.equal((await designPage.locator('#design-ascii').textContent()).includes('[canvas]'), false);
     assert.equal((await new Governance(root).run({ action: 'architecture_design_snapshot' })).baseline, null);
     root = roots[0];
     await designPage.evaluate(path => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root);
