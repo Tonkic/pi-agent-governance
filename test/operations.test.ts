@@ -174,22 +174,24 @@ test('stale workspace and human intent changes before prompting preserve session
       b.desktop,
       async () => false
     ),
-    /changed before prompt/
+    /stale|switched/
   );
+  assert.equal(b.calls.length, 0, 'Switched workspace is rejected before creating a session');
   assert.equal(
     b.calls.some((c) => c.operation === 'agent/prompt'),
     false
   );
 });
 
-test('new acceptance sessions are removed, but old owned sessions remain readable and cancelable', async t => {
+test('new acceptance sessions are removed, but old owned sessions remain readable and cancelable', async (t) => {
   const f = await fixture(t);
   await assert.rejects(f.start('acceptance'), /Unknown project operation/);
   assert.equal(f.calls.length, 0);
   const run = await f.start('analysis');
   const file = path.join(f.root, '.governance/operations.json');
   const history = JSON.parse(await fs.readFile(file, 'utf8'));
-  history.runs[0].kind = 'acceptance'; history.runs[0].itemId = 'old';
+  history.runs[0].kind = 'acceptance';
+  history.runs[0].itemId = 'old';
   await fs.writeFile(file, JSON.stringify(history));
   const raw = await fs.readFile(file, 'utf8');
   const list = await operationInvoke(f.root, { action: 'list' }, f.desktop);
@@ -197,11 +199,19 @@ test('new acceptance sessions are removed, but old owned sessions remain readabl
   assert.equal(await fs.readFile(file, 'utf8'), raw);
   await operationInvoke(f.root, { action: 'open', id: run.id }, f.desktop);
   await operationInvoke(f.root, { action: 'status', id: run.id }, f.desktop);
-  const canceled = await operationInvoke(f.root, { action: 'cancel', id: run.id, confirmed: true }, f.desktop);
+  const canceled = await operationInvoke(
+    f.root,
+    { action: 'cancel', id: run.id, confirmed: true },
+    f.desktop
+  );
   assert.equal(canceled.phase, 'canceled');
   assert.equal(canceled.kind, 'acceptance');
-  assert.equal(f.calls.filter(c => c.operation === 'agent/prompt').length, 1, 'No old acceptance prompt replayed');
-  assert.equal(f.calls.filter(c => c.operation === 'agent/abort').length, 1);
+  assert.equal(
+    f.calls.filter((c) => c.operation === 'agent/prompt').length,
+    1,
+    'No old acceptance prompt replayed'
+  );
+  assert.equal(f.calls.filter((c) => c.operation === 'agent/abort').length, 1);
 });
 
 test('sessionless creation failures can be explicitly resolved without replay', async (t) => {
@@ -488,27 +498,162 @@ test('persisted operation history rejects non-record roots and runs before host 
   await fs.writeFile(file, JSON.stringify({ version: 1, runs: [] }));
   assert.equal((await f.start()).phase, 'running');
 });
-test('design sessions require an explicit current draft and never confirm it', async t => {
+test('design sessions require an explicit current draft and never confirm it', async (t) => {
   const f = await fixture(t);
   await assert.rejects(f.start('design'), /draft/);
-  await f.g.run({ action: 'architecture_design_begin', reason: 'First design', expectedRevision: (await f.g.run({ action: 'architecture_design_snapshot' })).revision });
+  await f.g.run({
+    action: 'architecture_design_begin',
+    reason: 'First design',
+    expectedRevision: (await f.g.run({ action: 'architecture_design_snapshot' })).revision
+  });
   const d = await f.g.run({ action: 'architecture_design_snapshot' });
   await assert.rejects(f.start('design', { designRevision: '0'.repeat(64) }), /Design changed/);
   await f.start('design', { designRevision: d.revision });
-  const prompt = f.calls.find(c => c.operation === 'agent/prompt').args[0].content;
+  const prompt = f.calls.find((c) => c.operation === 'agent/prompt').args[0].content;
   assert.match(prompt, /io.github.tonkic.agent-governance\/architecture-copilot/);
   assert.match(prompt, /Never confirm a baseline/);
   assert.match(prompt, /Only the current draft may change/);
   assert.equal((await f.g.run({ action: 'architecture_design_snapshot' })).baseline, null);
 });
-test('design changed during session creation prevents the stale prompt without replay', async t => {
+test('design changed during session creation prevents the stale prompt without replay', async (t) => {
   const f = await fixture(t);
-  await f.g.run({ action: 'architecture_design_begin', reason: 'First design', expectedRevision: (await f.g.run({ action: 'architecture_design_snapshot' })).revision });
+  await f.g.run({
+    action: 'architecture_design_begin',
+    reason: 'First design',
+    expectedRevision: (await f.g.run({ action: 'architecture_design_snapshot' })).revision
+  });
   const d = await f.g.run({ action: 'architecture_design_snapshot' });
   f.onCreate = async () => {
     const { panelInvoke } = require('../plugin/panel');
-    await panelInvoke(f.root, 'governance.design', { action: 'discard', revision: d.revision, confirmed: true });
+    await panelInvoke(f.root, 'governance.design', {
+      action: 'discard',
+      revision: d.revision,
+      confirmed: true
+    });
   };
   await assert.rejects(f.start('design', { designRevision: d.revision }), /Project changed/);
-  assert.equal(f.calls.filter(c => c.operation === 'agent/prompt').length, 0);
+  assert.equal(f.calls.filter((c) => c.operation === 'agent/prompt').length, 0);
+});
+test('starting another operation reconciles a finished known session without manual status or prompt replay', async (t) => {
+  const f = await fixture(t);
+  const old = await f.start();
+  f.streaming = false;
+  const next = await f.start('architecture');
+  assert.notEqual(next.id, old.id);
+  const history = JSON.parse(
+    await fs.readFile(path.join(f.root, '.governance/operations.json'), 'utf8')
+  );
+  assert.equal(history.runs.find((r) => r.id === old.id).phase, 'completed');
+  assert.equal(history.runs.find((r) => r.id === next.id).phase, 'running');
+  assert.equal(f.calls.filter((c) => c.operation === 'agent/prompt').length, 2);
+  assert.equal(f.calls.filter((c) => c.operation === 'agent/abort').length, 0);
+});
+test('progress list reconciles finished sessions but never unknown submissions', async (t) => {
+  const f = await fixture(t);
+  const old = await f.start();
+  f.streaming = false;
+  const list = await operationInvoke(f.root, { action: 'list' }, f.desktop);
+  assert.equal(list.runs.find((r) => r.id === old.id).phase, 'completed');
+  const u = await fixture(t);
+  u.failPrompt = true;
+  await assert.rejects(u.start(), /ambiguous/);
+  u.streaming = false;
+  assert.equal(
+    (await operationInvoke(u.root, { action: 'list' }, u.desktop)).runs[0].phase,
+    'unknown'
+  );
+  await assert.rejects(u.start(), /existing/);
+});
+test('failed or malformed host probes preserve running history and never create another session', async (t) => {
+  for (const response of [
+    'throw',
+    {},
+    { isStreaming: 'false' },
+    { isStreaming: false, isRunning: true }
+  ]) {
+    const f = await fixture(t);
+    await f.start();
+    const file = path.join(f.root, '.governance/operations.json'),
+      raw = await fs.readFile(file, 'utf8');
+    const invoke = f.desktop.invoke;
+    f.desktop.invoke = async (request) => {
+      if (request.operation === 'agent/getStatus') {
+        if (response === 'throw') throw Error('Probe unavailable');
+        return response;
+      }
+      return invoke(request);
+    };
+    await assert.rejects(f.start());
+    assert.equal(await fs.readFile(file, 'utf8'), raw);
+    assert.equal(f.calls.filter((c) => c.operation === 'session/create').length, 1);
+  }
+  const f = await fixture(t);
+  await f.start();
+  f.streaming = false;
+  const file = path.join(f.root, '.governance/operations.json'),
+    raw = await fs.readFile(file, 'utf8');
+  const invoke = f.desktop.invoke;
+  f.desktop.invoke = async (request) =>
+    request.operation === 'session/get' ? { session: null } : invoke(request);
+  await assert.rejects(f.start());
+  assert.equal(await fs.readFile(file, 'utf8'), raw);
+});
+test('reconciliation never overwrites a concurrent cancellation or changed project intent', async (t) => {
+  for (const change of ['cancel', 'intent', 'workspace']) {
+    const f = await fixture(t);
+    const run = await f.start();
+    f.streaming = false;
+    const invoke = f.desktop.invoke;
+    let changed = false,
+      current = true;
+    f.desktop.invoke = async (request) => {
+      if (request.operation === 'agent/getStatus' && !changed) {
+        changed = true;
+        if (change === 'cancel')
+          await operationInvoke(
+            f.root,
+            { action: 'cancel', id: run.id, confirmed: true },
+            f.desktop
+          );
+        if (change === 'intent')
+          await f.g.run({
+            action: 'progress',
+            current: 'Human changed intent',
+            next: [],
+            blocked: []
+          });
+        if (change === 'workspace') current = false;
+      }
+      return invoke(request);
+    };
+    if (change === 'cancel') {
+      const list = await operationInvoke(f.root, { action: 'list' }, f.desktop);
+      assert.equal(list.runs[0].phase, 'canceled');
+    } else {
+      await assert.rejects(
+        operationInvoke(f.root, { action: 'list' }, f.desktop, async () => current),
+        /changed|switched/i
+      );
+      const history = JSON.parse(
+        await fs.readFile(path.join(f.root, '.governance/operations.json'), 'utf8')
+      );
+      assert.equal(history.runs[0].phase, 'running');
+    }
+  }
+});
+test('status timeout retains the old run and sends no new prompt', async t => {
+  const f = await fixture(t); await f.start();
+  const file = path.join(f.root, '.governance/operations.json'), before = await fs.readFile(file, 'utf8');
+  let reached; const querying = new Promise(resolve => { reached = resolve; });
+  const invoke = f.desktop.invoke;
+  f.desktop.invoke = async request => {
+    if(request.operation === 'agent/getStatus') { reached(); return new Promise(() => {}); }
+    return invoke(request);
+  };
+  t.mock.timers.enable({apis:['setTimeout']});
+  const pending = f.start();
+  await querying; t.mock.timers.tick(10000);
+  await assert.rejects(pending, /timed out/);
+  assert.equal(await fs.readFile(file, 'utf8'), before);
+  assert.equal(f.calls.filter(c => c.operation === 'agent/prompt').length, 1);
 });
