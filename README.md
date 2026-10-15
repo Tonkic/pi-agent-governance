@@ -1,6 +1,6 @@
 # PI Agent Governance
 
-PI-Desktop 本地插件：保存任务目标和进度，展示项目看板与源码架构，管理受管 Git 工作区。项目数据保存在仓库文件中，Agent 可以据此接手。
+共享治理核心＋本地 MCP＋可移植 Skill，同时保留 PI-Desktop 图形插件。保存任务目标和进度，展示项目看板与源码架构，管理受管 Git 工作区；项目数据保存在仓库文件中。
 
 社区 ID：`io.github.tonkic.agent-governance`。仓库版本0.7.8；市场已发布0.7.0。本机安装不会自动升级；权限说明见 [发布说明](notes/release-0.7.0.md)。
 
@@ -9,6 +9,8 @@ PI-Desktop 本地插件：保存任务目标和进度，展示项目看板与源
 1. 在 PI-Desktop 插件页安装对应的 `plugin/dist/` 包并确认权限；开发时加载 `plugin/`。安装不会由本仓库自动执行。
 2. 打开项目，在命令面板运行 `Agent Governance: 打开治理面板`。
 3. 明确要开发的功能与检查条件；已有任务先调用 `status`，按 STATE 接续。
+
+使用 Codex、Claude Code 或 Pi：按 [MCP 与 Skill](docs/mcp.md) 配置本地 stdio 服务，绑定显式绝对项目目录。通用包和PI包分目标构建；仅稳定 `vN.0.0`（N≥1）标签由Actions创建一次GitHub Release，0.x/次版本/补丁仅CI，不自动发布npm、提交市场或安装。
 
 工作台三栏为待办/进行中/已完成。完成栏只展示近期5项，「查看全部」打开可搜索历史表格，数据不删除；全局搜索仍搜索全部。功能按分层文档实现并测试，通过后完成，没有独立验收。旧历史只读保留，见 [文档开发](docs/doc-driven.md)。
 
@@ -23,6 +25,7 @@ PI-Desktop 本地插件：保存任务目标和进度，展示项目看板与源
 ## 按问题阅读
 
 - [文档索引](docs/README.md)：先定位专题，需要时再读参数和限制。
+- [MCP 与 Skill](docs/mcp.md)：通用包、客户端配置、工具与安全边界。
 - [治理用法](docs/governance.md)、[项目接口](docs/project.md)、[Git 协作](docs/git.md)。
 - [文档维护](docs/documentation.md)：简短 Docs、Git 式 Notes、渐进式披露。
 - [架构](docs/architecture.md)、[开发](docs/development.md)、[交付](docs/releasing.md)、[安装与发布](docs/publishing.md)。
@@ -30,7 +33,7 @@ PI-Desktop 本地插件：保存任务目标和进度，展示项目看板与源
 
 ## 开发检查
 
-需要 Node.js 20+。修改 TS 或 `docs/` 后重新构建；不手改 runtime、manifest 或安装包说明。
+需要 Node.js 22+。修改 TS 或 `docs/` 后重新构建；不手改 runtime、manifest 或安装包说明。
 
 ```powershell
 npm ci

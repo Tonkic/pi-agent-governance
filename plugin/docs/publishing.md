@@ -1,49 +1,58 @@
 <!-- Generated from docs/ by scripts/build-docs.cjs. Do not edit. -->
-# 插件中心发布 / Publishing
+# 产物与安装 / Distributions
 
-Community ID: `io.github.tonkic.agent-governance`. Source repository: `Tonkic/pi-agent-governance`.
+首批支持 **通用 MCP + Skills 包**和 **PI-Desktop 官方 piplug**，附 Codex、Claude Code、Pi 的 MCP 配置示例。不是这些 CLI 的原生插件格式。GitHub Release 仅限已批准的稳定主版本标签；当前 0.7.8 不发布，详见 [交付规则](releasing.md)。
 
-## 安装 / Installation
+## 构建目标
 
-0.6.0 uses a new community ID. It is not an in-place update of `pi.agent-governance`. Back up STATE and `.governance/`, disable the old plugin to avoid duplicate registrations, then install and grant permissions to the new plugin. The checkout keeps only the current package; retrieve an older package from its verified Git commit when needed.
-
-0.6.0 使用新的社区 ID，旧 ID 不会跨 ID 自动升级。先备份项目 STATE 与 `.governance/`、停用旧实例，再首次安装新插件并授权。无需删除或迁移项目数据；回退前先停用新实例。
-
-仓库的 `plugin/dist/` 只保留当前可用包，旧包不在当前树堆积，可从对应已验证Git提交取回。删除旧操作记录只清理仓库历史列表，不删除宿主聊天、不取消或重发会话；运行时操作记录仍按需要生成，不在普通刷新时自动清除。
-
-The panel reads the host locale on opening, with browser-language fallback: Chinese maps to zh-CN; other languages use English. Reopen after changing the app language. User content and raw backend diagnostics remain unchanged. Manifest command titles use a bilingual string for installer compatibility; runtime command titles follow the locale.
-
-面板启动时读取宿主语言，失败时回退到浏览器语言；切换语言后重新打开面板。用户数据和底层诊断保留原文。清单命令标题为兼容安装器使用中英并列字符串，运行时命令标题按语言注册。
-
-## 凭据 / Credentials
-
-Store the token only in repository-root `.secrets/plugin-center.token` (UTF-8, single line). The root `.gitignore` excludes `/.secrets/`; verify with `git check-ignore .secrets/plugin-center.token` and ensure `git ls-files -- .secrets` is empty. Restrict the directory/file ACL to the current user on Windows; use directory 0700 / file 0600 on POSIX. Never put the token in manifest, source, documentation, command arguments, screenshots, logs, or an MCP config committed to Git. Rotate tokens exposed in chat.
-
-凭据仅保存在仓库根 `.secrets/plugin-center.token`，不是插件目录。Windows 应限制为当前用户访问；不要依赖 Git 忽略代替访问控制。密钥泄露到聊天后应撤销并更换，替换本地文件即可，不修改源码。
-
-## 发布命令 / Publisher CLI
-
-Requires Node.js 20+, Git, an authorized GitHub repository, and an existing remote source commit. Run from the repository checkout:
+在干净、已构建且已审查的来源提交上执行：
 
 ```powershell
-node scripts/plugin-center.cjs whoami
-node scripts/plugin-center.cjs list_repositories
-node scripts/plugin-center.cjs list_plugins
-node scripts/plugin-center.cjs preview FULL_COMMIT_SHA RELEASE_NOTES_FILE
-# Only after explicit authorization, checks, diff review and pushing the source commit:
-node scripts/plugin-center.cjs create_plugin FULL_COMMIT_SHA RELEASE_NOTES_FILE --submit
+npm ci
+npm run typecheck
+npm test
+npm run build:distributions
+# 可单独检查命名目标；不接受任意shell命令
+npm run build:distributions -- mcp-skills
+npm run build:distributions -- pi-desktop
 ```
 
-The preview sends nothing and lists the payload files. Submission reads plugin files from that exact Git commit, not the mutable working tree. A fixed file allowlist excludes `.secrets`, repository State, old packages, and unrelated files. Manifest fields are copied from the same commit; the platform rebuilds manifest.json. The client sends credentials only to `https://plugins.aiuo.net/mcp`, rejects redirects, redacts token-like response text and never automatically retries mutations. If a request fails or times out, inspect `list_plugins` and platform status before deciding whether another submission is needed. `create_plugin` is for the first release only; later versions use the platform's documented `submit_version` tool, not another create call.
+输出只在忽略的 `build/distributions/`。构建器仅清理自己标记且文件清单已知的目录；未知文件、符号链接/junction 或不完整旧输出会阻塞，不覆盖用户内容。普通 build 会清理 build/，所以先完成检查再生成发布产物。
 
-提交前运行 typecheck/build/test、浏览器检查、官方 i18n 门禁和 PI PluginCheck/PluginPack；审查差异、包与敏感信息。已批准更新按 [交付流程](releasing.md) 同步 GitHub、集成 main，主/次升级另提交市场；遵守授权和分支保护，不强推。安装包说明从 docs/ 生成并随已审查 SHA 提交。发布成功仍须读取平台状态确认，不等于真实宿主验收。
+| 目标 | 输出与约束 |
+| --- | --- |
+| mcp-skills | `agent-governance-mcp-skills-VERSION.tgz`；npm pack --ignore-scripts 生成的本地可安装下载包，不发布到 npm |
+| pi-desktop | `io.github.tonkic.agent-governance-VERSION.piplug`；核对已提交的官方包，复制原始字节，不用 shell 打包 |
+| 两者 | `asset-manifest.json` 与 `SHA256SUMS`，绑定版本、来源完整 SHA、文件名、大小和 SHA256 |
 
-## 更新 / Updates
+通用包仅包含根 package metadata、安装锁、`build/mcp/server.js`、必需的 `build/plugin/{core,git,project,design,behaviors,tool}.js`、规范 Skill（含 LICENSE/SOURCE/references）、配置示例与安装说明。不包含开发 node_modules、项目 STATE、`.governance/`、`.pi/`、`.secrets/` 或本地证据。
 
-After approval and catalog publication, use PI-Desktop's plugin-page update controls. Updates require the same ID and a higher version; new permissions require confirmation. This plugin does not download or replace itself, and does not bypass host update/permission checks. Enabling the host's auto-update option is not a promise of an unattended background timer.
+npm pack 不包含 package-lock.json，因此包内使用由根 package-lock 派生的 **npm-shrinkwrap.json**。它保留精确依赖图，运行依赖与根包一致；解包后 `npm ci --omit=dev` 可直接使用。包自身不包含生命周期脚本。
 
-审核上架后使用宿主插件页检查更新或自动更新选项；同 ID 的更高版本才可更新。新增权限仍须确认。插件不实现自行安装、后台替换或绕过宿主的更新机制。
+## 通用包安装
 
-0.7.0 相比市场0.6.0新增 `desktop.control` 和只读 `models.list`，升级须由宿主确认；开启自动更新不代表可静默扩权。对应发布说明见 [0.7.0](https://github.com/Tonkic/pi-agent-governance/blob/main/notes/release-0.7.0.md)。
+1. 校验 SHA256SUMS，解压到可信本地目录。需要 Node.js 22+、Git。
+2. 在解压后的 package 目录执行 `npm ci --omit=dev --ignore-scripts`。
+3. 使用 `node build/mcp/server.js --workspace D:/projects/example` 启动stdio MCP。按 `mcp/clients/` 示例替换node/server/项目的绝对路径；项目须已存在，不自动初始化，不把凭据写入配置。
+4. 按客户端支持的 Skill 位置选择复制 `plugin/skills/architecture-copilot/`。Skill 不授予代码变更或自动确认基线权限。
 
-PI-Desktop 0.16.1 的本地MCP仅开放插件/市场查询，不开放安装、检查插件更新或应用更新；`updates/check` 是应用自身更新。宿主内部安装服务存在，但不能通过未登记operation调用。依据 [官方MCP边界](https://github.com/vastsa/PI-Desktop/blob/104c3613d3037bf0c600151d80e92a5cd73e161c/docs/adr/0203-local-mcp-control-plane.md)。发布到市场和安装到本机是不同动作。
+MCP 使用与现有插件相同的共享治理核心；数据、修订/锁和显式写入/Git边界不变。只在可信仓库使用；提示词和路径检查不是操作系统沙箱。客户端配置与协议用法见仓库 `docs/mcp.md`。
+
+## PI-Desktop 官方包检查
+
+Community ID：`io.github.tonkic.agent-governance`。源码仓库：`Tonkic/pi-agent-governance`。
+
+1. 插件源码/说明修改后执行干净构建、类型、全套测试、浏览器和官方 i18n 检查。
+2. 使用宿主 **PluginCheck / PluginPack 工具**检查并生成当前版本包，提交至 `plugin/dist/`。不得用脚本自制 piplug。当前目录只保留当前包；旧包可从已验证 Git 提交取回。
+3. CI 解读 ZIP，拒绝路径穿越、重复/大小写别名、链接、未知条目、私密文件、CRC/结构错误和过大内容。版本、manifest（含权限/fs/net）及完整允许文件清单必须匹配新构建源码；仅允许 CRLF→LF 归一化。
+4. 缺包、包未提交、源码不一致或篡改立即阻塞；CI 不修复或重打包。重新执行官方工具并审查后才能重建。构建器只核对产物，不能独立证明工具来源；PluginPack 检查事实仍需真实记录。
+
+本次迁移的共享 Skill、源码与说明集成后，必须由协调 Agent 重新生成官方包。旧包不能冒充新源码匹配。
+
+## 安装与更新边界
+
+- 使用 PI-Desktop 插件页自行安装/更新并确认权限，不自动安装或调用市场。旧 ID `pi.agent-governance` 不跨 ID 更新：先备份 STATE/`.governance/`，停用旧实例再安装新 ID，不删除项目数据。
+- 市场已发布版本和 GitHub 下载产物是不同通道；本仓库不再自动提交市场，也不读取旧市场凭据。保留已有凭据与发布历史，不迁移、不打印、不上传。
+- 同 ID 更高版本的宿主更新仍须确认新增权限。0.7.0 新增 desktop.control 和只读 models.list，说明见 [0.7.0](https://github.com/Tonkic/pi-agent-governance/blob/main/notes/release-0.7.0.md)。
+- 面板启动时读取宿主语言，失败回退浏览器语言；中文为 zh-CN，其他为英文。用户内容及底层诊断不翻译。切换语言后重新打开面板。
+- PI-Desktop 0.16.1 本地 MCP 不开放安装或插件更新接口；不能借内部服务绕过宿主注册操作。GitHub 发布成功不等于真实宿主/目视验收完成。

@@ -1,61 +1,44 @@
-# 更新交付 / Checked delivery
+# GitHub 交付 / Checked delivery
 
-用户持续授权：每次小更新也要提交并推送 GitHub；主/次版本升级另提交插件市场。以插件中心最新 published/stable 版本为市场基线：0.6.0 → 0.6.1 只同步源码，0.6.x → 0.7.x 或 1.x 发布市场。不为发布自行升版本；预发布、回退、首次创建不自动发布。
+仅稳定主版本标签 `vN.0.0`（N≥1）自动创建一次 GitHub Release，例如 `v1.0.0`、`v2.0.0`。当前版本仍为 **0.7.8**：0.x、次版本、补丁、预发布和构建后缀不发布。此规则取代旧的主/次版本自动提交 PI 市场规则。
 
-This is repository delivery automation, not a plugin self-updater, background service or hosted CI job. Ordinary build/test never pushes or publishes. Completing approved work triggers this documented flow.
+No npm publishing, marketplace calls, automatic installation, version bump or tag creation. The user creates an approved release tag separately; automation never invents one. Ordinary build/test does not push or publish.
 
-## 开发与交付
+## 开发与源码交付
 
-1. 调用 governance status/git_status，按 STATE 工作。依照 [Git 协作](git.md) 分配工作区；写入委派使用返回目录。审查 git_diff → git_commit → 提交后测试 → git_verify，集成后重测。总体验收有阻塞不得关闭。
-2. 根工作区有用户改动导致受管创建失败时，保留用户目录并明确报告，不自动 stash/reset/删除/改忽略来绕过，不伪造受管验证。必要的串行普通 Git 提交仅纳入已批准范围并明确记录此限制。
-3. 完成构建、typecheck、test、test:browser、差异和敏感信息审查。插件变更按 [发布检查](publishing.md) 执行干净构建、官方 i18n 门禁、PI PluginCheck/PluginPack；不使用 shell 自制 piplug。未改变插件的脚本变更无需重打包。
-4. 提交已审查源码、JS、manifest、匹配包及说明。提交后重测。每次小更新末尾执行 `npm run release:auto`：读取已提交 HEAD，运行 typecheck/test/test:browser，检查工作区、扫描可达历史中的凭据和常见密钥标记，只推 `release/source-VERSION-FULLSHA` 到固定仓库。相同版本的不同更新用不同 SHA 分支，不覆盖旧分支，不推 main。没有市场提交或发布重投记录。
-5. 主/次版本升级需下方证据记录、已提交发布说明和全部发布检查；执行 `npm run release:auto -- FULL_SHA COMMITTED_NOTES_PATH RECEIPT_ABSOLUTE_PATH`。只推 `release/plugin-center-VERSION`，调用 submit_version 后查询状态。发布未确认则停止，后续只读查询，不自动重投。
-
-凭据只存在本地忽略文件 `.secrets/plugin-center.token`，不传命令行。需要 Node 20+、Git、Playwright/PI_BROWSER、插件中心读取凭据与 GitHub 推送权限。小更新也读取市场基线以确定是否符合发布条件；平台不可用则停止，不猜测或降级检查。
+1. 读取 STATE、README，调用 governance status/git_status；写入委派按 [Git 协作](git.md) 使用独立受管 worktree。
+2. 完成 typecheck、build、test、check:behaviors、test:browser、差异与敏感信息审查。插件变更执行官方 i18n、PluginCheck 和 PluginPack，见 [产物与安装](publishing.md)。
+3. 审查 git_diff → git_commit → 实际提交后测试 → git_verify。集成后重新测试。共享 STATE/AGENTS 由协调 Agent 维护；整体宿主/目视阻塞不得假报完成。
+4. 已授权的普通源码 main 集成和推送由治理流程执行，**不再由 release:auto 推送来源分支**。遵循保护，不 stash/reset/强推；只清理已合并且无活动工作的临时分支，保留旧发布追溯。
 
 ```powershell
-# 只读预览；不运行测试、推送或提交版本
+# 只做本地/CI计划：检查已提交来源、工作区、远端URL、可达历史；不运行测试
 npm run release:auto -- --plan
-# 小更新：检查后推送源码，不提交市场
+# 运行完整检查后返回同一计划；仍不推送、不发布
 npm run release:auto
-# 主/次版本：三个参数替换成真实值
-npm run release:auto -- FULL_SHA notes/release-notes.md C:\path\to\scratch\release-receipt.json
-# 发布结果不明时只查询，不重投
-node scripts/plugin-center.cjs plugin_status
+# 可显式绑定完整40位SHA；必须是当前干净HEAD
+npm run release:auto -- --plan FULL_SHA
 ```
 
-## 市场发布证据
+`release:auto` 从 tag CI 环境识别标签；无标签时结果为不发布。符合标签时另外核对 package 版本、标签实际提交和 origin/main 祖先关系。`--gate` 仅供 Action 输出资格，不等于通过发布检查。
 
-在 session scratch 写记录，绑定最终完整提交 SHA 和该提交中安装包 SHA256。证据是调用方实际检查的声明，不是独立签名或自动验收；不得为绕过门禁填 true。
+## Action 合约
 
-```json
-{
-  "sourceRef": "FULL_40_HEX_COMMIT_SHA",
-  "packageSha256": "PACKAGE_SHA256",
-  "checks": {
-    "pluginCheck": { "passed": true, "evidence": "实际结果与日志" },
-    "pluginPack": { "passed": true, "evidence": "包清单与哈希，内容匹配提交" },
-    "i18n": { "passed": true, "evidence": "官方门禁及REVIEW处理" },
-    "diffReview": { "passed": true, "evidence": "源码、包、说明的实际审查" },
-    "secretReview": { "passed": true, "evidence": "源码、历史与包敏感信息审查" }
-  }
-}
-```
+- `.github/workflows/release.yml` 只监听标签 push。脚本精确匹配主版本规则；不合格标签不能进入后续 job。
+- 全量 checkout，绑定解析后的提交 SHA；Linux/Windows 干净 npm ci、类型、构建、单元、行为和 Chromium 浏览器检查全部通过才构建产物。
+- 使用 Node 22、锁定的实际运行依赖。浏览器从 Playwright 安装 Chromium；不依赖 Ubuntu 的 Edge。可本地用 `PI_BROWSER` 指定浏览器。
+- `npm run build:distributions` 构建通用 MCP/Skills tgz，核对并复制官方 PI piplug；另产出 `asset-manifest.json`、`SHA256SUMS`，绑定版本、来源 SHA、大小和哈希。缺任一产物即停止。
+- 仅最终 release job 授予 `contents:write`；其他 job 为 `contents:read`。最终 job 只从环境使用 GITHUB_TOKEN，不读取本机市场凭据。
+- 发布前通过固定 GitHub HTTPS API 再查标签和 main 祖先关系；不存在的标签不会被创建。只将明确 GET 404 视为未发布，其他错误一律停止。
+- 已有Release经标签/源码、完整附件大小与SHA-256核对一致后，只读跳过；部分或不可核对则报错，绝不写入。新发布只POST创建一次，各附件上传一次；不覆盖、不改latest、不删除、不自动重试。并发按标签串行，重新运行attempt不得发布。
+- 创建前写 attempted journal，并保存为 Action artifact。超时/未知响应或上传失败保留部分 Release 和记录，人工只读核对，不自动恢复上传。不要删除重建已使用的标签或 Release。
+- Actions 沿用本仓库 v4 引用约定，不声称其为不可变 SHA pin。须在真实仓库运行后才能声称 Action 通过。
 
-## 边界与恢复
+## 保留的安全门禁
 
-- `scripts/release-policy.json` 的 enabled:false 关闭自动交付。仓库、规则、分支策略变更需重新批准；新增权限或 fs/net 范围变化拦截市场发布。
-- 只接受固定GitHub仓库，拒绝多个push URL；保留pre-push hook，不强推、不推标签、不安装。release:auto只推明确来源分支，main由下面的集成步骤处理。来源分支指向其他SHA时拒绝替换；推送结果不明先用ls-remote核对。
-- 市场提交互斥锁和持久化 attempted 记录在 Git common directory 的 pi-governance/releases/。提交前持久化；超时、断网、崩溃不得盲目重试、supersede 或删除记录。人工检查远端状态及存活进程后恢复。
-- 只允许保留既有无关未跟踪 `.pi/` 与 redesign archive；不纳入提交。其他未跟踪内容或已跟踪修改均停止交付。密钥扫描只是辅助，不代替人工敏感内容审查。
-- 2026-10-12用户批准唯一历史测试夹具例外：blob `d2c45515b924a1f69d92ef00b771e77b7318bbfe` 的两条合成令牌。真实本机令牌优先拦截；其他blob/令牌/私钥及敏感路径检查不变。当前测试在运行时拼接假令牌，不重写历史。
-- Windows构建若仅产生换行/文件stat状态，发布前仅对已知生成目录逐个核对规范化内容、HEAD和索引哈希，全部相同才刷新索引stat；真实内容/已暂存/未知路径仍拒绝，不改dirty检查或工作区文件。
-- 发布成功不等于真实宿主/目视验收完成，也不等于本机自动安装成功。保留未完成的总体标准。
-- 首次 create_plugin 和手动 submit_version 仍需要对应授权与完整检查。
-
-## main 集成与分支清理
-
-用户已授权完成更新后合并main、集成重测、普通推送，再清理已合并临时分支。release:auto只负责源码/市场交付；Agent须完成集成步骤，不能以来源分支同步代替交付完成。
-
-合并前获取并核对远端main，保留其提交，用普通merge（建议--no-ff保留功能历史）。集成提交实际运行typecheck/build/test/browser后再推送；分支保护要求PR/CI时遵循保护，不绕过。仅当远端main已包含临时分支全部提交、无活跃worktree/受管任务时，才普通删除远端临时分支及本地已合并分支（git branch -d，不用-D）。保留市场发布来源分支和仍有未合并工作的分支。整体真实宿主/目视阻塞仍需诚实保留，不因合并而close。
+- 只允许固定 `Tonkic/pi-agent-governance` 和正常 Git push URL；多个 URL、带凭据 URL 或其他仓库拒绝。脚本本身不 push。
+- 完整 SHA、干净已跟踪文件；仅容许既有无关 `.pi/` 和 redesign archive 未跟踪目录。不得为过门禁删除用户文件或修改忽略规则。
+- 扫描可达 Git 历史的秘密路径、令牌与私钥标记；不读取秘密文件。环境中实际提供的凭据优先拦截，不因夹具例外豁免。
+- 唯一历史例外仍为 blob `d2c45515b924a1f69d92ef00b771e77b7318bbfe` 的两条已批准合成测试令牌；其他内容仍拦截，不重写历史。
+- Windows 构建仅有 stat/换行状态时，只对已知生成文件核对规范化工作区哈希与 HEAD、index 全部相同后刷新索引 stat；真实、已暂存或未知修改拒绝。
+- 旧 notes/releases、Git 发布记录及本地 token 文件保留；旧 marketplace 传输和提交能力已移除。密钥扫描仅为辅助，仍需人工审查。

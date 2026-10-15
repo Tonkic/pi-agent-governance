@@ -4,7 +4,7 @@
 
 ## 构建与检查
 
-需要 Node.js 20+。在仓库根目录运行：
+需要 Node.js 22+。在仓库根目录运行：
 
 ```powershell
 npm ci
@@ -13,13 +13,13 @@ npm run build
 npm test
 ```
 
-构建成功后，插件 JS 位于 `plugin/runtime/`，CLI 和测试 JS 位于 `build/`。读取当前目录的治理状态：
+构建成功后，插件 JS 位于 `plugin/runtime/`，MCP入口位于 `build/mcp/server.js`，CLI和测试位于 `build/`。MCP启动与客户端配置见 [MCP与Skill](mcp.md)。读取当前目录的治理状态：
 
 ```powershell
 '{"action":"status"}' | node build/scripts/governance.js
 ```
 
-运行浏览器检查前，配置可解析的 Playwright 和指向 Chromium/Edge 的 `PI_BROWSER`：
+浏览器检查使用锁定的Playwright。首次运行可执行 `npx playwright install chromium`；本机也可用 `PI_BROWSER` 指向已有Chromium/Edge，CI安装bundled Chromium：
 
 ```powershell
 npm run test:browser
@@ -32,6 +32,7 @@ npm run test:browser
 | 路径 | 内容 |
 | --- | --- |
 | `plugin/*.ts` | 主进程源码 |
+| `mcp/` | stdio协议适配和客户端示例；复用同一核心，不含宿主模型/会话接口 |
 | `plugin/renderer/` | 浏览器 TS、HTML 和 CSS |
 | `plugin/runtime/` | 已提交的运行 JS，供宿主及发布载荷使用 |
 | `plugin/manifest.json`、`plugin/main.js` | 生成清单和市场所需固定入口；main.js只转接runtime/main.js，不手改 |
@@ -56,7 +57,8 @@ npm run test:browser
 | 说明与生成规则 | `docs/`、`scripts/build-docs.cjs` | `test/layout.test.cjs` |
 | 行为文档与场景证据 | `plugin/behaviors.ts`、`scripts/check-behaviors.cjs` | `test/behaviors.test.cjs`、`npm run check:behaviors` |
 | 构建路径 | `tsconfig.json`、`scripts/build.cjs` | `test/layout.test.cjs` |
-| 发布载荷 | `scripts/plugin-center.cjs` | `test/release.test.cjs`、发布预览 |
+| MCP工具/Skill资源/提示 | `mcp/server.ts`、`plugin/skills/architecture-copilot/` | `test/mcp.test.cjs`、真实SDK协议测试 |
+| 多目标分发与GitHub发布 | `scripts/build-distributions.cjs`、`scripts/github-release.cjs`、`.github/workflows/` | `test/distributions.test.cjs`、`test/release.test.cjs` |
 
 ## 交付
 

@@ -1,11 +1,11 @@
 {
   "enabled": true,
-  "rule": "stable-major-or-minor",
-  "pluginId": "io.github.tonkic.agent-governance",
+  "rule": "stable-major-tag-only",
   "repository": "Tonkic/pi-agent-governance",
-  "branchPrefix": "release/plugin-center-",
-  "sourceBranchPrefix": "release/source-",
-  "syncPatches": true,
-  "allowPermissionChanges": false,
-  "allowSupersede": false
+  "targets": ["mcp-skills", "pi-desktop"],
+  "allowSupersede": false,
+  "npmPublish": false,
+  "marketplacePublish": false,
+  "autoInstall": false,
+  "createTags": false
 }
