@@ -511,6 +511,9 @@ test('design sessions require an explicit current draft and never confirm it', a
   await f.start('design', { designRevision: d.revision });
   const prompt = f.calls.find((c) => c.operation === 'agent/prompt').args[0].content;
   assert.match(prompt, /io.github.tonkic.agent-governance\/architecture-copilot/);
+  assert.match(prompt, /design proposal mode/);
+  assert.match(prompt, /If the Skill cannot be loaded, stop and report/);
+  assert.doesNotMatch(prompt, /current-state analysis mode/);
   assert.match(prompt, /Never confirm a baseline/);
   assert.match(prompt, /Only the current draft may change/);
   assert.equal((await f.g.run({ action: 'architecture_design_snapshot' })).baseline, null);
@@ -716,4 +719,34 @@ test('official status envelope keeps running and waiting permissions busy and re
     assert.equal(await fs.readFile(file, 'utf8'), raw);
     assert.equal(f.calls.filter((c) => c.operation === 'agent/prompt').length, 1);
   }
+});
+
+test('architecture analysis defaults to the Skill in current-state mode without opening a design draft', async (t) => {
+  const f = await fixture(t);
+  const before = await fs.readFile(path.join(f.root, 'STATE.json'), 'utf8');
+  const run = await f.start('architecture');
+  assert.equal(run.kind, 'architecture');
+  const prompts = f.calls.filter(c => c.operation === 'agent/prompt');
+  assert.equal(prompts.length, 1);
+  const prompt = prompts[0].args[0].content;
+  assert.match(prompt, /Load Skill io\.github\.tonkic\.agent-governance\/architecture-copilot/);
+  assert.match(prompt, /current-state analysis mode/);
+  assert.match(prompt, /If the Skill cannot be loaded, stop and report/);
+  assert.match(prompt, /architecture_sources/);
+  assert.match(prompt, /architecture_set/);
+  assert.match(prompt, /Do not create or change design drafts or baselines/);
+  assert.doesNotMatch(prompt, /Reanalyze the core project architecture|architecture_design_save/);
+  assert.equal(await fs.readFile(path.join(f.root, 'STATE.json'), 'utf8'), before);
+  assert.equal((await f.g.run({ action: 'architecture_design_snapshot' })).draft, null);
+});
+
+test('architecture Skill documents separate current-state and design write boundaries', async () => {
+  const skill = await fs.readFile(path.join(__dirname, '../../plugin/skills/architecture-copilot/SKILL.md'), 'utf8');
+  assert.match(skill, /## 源码现状分析模式/);
+  assert.match(skill, /architecture_sources/);
+  assert.match(skill, /architecture_set/);
+  assert.match(skill, /不创建或修改设计草案、基线/);
+  assert.match(skill, /## 方案设计模式/);
+  assert.match(skill, /不改 `.governance\/architecture.json`/);
+  assert.doesNotMatch(skill, /不要改功能代码、STATE、看板、AGENTS.md、源码现状图/);
 });

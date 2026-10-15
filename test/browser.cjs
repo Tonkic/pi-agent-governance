@@ -828,10 +828,12 @@ const models = {
     await page.locator('#launch-model').selectOption('fixture/reasoning');
     await page.locator('#launch-thinking').selectOption('high');
     await confirm(page);
-    assert.match(
-      hostCalls.findLast((c) => c.operation === 'agent/prompt').args[0].content,
-      /architecture_sources/
-    );
+    const architecturePrompt = hostCalls.findLast((c) => c.operation === 'agent/prompt').args[0].content;
+    assert.match(architecturePrompt, /Load Skill io\.github\.tonkic\.agent-governance\/architecture-copilot/);
+    assert.match(architecturePrompt, /current-state analysis mode/);
+    assert.match(architecturePrompt, /If the Skill cannot be loaded, stop and report/);
+    assert.match(architecturePrompt, /architecture_sources/);
+    assert.doesNotMatch(architecturePrompt, /Reanalyze the core project architecture|architecture_design_save/);
     const createdWithModel = hostCalls.findLast((c) => c.operation === 'session/create').args[0];
     assert.equal(createdWithModel.providerId, 'fixture');
     assert.equal(createdWithModel.modelId, 'reasoning');

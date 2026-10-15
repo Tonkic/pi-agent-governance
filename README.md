@@ -2,7 +2,7 @@
 
 PI-Desktop 本地插件：保存任务目标和进度，展示项目看板与源码架构，管理受管 Git 工作区。项目数据保存在仓库文件中，Agent 可以据此接手。
 
-社区 ID：`io.github.tonkic.agent-governance`。仓库版本0.7.7；市场已发布0.7.0。本机安装不会自动升级；权限说明见 [发布说明](notes/release-0.7.0.md)。
+社区 ID：`io.github.tonkic.agent-governance`。仓库版本0.7.8；市场已发布0.7.0。本机安装不会自动升级；权限说明见 [发布说明](notes/release-0.7.0.md)。
 
 ## 开始使用
 
@@ -14,7 +14,7 @@ PI-Desktop 本地插件：保存任务目标和进度，展示项目看板与源
 
 工作项可标记架构影响，默认不扫描源码或自动重分析；需要时手动核对来源。面板跟随宿主主工作区切换，旧草稿只读隔离保留，新项目须确认启用。规则见 [项目接口](docs/project.md)。
 
-架构设计可选，需要方向或可视化时用Architecture Copilot。「项目架构→设计方案」用同一份节点/关系显示画板和可展开ASCII图，新保存方案的正文也包含图；确定后沿用基线，普通功能不重设计。Skill使用已批准的agent.prompt.inject。见 [架构设计](docs/architecture-design.md)。
+「分析架构」默认使用Architecture Copilot的源码现状模式；「设计方案」用同一Skill的设计模式，ASCII正文和画板同源，确定后沿用基线。两者不混写，Skill不可用则停止，不回退旧提示词。架构对普通功能开发仍可选。见 [架构分析与设计](docs/architecture-design.md)。
 
 已结束会话的旧运行记录会在打开/刷新「分析进度」或开始新操作时核对宿主并同步，不需要手动先点结果；未知提交仍保留明确处理，不自动重发或后台轮询。
 

@@ -201,6 +201,22 @@
       "gitTaskId": null
     },
     {
+      "id": "architecture-skill-default",
+      "title": "分析架构默认使用Architecture Copilot",
+      "description": "用户批准用Skill替换旧分析提示词；现状/设计模式分离。实际prompt回归、138测试/95图/10行为场景、干净构建与官方0.7.8包通过。受管创建和GitHub交付被现有用户操作记录修改阻塞，只提交本次文件，不丢弃或混入旧记录。",
+      "blocker": "",
+      "stage": "doing",
+      "taskId": "project-board-release",
+      "criteria": [
+        "分析入口实际prompt默认加载Skill且无旧提示词回退",
+        "现状与设计边界/既有安全回归通过",
+        "干净包检查、提交后验证及GitHub/main交付"
+      ],
+      "architectureImpact": "none",
+      "gitTaskId": null,
+      "completedAt": null
+    },
+    {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
       "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
@@ -210,5 +226,5 @@
       "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-13T12:44:27.313Z"
+  "updatedAt": "2026-10-15T09:51:50.941Z"
 }
