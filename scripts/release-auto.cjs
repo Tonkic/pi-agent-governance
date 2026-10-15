@@ -1,228 +1,55 @@
 'use strict';
-// Release-time automation only; never loaded by the plugin or on ordinary builds.
+// Local/CI validation and planning only. No push, tag creation or publication.
 const fs = require('node:fs');
 const path = require('node:path');
-const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
-const { buildPayload, versionPayload, connect, unwrap } = require('./plugin-center.cjs');
+const safety = require('./release-safety.cjs');
 const root = path.resolve(__dirname, '..');
-const pluginId = 'io.github.tonkic.agent-governance';
-const repository = 'Tonkic/pi-agent-governance';
-const sha256 = data => crypto.createHash('sha256').update(data).digest('hex');
-function fail(message) { throw new Error(message); }
-function stable(version) {
-  if (typeof version !== 'string' || !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version)) fail('Only stable x.y.z versions are allowed');
-  const parts = version.split('.').map(Number);
-  if (!parts.every(Number.isSafeInteger)) fail('Version exceeds safe integer range');
-  return parts;
+function decision(tag, version) {
+  const eligible = typeof tag === 'string' && /^v[1-9]\d*\.0\.0$/.test(tag);
+  if (eligible && tag.slice(1) !== version) throw Error('Tag/package version mismatch');
+  return { publish: eligible, reason: eligible ? 'stable-major-tag' : 'not-stable-major-tag' };
 }
-function compare(a, b) {
-  const x = stable(a), y = stable(b);
-  for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] > y[i] ? 1 : -1;
-  return 0;
+function validatePolicy(policy) {
+  const expected = { enabled: true, rule: 'stable-major-tag-only', repository: safety.repository, targets: ['mcp-skills', 'pi-desktop'], allowSupersede: false, npmPublish: false, marketplacePublish: false, autoInstall: false, createTags: false };
+  if (JSON.stringify(policy) !== JSON.stringify(expected)) throw Error('Policy changed; renewed human approval required');
 }
-function decision(candidate, status) {
-  const v = stable(candidate);
-  if (status?.pluginId !== pluginId || status.boundRepository !== repository || status.state !== 'active' || !Array.isArray(status.versions)) fail('Unexpected plugin identity, repository or state');
-  const releases = status.versions.filter(r => r.status === 'published' && r.channel === 'stable');
-  releases.forEach(r => stable(r.version));
-  releases.sort((a, b) => compare(b.version, a.version));
-  const base = releases[0];
-  if (!base) fail('No published stable baseline; first publication requires manual approval');
-  const b = stable(base.version);
-  if (compare(candidate, base.version) < 0) fail('Version is older than published baseline');
-  if (v[0] === b[0] && v[1] === b[1]) return { publish: false, reason: 'patch-or-unchanged', baseline: base.version };
-  if (status.versions.some(r => r.version === candidate)) fail('Version already exists; inspect platform status');
-  if (status.versions.some(r => !['published', 'rejected', 'withdrawn'].includes(r.status))) fail('Pending or unknown remote version state; no superseding');
-  return { publish: true, baseline: base.version, sourceRef: base.sourceRef };
+function validateSource(rootDir, sourceRef, tag, runGit = safety.gitAt(rootDir)) {
+  safety.fullSha(sourceRef);
+  if (!/^v[1-9]\d*\.0\.0$/.test(tag || '')) throw Error('Only stable major release tags are eligible');
+  if (runGit('rev-parse', `refs/tags/${tag}^{commit}`).trim() !== sourceRef) throw Error('Tag/source mismatch');
+  runGit('merge-base', '--is-ancestor', sourceRef, 'refs/remotes/origin/main');
 }
-function validatePolicy(p) {
-  if (!p.enabled) fail('Automatic release disabled');
-  if (p.rule !== 'stable-major-or-minor' || p.pluginId !== pluginId || p.repository !== repository || p.branchPrefix !== 'release/plugin-center-' || p.sourceBranchPrefix !== 'release/source-' || p.syncPatches !== true || p.allowPermissionChanges !== false || p.allowSupersede !== false) fail('Policy changed; renewed human approval required');
-}
-function permissionGuard(candidate, baseline) {
-  if (!Array.isArray(candidate.permissions) || !Array.isArray(baseline.permissions)) fail('Missing permissions');
-  if (candidate.permissions.some(p => !baseline.permissions.includes(p)) || JSON.stringify(candidate.fs ?? null) !== JSON.stringify(baseline.fs ?? null) || JSON.stringify(candidate.net ?? null) !== JSON.stringify(baseline.net ?? null)) fail('Permission expansion/change requires human approval');
-}
-function receiptGuard(receipt, sourceRef, packageHash) {
-  if (receipt?.sourceRef !== sourceRef || receipt.packageSha256 !== packageHash) fail('Evidence does not match source/package');
-  for (const key of ['pluginCheck', 'pluginPack', 'i18n', 'diffReview', 'secretReview']) {
-    const check = receipt.checks?.[key];
-    if (check?.passed !== true || typeof check.evidence !== 'string' || !check.evidence.trim()) fail(`Missing release evidence: ${key}`);
-  }
-}
-// Dependency injection keeps all publication state-machine tests offline.
-async function execute(plan, ops) {
-  if (!plan.publish) return plan;
-  await ops.preflight();
-  await ops.checkRemote();
-  await ops.push();
-  await ops.checkRemote();
-  await ops.markAttempt(); // Durable BEFORE network mutation; uncertainty never triggers a retry.
-  await ops.submit();
-  return ops.status(); // Approval and catalog publication may still be pending.
-}
-async function executeSourceSync(ops) {
-  await ops.preflight();
-  await ops.push();
-  return { published: false, sourceSynced: true };
-}
-function validatePushRemote(remote) {
-  const allowed = [
-    'https://github.com/Tonkic/pi-agent-governance.git',
-    'https://github.com/Tonkic/pi-agent-governance',
-    'git@github.com:Tonkic/pi-agent-governance.git'
-  ];
-  if (!allowed.includes(remote)) fail('Unexpected push remote');
-}
-function pushSource(sourceRef, branch) {
-  const origin = git('remote', 'get-url', '--push', '--all', 'origin').trim();
-  validatePushRemote(origin);
-  if (!/^refs\/heads\/release\/(?:source-|plugin-center-)[A-Za-z0-9.-]+$/.test(branch)) fail('Unexpected release branch');
-  clean(sourceRef);
-  const existing = git('ls-remote', '--heads', 'origin', branch).trim();
-  if (existing && existing.split(/\s/)[0] !== sourceRef) fail('Release branch already points elsewhere; refusing replacement');
-  git('-c', 'push.followTags=false', '-c', 'remote.origin.mirror=false', 'push', 'origin', `${sourceRef}:${branch}`);
-  if (git('ls-remote', '--heads', 'origin', branch).trim().split(/\s/)[0] !== sourceRef) fail('Remote source verification failed');
-}
-function git(...args) {
-  return execFileSync('git', args, { cwd: root, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
-}
-function readCommit(ref, file) { return git('show', `${ref}:${file}`); }
-function untrackedGuard(raw) {
-  const extra = raw.split('\0').filter(Boolean);
-  if (extra.some(file => !file.startsWith('.pi/') && !file.startsWith('changes/archive/redesign-governance-panel/'))) fail('Unexpected untracked files; inspect before release');
-}
-function clean(sourceRef) {
-  if (git('rev-parse', 'HEAD').trim() !== sourceRef || git('status', '--porcelain', '--untracked-files=no').trim()) fail('HEAD changed or tracked worktree is dirty');
-  untrackedGuard(git('ls-files', '-z', '--others', '--exclude-standard'));
-}
-function containsCredential(object, bytes, token) {
-  // Never exempt the actual local credential, even if it equals a fixture value.
-  if (bytes.includes(Buffer.from(token))) return true;
-  let text = bytes.toString('utf8');
-  // User-approved 2026-10-12: immutable release.test.cjs blob from e65789c.
-  // Only these two synthetic fixtures are excluded; all other markers still fail.
-  if (object === 'd2c45515b924a1f69d92ef00b771e77b7318bbfe') {
-    for (const fixture of ['fixtureCredential123', 'otherCredential123'])
-      text = text.split('pi_pat_' + fixture).join('');
-  }
-  return /pi_pat_[A-Za-z0-9_-]{16,}|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/.test(text);
-}
-function secretScan(sourceRef) {
-  const token = fs.readFileSync(path.join(root, '.secrets/plugin-center.token'), 'utf8').trim();
-  if (!/^pi_pat_[A-Za-z0-9_-]+$/.test(token)) fail('Invalid credential');
-  const objects = git('rev-list', '--objects', sourceRef).trim().split('\n');
-  for (const row of objects) {
-    if (/\s(?:.*\/)?\.secrets\//.test(row)) fail('Secret path found in reachable history');
-    const object = row.split(' ')[0];
-    const bytes = execFileSync('git', ['cat-file', '-p', object], { cwd: root, maxBuffer: 32 * 1024 * 1024 });
-    if (containsCredential(object, bytes, token)) fail('Credential-like content found in reachable history');
-  }
-}
-function refreshGeneratedIndex(runGit = git) {
-  const outputs = ['plugin/runtime/', 'plugin/docs/', 'plugin/main.js', 'plugin/manifest.json', 'plugin/README.md'];
-  const rows = runGit('status', '--porcelain=v1', '--untracked-files=no', '--', ...outputs).split(/\r?\n/).filter(Boolean);
-  const files = [];
-  // Preflight all outputs; do not stage real changes or touch user-staged content.
-  for (const row of rows) {
-    const file = row.slice(3);
-    const generated = outputs.some(output => output.endsWith('/') ? file.startsWith(output) : file === output);
-    if (!row.startsWith(' M ') || !generated) fail('Unexpected generated-output status; inspect before release');
-    const head = runGit('rev-parse', 'HEAD:' + file).trim();
-    const index = runGit('rev-parse', ':' + file).trim();
-    const actual = runGit('hash-object', '--path=' + file, '--', file).trim();
-    if (actual !== head || index !== head) fail('Generated output differs from HEAD/index; inspect before release');
-    files.push(file);
-  }
-  // Content is unchanged. Refresh Git's cached output stat without rewriting files.
-  if (files.length) runGit('add', '--', ...files);
-}
+function refreshGeneratedIndex(runGit = safety.gitAt(root)) { return safety.refreshGeneratedIndex(runGit); }
 function runChecks() {
-  // npm is invoked via Node, avoiding shell quoting and npm.cmd portability issues.
   const npm = process.env.npm_execpath;
-  if (!npm || !fs.existsSync(npm)) fail('Run through npm run release:auto');
-  for (const script of ['typecheck', 'test', 'test:browser']) execFileSync(process.execPath, [npm, 'run', script], { cwd: root, stdio: 'inherit' });
+  if (!npm || !fs.existsSync(npm)) throw Error('Run through npm run release:auto');
+  for (const script of ['typecheck', 'build', 'test', 'check:behaviors', 'test:browser']) execFileSync(process.execPath, [npm, 'run', script], { cwd: root, stdio: 'inherit' });
   refreshGeneratedIndex();
 }
-async function main() {
-  const args = process.argv.slice(2);
-  const preview = args[0] === '--plan';
-  if (preview) args.shift();
-  const [refArg, notesPath, receiptPath] = args;
-  const sourceRef = refArg || git('rev-parse', 'HEAD').trim();
-  if (!/^[a-f0-9]{40}$/.test(sourceRef)) fail('A full commit SHA is required');
-  const policy = JSON.parse(fs.readFileSync(path.join(root, 'scripts/release-policy.json'), 'utf8'));
-  validatePolicy(policy);
-  const manifest = JSON.parse(readCommit(sourceRef, 'plugin/manifest.json'));
-  if (manifest.id !== pluginId) fail('Unexpected plugin ID');
-  const call = await connect();
-  const getStatus = async () => unwrap(await call('plugin_status', { pluginId }));
-  const plan = decision(manifest.version, await getStatus());
-  console.log(JSON.stringify({ ...plan, mode: preview ? 'plan' : 'auto', version: manifest.version, sourceRef, baselineSourceRef: plan.sourceRef }));
-  if (preview) return; // Plan remains read-only.
-  clean(sourceRef);
-  if (JSON.stringify(JSON.parse(readCommit(sourceRef, 'scripts/release-policy.json'))) !== JSON.stringify(policy)) fail('Policy must belong to the released commit');
-  if (!plan.publish) {
-    const branch = `refs/heads/${policy.sourceBranchPrefix}${manifest.version}-${sourceRef}`;
-    const result = await executeSourceSync({
-      preflight: async () => { runChecks(); clean(sourceRef); secretScan(sourceRef); },
-      push: async () => pushSource(sourceRef, branch)
-    });
-    console.log(JSON.stringify({ ...result, branch, sourceRef }));
-    return result; // Patches sync source only; no submit_version or publication journal.
+function main(args = process.argv.slice(2)) {
+  validatePolicy(JSON.parse(fs.readFileSync(path.join(root, 'scripts/release-policy.json'), 'utf8')));
+  const tag = process.env.GITHUB_REF_TYPE === 'tag' ? process.env.GITHUB_REF_NAME : undefined;
+  const version = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).version;
+  const plan = decision(tag, version);
+  if (args[0] === '--gate' && args.length === 1) {
+    if (process.env.GITHUB_REPOSITORY !== safety.repository) throw Error('Unexpected repository');
+    if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `eligible=${plan.publish}\n`);
+    console.log(JSON.stringify(plan)); return plan;
   }
-  if (!/^[a-f0-9]{40}$/.test(plan.sourceRef || '')) fail('Missing baseline source commit');
-  permissionGuard(manifest, JSON.parse(readCommit(plan.sourceRef, 'plugin/manifest.json')));
-  if (!notesPath || !/^[\w./-]+$/.test(notesPath) || notesPath.split('/').includes('..') || notesPath.startsWith('/')) fail('Provide a committed relative release-notes path');
-  const notes = readCommit(sourceRef, notesPath);
-  if (!notes.trim()) fail('Release notes are empty');
-  const payload = versionPayload(buildPayload(sourceRef, notes));
-  const packagePath = `plugin/dist/${pluginId}-${manifest.version}.piplug`;
-  const packageBytes = execFileSync('git', ['show', `${sourceRef}:${packagePath}`], { cwd: root, maxBuffer: 32 * 1024 * 1024 });
-  receiptGuard(JSON.parse(fs.readFileSync(receiptPath, 'utf8')), sourceRef, sha256(packageBytes));
-  const origin = git('remote', 'get-url', '--push', '--all', 'origin').trim();
-  validatePushRemote(origin);
-  const common = path.resolve(root, git('rev-parse', '--git-common-dir').trim());
-  const journalDir = path.join(common, 'pi-governance', 'releases');
-  fs.mkdirSync(journalDir, { recursive: true });
-  const lock = path.join(journalDir, 'auto-release.lock');
-  fs.mkdirSync(lock); // Exclusive; crashes leave a visible lock, not an automatic retry.
-  try {
-    const journal = path.join(journalDir, `${pluginId}-${manifest.version}.json`);
-    if (fs.existsSync(journal)) fail('Submission was previously attempted; inspect remote status and journal manually');
-    const branch = `refs/heads/${policy.branchPrefix}${manifest.version}`;
-    const checkRemote = async () => {
-      clean(sourceRef);
-      const latest = decision(manifest.version, await getStatus());
-      if (!latest.publish || latest.baseline !== plan.baseline || latest.sourceRef !== plan.sourceRef) fail('Published baseline changed; restart release review');
-      const available = unwrap(await call('check_version', { pluginId, version: manifest.version }));
-      if (available.version !== manifest.version || available.available !== true || available.exists !== false) fail('Version unavailable or response unknown');
-    };
-    const result = await execute(plan, {
-      preflight: async () => { runChecks(); clean(sourceRef); secretScan(sourceRef); },
-      checkRemote,
-      push: async () => pushSource(sourceRef, branch),
-      markAttempt: async () => {
-        const fd = fs.openSync(journal, 'wx');
-        try { fs.writeFileSync(fd, JSON.stringify({ sourceRef, version: manifest.version, at: new Date().toISOString(), state: 'attempted-inspect-remote-before-any-retry' }, null, 2)); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
-      },
-      submit: () => call('submit_version', payload),
-      status: async () => {
-        const status = await getStatus();
-        const release = status.versions?.find(v => v.version === manifest.version);
-        const state = release?.sourceRef === sourceRef ? release.status : 'unknown-inspect-remote';
-        console.log(JSON.stringify({ version: manifest.version, state, publishedAt: release?.publishedAt || null }));
-        if (state !== 'published') fail('Submitted but publication is not confirmed; query plugin_status, do not resubmit');
-        return { version: manifest.version, state };
-      }
-    });
-    return result;
-  } finally { fs.rmdirSync(lock); }
+  const preview = args[0] === '--plan';
+  if (preview) args = args.slice(1);
+  if (args.length > 1) throw Error('Usage: release:auto [--plan] [FULL_SHA]; validation only');
+  const git = safety.gitAt(root);
+  const sourceRef = safety.fullSha(args[0] || git('rev-parse', 'HEAD').trim());
+  if (!preview) runChecks();
+  refreshGeneratedIndex(git);
+  safety.clean(root, sourceRef);
+  safety.validatePushRemote(git('remote', 'get-url', '--push', '--all', 'origin').trim());
+  safety.secretScan(root, sourceRef, [process.env.GITHUB_TOKEN].filter(Boolean));
+  if (plan.publish) validateSource(root, sourceRef, tag);
+  const result = { ...plan, version, sourceRef, mode: preview ? 'plan' : 'validate', mutation: false, publication: 'GitHub Actions final job only; source integration/push remains external' };
+  console.log(JSON.stringify(result)); return result;
 }
-module.exports = { stable, compare, decision, validatePolicy, permissionGuard, receiptGuard, execute, executeSourceSync, untrackedGuard, validatePushRemote, containsCredential, refreshGeneratedIndex };
-if (require.main === module) main().catch(error => {
-  // Do not print arbitrary subprocess output/remote payloads or credentials.
-  console.error(error.code || error.status ? 'Release blocked by local command/IO failure; inspect checks and remote status. No mutation retry.' : String(error.message).replace(/pi_pat_[A-Za-z0-9_-]+/g, '[REDACTED]'));
-  process.exitCode = 1;
-});
+module.exports = { ...safety, decision, validatePolicy, validateSource, refreshGeneratedIndex, main };
+if (require.main === module) { try { main(); } catch { console.error('Release validation blocked; inspect local checks/source. No publication or retry performed.'); process.exitCode = 1; } }
