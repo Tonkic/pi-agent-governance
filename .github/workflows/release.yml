@@ -1,0 +1,108 @@
+name: Major GitHub Release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+concurrency:
+  group: major-release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      eligible: ${{ steps.policy.outputs.eligible }}
+      source: ${{ steps.source.outputs.sha }}
+    steps:
+      # Follow the repository's v4 convention; do not claim these mutable refs are SHA pins.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: policy
+        run: node scripts/release-auto.cjs --gate
+      - id: source
+        if: steps.policy.outputs.eligible == 'true'
+        shell: bash
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+  validate:
+    needs: gate
+    if: needs.gate.outputs.eligible == 'true'
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.gate.outputs.source }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test
+      - run: npm run check:behaviors
+      - run: npx --no-install playwright install --with-deps chromium
+      - run: npm run test:browser
+      - run: npm run release:auto -- --plan
+  build:
+    needs: [gate, validate]
+    if: needs.gate.outputs.eligible == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.gate.outputs.source }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run build
+      - run: npm run release:auto -- --plan
+      - run: npm run build:distributions
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-distributions
+          path: |
+            build/distributions/*.tgz
+            build/distributions/*.piplug
+            build/distributions/asset-manifest.json
+            build/distributions/SHA256SUMS
+          if-no-files-found: error
+  release:
+    needs: [gate, build]
+    if: needs.gate.outputs.eligible == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.gate.outputs.source }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-distributions
+          path: build/distributions
+      - run: node scripts/github-release.cjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_SOURCE_SHA: ${{ needs.gate.outputs.source }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-attempt-${{ github.run_id }}-${{ github.run_attempt }}
+          path: build/github-release-attempt.json
+          if-no-files-found: ignore

@@ -169,7 +169,7 @@ test('bilingual copy has equal keys and placeholders, valid DOM keys, and preser
   }
   assert.doesNotMatch(script, /innerHTML/);
 });
-test('community manifest and publisher keep credentials and old packages out of submission', async () => {
+test('community manifest and distribution allowlist exclude credentials and old packages', async () => {
   const manifest = JSON.parse(await fs.readFile(path.join(__dirname, '../plugin/manifest.json'), 'utf8'));
   assert.equal(manifest.id, 'io.github.tonkic.agent-governance');
   for (const locale of ['en', 'zh-CN']) {
@@ -177,17 +177,12 @@ test('community manifest and publisher keep credentials and old packages out of 
     assert.ok(manifest.ui.title[locale].trim());
   }
   assert.equal(typeof manifest.contributes.commands[0].title, 'string', 'installer requires a plain command title');
-  const publisher = require('../../scripts/plugin-center.cjs');
-  assert.throws(() => publisher.buildPayload('main', 'Notes'), /full reviewed commit/);
-  assert.equal(new Set(publisher.files).size, publisher.files.length);
-  for (const file of publisher.files) {
+  const { piFiles } = require('../../scripts/build-distributions.cjs');
+  assert.equal(new Set(piFiles).size, piFiles.length);
+  for (const file of piFiles) {
     assert.doesNotMatch(file, /(?:^|\/)(?:\.\.|\.secrets|dist)(?:\/|$)|\.token$/);
     assert.ok((await fs.stat(path.join(__dirname, '../../plugin', file))).isFile());
   }
-  const script = await fs.readFile(path.join(__dirname, '../../scripts/plugin-center.cjs'), 'utf8');
-  assert.match(script, /redirect: 'error'/);
-  assert.match(script, /--submit/);
-  assert.doesNotMatch(script, /console\.(?:log|error)\(token\)/);
 });
 
 test('item details use a modal and cannot shrink the board through open-state CSS', async () => {
