@@ -39,12 +39,7 @@ async function bindWorkspace(args: string[]) {
 async function main() {
   const root = await bindWorkspace(process.argv.slice(2));
   const packageRoot = path.resolve(__dirname, '../..');
-  let skillRoot = path.join(packageRoot, 'skills/architecture-copilot');
-  try { await fs.lstat(skillRoot); }
-  catch (e: any) {
-    if (e.code !== 'ENOENT') throw e;
-    skillRoot = path.join(packageRoot, 'plugin/skills/architecture-copilot');
-  }
+  const skillRoot = path.join(packageRoot, 'plugin/skills/architecture-copilot');
   async function readSkill(file: string) {
     if (!skillFiles.includes(file)) throw new McpError(ErrorCode.InvalidParams, 'Unknown Skill resource');
     const target = path.join(skillRoot, file);
