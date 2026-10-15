@@ -32,7 +32,7 @@ function remote(options = {}) {
     if (url.includes('/git/ref/')) return options.missingTag ? { status: 404 } : { status: 200, data: { object: { type: options.annotated ? 'tag' : 'commit', sha: options.wrongTag ? 'b'.repeat(40) : sha } } };
     if (url.includes('/git/tags/')) return { status: 200, data: { object: { type: 'commit', sha } } };
     if (url.includes('/compare/')) return { status: 200, data: { status: options.diverged ? 'diverged' : 'ahead', merge_base_commit: { sha } } };
-    if (url.includes('/releases/tags/')) return { status: options.existing ? 200 : options.unknownStatus ? 403 : 404, data: release };
+    if (url.includes('/releases/tags/')) return { status: options.existing || options.completeExisting ? 200 : options.unknownStatus ? 403 : 404, data: { ...release, ...(options.completeExisting ? { assets: files.map((file, i) => ({ id: 100 + i, name: file.name, size: file.bytes.length, state: 'uploaded', digest: `sha256:${require('../scripts/build-distributions.cjs').sha256(file.bytes)}` })) } : {}) } };
     if (method === 'POST' && !binary) { if (options.createFail) throw Error('unknown create'); return { status: 201, data: release }; }
     if (binary) {
       if (options.uploadFail) throw Error('unknown upload');
@@ -65,6 +65,21 @@ test('incomplete or duplicate artifact set prevents all network calls', async ()
 test('source/remote uncertainty/existing partial release and failed marker prevent every mutation', async () => {
   for (const options of [{ missingTag: true }, { wrongTag: true }, { diverged: true }, { existing: true }, { unknownStatus: true }, { markerFail: true }]) {
     const f = remote(options); await assert.rejects(publishRelease(f.args)); assert.equal(f.calls.some(c => c.method === 'POST'), false);
+  }
+});
+test('a complete existing exact-source Release skips safely without attempt marker or any POST', async () => {
+  const f = remote({ completeExisting: true });
+  const result = await publishRelease(f.args);
+  assert.equal(result.published, false);
+  assert.equal(result.reason, 'existing-verified-release');
+  assert.ok(f.calls.every(c => c.method === 'GET'));
+});
+test('an existing Release with missing, duplicate, changed, undigested assets or wrong source remains blocked', async () => {
+  for (const mutate of [r => r.assets.pop(), r => { r.assets[1] = r.assets[0]; }, r => { r.assets[0].digest = 'sha256:wrong'; }, r => { delete r.assets[0].digest; }, r => { r.target_commitish = 'main'; }, r => { r.prerelease = true; }]) {
+    const f = remote({ completeExisting: true }), original = f.args.request;
+    f.args.request = async (...args) => { const result = await original(...args); if (args[1].includes('/releases/tags/')) mutate(result.data); return result; };
+    await assert.rejects(publishRelease(f.args), /partial or unverifiable/);
+    assert.ok(f.calls.every(c => c.method === 'GET'));
   }
 });
 test('unknown create/upload stops immediately; no retry, rollback, deletion or resume mutation', async () => {

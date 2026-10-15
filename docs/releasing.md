@@ -30,7 +30,7 @@ npm run release:auto -- --plan FULL_SHA
 - `npm run build:distributions` 构建通用 MCP/Skills tgz，核对并复制官方 PI piplug；另产出 `asset-manifest.json`、`SHA256SUMS`，绑定版本、来源 SHA、大小和哈希。缺任一产物即停止。
 - 仅最终 release job 授予 `contents:write`；其他 job 为 `contents:read`。最终 job 只从环境使用 GITHUB_TOKEN，不读取本机市场凭据。
 - 发布前通过固定 GitHub HTTPS API 再查标签和 main 祖先关系；不存在的标签不会被创建。只将明确 GET 404 视为未发布，其他错误一律停止。
-- 已有 Release（含不完整 Release）拒绝任何写入。新发布只 POST 创建一次，然后各上传一次；不覆盖、不修改 latest、不删除、不自动重试。并发按标签串行，重新运行的 attempt 不得发布。
+- 已有Release经标签/源码、完整附件大小与SHA-256核对一致后，只读跳过；部分或不可核对则报错，绝不写入。新发布只POST创建一次，各附件上传一次；不覆盖、不改latest、不删除、不自动重试。并发按标签串行，重新运行attempt不得发布。
 - 创建前写 attempted journal，并保存为 Action artifact。超时/未知响应或上传失败保留部分 Release 和记录，人工只读核对，不自动恢复上传。不要删除重建已使用的标签或 Release。
 - Actions 沿用本仓库 v4 引用约定，不声称其为不可变 SHA pin。须在真实仓库运行后才能声称 Action 通过。
 

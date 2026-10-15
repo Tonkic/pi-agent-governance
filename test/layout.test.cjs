@@ -89,8 +89,8 @@ test('package documentation is generated from canonical concise docs and include
     fs.readFileSync(path.join(root, 'plugin/docs/ui-sources.md'), 'utf8'),
     /MIT License/
   );
-  const publisher = require('../scripts/plugin-center.cjs');
-  for (const file of docFiles) assert.ok(publisher.files.includes(`docs/${file}`));
+  const { piFiles } = require('../scripts/build-distributions.cjs');
+  for (const file of docFiles) assert.ok(piFiles.includes(`docs/${file}`));
   assert.ok(fs.readFileSync(path.join(root, 'plugin/README.md'), 'utf8').startsWith(marker));
   for (const old of ['GIT.md', 'PROJECT.md', 'PUBLISHING.md', 'UI-SOURCES.md'])
     assert.equal(fs.existsSync(path.join(root, 'plugin', old)), false);
@@ -160,9 +160,9 @@ test('documentation generation rejects dangling output links without creating th
 });
 test('marketplace package entry is main.js and forwards the unchanged runtime exports', () => {
   const manifest = require('../plugin/manifest.json');
-  const publisher = require('../scripts/plugin-center.cjs');
-  assert.equal(manifest.main, 'main.js', 'Marketplace requires exactly main.js');
-  assert.ok(publisher.files.includes('main.js'), 'Entry must be in the exact-SHA payload');
+  const { piFiles } = require('../scripts/build-distributions.cjs');
+  assert.equal(manifest.main, 'main.js', 'PI requires exactly main.js');
+  assert.ok(piFiles.includes('main.js'), 'Entry must be in the exact-source official package');
   assert.strictEqual(require('../plugin/main.js'), require('../plugin/runtime/main.js'));
 });
 test('generated entry is deterministic and refuses hand-written or dangling linked files', (t) => {

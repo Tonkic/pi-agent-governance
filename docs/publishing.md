@@ -32,7 +32,7 @@ npm pack 不包含 package-lock.json，因此包内使用由根 package-lock 派
 
 1. 校验 SHA256SUMS，解压到可信本地目录。需要 Node.js 22+、Git。
 2. 在解压后的 package 目录执行 `npm ci --omit=dev --ignore-scripts`。
-3. 使用 `node build/mcp/server.js` 启动 stdio MCP，按 `mcp/clients/` 示例配置，替换绝对路径；不要把凭据写入配置。
+3. 使用 `node build/mcp/server.js --workspace D:/projects/example` 启动stdio MCP。按 `mcp/clients/` 示例替换node/server/项目的绝对路径；项目须已存在，不自动初始化，不把凭据写入配置。
 4. 按客户端支持的 Skill 位置选择复制 `plugin/skills/architecture-copilot/`。Skill 不授予代码变更或自动确认基线权限。
 
 MCP 使用与现有插件相同的共享治理核心；数据、修订/锁和显式写入/Git边界不变。只在可信仓库使用；提示词和路径检查不是操作系统沙箱。客户端配置与协议用法见仓库 `docs/mcp.md`。

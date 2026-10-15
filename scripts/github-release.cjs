@@ -69,7 +69,14 @@ async function publishRelease({ tag, version, sourceRef, files, request, markAtt
   const comparison = await get(`${api}/compare/${sourceRef}...main`);
   if (!['ahead', 'identical'].includes(comparison.status) || comparison.merge_base_commit?.sha !== sourceRef) fail('Release source must be on main ancestry');
   const existing = await request('GET', `${api}/releases/tags/${tag}`);
-  if (existing.status === 200) fail('Release already exists (including partial); never overwrite or retry uploads');
+  if (existing.status === 200) {
+    const release = existing.data;
+    if (!Number.isSafeInteger(release?.id) || release.id <= 0 || release.tag_name !== tag || release.target_commitish !== sourceRef || release.draft !== false || release.prerelease !== false || !Array.isArray(release.assets) || release.assets.length !== files.length || new Set(release.assets.map(a => a.name)).size !== files.length || files.some(file => {
+      const asset = release.assets.find(a => a.name === file.name);
+      return !asset || asset.state !== 'uploaded' || asset.size !== file.bytes.length || asset.digest !== `sha256:${sha256(file.bytes)}`;
+    })) fail('Existing release is partial or unverifiable; inspect remotely; never overwrite or retry uploads');
+    return { published: false, reason: 'existing-verified-release', tag, sourceRef, releaseId: release.id };
+  }
   if (existing.status !== 404) fail('Release status unknown; no mutation');
   // Persist locally BEFORE the first mutation. Rerun attempts are separately refused by CLI.
   await markAttempt();

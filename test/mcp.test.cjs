@@ -151,12 +151,24 @@ test('MCP source fingerprints and design draft identity remain separate shared-c
 
 test('real downloadable MCP target installs production-only lock and serves tools without repository or host dependencies', { timeout: 120000 }, async t => {
   const { execFileSync } = require('node:child_process');
-  const { buildDistributions } = require('../scripts/build-distributions.cjs');
+  const { buildDistributions, sharedModules, skillFiles } = require('../scripts/build-distributions.cjs');
   const { safeFile } = require('../scripts/release-safety.cjs');
-  const built = buildDistributions({ root: repo, targets: ['mcp-skills'] });
+  const buildRoot = await fs.mkdtemp(path.join(process.env.PI_SCRATCH_DIR || os.tmpdir(), 'mcp-source-'));
+  t.after(() => fs.rm(buildRoot, { recursive: true, force: true }));
+  for (const file of ['package.json', 'package-lock.json', 'build/mcp/server.js', ...sharedModules.map(n => `build/plugin/${n}.js`), ...skillFiles.map(n => `plugin/skills/architecture-copilot/${n}`), ...['codex.toml', 'claude-code.json', 'pi.json'].map(n => `mcp/clients/${n}`)]) {
+    const dest = safeFile(buildRoot, file);
+    await fs.mkdir(path.dirname(dest), { recursive: true });
+    await fs.copyFile(path.join(repo, file), dest);
+  }
+  await fs.writeFile(path.join(buildRoot, '.gitignore'), 'build/distributions/\nbuild/distribution-stage-*/\nnode_modules/\n');
+  const git = (...args) => execFileSync('git', args, { cwd: buildRoot, stdio: 'pipe' });
+  git('init', '--initial-branch=main'); git('add', '--', '.');
+  git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', '-c', 'core.hooksPath=', '-c', 'commit.gpgsign=false', 'commit', '-m', 'exact compiled MCP fixture');
+  const built = buildDistributions({ root: buildRoot, targets: ['mcp-skills'] });
   const unpack = await fs.mkdtemp(path.join(process.env.PI_SCRATCH_DIR || os.tmpdir(), 'mcp-installed-'));
-  t.after(() => fs.rm(unpack, { recursive: true, force: true }));
-  const tar = require('node:zlib').gunzipSync(await fs.readFile(path.join(repo, 'build/distributions', built.assets[0].name)));
+  let installedClient;
+  t.after(async () => { await installedClient?.close(); await fs.rm(unpack, { recursive: true, force: true }); });
+  const tar = require('node:zlib').gunzipSync(await fs.readFile(path.join(buildRoot, 'build/distributions', built.assets[0].name)));
   const names = [];
   for (let offset = 0; offset + 512 <= tar.length && tar[offset];) {
     const header = tar.subarray(offset, offset + 512);
@@ -177,6 +189,7 @@ test('real downloadable MCP target installs production-only lock and serves tool
   await assert.rejects(fs.stat(path.join(unpack, 'node_modules/playwright')));
   await assert.rejects(fs.stat(path.join(unpack, 'node_modules/typescript')));
   const f = await fixture(t, path.join(unpack, 'build/mcp/server.js'), unpack);
+  installedClient = f.client;
   assert.equal((await f.client.listTools()).tools[0].name, 'governance');
   assert.equal((await f.client.listResources()).resources.length, 12);
   assert.deepEqual(await fs.readdir(f.root), []);

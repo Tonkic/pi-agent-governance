@@ -105,3 +105,12 @@
 - 检查：实际prompt/Skill边界red→green，删除记录后读取不创建/新任务可启动；最终干净npm ci/typecheck/build、141测试、Edge95图及原10行为场景通过，i18n0失败/2既有提示。
 - 包：官方检查/打包60文件709624字节SHA1573768cd1b169d70adb2b2a797b798ee7520dc0bc5400e10e80c1a2a06628f7，条目/权限核对；不自动安装或运行付费模型，不宣称模型必然遵从提示词。
 - 交付：新授权删除旧记录后b11a5d0解除dirty阻塞，受管bd40da3提交后141测试/95图/10场景及git_verify通过，来源同步成功；main4cdcd91集成重测/普通推送与远端SHA核对通过。本项done，原真实宿主等总体检查保留；不伪造此前串行阶段受管验证。
+
+## 0.7.8 — MCP/Skills 与主版本GitHub发布
+
+- 增：显式绝对工作区绑定的stdio MCP，复用同一schema/核心/锁/指纹；固定Skill资源和分析/设计提示，附Codex、Claude Code、Pi配置示例。
+- 改：命名目标构建通用MCP/Skills tgz与校验官方PI包；Actions仅稳定vN.0.0（N≥1）创建一次GitHub Release，取代自动市场流程，不npm发布/安装/建标签。
+- 删：旧市场发布器及未使用压缩依赖；保留市场追溯与凭据，不读凭据、不改历史。唯一Skill正文仍在plugin/skills/architecture-copilot。
+- 检查：真实SDK与生产依赖解包安装、完整151测试、95图浏览器及10行为场景通过；i18n 0失败/2既有提示；官方PluginCheck/Pack 61文件/713439字节。
+- 坑：npm pack排除package-lock，派生npm-shrinkwrap锁支持npm ci；Windows先关闭MCP进程再删除其cwd。完整既有Release核对源码/附件摘要后零写入跳过，部分/未知结果停止，无写入重试。
+- 边界：当前仍0.7.8；未运行远端Release Action、真实发布、各CLI端到端会话或本机安装。源码提交/集成重测与GitHub同步结果记录在本次检查说明。

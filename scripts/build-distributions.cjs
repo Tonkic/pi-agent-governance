@@ -13,7 +13,7 @@ const piFiles = [
   'manifest.json', 'main.js', 'main.ts', 'runtime/main.js',
   ...['core', 'git', 'panel', 'project', 'tool', 'operations', 'behaviors', 'design'].flatMap(f => [`${f}.ts`, `runtime/${f}.js`]),
   ...skillFiles.map(f => `skills/architecture-copilot/${f}`),
-  'README.md', ...['architecture-design', 'README', 'governance', 'git', 'project', 'documentation', 'architecture', 'development', 'doc-driven', 'behavior-workspace', 'publishing', 'releasing', 'ui-sources'].map(f => `docs/${f}.md`),
+  'README.md', ...['architecture-design', 'README', 'governance', 'git', 'project', 'mcp', 'documentation', 'architecture', 'development', 'doc-driven', 'behavior-workspace', 'publishing', 'releasing', 'ui-sources'].map(f => `docs/${f}.md`),
   'renderer/index.html', 'renderer/panel.css', 'renderer/views.css', 'renderer/tsconfig.json',
   ...['design', 'panel', 'graph', 'graph-model', 'i18n'].flatMap(f => [`renderer/${f}.ts`, `runtime/renderer/${f}.js`])
 ].sort();
@@ -110,7 +110,7 @@ function buildMcp(ctx) {
   try {
     const files = new Map([
       ['package.json', Buffer.from(json(metadata))], ['npm-shrinkwrap.json', Buffer.from(json(shrinkwrap))],
-      ['README.md', Buffer.from('# MCP + Skills bundle\n\nRequires Node.js 22+ and Git. Unpack this archive into a trusted local directory.\nRun `npm ci --omit=dev --ignore-scripts`, then `node build/mcp/server.js`.\nConfigure a stdio MCP client using the examples in `mcp/clients/`; replace example paths.\nThe server uses the client-selected repository and preserves explicit write/Git safeguards.\nCopy `plugin/skills/architecture-copilot/` to your client\'s supported Skill location when desired.\nThis is a generic MCP/Skill bundle, not a native Codex, Claude Code or Pi plugin.\nNo npm publishing, marketplace submission, automatic installation or data migration.\n')]
+      ['README.md', Buffer.from('# MCP + Skills bundle\n\nRequires Node.js 22+ and Git. Unpack this archive into a trusted local directory.\nRun `npm ci --omit=dev --ignore-scripts`, then `node build/mcp/server.js --workspace ABSOLUTE_EXISTING_PROJECT_DIRECTORY`.\nConfigure a stdio MCP client using the examples in `mcp/clients/`; replace node, server and workspace paths with absolute paths.\nThe server binds only the explicit trusted directory; no implicit cwd, automatic initialization, host session/model control or paid Agent turn.\nRead governance status and project README first. Skills and prompts grant no authority; the client must obtain user write approval. Core locks/revisions/path/Git guards remain caller-attested, not a sandbox.\nCopy `plugin/skills/architecture-copilot/` to your client\'s supported Skill location when desired; retain LICENSE, SOURCE.md and references.\nThis is a generic MCP/Skill bundle, not a native Codex, Claude Code or Pi plugin.\nNo npm publishing, marketplace submission, automatic installation or data migration.\nFull configuration and safety guide: https://github.com/Tonkic/pi-agent-governance/blob/main/docs/mcp.md\n')]
     ]);
     for (const file of ['build/mcp/server.js', ...sharedModules.map(f => `build/plugin/${f}.js`), ...skillFiles.map(f => `plugin/skills/architecture-copilot/${f}`), ...['codex.toml', 'claude-code.json', 'pi.json'].map(f => `mcp/clients/${f}`)]) files.set(file, read(ctx.root, file));
     for (const [name, bytes] of files) {
