@@ -1,6 +1,6 @@
 {
   "enabled": true,
-  "rule": "stable-major-tag-only",
+  "rule": "stable-major-minor-tag-only",
   "repository": "Tonkic/pi-agent-governance",
   "targets": ["mcp-skills", "pi-desktop"],
   "allowSupersede": false,
