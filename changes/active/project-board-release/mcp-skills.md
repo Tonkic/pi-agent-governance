@@ -4,7 +4,7 @@
 
 ## 已实际检查
 
-- 干净npm ci、typecheck/build成功；集成npm test **151/151**，无跳过。
+- 干净npm ci、typecheck/build成功；初始集成151测试通过，补齐CI依赖顺序回归后本地与远端均 **152/152**，无跳过。
 - 真实SDK子进程完成握手、schema/参数校验、工作区绑定、无自动初始化、并发锁/过期修订、来源指纹、草案ID、Skill资源/提示、路径穿越、畸形/超限输入及EOF检查。
 - 实际通用tgz解压后使用npm-shrinkwrap进行 `npm ci --omit=dev --ignore-scripts --offline`，无开发TypeScript/Playwright依赖，独立MCP启动与工具/资源/初始化/状态成功。
 - Edge模拟宿主浏览器回归通过，保存95张视口截图；原有10行为场景通过。i18n 0失败、2项既有提示。
@@ -14,10 +14,13 @@
 
 ## 交付检查
 
-受管源码 `464bcda32f077309fe2c04a1c087d04439780e60` 提交后干净安装/类型/151测试/95图/10场景与两目标构建通过，git_verify已登记。main `9de2b6a595ed3aa0760eb54bb94075fc2955e239` 集成后同套检查重跑通过，正常推送并用ls-remote核对一致。MCP包70713字节，SHA256 `051dedf2371265f6e86499b7f339767cf0ee0e61d2a2fa57825c83b193ff63d5`；PI包原字节不变。发布计划返回publish:false、mutation:false。远端Tests运行38779107707已只读观察到in_progress，尚不声称远端成功。
+- 初始受管源码464bcda经提交后全套检查与git_verify，main9de2b6a集成重测/普通推送并核对远端SHA。MCP包70713字节，SHA256 `051dedf2371265f6e86499b7f339767cf0ee0e61d2a2fa57825c83b193ff63d5`；PI包原字节不变。两目标及发布计划publish:false/mutation:false通过。
+- 真实CI38779107707发现Chromium安装晚于行为检查，顺序回归red→green；受管修复b32ff20。CI38780981726的Ubuntu全通过，Windows13个Git夹具因TEMP别名失败；本地别名目录复现13失败，夹具realpath后13通过，不改产品根目录门禁；受管修复ddff7a1提交后152测试通过。
+- main `45a2f871682c3fd28b384d28125a8b811bb50830` 集成重测152通过、正常推送并核对SHA。[真实Tests运行38782258411](https://github.com/Tonkic/pi-agent-governance/actions/runs/38782258411) 已观察到success：Ubuntu与Windows的npm ci、类型、构建、生成物diff、152测试、Chromium安装、行为与浏览器检查全部通过。
+- 后续记录提交仅更新STATE、看板和本页/Notes，不改变实现、权限或官方PI包。宿主外部阻塞保留。
 
 ## 未验证与限制
 
-没有创建发布标签或真实GitHub Release；远端Action结果须实际观察才可声称通过。三个CLI目前提供配置示例，未进行其真实模型会话端到端测试。没有自动安装或绕过PI宿主权限。
+没有创建发布标签或真实GitHub Release；上述远端成功仅指Tests工作流，不是Release发布job实发。三个CLI目前提供配置示例，未进行其真实模型会话端到端测试。没有自动安装或绕过PI宿主权限。
 
 内置Browser前台目视、真实已安装宿主完整交互、换行指纹/一次启动接续等原总体阻塞保留。模拟测试/截图保存不是手工目视或真实宿主证据；总体STATE继续working。

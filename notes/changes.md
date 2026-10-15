@@ -111,6 +111,6 @@
 - 增：显式绝对工作区绑定的stdio MCP，复用同一schema/核心/锁/指纹；固定Skill资源和分析/设计提示，附Codex、Claude Code、Pi配置示例。
 - 改：命名目标构建通用MCP/Skills tgz与校验官方PI包；Actions仅稳定vN.0.0（N≥1）创建一次GitHub Release，取代自动市场流程，不npm发布/安装/建标签。
 - 删：旧市场发布器及未使用压缩依赖；保留市场追溯与凭据，不读凭据、不改历史。唯一Skill正文仍在plugin/skills/architecture-copilot。
-- 检查：真实SDK与生产依赖解包安装、完整151测试、95图浏览器及10行为场景通过；i18n 0失败/2既有提示；官方PluginCheck/Pack 61文件/713439字节。
-- 坑：npm pack排除package-lock，派生npm-shrinkwrap锁支持npm ci；Windows先关闭MCP进程再删除其cwd。完整既有Release核对源码/附件摘要后零写入跳过，部分/未知结果停止，无写入重试。
-- 边界：当前仍0.7.8；未运行远端Release Action、真实发布、各CLI端到端会话或本机安装。源码提交/集成重测与GitHub同步结果记录在本次检查说明。
+- 检查：真实SDK与生产依赖解包安装、完整152测试、95图浏览器及10行为场景通过；i18n 0失败/2既有提示；官方PluginCheck/Pack 61文件/713439字节。main45a2f87的真实Linux/Windows CI运行38782258411全部通过。
+- 坑：npm pack用派生npm-shrinkwrap锁；Windows先关MCP再删cwd。真实CI发现Chromium安装顺序和TEMP别名夹具问题，均本地复现red→green；仅规范化可信测试目录，不放宽产品根目录检查。完整既有Release核对摘要后零写入跳过，部分/未知结果停止。
+- 交付：受管464bcda及CI修复b32ff20/ddff7a1实际验证后集成main、重测/普通推送并核对SHA。当前0.7.8，未建标签、实发Release、各CLI模型会话或本机安装；原总体宿主阻塞保留。
