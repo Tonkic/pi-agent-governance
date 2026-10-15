@@ -8,25 +8,34 @@ const { decision, validatePolicy, validateSource, containsCredential, refreshGen
 const { publishRelease, transport } = require('../scripts/github-release.cjs');
 const policy = require('../scripts/release-policy.json');
 const sha = 'a'.repeat(40), repository = 'Tonkic/pi-agent-governance';
-test('only exact stable vN.0.0 tags N>=1 qualify; 0.x/minor/patch/prerelease never publish', () => {
+test('only exact stable vX.Y.0 tags X>=1 qualify; 0.x/patch/prerelease/build/leading zeros never publish', () => {
   validatePolicy(policy);
-  for (const version of ['1.0.0', '2.0.0', '10.0.0']) assert.equal(decision(`v${version}`, version).publish, true);
-  for (const tag of [undefined, '', 'main', '1.0.0', 'v0.7.8', 'v0.0.0', 'v1.1.0', 'v1.0.1', 'v1.0.0-rc.1', 'v1.0.0+build', 'v01.0.0', 'v1.0.0\n', 'v-1.0.0']) assert.equal(decision(tag, '0.7.8').publish, false);
-  assert.throws(() => decision('v1.0.0', '0.7.8'), /mismatch/);
-  for (const [key, value] of [['enabled', false], ['rule', 'stable-major-or-minor'], ['allowSupersede', true], ['npmPublish', true], ['marketplacePublish', true], ['createTags', true], ['repository', 'other/repo']]) assert.throws(() => validatePolicy({ ...policy, [key]: value }), /approval/);
+  assert.equal(policy.rule, 'stable-major-minor-tag-only');
+  for (const version of ['1.0.0', '1.1.0', '1.2.0', '2.0.0', '10.20.0']) {
+    assert.equal(decision(`v${version}`, version).publish, true);
+    assert.throws(() => decision(`v${version}`, '0.7.8'), /mismatch/);
+  }
+  for (const tag of [undefined, '', 'main', '1.1.0', 'v0.7.8', 'v0.0.0', 'v0.1.0', 'v1.0.1', 'v1.2.1', 'v1.0.0-rc.1', 'v1.2.0-rc.1', 'v1.0.0+build', 'v1.2.0+build', 'v01.0.0', 'v1.01.0', 'v1.1.00', 'v1.1.0\n', 'v1.1.0\r\n', 'v-1.0.0']) assert.equal(decision(tag, '0.7.8').publish, false);
+  assert.throws(() => decision('v1.1.0', '1.2.0'), /mismatch/);
+  for (const [key, value] of [['enabled', false], ['rule', 'stable-major-tag-only'], ['allowSupersede', true], ['npmPublish', true], ['marketplacePublish', true], ['autoInstall', true], ['createTags', true], ['repository', 'other/repo']]) assert.throws(() => validatePolicy({ ...policy, [key]: value }), /approval/);
 });
 test('immutable full SHA tag must be on main ancestry; no implicit tag creation', () => {
   assert.throws(() => fullSha('main')); assert.throws(() => fullSha('a'.repeat(39)));
-  const calls = [], git = (...args) => { calls.push(args); return sha; };
-  validateSource('.', sha, 'v1.0.0', git);
-  assert.deepEqual(calls, [['rev-parse', 'refs/tags/v1.0.0^{commit}'], ['merge-base', '--is-ancestor', sha, 'refs/remotes/origin/main']]);
-  assert.throws(() => validateSource('.', sha, 'v1.0.0', () => 'b'.repeat(40)), /mismatch/);
-  assert.throws(() => validateSource('.', sha, 'v0.7.8', git));
-  assert.throws(() => validateSource('.', sha, 'v1.0.0', (...args) => { if (args[0] === 'merge-base') throw Error('not ancestor'); return sha; }), /ancestor/);
+  for (const tag of ['v1.0.0', 'v1.1.0', 'v1.2.0', 'v2.0.0']) {
+    const calls = [], git = (...args) => { calls.push(args); return sha; };
+    validateSource('.', sha, tag, git);
+    assert.deepEqual(calls, [['rev-parse', `refs/tags/${tag}^{commit}`], ['merge-base', '--is-ancestor', sha, 'refs/remotes/origin/main']]);
+    assert.throws(() => validateSource('.', sha, tag, () => 'b'.repeat(40)), /mismatch/);
+    assert.throws(() => validateSource('.', sha, tag, (...args) => { if (args[0] === 'merge-base') throw Error('not ancestor'); return sha; }), /ancestor/);
+  }
+  for (const tag of ['v0.1.0', 'v1.1.1', 'v1.1.0-rc.1', 'v1.1.0+build', 'v01.1.0', 'v1.01.0', 'v1.1.00', 'v1.1.0\n']) {
+    assert.throws(() => validateSource('.', sha, tag, () => assert.fail('must not reach Git')), /Only stable/);
+  }
 });
 function remote(options = {}) {
-  const calls = [], uploaded = [], files = ['agent-governance-mcp-skills-1.0.0.tgz', 'io.github.tonkic.agent-governance-1.0.0.piplug', 'asset-manifest.json', 'SHA256SUMS'].map(name => ({ name, bytes: Buffer.from('fixture') }));
-  const release = { id: 42, tag_name: 'v1.0.0', target_commitish: sha, draft: false, prerelease: false };
+  const version = options.version || '1.0.0', tag = `v${version}`;
+  const calls = [], uploaded = [], files = [`agent-governance-mcp-skills-${version}.tgz`, `io.github.tonkic.agent-governance-${version}.piplug`, 'asset-manifest.json', 'SHA256SUMS'].map(name => ({ name, bytes: Buffer.from('fixture') }));
+  const release = { id: 42, tag_name: tag, target_commitish: sha, draft: false, prerelease: false };
   const request = async (method, url, body, binary) => {
     calls.push({ method, url, body, binary });
     if (url.includes('/git/ref/')) return options.missingTag ? { status: 404 } : { status: 200, data: { object: { type: options.annotated ? 'tag' : 'commit', sha: options.wrongTag ? 'b'.repeat(40) : sha } } };
@@ -41,20 +50,28 @@ function remote(options = {}) {
     }
     return { status: 200, data: { ...release, assets: uploaded } };
   };
-  return { calls, args: { tag: 'v1.0.0', version: '1.0.0', sourceRef: sha, files, request, markAttempt: async () => { calls.push({ method: 'MARK' }); if (options.markerFail) throw Error('marker failed'); } } };
+  return { calls, args: { tag, version, sourceRef: sha, files, request, markAttempt: async () => { calls.push({ method: 'MARK' }); if (options.markerFail) throw Error('marker failed'); } } };
 }
 test('release creates once and uploads both artifacts plus manifest/checksums; never overwrites/latest supersedes', async () => {
-  const f = remote({ annotated: true });
-  const result = await publishRelease(f.args); assert.equal(result.published, true); assert.equal(result.assets.length, 4);
-  const mutations = f.calls.filter(c => c.method === 'POST'); assert.equal(mutations.length, 5);
-  assert.ok(f.calls.findIndex(c => c.method === 'MARK') < f.calls.findIndex(c => c.method === 'POST'));
-  assert.equal(mutations[0].body.make_latest, 'false'); assert.equal(mutations[0].body.target_commitish, sha);
-  assert.ok(f.calls.every(c => ['GET', 'POST', 'MARK'].includes(c.method)));
+  for (const version of ['1.0.0', '1.1.0', '1.2.0', '2.0.0']) {
+    const f = remote({ annotated: true, version });
+    const result = await publishRelease(f.args); assert.equal(result.published, true); assert.equal(result.assets.length, 4);
+    const mutations = f.calls.filter(c => c.method === 'POST'); assert.equal(mutations.length, 5);
+    assert.ok(f.calls.findIndex(c => c.method === 'MARK') < f.calls.findIndex(c => c.method === 'POST'));
+    assert.equal(mutations[0].body.tag_name, `v${version}`);
+    assert.equal(mutations[0].body.make_latest, 'false'); assert.equal(mutations[0].body.target_commitish, sha);
+    assert.ok(f.calls.every(c => ['GET', 'POST', 'MARK'].includes(c.method)));
+  }
 });
 test('ineligible releases perform zero network calls', async () => {
-  for (const tag of ['v0.7.8', 'v1.1.0', 'v1.0.1', 'v1.0.0-rc.1']) {
+  for (const tag of ['v0.7.8', 'v0.1.0', 'v1.0.1', 'v1.2.1', 'v1.2.0-rc.1', 'v1.2.0+build', 'v01.1.0', 'v1.01.0', 'v1.1.00']) {
     const f = remote(); assert.equal((await publishRelease({ ...f.args, tag })).published, false); assert.deepEqual(f.calls, []);
   }
+});
+test('eligible minor tag with mismatched package version prevents every network call', async () => {
+  const f = remote();
+  await assert.rejects(publishRelease({ ...f.args, tag: 'v1.1.0' }), /mismatch/);
+  assert.deepEqual(f.calls, []);
 });
 test('incomplete or duplicate artifact set prevents all network calls', async () => {
   const f = remote();
@@ -68,11 +85,13 @@ test('source/remote uncertainty/existing partial release and failed marker preve
   }
 });
 test('a complete existing exact-source Release skips safely without attempt marker or any POST', async () => {
-  const f = remote({ completeExisting: true });
-  const result = await publishRelease(f.args);
-  assert.equal(result.published, false);
-  assert.equal(result.reason, 'existing-verified-release');
-  assert.ok(f.calls.every(c => c.method === 'GET'));
+  for (const version of ['1.0.0', '1.1.0', '1.2.0', '2.0.0']) {
+    const f = remote({ completeExisting: true, version });
+    const result = await publishRelease(f.args);
+    assert.equal(result.published, false);
+    assert.equal(result.reason, 'existing-verified-release');
+    assert.ok(f.calls.every(c => c.method === 'GET'));
+  }
 });
 test('an existing Release with missing, duplicate, changed, undigested assets or wrong source remains blocked', async () => {
   for (const mutate of [r => r.assets.pop(), r => { r.assets[1] = r.assets[0]; }, r => { r.assets[0].digest = 'sha256:wrong'; }, r => { delete r.assets[0].digest; }, r => { r.target_commitish = 'main'; }, r => { r.prerelease = true; }]) {

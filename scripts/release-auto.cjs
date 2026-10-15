@@ -5,18 +5,19 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const safety = require('./release-safety.cjs');
 const root = path.resolve(__dirname, '..');
+const stableTagPattern = /^v[1-9]\d*\.(?:0|[1-9]\d*)\.0(?![\s\S])/; // Strict end, including no final newline.
 function decision(tag, version) {
-  const eligible = typeof tag === 'string' && /^v[1-9]\d*\.0\.0$/.test(tag);
+  const eligible = typeof tag === 'string' && stableTagPattern.test(tag);
   if (eligible && tag.slice(1) !== version) throw Error('Tag/package version mismatch');
-  return { publish: eligible, reason: eligible ? 'stable-major-tag' : 'not-stable-major-tag' };
+  return { publish: eligible, reason: eligible ? 'stable-major-minor-tag' : 'not-stable-major-minor-tag' };
 }
 function validatePolicy(policy) {
-  const expected = { enabled: true, rule: 'stable-major-tag-only', repository: safety.repository, targets: ['mcp-skills', 'pi-desktop'], allowSupersede: false, npmPublish: false, marketplacePublish: false, autoInstall: false, createTags: false };
+  const expected = { enabled: true, rule: 'stable-major-minor-tag-only', repository: safety.repository, targets: ['mcp-skills', 'pi-desktop'], allowSupersede: false, npmPublish: false, marketplacePublish: false, autoInstall: false, createTags: false };
   if (JSON.stringify(policy) !== JSON.stringify(expected)) throw Error('Policy changed; renewed human approval required');
 }
 function validateSource(rootDir, sourceRef, tag, runGit = safety.gitAt(rootDir)) {
   safety.fullSha(sourceRef);
-  if (!/^v[1-9]\d*\.0\.0$/.test(tag || '')) throw Error('Only stable major release tags are eligible');
+  if (!stableTagPattern.test(tag || '')) throw Error('Only stable major/minor vX.Y.0 release tags with X>=1 are eligible');
   if (runGit('rev-parse', `refs/tags/${tag}^{commit}`).trim() !== sourceRef) throw Error('Tag/source mismatch');
   runGit('merge-base', '--is-ancestor', sourceRef, 'refs/remotes/origin/main');
 }
