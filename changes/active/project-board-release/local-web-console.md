@@ -19,7 +19,12 @@
 
 ## 交付检查（持续更新本记录）
 
-最终提交后检查、两目标分发/摘要核对、main集成重测及真实Linux/Windows CI待完成；本记录不提前声明成功。
+- 受管最终提交6df5ff5af0ffb53e02e50b67c999a8204af8cf2b实际重装依赖、typecheck/build、156测试、95+7浏览器图和10行为场景通过；git_verify已据实登记，工作区干净。
+- main集成9236ccad9b35edbdd1770864b3bd9c4285938a5a后重复上述完整检查，通过后普通push，ls-remote核对完整SHA一致。
+- main两目标构建通过；通用tgz 125539字节SHA256 7944b2228122265450cfa0b7c423aff9e533a87061ae467847c3d78771983538，PI保持上述官方原字节。readAssets核对两个产物、manifest和SHA256SUMS共4文件通过。
+- main只读发布计划返回publish:false、mutation:false、reason:not-stable-major-minor-tag，符合当前0.7.8；无真实发布调用。
+- [真实Tests CI 38794612011](https://github.com/Tonkic/pi-agent-governance/actions/runs/38794612011)在9236cca成功：Ubuntu 1m48s、Windows 7m41s，两边ci/类型/构建/生成差异/156测试/Chromium/行为/浏览器全部通过。保留Actions运行时弃用和runner镜像迁移提示，不视作失败。
+- 检查日志与CI结果保存在本次session scratch的web-postcommit-*、web-main-*、web-github-ci-*；不把本机证据打入分发包。本项直接done；总体外部阻塞不close。
 
 ## 保留限制
 

@@ -229,18 +229,6 @@
       "gitTaskId": null
     },
     {
-      "id": "local-web-console",
-      "title": "独立本地项目控制台与稳定次版本发布",
-      "description": "复用工作台/核心，127.0.0.1显式项目，网页看板/进度/架构/设计人工确认/行为文档；MCP共享，不启动外部Agent。1.x稳定vX.Y.0主次版本各发一次GitHub。",
-      "blocker": "",
-      "stage": "doing",
-      "taskId": "project-board-release",
-      "criteria": [],
-      "architectureImpact": "affects",
-      "gitTaskId": null,
-      "completedAt": null
-    },
-    {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
       "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
@@ -248,7 +236,19 @@
       "stage": "doing",
       "taskId": "project-board-release",
       "gitTaskId": null
+    },
+    {
+      "id": "local-web-console",
+      "title": "独立本地项目控制台与稳定次版本发布",
+      "description": "独立127.0.0.1项目Web控制台与稳定vX.Y.0主/次版本发布规则完成，MCP共享核心数据，不遥控外部Agent。受管6df5ff5实际提交后验证、main9236cca集成重测及普通推送核对；156测试/95+7浏览器图/10行为场景、官方PI62文件719477字节及通用分发通过。真实Tests CI38794612011 Ubuntu/Windows全成功；当前0.7.8未升版/建标签/实发Release/安装，原总体宿主阻塞保留。",
+      "blocker": "",
+      "stage": "done",
+      "taskId": "project-board-release",
+      "criteria": [],
+      "architectureImpact": "affects",
+      "gitTaskId": null,
+      "completedAt": "2026-10-15T19:41:35.780Z"
     }
   ],
-  "updatedAt": "2026-10-15T19:13:44.938Z"
+  "updatedAt": "2026-10-15T19:41:35.780Z"
 }

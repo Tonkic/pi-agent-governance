@@ -122,4 +122,4 @@
 - 改：1.x起稳定vX.Y.0主/次版本各发布一次GitHub Release，例如1.1.0、1.2.0；0.x/非零补丁/预发布/构建后缀拒绝，既有完整Release只读核对后跳过。
 - 检查：组合156测试、真实HTTP网页7图及原浏览器95图、原10行为场景通过；解包生产依赖安装后真实MCP和Web均通过，一次只读安全复核无具体缺陷。
 - 包：官方PluginCheck/Pack 62文件719477字节SHA b6c89288d3de1fbf6cc0be710336fd17826ca9502ac188dfce03ff06525f8458，版本0.7.8、权限不变；未升版本/建标签/实发Release/npm/市场/安装。
-- 交付：受管源4580844及发布worker d385566已组合；最终提交后检查、main集成及真实CI结果见changes/active/project-board-release/local-web-console.md。人工目视及既有完整宿主阻塞保留。
+- 交付：受管6df5ff5提交后完整检查/git_verify，main9236cca集成重测/普通推送核对，真实Tests CI38794612011的Ubuntu/Windows全部通过。本项done；证据见changes/active/project-board-release/local-web-console.md，人工目视及既有完整宿主阻塞保留。
