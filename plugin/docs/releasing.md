@@ -1,7 +1,7 @@
 <!-- Generated from docs/ by scripts/build-docs.cjs. Do not edit. -->
 # GitHub 交付 / Checked delivery
 
-仅稳定主版本标签 `vN.0.0`（N≥1）自动创建一次 GitHub Release，例如 `v1.0.0`、`v2.0.0`。当前版本仍为 **0.7.8**：0.x、次版本、补丁、预发布和构建后缀不发布。此规则取代旧的主/次版本自动提交 PI 市场规则。
+仅稳定主/次版本标签 `vX.Y.0`（X≥1，Y≥0）各自动创建一次 GitHub Release，例如 `v1.0.0`、`v1.1.0`、`v1.2.0`、`v2.0.0`。当前版本仍为 **0.7.8**：0.x、补丁非0、预发布、构建后缀或版本分量有前导零均不发布；标签必须与 package 版本完全一致。策略为 `stable-major-minor-tag-only`，取代仅主版本 `vN.0.0` 和旧 PI 市场自动提交规则。
 
 No npm publishing, marketplace calls, automatic installation, version bump or tag creation. The user creates an approved release tag separately; automation never invents one. Ordinary build/test does not push or publish.
 
@@ -25,7 +25,7 @@ npm run release:auto -- --plan FULL_SHA
 
 ## Action 合约
 
-- `.github/workflows/release.yml` 只监听标签 push。脚本精确匹配主版本规则；不合格标签不能进入后续 job。
+- `.github/workflows/release.yml` 只监听标签 push。脚本精确匹配上述稳定主/次版本规则；不合格或 package 版本不符的标签不能进入后续 job。
 - 全量 checkout，绑定解析后的提交 SHA；Linux/Windows 干净 npm ci、类型、构建、单元、行为和 Chromium 浏览器检查全部通过才构建产物。
 - 使用 Node 22、锁定的实际运行依赖。浏览器从 Playwright 安装 Chromium；不依赖 Ubuntu 的 Edge。可本地用 `PI_BROWSER` 指定浏览器。
 - `npm run build:distributions` 构建通用 MCP/Skills tgz，核对并复制官方 PI piplug；另产出 `asset-manifest.json`、`SHA256SUMS`，绑定版本、来源 SHA、大小和哈希。缺任一产物即停止。

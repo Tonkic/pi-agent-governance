@@ -34,6 +34,7 @@ npm run test:browser
 | --- | --- |
 | `plugin/*.ts` | 主进程源码 |
 | `mcp/` | stdio协议适配和客户端示例；复用同一核心，不含宿主模型/会话接口 |
+| `web/` | 本地HTTP白名单服务及网页桥接/CSS；复用工作台，不含外部Agent启动 |
 | `plugin/renderer/` | 浏览器 TS、HTML 和 CSS |
 | `plugin/runtime/` | 已提交的运行 JS，供宿主及发布载荷使用 |
 | `plugin/manifest.json`、`plugin/main.js` | 生成清单和市场所需固定入口；main.js只转接runtime/main.js，不手改 |
@@ -59,6 +60,7 @@ npm run test:browser
 | 行为文档与场景证据 | `plugin/behaviors.ts`、`scripts/check-behaviors.cjs` | `test/behaviors.test.cjs`、`npm run check:behaviors` |
 | 构建路径 | `tsconfig.json`、`scripts/build.cjs` | `test/layout.test.cjs` |
 | MCP工具/Skill资源/提示 | `mcp/server.ts`、`plugin/skills/architecture-copilot/` | `test/mcp.test.cjs`、真实SDK协议测试 |
+| 本地浏览器控制台 | `web/server.ts`、`web/bridge.js` | `test/web.test.cjs`、`test/web-browser.cjs`，由test:browser串行执行 |
 | 多目标分发与GitHub发布 | `scripts/build-distributions.cjs`、`scripts/github-release.cjs`、`.github/workflows/` | `test/distributions.test.cjs`、`test/release.test.cjs` |
 
 ## 交付

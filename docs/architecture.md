@@ -29,6 +29,7 @@ CLI → scripts/governance.ts → core.ts
 MCP客户端 → mcp/server.ts → tool.schema校验 → core.ts
 MCP资源/提示、PI Skill → plugin/skills/architecture-copilot/
 面板 → 宿主桥接 → main.ts → panel.ts → core.ts
+浏览器 → web/bridge.js → 127.0.0.1 web/server.ts → panel.ts → core.ts
 面板任务 → main.ts → operations.ts → 宿主 session/agent API
 core.ts → project.ts → .governance/
 core.ts → git.ts → Git common directory
@@ -37,6 +38,8 @@ core.ts → git.ts → Git common directory
 `project.ts` 复用 `core.ts` 提供的锁、状态和文件操作。面板写入使用动作白名单、确认和版本校验；Git 写入及任务关闭使用 Agent 工具或 CLI。
 
 `mcp/server.ts`绑定显式绝对工作区，限制输入缓冲和固定Skill资源；每次调用创建新核心对象，避免共享修订令牌。它不引用PI宿主接口，不自动初始化项目或运行Agent。MCP客户端负责用户确认，核心继续校验修订/锁/路径与受管Git范围。用法与限制见 [MCP](mcp.md)。
+
+`web/server.ts`仅监听loopback，固定工作区、随机会话凭据及Host/Origin检查后分发白名单面板动作；静态资源也用固定清单。复用renderer，不复制状态或Agent实现。独立网页允许人工基线确认，但不提供任意工具、Git写入或宿主会话控制。见 [本地控制台](web-console.md)。
 
 ## 数据位置
 

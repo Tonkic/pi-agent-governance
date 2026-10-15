@@ -151,11 +151,11 @@ test('MCP source fingerprints and design draft identity remain separate shared-c
 
 test('real downloadable MCP target installs production-only lock and serves tools without repository or host dependencies', { timeout: 120000 }, async t => {
   const { execFileSync } = require('node:child_process');
-  const { buildDistributions, sharedModules, skillFiles } = require('../scripts/build-distributions.cjs');
+  const { buildDistributions, sharedModules, skillFiles, consoleFiles } = require('../scripts/build-distributions.cjs');
   const { safeFile } = require('../scripts/release-safety.cjs');
   const buildRoot = await fs.mkdtemp(path.join(process.env.PI_SCRATCH_DIR || os.tmpdir(), 'mcp-source-'));
   t.after(() => fs.rm(buildRoot, { recursive: true, force: true }));
-  for (const file of ['package.json', 'package-lock.json', 'build/mcp/server.js', ...sharedModules.map(n => `build/plugin/${n}.js`), ...skillFiles.map(n => `plugin/skills/architecture-copilot/${n}`), ...['codex.toml', 'claude-code.json', 'pi.json'].map(n => `mcp/clients/${n}`)]) {
+  for (const file of ['package.json', 'package-lock.json', 'build/mcp/server.js', ...consoleFiles, ...sharedModules.map(n => `build/plugin/${n}.js`), ...skillFiles.map(n => `plugin/skills/architecture-copilot/${n}`), ...['codex.toml', 'claude-code.json', 'pi.json'].map(n => `mcp/clients/${n}`)]) {
     const dest = safeFile(buildRoot, file);
     await fs.mkdir(path.dirname(dest), { recursive: true });
     await fs.copyFile(path.join(repo, file), dest);
@@ -196,4 +196,10 @@ test('real downloadable MCP target installs production-only lock and serves tool
   await f.value({ action: 'init' });
   assert.equal((await f.value({ action: 'status' })).status, 'idle');
   assert.equal(f.stderr(), '');
+  const web = await require(path.join(unpack, 'build/web/server.js')).startConsole({ workspace: f.root });
+  try {
+    assert.equal((await fetch(web.origin + '/panel/')).status, 200);
+    const response = await fetch(web.origin + '/api/invoke', { method: 'POST', headers: { Origin: web.origin, 'Content-Type': 'application/json', 'X-Governance-Token': web.url.split('#')[1] }, body: JSON.stringify({ channel: 'governance.snapshot' }) });
+    assert.equal((await response.json()).result.state.status, 'idle');
+  } finally { await web.close(); }
 });

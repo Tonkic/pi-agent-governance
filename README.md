@@ -1,6 +1,6 @@
 # PI Agent Governance
 
-共享治理核心＋本地 MCP＋可移植 Skill，同时保留 PI-Desktop 图形插件。保存任务目标和进度，展示项目看板与源码架构，管理受管 Git 工作区；项目数据保存在仓库文件中。
+共享治理核心＋本地MCP＋可移植Skill，提供独立浏览器控制台并保留PI-Desktop图形插件。保存任务进度、项目看板、源码架构与设计草案；项目数据仍在仓库文件中，各入口共享。
 
 社区 ID：`io.github.tonkic.agent-governance`。仓库版本0.7.8；市场已发布0.7.0。本机安装不会自动升级；权限说明见 [发布说明](notes/release-0.7.0.md)。
 
@@ -10,7 +10,7 @@
 2. 打开项目，在命令面板运行 `Agent Governance: 打开治理面板`。
 3. 明确要开发的功能与检查条件；已有任务先调用 `status`，按 STATE 接续。
 
-使用 Codex、Claude Code 或 Pi：按 [MCP 与 Skill](docs/mcp.md) 配置本地 stdio 服务，绑定显式绝对项目目录。通用包和PI包分目标构建；仅稳定 `vN.0.0`（N≥1）标签由Actions创建一次GitHub Release，0.x/次版本/补丁仅CI，不自动发布npm、提交市场或安装。
+使用Codex、Claude Code或Pi：按 [MCP与Skill](docs/mcp.md) 配置本地stdio服务。也可启动 [本地Web控制台](docs/web-console.md)，浏览器管理同一项目，不依赖PI-Desktop、不从网页启动Agent。通用包和PI包分目标构建；1.x起稳定 `vX.Y.0` 主/次版本各发布一次GitHub Release，0.x/补丁/预发布仅CI，不自动发布npm、提交市场、安装或创建标签。
 
 工作台三栏为待办/进行中/已完成。完成栏只展示近期5项，「查看全部」打开可搜索历史表格，数据不删除；全局搜索仍搜索全部。功能按分层文档实现并测试，通过后完成，没有独立验收。旧历史只读保留，见 [文档开发](docs/doc-driven.md)。
 

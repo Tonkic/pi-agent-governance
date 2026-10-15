@@ -114,3 +114,12 @@
 - 检查：真实SDK与生产依赖解包安装、完整152测试、95图浏览器及10行为场景通过；i18n 0失败/2既有提示；官方PluginCheck/Pack 61文件/713439字节。main45a2f87的真实Linux/Windows CI运行38782258411全部通过。
 - 坑：npm pack用派生npm-shrinkwrap锁；Windows先关MCP再删cwd。真实CI发现Chromium安装顺序和TEMP别名夹具问题，均本地复现red→green；仅规范化可信测试目录，不放宽产品根目录检查。完整既有Release核对摘要后零写入跳过，部分/未知结果停止。
 - 交付：受管464bcda及CI修复b32ff20/ddff7a1实际验证后集成main、重测/普通推送并核对SHA。当前0.7.8，未建标签、实发Release、各CLI模型会话或本机安装；原总体宿主阻塞保留。
+
+## 0.7.8 — 独立本地控制台与稳定次版本发布
+
+- 增：127.0.0.1显式项目Web入口，复用工作台/核心/确认/修订；看板、进度、架构、设计人工审阅及文档状态，MCP客户端共享同一文件，不遥控外部Agent/模型。
+- 保：随机启动凭据、精确Host/Origin/JSON、固定API/资源白名单和容量/连接/时间预算；不公网、不任意命令/Git写入、不自动初始化或打开浏览器。
+- 改：1.x起稳定vX.Y.0主/次版本各发布一次GitHub Release，例如1.1.0、1.2.0；0.x/非零补丁/预发布/构建后缀拒绝，既有完整Release只读核对后跳过。
+- 检查：组合156测试、真实HTTP网页7图及原浏览器95图、原10行为场景通过；解包生产依赖安装后真实MCP和Web均通过，一次只读安全复核无具体缺陷。
+- 包：官方PluginCheck/Pack 62文件719477字节SHA b6c89288d3de1fbf6cc0be710336fd17826ca9502ac188dfce03ff06525f8458，版本0.7.8、权限不变；未升版本/建标签/实发Release/npm/市场/安装。
+- 交付：受管源4580844及发布worker d385566已组合；最终提交后检查、main集成及真实CI结果见changes/active/project-board-release/local-web-console.md。人工目视及既有完整宿主阻塞保留。

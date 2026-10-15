@@ -38,7 +38,7 @@ node build/mcp/server.js --workspace D:/projects/example
 - `prompts/list` 提供 `architecture-analysis` 与 `architecture-design`，直接嵌入同一份Skill正文。取提示不运行Agent，不产生付费模型请求，也不授予写入权限。
 - 如需客户端原生Skill发现，可手动把包中 `plugin/skills/architecture-copilot/` 完整目录放入该客户端支持的Skill目录；与开发源路径相同。保留LICENSE、SOURCE.md和references，不复制旧提示词作为第二来源。
 
-源码分析与设计方案严格分开。MCP可在明确授权下创建/保存设计草案，但不提供基线确认、宿主模型选择、会话启动/中止或窗口接口；基线确认仍由PI面板人工进行。普通功能开发不强制架构设计或单独验收。
+源码分析与设计方案严格分开。MCP可在明确授权下创建/保存草案，不提供基线确认、宿主模型或会话/窗口控制。基线由PI面板或 [本地Web控制台](web-console.md) 人工审阅确认；网页与MCP绑定同一项目并手动刷新。普通功能不强制架构设计或单独验收。
 
 ## 安全与排错
 
