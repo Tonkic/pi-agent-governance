@@ -47,7 +47,7 @@ ASCII方框用稳定模块ID对应画板节点，方向箭头与关系标签对�
 
 独立数据保存在 `.governance/architecture-design.json`，包含当前草案和追加的确认历史。读取缺省项目不创建文件；损坏记录保留并报错，不能覆盖“恢复默认”。
 
-Agent工具只开放 `architecture_design_snapshot`、`architecture_design_begin`、`architecture_design_save`；Skill要求面板或CLI已明确发起草案后才保存。写入使用设计快照expectedRevision，保存另须携带本次会话绑定expectedDraft（draftId）。确认和放弃只在需确认的governance.design面板白名单提供，不注册Agent确认动作。MCP配置和模式提示见 [MCP与Skill](mcp.md)。
+Agent工具只开放 `architecture_design_snapshot`、`architecture_design_begin`、`architecture_design_save`；Skill要求明确发起草案后才保存，携带设计快照expectedRevision及绑定expectedDraft。确认和放弃仅由PI面板或 [本地Web控制台](web-console.md) 的人工确认白名单提供，不注册Agent/MCP确认动作。配置见 [MCP与Skill](mcp.md)。
 
 proposal包含title、可读document、nodes和edges；每节点id/title/description/files，关系from/to/label。通常3–5个核心职责，一张图一个层级，箭头说明实际设计含义。files可为空，不要求未来代码已经存在，不代表源码验证。
 
