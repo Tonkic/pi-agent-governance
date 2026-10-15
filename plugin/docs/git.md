@@ -38,6 +38,8 @@ allowedPaths 只允许准确相对文件名或以 `/` 结尾的目录前缀，�
 
 审查返回的 patch（相对任务基准）、workingPatch（相对 HEAD）、stagedPatch（暂存区）、status、files 和 untracked；新增文件内容须在该 worktree 另行读取，二进制文件须单独检查。变更范围包括相对任务基准的净变化、本次已暂存/未暂存变化及未跟踪文件；不按历史逐个提交审查。
 
+二进制差异显示摘要和完整Git blob ID，不嵌入大块编码载荷；快照仍绑定暂存对象与工作区内容哈希，暂存内容变化会使审查失效。包、图片等须单独核对；命令输出仍限制4MiB，不因批量删除旧包而提高限制。
+
 ```json
 {"action":"git_commit","id":"feature-x-worker","expectedDiff":"刚审查的snapshot","message":"feat: implement module a"}
 ```

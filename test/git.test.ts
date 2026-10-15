@@ -142,3 +142,43 @@ test('diff exposes a pending revert even when the net task patch is empty', asyn
   assert.equal(d.patch, ''); assert.match(d.workingPatch, /-changed/); assert.match(d.stagedPatch, /\+base/);
   await commit(p);
 });
+
+test('large binary deletions use bounded summaries and retain full staged object identity', async t => {
+  const { root, g, create } = await fixture(t);
+  const bytes = require('node:crypto').randomBytes(4 * 1024 * 1024);
+  bytes[0] = 0;
+  await fs.writeFile(path.join(root, 'artifact.bin'), bytes);
+  await g.git(root, ['add', 'artifact.bin']);
+  await g.git(root, ['commit', '-m', 'binary fixture']);
+  const base = await g.head(root);
+  const oid = (await g.git(root, ['rev-parse', base + ':artifact.bin'])).trim();
+  const task = await create('binary-delete', { expectedHead: base, allowedPaths: ['artifact.bin'] });
+  await g.git(task.worktree, ['rm', 'artifact.bin']);
+  const d = await g.run({ action: 'git_diff', id: task.id });
+  assert.deepEqual(d.files, ['artifact.bin']);
+  assert.match(d.stagedPatch, /Binary files/);
+  assert.ok(d.stagedPatch.includes(oid));
+  assert.doesNotMatch(d.stagedPatch, /GIT binary patch/);
+  assert.ok(d.stagedPatch.length < 2000);
+  await g.run({ action: 'git_commit', id: task.id, expectedDiff: d.snapshot, message: 'remove old binary' });
+  await assert.rejects(fs.stat(path.join(task.worktree, 'artifact.bin')), { code: 'ENOENT' });
+});
+
+test('binary staged content changes invalidate a reviewed snapshot even with identical working bytes', async t => {
+  const { g, create } = await fixture(t);
+  const task = await create('binary-stale', { allowedPaths: ['artifact.bin'] });
+  const file = path.join(task.worktree, 'artifact.bin');
+  const a = Buffer.from([0, 1, 2]), b = Buffer.from([0, 3, 4]);
+  await fs.writeFile(file, a);
+  await g.git(task.worktree, ['add', 'artifact.bin']);
+  const before = await g.run({ action: 'git_diff', id: task.id });
+  await fs.writeFile(file, b);
+  await g.git(task.worktree, ['add', 'artifact.bin']);
+  await fs.writeFile(file, a);
+  const after = await g.run({ action: 'git_diff', id: task.id });
+  assert.notEqual(after.snapshot, before.snapshot);
+  const stagedOid = (await g.git(task.worktree, ['rev-parse', ':artifact.bin'])).trim();
+  assert.ok(after.stagedPatch.includes(stagedOid));
+  assert.doesNotMatch(after.stagedPatch, /GIT binary patch/);
+  await assert.rejects(g.run({ action: 'git_commit', id: task.id, expectedDiff: before.snapshot, message: 'stale' }), /Diff changed/);
+});

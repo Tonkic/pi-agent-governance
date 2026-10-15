@@ -201,6 +201,22 @@
       "gitTaskId": null
     },
     {
+      "id": "architecture-skill-default",
+      "title": "默认Architecture Copilot与废弃内容清理",
+      "description": "默认Skill双模式及27旧包/两条旧操作记录清理已实施；引用核查未发现额外废弃源码，当前文档更新。干净141测试/95图/10行为场景和官方0.7.8包通过；dirty阻塞已获新授权删除记录解决，受管clean-code-prune待提交后验证/来源同步/main交付。 批量二进制差异及已暂存删除提交两个实际问题已red→green修复，安全边界保留。",
+      "blocker": "",
+      "stage": "doing",
+      "taskId": "project-board-release",
+      "criteria": [
+        "分析入口实际prompt默认加载Skill且无旧提示词回退",
+        "现状与设计边界/既有安全回归通过",
+        "干净包检查、提交后验证及GitHub/main交付"
+      ],
+      "architectureImpact": "none",
+      "gitTaskId": null,
+      "completedAt": null
+    },
+    {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
       "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
@@ -210,5 +226,5 @@
       "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-13T12:44:27.313Z"
+  "updatedAt": "2026-10-15T10:22:10.701Z"
 }

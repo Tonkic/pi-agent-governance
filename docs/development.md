@@ -36,11 +36,11 @@ npm run test:browser
 | `plugin/runtime/` | 已提交的运行 JS，供宿主及发布载荷使用 |
 | `plugin/manifest.json`、`plugin/main.js` | 生成清单和市场所需固定入口；main.js只转接runtime/main.js，不手改 |
 | `plugin/README.md`、`plugin/docs/` | 从 `docs/` 生成并提交的安装包说明，不手改 |
-| `plugin/dist/` | 安装包，保留历史版本 |
+| `plugin/dist/` | 只保留当前可用安装包；旧版本按需从对应Git提交取回 |
 | `scripts/`、`test/` | 工具与测试源码；`.cjs` 为手写文件 |
 | `build/` | Git 忽略的编译中间文件、CLI 和测试 JS |
 
-本机宿主目标 `/.pi/` 与既有 `/changes/archive/redesign-governance-panel/` 经用户批准由 Git 忽略；文件保留，不纳入源码提交。其他历史验收与安装包不因此删除。
+本机宿主目标 `/.pi/` 与既有 `/changes/archive/redesign-governance-panel/` 经用户批准由Git忽略，文件不纳入源码提交。历史证据与有效项目数据保留；经明确批准可清理旧包、旧操作记录和确认无引用的废弃内容，不以忽略规则代替清理或放宽dirty门禁。
 
 `build.cjs` 清理 `build/`、`plugin/runtime/`；`build-docs.cjs` 和 `build-entry.cjs` 只替换带生成标记的说明/入口，拒绝链接或未知手写文件。不要在生成目录放手写内容。构建不防恶意并发修改，运行期间保持目录可信、独占。
 
