@@ -142,3 +142,12 @@ test('workflow gates both artifacts behind matrix checks and isolates write perm
   for (const command of ['npm ci', 'npm run typecheck', 'npm test', 'npm run check:behaviors', 'npm run test:browser', 'npm run build:distributions', 'node scripts/github-release.cjs']) assert.ok(source.includes(command));
   assert.doesNotMatch(source, /npm publish|submit_version|workflow_dispatch|--force/);
 });
+test('CI and release install Chromium before behavior checks that launch the browser', () => {
+  for (const name of ['test.yml', 'release.yml']) {
+    const workflow = fs.readFileSync(path.join(__dirname, '../.github/workflows', name), 'utf8');
+    const install = workflow.indexOf('npx --no-install playwright install --with-deps chromium');
+    for (const command of ['npm run check:behaviors', 'npm run test:browser']) {
+      assert.ok(install >= 0 && install < workflow.indexOf(command), `${name}: install Chromium before ${command}`);
+    }
+  }
+});
