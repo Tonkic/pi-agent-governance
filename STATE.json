@@ -44,10 +44,10 @@
     "2026-10-15用户明确批准Clean Code清理：删除已无用的旧操作记录、旧安装包、旧提示词和核实无引用的废弃代码/产物；本授权取代此前保留旧回退包及operations记录的限制。保留当前可用包、有效源码/测试/许可和必要发布追溯；不重写Git历史，不删除宿主会话、凭据、未合并工作区或无关用户数据。",
     "用户批准迁移为共享核心＋本地stdio MCP＋可移植Skills；首批发布通用MCP/Skills包、现有PI-Desktop包和Codex/Claude Code/Pi配置示例，不做各CLI原生插件。采用GitHub Actions，只在v1.0.0、v2.0.0等稳定主版本标签创建一次GitHub Release；0.x、次版本、补丁仅CI/源码更新。此规则取代原主/次版本自动提交PI市场规则；发布job可授予contents:write，不自动提交市场/发布npm/安装，不自行升主版本或创建发布标签。PI包由官方PluginPack生成，CI核对源码/版本后上传。"
   ],
-  "current": "MCP/Skills与主版本GitHub发布本项已完成：共享核心、显式工作区stdio、同源Skill资源/提示、Codex/Claude Code/Pi示例及通用tgz/官方PI包。受管464bcda验证，main9de2b6a重测干净ci/类型/151测试/95图/10场景、产物与计划后普通推送并核对远端SHA。当前0.7.8，不建标签/真实Release，不市场/npm发布或安装；远端Tests已触发，尚未宣称完成。整体仍working，原宿主阻塞保留。",
+  "current": "MCP/Skills功能与本地151测试/产物已交付，但真实GitHub CI运行38779107707在check:behaviors失败：Chromium安装步骤位于内部浏览器启动之后；Ubuntu缺可执行文件，Windows被矩阵取消。正在原受管工作区修复两workflow顺序并补回归，不能声称远端通过；0.7.8仍不建标签/真实Release。",
   "next": [
-    "原真实宿主/前台目视/换行指纹/一次启动接续检查需受支持条件后核实；不自动安装或运行付费Agent",
-    "未来经用户明确批准升级稳定vN.0.0后由标签触发Action；本轮不建标签"
+    "修复Chromium安装先于行为/浏览器检查，真实red-green及提交后检查",
+    "合入main重测/普通推送，观察Linux/Windows实际CI结果后更新同一检查记录"
   ],
   "blocked": [
     "内置Browser未进入当前会话前台，当前截图目视未完成；自动断言与截图已保存",

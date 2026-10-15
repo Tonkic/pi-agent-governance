@@ -20,18 +20,6 @@
       "gitTaskId": null
     },
     {
-      "id": "mcp-skills-release",
-      "title": "共享MCP/Skills与大版本GitHub发布",
-      "description": "共享MCP/Skills、两命名目标和仅稳定vN.0.0 GitHub Release Action已交付。SDK/解包生产安装、151测试/95图/10场景、i18n0失败2提示及官方PI包61文件713439字节通过。受管464bcda验证，main9de2b6a重测/普通推送和远端SHA一致。0.7.8不建标签/真实Release/市场/npm发布/安装；远端Tests已触发，状态另查。",
-      "blocker": "",
-      "stage": "done",
-      "taskId": "project-board-release",
-      "criteria": [],
-      "architectureImpact": "affects",
-      "gitTaskId": null,
-      "completedAt": "2026-10-15T17:41:46.666Z"
-    },
-    {
       "id": "architecture-skill-default",
       "title": "默认Architecture Copilot与废弃内容清理",
       "description": "0.7.8默认Skill双模式及旧操作记录/27旧包清理完成。bd40da3受管验证/来源同步，main4cdcd91集成141测试/95图/10行为场景重测及普通推送、远端SHA核对通过。当前目录只保留0.7.8包；二进制差异/暂存删除实际问题red→green。无新权限、不自动安装或重发旧会话，原总体真实宿主检查保留。",
@@ -229,6 +217,18 @@
       "gitTaskId": null
     },
     {
+      "id": "mcp-skills-release",
+      "title": "共享MCP/Skills与大版本GitHub发布",
+      "description": "共享MCP/Skills、两命名目标和仅稳定vN.0.0 GitHub Release Action已交付。SDK/解包生产安装、151测试/95图/10场景、i18n0失败2提示及官方PI包61文件713439字节通过。受管464bcda验证，main9de2b6a重测/普通推送和远端SHA一致。0.7.8不建标签/真实Release/市场/npm发布/安装；远端Tests已触发，状态另查。",
+      "blocker": "",
+      "stage": "doing",
+      "taskId": "project-board-release",
+      "criteria": [],
+      "architectureImpact": "affects",
+      "gitTaskId": null,
+      "completedAt": null
+    },
+    {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
       "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
@@ -238,5 +238,5 @@
       "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-15T17:41:46.666Z"
+  "updatedAt": "2026-10-15T17:47:25.706Z"
 }
