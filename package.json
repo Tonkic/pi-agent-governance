@@ -2,14 +2,16 @@
   "name": "pi-agent-governance",
   "version": "0.7.8",
   "private": true,
-  "description": "Repository-level agent engineering governance for PI-Desktop",
+  "description": "Shared repository governance core, MCP/Skills and PI-Desktop adapter",
   "scripts": {
     "build": "node scripts/build.cjs",
     "typecheck": "tsc --project tsconfig.json --noEmit && tsc --project plugin/renderer/tsconfig.json --noEmit",
-    "test": "npm run build && node --test build/test/git.test.js build/test/governance.test.js build/test/panel.test.js build/test/project.test.js build/test/operations.test.js test/release.test.cjs test/layout.test.cjs test/behaviors.test.cjs test/design.test.cjs",
+    "test": "npm run build && node --test build/test/git.test.js build/test/governance.test.js build/test/panel.test.js build/test/project.test.js build/test/operations.test.js test/release.test.cjs test/layout.test.cjs test/behaviors.test.cjs test/design.test.cjs test/mcp.test.cjs test/distributions.test.cjs",
     "test:browser": "npm run build && node test/browser.cjs",
     "check:behaviors": "npm run build && node scripts/check-behaviors.cjs",
     "release:auto": "node scripts/release-auto.cjs",
+    "mcp": "node build/mcp/server.js",
+    "build:distributions": "node scripts/build-distributions.cjs",
     "governance": "npm run build --silent && node build/scripts/governance.js"
   },
   "engines": {
@@ -17,6 +19,12 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.4",
+    "fflate": "0.8.3",
+    "playwright": "1.64.1",
     "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "ajv": "8.20.0"
   }
 }

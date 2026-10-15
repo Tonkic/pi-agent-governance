@@ -8,6 +8,7 @@ Three-column workbench, document-based development, optional architecture design
 | 要解决的问题 | 先读 | 需要深入时 |
 | --- | --- | --- |
 | 接手目标、更新进度、验证关闭 | [治理用法](docs/governance.md#接手与执行) | 同页“验证与关闭” |
+| Codex、Claude Code、Pi 接入 | [MCP 与 Skill](docs/mcp.md) | 同页“客户端配置”“安全与排错” |
 | 三栏工作项、完成与历史记录 | [项目接口](docs/project.md#工作项) | 同页“三栏工作台” |
 | 可选架构方向与可视化 | [架构设计](docs/architecture-design.md) | 同页“数据与接口” |
 | 整理当前项目文档 | [文档维护](docs/documentation.md) | [可选Agent操作](docs/project.md#可选项目agent操作) |
@@ -15,7 +16,7 @@ Three-column workbench, document-based development, optional architecture design
 | 分支、worktree、提交和集成 | [Git 协作](docs/git.md#原则) | 同页“冲突与恢复” |
 | 代码职责与数据位置 | [架构](docs/architecture.md) | 表中的 TS 入口 |
 | 构建、测试与安装包生成 | [开发](docs/development.md) | 同页“目录” |
-| GitHub 和市场交付 | [交付流程](docs/releasing.md) | [安装与发布](docs/publishing.md) |
+| 多目标构建与大版本GitHub交付 | [交付流程](docs/releasing.md) | [安装与发布](docs/publishing.md) |
 | UI 参考与许可 | [来源](docs/ui-sources.md) | 同页 MIT 许可 |
 
 ## 写作与位置

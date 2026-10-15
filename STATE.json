@@ -44,11 +44,11 @@
     "2026-10-15用户明确批准Clean Code清理：删除已无用的旧操作记录、旧安装包、旧提示词和核实无引用的废弃代码/产物；本授权取代此前保留旧回退包及operations记录的限制。保留当前可用包、有效源码/测试/许可和必要发布追溯；不重写Git历史，不删除宿主会话、凭据、未合并工作区或无关用户数据。",
     "用户批准迁移为共享核心＋本地stdio MCP＋可移植Skills；首批发布通用MCP/Skills包、现有PI-Desktop包和Codex/Claude Code/Pi配置示例，不做各CLI原生插件。采用GitHub Actions，只在v1.0.0、v2.0.0等稳定主版本标签创建一次GitHub Release；0.x、次版本、补丁仅CI/源码更新。此规则取代原主/次版本自动提交PI市场规则；发布job可授予contents:write，不自动提交市场/发布npm/安装，不自行升主版本或创建发布标签。PI包由官方PluginPack生成，CI核对源码/版本后上传。"
   ],
-  "current": "用户批准实现共享治理核心＋本地stdio MCP＋可移植Skills，首批通用MCP/Skills包及PI-Desktop官方包，附Codex/Claude Code/Pi配置；保持数据格式/现有图形界面/锁/指纹/修订/写入边界。GitHub Actions仅vN.0.0稳定主版本（N>=1）自动创建一次GitHub Release，0.x/次/补丁仅CI源码；只发布GitHub，替代原自动市场流程，不npm发布/安装、不自行升级或创建标签。当前0.7.8保留，PI包官方PluginPack生成、CI校验后上传。",
+  "current": "MCP stdio入口、共享schema/AJV验证、显式绝对工作区、固定Skill资源及两种模式提示和Codex/Claude Code/Pi示例已实现；真实SDK协议5项、操作24项及typecheck/build通过。独立发布任务仍在实现多目标/主版本GitHub Action。当前0.7.8不升级、不建标签/真实Release、不安装或提交市场。",
   "next": [
-    "实现MCP stdio协议工具/Skill资源提示及真实SDK客户端回归",
-    "按目标构建通用包和核验PI包，配置主版本Action/幂等与安全检查",
-    "组合干净构建/单元/浏览器/包检查，受管提交后验证及main交付"
+    "集成经验证的多目标构建/Action，验证解压通用包真实npm ci和SDK连接",
+    "完整干净回归、官方PluginCheck/Pack及分发源码对照",
+    "审查提交后检查、受管验证并main集成重测和普通推送"
   ],
   "blocked": [
     "内置Browser未进入当前会话前台，当前截图目视未完成；自动断言与截图已保存",

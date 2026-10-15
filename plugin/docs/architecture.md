@@ -1,7 +1,7 @@
 <!-- Generated from docs/ by scripts/build-docs.cjs. Do not edit. -->
 # 架构
 
-插件为 PI-Desktop 提供任务状态、项目看板、源码架构和 Git 协作。所有入口复用治理内核，不需要 Web 服务或数据库。
+共享核心提供任务状态、项目看板、源码架构和Git协作；PI-Desktop图形适配器与本地stdio MCP复用同一实现和项目数据，不需要Web服务或数据库。
 
 ## 模块与代码入口
 
@@ -27,6 +27,8 @@
 ```text
 Agent 工具 → main.ts → core.ts → STATE.json
 CLI → scripts/governance.ts → core.ts
+MCP客户端 → mcp/server.ts → tool.schema校验 → core.ts
+MCP资源/提示、PI Skill → plugin/skills/architecture-copilot/
 面板 → 宿主桥接 → main.ts → panel.ts → core.ts
 面板任务 → main.ts → operations.ts → 宿主 session/agent API
 core.ts → project.ts → .governance/
@@ -34,6 +36,8 @@ core.ts → git.ts → Git common directory
 ```
 
 `project.ts` 复用 `core.ts` 提供的锁、状态和文件操作。面板写入使用动作白名单、确认和版本校验；Git 写入及任务关闭使用 Agent 工具或 CLI。
+
+`mcp/server.ts`绑定显式绝对工作区，限制输入缓冲和固定Skill资源；每次调用创建新核心对象，避免共享修订令牌。它不引用PI宿主接口，不自动初始化项目或运行Agent。MCP客户端负责用户确认，核心继续校验修订/锁/路径与受管Git范围。用法与限制见 [MCP](mcp.md)。
 
 ## 数据位置
 
