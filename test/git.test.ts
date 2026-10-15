@@ -6,7 +6,9 @@ const path = require('node:path');
 const os = require('node:os');
 const { GitGovernance } = require('../plugin/git');
 async function fixture(t) {
-  const root = await fs.mkdtemp(path.join(process.env.PI_SCRATCH_DIR || os.tmpdir(), 'git-governance-'));
+  // Windows runner TEMP may use an 8.3 alias; Git reports the canonical repository path.
+  // Normalize this trusted fixture only; do not weaken the product's root/subdirectory guard.
+  const root = await fs.realpath(await fs.mkdtemp(path.join(process.env.PI_SCRATCH_DIR || os.tmpdir(), 'git-governance-')));
   t.after(() => fs.rm(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }));
   const g = new GitGovernance(root);
   await g.git(root, ['init', '-b', 'main']);
