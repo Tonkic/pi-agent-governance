@@ -148,3 +148,39 @@ test('MCP source fingerprints and design draft identity remain separate shared-c
   assert.equal(await fs.readFile(path.join(f.root, '.governance/architecture.json'), 'utf8'), sourceBefore);
   await assert.rejects(f.call({ action: 'architecture_design_confirm' }), /Invalid governance arguments/);
 });
+
+test('real downloadable MCP target installs production-only lock and serves tools without repository or host dependencies', { timeout: 120000 }, async t => {
+  const { execFileSync } = require('node:child_process');
+  const { buildDistributions } = require('../scripts/build-distributions.cjs');
+  const { safeFile } = require('../scripts/release-safety.cjs');
+  const built = buildDistributions({ root: repo, targets: ['mcp-skills'] });
+  const unpack = await fs.mkdtemp(path.join(process.env.PI_SCRATCH_DIR || os.tmpdir(), 'mcp-installed-'));
+  t.after(() => fs.rm(unpack, { recursive: true, force: true }));
+  const tar = require('node:zlib').gunzipSync(await fs.readFile(path.join(repo, 'build/distributions', built.assets[0].name)));
+  const names = [];
+  for (let offset = 0; offset + 512 <= tar.length && tar[offset];) {
+    const header = tar.subarray(offset, offset + 512);
+    const name = header.subarray(0, 100).toString().replace(/\0.*$/, '');
+    const size = parseInt(header.subarray(124, 136).toString().replace(/\0.*$/, '').trim(), 8) || 0;
+    assert.ok(name.startsWith('package/'));
+    assert.ok(header[156] === 48 || header[156] === 0);
+    const relative = name.slice(8), output = safeFile(unpack, relative);
+    names.push(relative);
+    await fs.mkdir(path.dirname(output), { recursive: true });
+    await fs.writeFile(output, tar.subarray(offset + 512, offset + 512 + size));
+    offset += 512 + Math.ceil(size / 512) * 512;
+  }
+  assert.ok(names.includes('npm-shrinkwrap.json'));
+  assert.ok(names.includes('plugin/skills/architecture-copilot/LICENSE'));
+  for (const name of names) assert.doesNotMatch(name, /(?:^|\/)(?:node_modules|\.pi|\.governance|\.secrets|STATE.json|test)(?:\/|$)/);
+  execFileSync(process.execPath, [process.env.npm_execpath, 'ci', '--omit=dev', '--ignore-scripts', '--offline', '--no-audit', '--no-fund'], { cwd: unpack, encoding: 'utf8', timeout: 90000, env: { ...process.env, NODE_PATH: '' } });
+  await assert.rejects(fs.stat(path.join(unpack, 'node_modules/playwright')));
+  await assert.rejects(fs.stat(path.join(unpack, 'node_modules/typescript')));
+  const f = await fixture(t, path.join(unpack, 'build/mcp/server.js'), unpack);
+  assert.equal((await f.client.listTools()).tools[0].name, 'governance');
+  assert.equal((await f.client.listResources()).resources.length, 12);
+  assert.deepEqual(await fs.readdir(f.root), []);
+  await f.value({ action: 'init' });
+  assert.equal((await f.value({ action: 'status' })).status, 'idle');
+  assert.equal(f.stderr(), '');
+});

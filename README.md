@@ -33,7 +33,7 @@
 
 ## 开发检查
 
-需要 Node.js 20+。修改 TS 或 `docs/` 后重新构建；不手改 runtime、manifest 或安装包说明。
+需要 Node.js 22+。修改 TS 或 `docs/` 后重新构建；不手改 runtime、manifest 或安装包说明。
 
 ```powershell
 npm ci

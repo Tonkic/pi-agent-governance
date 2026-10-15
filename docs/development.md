@@ -4,7 +4,7 @@
 
 ## 构建与检查
 
-需要 Node.js 20+。在仓库根目录运行：
+需要 Node.js 22+。在仓库根目录运行：
 
 ```powershell
 npm ci

@@ -5,7 +5,7 @@
 
 ## 安装和启动
 
-需要 Node.js 20+ 和 Git。从 GitHub Release 下载 `mcp-skills` 目标的 tgz，核对 SHA256SUMS，解压到可信工具目录。在解压后的 `package/` 中运行：
+需要 Node.js 22+ 和 Git。从 GitHub Release 下载 `mcp-skills` 目标的 tgz，核对 SHA256SUMS，解压到可信工具目录。在解压后的 `package/` 中运行：
 
 ```powershell
 npm ci --omit=dev --ignore-scripts
@@ -36,7 +36,7 @@ node build/mcp/server.js --workspace D:/projects/example
 - 工具复用原核心的锁、来源指纹、修订、路径和Git范围检查。写项目数据先取 `project_snapshot.revision`；设计取 `architecture_design_snapshot.revision` 和明确启动的draftId。
 - `resources/list` 列出固定的Architecture Copilot正文、来源、许可与参考资料。只读这些资源，不提供任意文件URI读取。
 - `prompts/list` 提供 `architecture-analysis` 与 `architecture-design`，直接嵌入同一份Skill正文。取提示不运行Agent，不产生付费模型请求，也不授予写入权限。
-- 如需客户端原生Skill发现，可手动把包中 `skills/architecture-copilot/` 完整目录放入该客户端支持的Skill目录；开发源在 `plugin/skills/architecture-copilot/`。保留LICENSE、SOURCE.md和references，不复制旧提示词作为第二来源。
+- 如需客户端原生Skill发现，可手动把包中 `plugin/skills/architecture-copilot/` 完整目录放入该客户端支持的Skill目录；与开发源路径相同。保留LICENSE、SOURCE.md和references，不复制旧提示词作为第二来源。
 
 源码分析与设计方案严格分开。MCP可在明确授权下创建/保存设计草案，但不提供基线确认、宿主模型选择、会话启动/中止或窗口接口；基线确认仍由PI面板人工进行。普通功能开发不强制架构设计或单独验收。
 
