@@ -214,7 +214,7 @@ class GitGovernance {
             '--no-ext-diff',
             '--no-textconv',
             '--no-renames',
-            '--binary',
+            '--full-index', // Bind staged binary blobs without inflating them into patch payloads.
             '--'
         ]);
         const patch = await this.git(t.worktree, [
@@ -398,28 +398,14 @@ class GitGovernance {
                     throw Error('Use git_recover before further commits');
                 if ((await this.inspect(t)).snapshot !== before.snapshot)
                     throw Error('Concurrent edit detected');
-                const pending = [
-                    ...new Set([
+                // Stage only worktree changes. Already-staged deletions no longer exist in the index.
+                const pending = [...new Set([
                         ...split(await this.git(t.worktree, [
-                            'diff',
-                            '--name-only',
-                            '-z',
-                            '--no-renames',
-                            'HEAD',
-                            '--'
-                        ])),
-                        ...split(await this.git(t.worktree, [
-                            'diff',
-                            '--cached',
-                            '--name-only',
-                            '-z',
-                            '--no-renames',
-                            '--'
+                            'diff', '--name-only', '-z', '--no-renames', '--'
                         ])),
                         ...before.untracked
-                    ])
-                ];
-                if (!pending.length && !t.pendingMerge)
+                    ])];
+                if (!pending.length && !before.stagedPatch && !t.pendingMerge)
                     throw Error('No stageable changes');
                 if (pending.length)
                     await this.git(t.worktree, ['add', '-A', '--', ...pending]);

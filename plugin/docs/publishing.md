@@ -5,9 +5,11 @@ Community ID: `io.github.tonkic.agent-governance`. Source repository: `Tonkic/pi
 
 ## 安装 / Installation
 
-0.6.0 uses a new community ID. It is not an in-place update of `pi.agent-governance`. Back up STATE and `.governance/`, disable the old plugin to avoid duplicate tool/command registrations, then install and grant permissions to the new plugin. Keep project data and old packages for rollback.
+0.6.0 uses a new community ID. It is not an in-place update of `pi.agent-governance`. Back up STATE and `.governance/`, disable the old plugin to avoid duplicate registrations, then install and grant permissions to the new plugin. The checkout keeps only the current package; retrieve an older package from its verified Git commit when needed.
 
 0.6.0 使用新的社区 ID，旧 ID 不会跨 ID 自动升级。先备份项目 STATE 与 `.governance/`、停用旧实例，再首次安装新插件并授权。无需删除或迁移项目数据；回退前先停用新实例。
+
+仓库的 `plugin/dist/` 只保留当前可用包，旧包不在当前树堆积，可从对应已验证Git提交取回。删除旧操作记录只清理仓库历史列表，不删除宿主聊天、不取消或重发会话；运行时操作记录仍按需要生成，不在普通刷新时自动清除。
 
 The panel reads the host locale on opening, with browser-language fallback: Chinese maps to zh-CN; other languages use English. Reopen after changing the app language. User content and raw backend diagnostics remain unchanged. Manifest command titles use a bilingual string for installer compatibility; runtime command titles follow the locale.
 

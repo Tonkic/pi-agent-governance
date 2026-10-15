@@ -750,3 +750,20 @@ test('architecture Skill documents separate current-state and design write bound
   assert.match(skill, /不改 `.governance\/architecture.json`/);
   assert.doesNotMatch(skill, /不要改功能代码、STATE、看板、AGENTS.md、源码现状图/);
 });
+
+test('explicitly removed old operation records stay absent on reads and do not block a new Skill session', async (t) => {
+  const f = await fixture(t);
+  const file = path.join(f.root, '.governance/operations.json');
+  await f.start('architecture');
+  await fs.unlink(file); // User-authorized record cleanup, not runtime auto-pruning.
+  const listed = await operationInvoke(f.root, { action: 'list' }, f.desktop);
+  assert.deepEqual(listed.runs, []);
+  await assert.rejects(fs.stat(file), { code: 'ENOENT' });
+  assert.equal(f.calls.filter(c => c.operation === 'agent/abort').length, 0);
+  assert.equal(f.calls.filter(c => c.operation === 'agent/prompt').length, 1);
+  const next = await f.start('architecture');
+  assert.equal(next.phase, 'running');
+  assert.equal(f.calls.filter(c => c.operation === 'agent/prompt').length, 2);
+  const saved = JSON.parse(await fs.readFile(file, 'utf8'));
+  assert.deepEqual(saved.runs.map(run => run.id), [next.id]);
+});

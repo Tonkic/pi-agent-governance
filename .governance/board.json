@@ -202,8 +202,8 @@
     },
     {
       "id": "architecture-skill-default",
-      "title": "分析架构默认使用Architecture Copilot",
-      "description": "用户批准用Skill替换旧分析提示词；现状/设计模式分离。实际prompt回归、138测试/95图/10行为场景、干净构建与官方0.7.8包通过。受管创建和GitHub交付被现有用户操作记录修改阻塞，只提交本次文件，不丢弃或混入旧记录。",
+      "title": "默认Architecture Copilot与废弃内容清理",
+      "description": "默认Skill双模式及27旧包/两条旧操作记录清理已实施；引用核查未发现额外废弃源码，当前文档更新。干净141测试/95图/10行为场景和官方0.7.8包通过；dirty阻塞已获新授权删除记录解决，受管clean-code-prune待提交后验证/来源同步/main交付。 批量二进制差异及已暂存删除提交两个实际问题已red→green修复，安全边界保留。",
       "blocker": "",
       "stage": "doing",
       "taskId": "project-board-release",
@@ -226,5 +226,5 @@
       "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-15T09:51:50.941Z"
+  "updatedAt": "2026-10-15T10:22:10.701Z"
 }
