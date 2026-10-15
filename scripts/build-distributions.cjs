@@ -7,13 +7,14 @@ const zlib = require('node:zlib');
 const { execFileSync } = require('node:child_process');
 const { fullSha, gitAt, safeFile, containsCredential, clean } = require('./release-safety.cjs');
 const pluginId = 'io.github.tonkic.agent-governance';
-const sharedModules = ['core', 'git', 'project', 'design', 'behaviors', 'tool'];
+const sharedModules = ['core', 'git', 'project', 'design', 'behaviors', 'tool', 'panel'];
+const consoleFiles = ['build/web/server.js', 'web/bridge.js', 'web/console.css', 'plugin/renderer/index.html', 'plugin/renderer/panel.css', 'plugin/renderer/views.css', ...['i18n', 'graph-model', 'graph', 'design', 'panel'].map(f => `plugin/runtime/renderer/${f}.js`)];
 const skillFiles = ['SKILL.md', 'SOURCE.md', 'LICENSE', ...['README', 'web-and-product', 'transactional', 'realtime-and-storage', 'ai-native', 'agent-and-org', 'embedded-industrial', 'signals', 'glossary'].map(f => `references/${f}.md`)];
 const piFiles = [
   'manifest.json', 'main.js', 'main.ts', 'runtime/main.js',
   ...['core', 'git', 'panel', 'project', 'tool', 'operations', 'behaviors', 'design'].flatMap(f => [`${f}.ts`, `runtime/${f}.js`]),
   ...skillFiles.map(f => `skills/architecture-copilot/${f}`),
-  'README.md', ...['architecture-design', 'README', 'governance', 'git', 'project', 'mcp', 'documentation', 'architecture', 'development', 'doc-driven', 'behavior-workspace', 'publishing', 'releasing', 'ui-sources'].map(f => `docs/${f}.md`),
+  'README.md', ...['architecture-design', 'README', 'governance', 'git', 'project', 'mcp', 'web-console', 'documentation', 'architecture', 'development', 'doc-driven', 'behavior-workspace', 'publishing', 'releasing', 'ui-sources'].map(f => `docs/${f}.md`),
   'renderer/index.html', 'renderer/panel.css', 'renderer/views.css', 'renderer/tsconfig.json',
   ...['design', 'panel', 'graph', 'graph-model', 'i18n'].flatMap(f => [`renderer/${f}.ts`, `runtime/renderer/${f}.js`])
 ].sort();
@@ -96,7 +97,7 @@ function runtimeMetadata(pkg, lock) {
   for (const [name, version] of Object.entries(pkg.dependencies || {})) {
     if (!/^\d+\.\d+\.\d+$/.test(version) || !lock.packages[`node_modules/${name}`]) fail('Runtime dependency must be pinned and locked');
   }
-  const metadata = { name: pkg.name, version: pkg.version, private: true, description: 'Shared local stdio MCP server and portable Architecture Copilot Skill', license: pkg.license || 'UNLICENSED', engines: { node: '>=22' }, bin: { 'agent-governance-mcp': 'build/mcp/server.js' }, dependencies: pkg.dependencies || {}, files: ['build', 'plugin/skills', 'mcp/clients', 'README.md', 'npm-shrinkwrap.json'] };
+  const metadata = { name: pkg.name, version: pkg.version, private: true, description: 'Shared local MCP, Skills and browser project console', license: pkg.license || 'UNLICENSED', engines: { node: '>=22' }, bin: { 'agent-governance-mcp': 'build/mcp/server.js', 'agent-governance-web': 'build/web/server.js' }, dependencies: pkg.dependencies || {}, files: ['build', 'plugin/skills', 'plugin/renderer', 'plugin/runtime/renderer', 'web', 'mcp/clients', 'README.md', 'npm-shrinkwrap.json'] };
   // npm pack excludes package-lock.json. npm-shrinkwrap.json is the equivalent install lock,
   // included by npm pack and honored by npm ci --omit=dev after unpacking.
   const shrinkwrap = { ...lock, packages: { ...lock.packages, '': { name: metadata.name, version: metadata.version, license: metadata.license, engines: metadata.engines, bin: metadata.bin, dependencies: metadata.dependencies } } };
@@ -110,9 +111,9 @@ function buildMcp(ctx) {
   try {
     const files = new Map([
       ['package.json', Buffer.from(json(metadata))], ['npm-shrinkwrap.json', Buffer.from(json(shrinkwrap))],
-      ['README.md', Buffer.from('# MCP + Skills bundle\n\nRequires Node.js 22+ and Git. Unpack this archive into a trusted local directory.\nRun `npm ci --omit=dev --ignore-scripts`, then `node build/mcp/server.js --workspace ABSOLUTE_EXISTING_PROJECT_DIRECTORY`.\nConfigure a stdio MCP client using the examples in `mcp/clients/`; replace node, server and workspace paths with absolute paths.\nThe server binds only the explicit trusted directory; no implicit cwd, automatic initialization, host session/model control or paid Agent turn.\nRead governance status and project README first. Skills and prompts grant no authority; the client must obtain user write approval. Core locks/revisions/path/Git guards remain caller-attested, not a sandbox.\nCopy `plugin/skills/architecture-copilot/` to your client\'s supported Skill location when desired; retain LICENSE, SOURCE.md and references.\nThis is a generic MCP/Skill bundle, not a native Codex, Claude Code or Pi plugin.\nNo npm publishing, marketplace submission, automatic installation or data migration.\nFull configuration and safety guide: https://github.com/Tonkic/pi-agent-governance/blob/main/docs/mcp.md\n')]
+      ['README.md', Buffer.from('# MCP + Skills + local console\n\nRequires Node.js 22+ and Git. Unpack into a trusted directory, run `npm ci --omit=dev --ignore-scripts`.\nMCP: `node build/mcp/server.js --workspace ABSOLUTE_EXISTING_PROJECT_DIRECTORY`. Configure your client using `mcp/clients/`.\nBrowser console: `node build/web/server.js --workspace ABSOLUTE_EXISTING_PROJECT_DIRECTORY` (optional `--port 0..65535`). Open the complete private local URL printed in the terminal. Do not share it. Ctrl+C stops the service; startup does not open the browser or initialize data.\nThe web service listens only on 127.0.0.1; validates Host/Origin/session-token and fixed API/asset allowlists. The token stays in browser tab session storage, is removed from the address bar and changes each startup. Never forward the port, proxy it or expose it to a network.\nBrowser, MCP clients and the PI adapter share existing project data. Refresh after changes; stale writes are rejected. Web supports task/board edits, source graphs/checks, draft initiation/review/confirmation and behavior documents; no external model/session/Agent launch, shell or paid turn. Draft proposals are saved from MCP clients.\nRead status/README and obtain explicit user approval before writes. Skills, confirmations and caller-attested tests are not an authentication or malicious-process sandbox.\nCopy `plugin/skills/architecture-copilot/` to supported client Skill locations if desired; preserve LICENSE/SOURCE/references.\nNo native per-CLI wrappers, npm/market publication, auto installation, data migration or tag creation.\nGuides: https://github.com/Tonkic/pi-agent-governance/blob/main/docs/web-console.md and docs/mcp.md\n')]
     ]);
-    for (const file of ['build/mcp/server.js', ...sharedModules.map(f => `build/plugin/${f}.js`), ...skillFiles.map(f => `plugin/skills/architecture-copilot/${f}`), ...['codex.toml', 'claude-code.json', 'pi.json'].map(f => `mcp/clients/${f}`)]) files.set(file, read(ctx.root, file));
+    for (const file of ['build/mcp/server.js', ...consoleFiles, ...sharedModules.map(f => `build/plugin/${f}.js`), ...skillFiles.map(f => `plugin/skills/architecture-copilot/${f}`), ...['codex.toml', 'claude-code.json', 'pi.json'].map(f => `mcp/clients/${f}`)]) files.set(file, read(ctx.root, file));
     for (const [name, bytes] of files) {
       if (containsCredential('', bytes, process.env.GITHUB_TOKEN)) fail('Credential-like bundle content');
       const dest = safeFile(stage, name); fs.mkdirSync(path.dirname(dest), { recursive: true }); fs.writeFileSync(dest, bytes, { flag: 'wx' });
@@ -158,7 +159,7 @@ function buildDistributions({ root = path.resolve(__dirname, '..'), sourceRef = 
   fs.writeFileSync(path.join(output, 'SHA256SUMS'), sums, { flag: 'wx' });
   return manifest;
 }
-module.exports = { builders, buildDistributions, verifyPi, readZip, crc32, piFiles, skillFiles, sharedModules, runtimeMetadata, sha256 };
+module.exports = { builders, buildDistributions, verifyPi, readZip, crc32, piFiles, skillFiles, sharedModules, consoleFiles, runtimeMetadata, sha256 };
 if (require.main === module) {
   try { console.log(JSON.stringify(buildDistributions({ targets: process.argv.length > 2 ? process.argv.slice(2) : undefined }))); }
   catch { console.error('Distribution build blocked: verify inputs, official PluginPack artifact and npm invocation. No publication performed.'); process.exitCode = 1; }

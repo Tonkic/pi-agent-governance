@@ -7,6 +7,7 @@ const docFiles = [
   'git.md',
   'project.md',
   'mcp.md',
+  'web-console.md',
   'documentation.md',
   'doc-driven.md',
   'behavior-workspace.md',

@@ -1,7 +1,7 @@
 <!-- Generated from docs/ by scripts/build-docs.cjs. Do not edit. -->
 # 产物与安装 / Distributions
 
-首批支持 **通用 MCP + Skills 包**和 **PI-Desktop 官方 piplug**，附 Codex、Claude Code、Pi 的 MCP 配置示例。不是这些 CLI 的原生插件格式。GitHub Release 仅限已批准的稳定主版本标签；当前 0.7.8 不发布，详见 [交付规则](releasing.md)。
+支持 **通用MCP＋Skills＋本地Web控制台包**及 **PI-Desktop官方piplug**，附Codex、Claude Code、Pi配置示例；不是各CLI原生插件。1.x起稳定主/次版本vX.Y.0各发布一次GitHub Release；当前0.7.8不发布，见 [交付规则](releasing.md)。
 
 ## 构建目标
 
@@ -25,7 +25,7 @@ npm run build:distributions -- pi-desktop
 | pi-desktop | `io.github.tonkic.agent-governance-VERSION.piplug`；核对已提交的官方包，复制原始字节，不用 shell 打包 |
 | 两者 | `asset-manifest.json` 与 `SHA256SUMS`，绑定版本、来源完整 SHA、文件名、大小和 SHA256 |
 
-通用包仅包含根 package metadata、安装锁、`build/mcp/server.js`、必需的 `build/plugin/{core,git,project,design,behaviors,tool}.js`、规范 Skill（含 LICENSE/SOURCE/references）、配置示例与安装说明。不包含开发 node_modules、项目 STATE、`.governance/`、`.pi/`、`.secrets/` 或本地证据。
+通用包包含metadata/安装锁、MCP和Web编译入口、共享core/git/project/design/behaviors/tool/panel模块、规范Skill及许可/来源/参考、客户端示例、固定工作台HTML/CSS/renderer JS和网页桥接。排除宿主operations/main适配、开发node_modules、项目STATE、`.governance/`、`.pi/`、`.secrets/`及本地证据。
 
 npm pack 不包含 package-lock.json，因此包内使用由根 package-lock 派生的 **npm-shrinkwrap.json**。它保留精确依赖图，运行依赖与根包一致；解包后 `npm ci --omit=dev` 可直接使用。包自身不包含生命周期脚本。
 
@@ -35,6 +35,7 @@ npm pack 不包含 package-lock.json，因此包内使用由根 package-lock 派
 2. 在解压后的 package 目录执行 `npm ci --omit=dev --ignore-scripts`。
 3. 使用 `node build/mcp/server.js --workspace D:/projects/example` 启动stdio MCP。按 `mcp/clients/` 示例替换node/server/项目的绝对路径；项目须已存在，不自动初始化，不把凭据写入配置。
 4. 按客户端支持的 Skill 位置选择复制 `plugin/skills/architecture-copilot/`。Skill 不授予代码变更或自动确认基线权限。
+5. 需要独立网页时运行 `node build/web/server.js --workspace D:/projects/example`，打开终端私有地址，限制见 [本地Web控制台](web-console.md)。不要配置公网代理。
 
 MCP 使用与现有插件相同的共享治理核心；数据、修订/锁和显式写入/Git边界不变。只在可信仓库使用；提示词和路径检查不是操作系统沙箱。客户端配置与协议用法见仓库 `docs/mcp.md`。
 

@@ -17,6 +17,7 @@
   },
   "include": [
     "mcp/**/*.ts",
+    "web/**/*.ts",
     "plugin/**/*.ts",
     "scripts/**/*.ts",
     "test/**/*.ts",

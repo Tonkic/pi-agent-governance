@@ -82,7 +82,7 @@ description: >-
 }
 ```
 
-4. 保存后读取设计快照，返回其ASCII图与方案说明；有PI面板时可在“项目架构→设计方案”看画板。生成区块使用governance:architecture-ascii:start/end标记，保存自动更新，不手工维护第二份关系。
+4. 保存后读取设计快照，返回其ASCII图与方案说明；用户可在PI面板或独立本地控制台的“项目架构→设计方案”查看并人工审阅。生成区块使用governance:architecture-ascii:start/end标记，保存自动更新，不手工维护第二份关系。
 5. 不调用确认接口，不把会话结束标成已确认；不改 `.governance/architecture.json`。
 
 最多40节点、100边，正文含生成ASCII共20000字符；超限缩小设计范围，不截掉职责/关系。旧基线只生成只读ASCII视图、不改文件；新保存方案包含图，重复保存不重复追加。

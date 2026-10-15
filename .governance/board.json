@@ -229,6 +229,18 @@
       "gitTaskId": null
     },
     {
+      "id": "local-web-console",
+      "title": "独立本地项目控制台与稳定次版本发布",
+      "description": "复用工作台/核心，127.0.0.1显式项目，网页看板/进度/架构/设计人工确认/行为文档；MCP共享，不启动外部Agent。1.x稳定vX.Y.0主次版本各发一次GitHub。",
+      "blocker": "",
+      "stage": "doing",
+      "taskId": "project-board-release",
+      "criteria": [],
+      "architectureImpact": "affects",
+      "gitTaskId": null,
+      "completedAt": null
+    },
+    {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
       "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
@@ -238,5 +250,5 @@
       "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-15T18:13:13.714Z"
+  "updatedAt": "2026-10-15T19:13:44.938Z"
 }
