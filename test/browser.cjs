@@ -775,7 +775,7 @@ const models = {
     );
     const writesBeforeCancel = operationWrites.length;
     await page.context().setOffline(true);
-    await page.waitForFunction(() => document.querySelector('[data-operation-write]').disabled);
+    await page.waitForFunction(() => document.querySelector('[data-operation-write]')?.disabled === true);
     assert.equal(await page.getByRole('button', { name: '取消任务', exact: true }).isDisabled(), true);
     assert.equal(await page.getByRole('button', { name: '查看进度 / 结果', exact: true }).first().isEnabled(), true);
     assert.equal(await page.getByRole('button', { name: '打开 Agent 会话', exact: true }).first().isEnabled(), true);
@@ -783,13 +783,13 @@ const models = {
     await settled(page);
     assert.equal(await page.getByRole('button', { name: '取消任务', exact: true }).isDisabled(), true);
     await page.context().setOffline(false);
-    await page.waitForFunction(() => !document.querySelector('[data-operation-write]').disabled);
+    await page.waitForFunction(() => document.querySelector('[data-operation-write]')?.disabled === false);
     await page.getByRole('button', { name: '取消任务', exact: true }).click();
     await page.context().setOffline(true);
     await confirm(page);
     assert.equal(operationWrites.length, writesBeforeCancel, 'Disconnect during cancel confirmation must not invoke the bridge');
     await page.context().setOffline(false);
-    await page.waitForFunction(() => !document.querySelector('[data-operation-write]').disabled);
+    await page.waitForFunction(() => document.querySelector('[data-operation-write]')?.disabled === false);
     const callsBeforeCancelDismiss = hostCalls.length;
     await page.getByRole('button', { name: '取消任务', exact: true }).click();
     await confirm(page, false);
@@ -878,16 +878,16 @@ const models = {
     await page.waitForSelector('.operation-run');
     const writesBeforeResolve = operationWrites.length;
     await page.context().setOffline(true);
-    await page.waitForFunction(() => document.querySelector('[data-operation-write]').disabled);
+    await page.waitForFunction(() => document.querySelector('[data-operation-write]')?.disabled === true);
     assert.equal(await page.getByRole('button', { name: '已核对 — 解除操作阻塞', exact: true }).isDisabled(), true);
     await page.context().setOffline(false);
-    await page.waitForFunction(() => !document.querySelector('[data-operation-write]').disabled);
+    await page.waitForFunction(() => document.querySelector('[data-operation-write]')?.disabled === false);
     await page.getByRole('button', { name: '已核对 — 解除操作阻塞', exact: true }).click();
     await page.context().setOffline(true);
     await confirm(page);
     assert.equal(operationWrites.length, writesBeforeResolve, 'Disconnect during resolve confirmation must not invoke the bridge');
     await page.context().setOffline(false);
-    await page.waitForFunction(() => !document.querySelector('[data-operation-write]').disabled);
+    await page.waitForFunction(() => document.querySelector('[data-operation-write]')?.disabled === false);
     await page.getByRole('button', { name: '已核对 — 解除操作阻塞', exact: true }).click();
     await confirm(page, false);
     assert.equal(
