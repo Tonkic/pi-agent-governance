@@ -1,0 +1,6 @@
+{
+  "hooks": {
+    "SessionStart": [{ "hooks": [{ "type": "command", "command": "node \"D:/tools/agent-governance/build/mcp/context-hook.js\" --host codex", "timeout": 5 }] }],
+    "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "node \"D:/tools/agent-governance/build/mcp/context-hook.js\" --host codex", "timeout": 5 }] }]
+  }
+}

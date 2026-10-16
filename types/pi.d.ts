@@ -7,7 +7,7 @@ interface PiToolRegistration {
   description: string;
   risk: string;
   schema: Record<string, unknown>;
-  execute?: (args: any) => any;
+  execute?: (args: any, context?: { sessionId?: string; turnId?: string; signal?: AbortSignal }) => any;
 }
 
 interface PiCommandRegistration {

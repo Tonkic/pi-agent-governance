@@ -91,11 +91,12 @@ test('close recovers archive-before-state crash', async t => {
 test('PI adapter registers, executes and unregisters', async t => {
   const g = await fixture(t); let registered, removed, command, removedCommand, opened;
   global.pi = { workspace: { get: async () => ({ path: g.root }) }, agent: { registerTool: async tool => { registered = tool; }, unregisterTool: async name => { removed = name; } }, commands: { register: async value => { command = value; }, unregister: async id => { removedCommand = id; } }, ui: { openPanel: async value => { opened = value; } } };
+  global.pi.desktop = { listOperations: async () => [{ id: 'session/get', description: 'Read session', risk: 'read' }], invoke: async () => ({ session: { id: 'caller', projectPath: g.root, mode: 'agent' } }) };
   t.after(() => { delete global.pi; });
   const adapter = require('../plugin/main'); await adapter.onLoad();
   assert.equal(registered.name, 'governance');
-  assert.equal((await registered.execute({ action: 'status' })).result.status, 'idle');
-  assert.equal((await registered.execute({ action: 'close' })).ok, false);
+  assert.equal((await registered.execute({ action: 'status' }, { sessionId: 'caller' })).result.status, 'idle');
+  assert.equal((await registered.execute({ action: 'close' }, { sessionId: 'caller' })).ok, false);
   assert.equal(command.id, 'governance.open'); await command.run(); assert.equal(opened.title, 'Agent Governance');
   assert.equal((await adapter.onPanelInvoke('governance.snapshot')).result.state.status, 'idle');
   assert.equal((await adapter.onPanelInvoke('unknown')).ok, false);

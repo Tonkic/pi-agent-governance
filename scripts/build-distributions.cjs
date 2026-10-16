@@ -10,6 +10,7 @@ const pluginId = 'io.github.tonkic.agent-governance';
 const sharedModules = ['core', 'git', 'project', 'design', 'behaviors', 'tool', 'panel'];
 const consoleFiles = ['build/web/server.js', 'web/bridge.js', 'web/console.css', 'plugin/renderer/index.html', 'plugin/renderer/panel.css', 'plugin/renderer/views.css', ...['i18n', 'graph-model', 'graph', 'design', 'panel'].map(f => `plugin/runtime/renderer/${f}.js`)];
 const skillFiles = ['SKILL.md', 'SOURCE.md', 'LICENSE', ...['README', 'web-and-product', 'transactional', 'realtime-and-storage', 'ai-native', 'agent-and-org', 'embedded-industrial', 'signals', 'glossary'].map(f => `references/${f}.md`)];
+const hostFiles = ['build/mcp/context-hook.js', 'mcp/clients/codex-hooks.json'];
 const piFiles = [
   'manifest.json', 'main.js', 'main.ts', 'runtime/main.js',
   ...['core', 'git', 'panel', 'project', 'tool', 'operations', 'behaviors', 'design'].flatMap(f => [`${f}.ts`, `runtime/${f}.js`]),
@@ -113,7 +114,9 @@ function buildMcp(ctx) {
       ['package.json', Buffer.from(json(metadata))], ['npm-shrinkwrap.json', Buffer.from(json(shrinkwrap))],
       ['README.md', Buffer.from('# MCP + Skills + local console\n\nRequires Node.js 22+ and Git. Unpack into a trusted directory, run `npm ci --omit=dev --ignore-scripts`.\nMCP: `node build/mcp/server.js --workspace ABSOLUTE_EXISTING_PROJECT_DIRECTORY`. Configure your client using `mcp/clients/`.\nBrowser console: `node build/web/server.js --workspace ABSOLUTE_EXISTING_PROJECT_DIRECTORY` (optional `--port 0..65535`). Open the complete private local URL printed in the terminal. Do not share it. Ctrl+C stops the service; startup does not open the browser or initialize data.\nThe web service listens only on 127.0.0.1; validates Host/Origin/session-token and fixed API/asset allowlists. The token stays in browser tab session storage, is removed from the address bar and changes each startup. Never forward the port, proxy it or expose it to a network.\nBrowser, MCP clients and the PI adapter share existing project data. Refresh after changes; stale writes are rejected. Web supports task/board edits, source graphs/checks, draft initiation/review/confirmation and behavior documents; no external model/session/Agent launch, shell or paid turn. Draft proposals are saved from MCP clients.\nRead status/README and obtain explicit user approval before writes. Skills, confirmations and caller-attested tests are not an authentication or malicious-process sandbox.\nCopy `plugin/skills/architecture-copilot/` to supported client Skill locations if desired; preserve LICENSE/SOURCE/references.\nNo native per-CLI wrappers, npm/market publication, auto installation, data migration or tag creation.\nGuides: https://github.com/Tonkic/pi-agent-governance/blob/main/docs/web-console.md and docs/mcp.md\n')]
     ]);
-    for (const file of ['build/mcp/server.js', ...consoleFiles, ...sharedModules.map(f => `build/plugin/${f}.js`), ...skillFiles.map(f => `plugin/skills/architecture-copilot/${f}`), ...['codex.toml', 'claude-code.json', 'pi.json'].map(f => `mcp/clients/${f}`)]) files.set(file, read(ctx.root, file));
+    const guide = files.get('README.md').toString('utf8');
+    files.set('README.md', Buffer.from(guide + '\nHost reuse: Claude Code may use `--host claude-code` instead of --workspace, reading official child CLAUDE_PROJECT_DIR with no cwd fallback. Merge mcp/clients/codex-hooks.json into supported trusted Codex Hook settings after editing only the helper installation path. The helper reads official session_id/cwd and injects read-only project metadata into the original conversation, not transcript content. It does not initialize data, start chats/models, persist a session registry or dynamically rebind MCP. Existing loaded tools/Skills retain host history. Client/version smoke remains required; see docs/mcp.md online.\n'));
+    for (const file of ['build/mcp/server.js', ...hostFiles, ...consoleFiles, ...sharedModules.map(f => `build/plugin/${f}.js`), ...skillFiles.map(f => `plugin/skills/architecture-copilot/${f}`), ...['codex.toml', 'claude-code.json', 'pi.json'].map(f => `mcp/clients/${f}`)]) files.set(file, read(ctx.root, file));
     for (const [name, bytes] of files) {
       if (containsCredential('', bytes, process.env.GITHUB_TOKEN)) fail('Credential-like bundle content');
       const dest = safeFile(stage, name); fs.mkdirSync(path.dirname(dest), { recursive: true }); fs.writeFileSync(dest, bytes, { flag: 'wx' });
@@ -159,7 +162,7 @@ function buildDistributions({ root = path.resolve(__dirname, '..'), sourceRef = 
   fs.writeFileSync(path.join(output, 'SHA256SUMS'), sums, { flag: 'wx' });
   return manifest;
 }
-module.exports = { builders, buildDistributions, verifyPi, readZip, crc32, piFiles, skillFiles, sharedModules, consoleFiles, runtimeMetadata, sha256 };
+module.exports = { builders, buildDistributions, verifyPi, readZip, crc32, piFiles, skillFiles, sharedModules, consoleFiles, hostFiles, runtimeMetadata, sha256 };
 if (require.main === module) {
   try { console.log(JSON.stringify(buildDistributions({ targets: process.argv.length > 2 ? process.argv.slice(2) : undefined }))); }
   catch { console.error('Distribution build blocked: verify inputs, official PluginPack artifact and npm invocation. No publication performed.'); process.exitCode = 1; }

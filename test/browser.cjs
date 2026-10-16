@@ -106,12 +106,12 @@ const models = {
     headless: true,
     ...(process.env.PI_BROWSER ? { executablePath: process.env.PI_BROWSER } : {})
   });
-  const output = path.join(base, 'modal-board-screenshots');
+  const output = process.env.PI_SCREENSHOT_DIR || path.join(base, 'modal-board-screenshots');
   await fs.mkdir(output, { recursive: true });
   const errors = [];
   let shots = 0;
   const url = pathToFileURL(path.resolve('plugin/renderer/index.html')).href;
-  async function makePage(locale = 'zh-CN') {
+  async function makePage(locale = 'zh-CN', operationStub = null) {
     const p = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
     p.on('pageerror', (e) => errors.push(e.message));
     await p.exposeFunction('hostInvoke', async (channel, payload) => {
@@ -152,6 +152,10 @@ const models = {
         (failSnapshot && channel === 'governance.snapshot')
       )
         return { ok: false, error: 'Fixture read failure' };
+      // Existing real-backend fixtures explicitly opt into new; the catalog is a bridge contract stub.
+      if (channel === 'governance.operation' && operationStub) return operationStub(payload, requestRoot);
+      if (channel === 'governance.operation' && payload.action === 'sessions')
+        return { ok: true, result: { workspace: requestRoot, sessions: [] } };
       try {
         return {
           ok: true,
@@ -180,11 +184,18 @@ const models = {
     return p;
   }
   const settled = (p) => p.waitForFunction(() => !document.querySelector('#refresh').disabled);
+  const chooseNew = async p => {
+    await p.waitForFunction(() => document.querySelector('#launch-dialog').open);
+    if (await p.locator('#launch-session').inputValue() !== 'new')
+      await p.locator('#launch-session').selectOption('new');
+    await p.waitForFunction(() => !document.querySelector('#launch-start').disabled);
+  };
   const confirm = async (p, yes = true) => {
     if (
       (await p.locator('#launch-dialog').evaluate((el) => el.open)) &&
       !(await p.locator('#confirm-dialog').evaluate((el) => el.open))
     ) {
+      await chooseNew(p);
       await p.locator('#launch-start').click();
     }
     await p.locator(`#confirm-dialog button[value="${yes ? 'confirm' : 'cancel'}"]`).click();
@@ -222,6 +233,8 @@ const models = {
   const rootColor = (p, name) =>
     p.locator('html').evaluate((el, key) => el.style.getPropertyValue(key), name);
   try {
+    await require('./host-context-browser.cjs')({ assert, makePage, modelRows, capture, chooseNew, settled, roots,
+      getRoot: () => root, setRoot: value => { root = value; } });
     const page = await makePage();
     root = roots[1];
     await page.evaluate((path) => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root);
@@ -364,6 +377,8 @@ const models = {
     holdModels = true;
     await page.locator('#analysis-start').click();
     await page.waitForFunction(() => document.querySelector('#launch-dialog').open);
+    await page.locator('#launch-session').selectOption('new');
+    await page.waitForFunction(() => document.querySelector('#launch-new-settings').hidden === false);
     assert.equal(await page.locator('#launch-start').isDisabled(), true);
     await page.locator('#launch-cancel').click();
     holdModels = false;
@@ -371,6 +386,7 @@ const models = {
     await page.waitForTimeout(30);
     assert.equal(await page.locator('#launch-dialog').evaluate((el) => el.open), false);
     await page.locator('#analysis-start').click();
+    await chooseNew(page);
     await page.waitForFunction(() => !document.querySelector('#launch-model').disabled);
     await page.locator('#launch-model').selectOption('fixture/reasoning');
     await page.locator('#launch-thinking').selectOption('high');
@@ -398,7 +414,9 @@ const models = {
     assert.equal(hostCalls.length, beforeSettings);
     modelListFailure = true;
     await page.locator('#analysis-start').click();
-    await page.waitForFunction(() => !document.querySelector('#launch-start').disabled);
+    await page.locator('#launch-session').selectOption('new');
+    await page.waitForFunction(() => document.querySelector('#launch-status').textContent.includes('Model list fixture unavailable'));
+    assert.equal(await page.locator('#launch-start').isDisabled(), true);
     assert.match(
       await page.locator('#launch-status').textContent(),
       /Model list fixture unavailable/
@@ -407,6 +425,7 @@ const models = {
     await page.locator('#launch-cancel').click();
     modelListFailure = false;
     await page.locator('#analysis-start').click();
+    await chooseNew(page);
     await page.waitForFunction(() => !document.querySelector('#launch-model').disabled);
     await page.locator('#launch-model').selectOption('fixture/reasoning');
     modelMissing = true;
@@ -781,6 +800,7 @@ const models = {
     await page.locator('#operations-close').click();
     const beforeDocs = hostCalls.length;
     await page.locator('#documentation-start').click();
+    await chooseNew(page);
     await page.waitForFunction(() => !document.querySelector('#launch-model').disabled);
     assert.match(await page.locator('#launch-title').textContent(), /文档维护/);
     await page.locator('#launch-cancel').click();
@@ -789,6 +809,7 @@ const models = {
     await confirm(page, false);
     assert.equal(hostCalls.length, beforeDocs);
     await page.locator('#documentation-start').click();
+    await chooseNew(page);
     await page.waitForFunction(() => !document.querySelector('#launch-model').disabled);
     await page.locator('#launch-model').selectOption('fixture/reasoning');
     await page.locator('#launch-thinking').selectOption('high');
@@ -824,6 +845,7 @@ const models = {
     await page.locator('#operations-close').click(); hostStreaming = true;
     await navigate(page, 'architecture');
     await page.locator('#architecture-analyze').click();
+    await chooseNew(page);
     await page.waitForFunction(() => !document.querySelector('#launch-model').disabled);
     await page.locator('#launch-model').selectOption('fixture/reasoning');
     await page.locator('#launch-thinking').selectOption('high');
@@ -857,23 +879,23 @@ const models = {
     const writesBeforeResolve = operationWrites.length;
     await page.context().setOffline(true);
     await page.waitForFunction(() => document.querySelector('[data-operation-write]').disabled);
-    assert.equal(await page.getByRole('button', { name: '已核对 — 解除创建阻塞', exact: true }).isDisabled(), true);
+    assert.equal(await page.getByRole('button', { name: '已核对 — 解除操作阻塞', exact: true }).isDisabled(), true);
     await page.context().setOffline(false);
     await page.waitForFunction(() => !document.querySelector('[data-operation-write]').disabled);
-    await page.getByRole('button', { name: '已核对 — 解除创建阻塞', exact: true }).click();
+    await page.getByRole('button', { name: '已核对 — 解除操作阻塞', exact: true }).click();
     await page.context().setOffline(true);
     await confirm(page);
     assert.equal(operationWrites.length, writesBeforeResolve, 'Disconnect during resolve confirmation must not invoke the bridge');
     await page.context().setOffline(false);
     await page.waitForFunction(() => !document.querySelector('[data-operation-write]').disabled);
-    await page.getByRole('button', { name: '已核对 — 解除创建阻塞', exact: true }).click();
+    await page.getByRole('button', { name: '已核对 — 解除操作阻塞', exact: true }).click();
     await confirm(page, false);
     assert.equal(
       hostCalls.filter((c) => c.operation === 'agent/prompt').length,
       promptsBeforeRecovery
     );
     await capture(page, 'creation-recovery');
-    await page.getByRole('button', { name: '已核对 — 解除创建阻塞', exact: true }).click();
+    await page.getByRole('button', { name: '已核对 — 解除操作阻塞', exact: true }).click();
     await confirm(page);
     assert.equal(
       hostCalls.filter((c) => c.operation === 'agent/prompt').length,
@@ -1151,6 +1173,7 @@ const models = {
           }
           await navigate(p, 'architecture');
           await p.locator('#architecture-analyze').click();
+          await chooseNew(p);
           await p.waitForFunction(() => !document.querySelector('#launch-model').disabled);
           await p.locator('#launch-model').selectOption('fixture/reasoning');
           await p.locator('#launch-thinking').selectOption('high');

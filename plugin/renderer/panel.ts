@@ -9,6 +9,8 @@ let projectSnapshot: any = null,
 const dirtyForms = new Set<string>();
 let launchContext: any = null,
   launchModels: any[] = [],
+  launchSessions: any[] = [],
+  launchModelsReady = false,
   launchLoading = false,
   launchRequest = 0;
 let workspaceEpoch = 0, loadRevision = 0, observedWorkspace: string = null;
@@ -208,7 +210,7 @@ async function load(checkSources = false) {
   dirtyForms.clear();
   launchRequest++;
   launchContext = null;
-  launchLoading = false;
+  clearLaunchChoices();
   if ($('launch-dialog').open) $('launch-dialog').close();
   resetCompletedHistory(false);
   projectSnapshot = null;
@@ -1304,11 +1306,65 @@ function launchOption(value, label) {
   option.textContent = label;
   return option;
 }
+function selectedLaunchSession() {
+  return launchSessions.find(row => 'existing:' + row.id === $('launch-session').value);
+}
 function updateLaunchControls() {
-  $('launch-start').disabled = busy || launchLoading || !launchContext || !navigator.onLine;
-  $('launch-model').disabled = busy || launchLoading;
+  const isNew = $('launch-session').value === 'new';
+  $('launch-new-settings').hidden = !isNew;
+  $('launch-session').disabled = busy || !launchContext;
+  $('launch-start').disabled = busy || launchLoading || !launchContext || !navigator.onLine ||
+    (isNew ? !launchModelsReady : !selectedLaunchSession());
+  $('launch-model').disabled = busy || launchLoading || !isNew || !launchModelsReady;
   const model = launchModels.find((row) => row.key === $('launch-model').value);
-  $('launch-thinking').disabled = busy || launchLoading || !model?.thinkingLevels.length;
+  $('launch-thinking').disabled = $('launch-model').disabled || !model?.thinkingLevels.length;
+}
+function clearLaunchChoices() {
+  launchSessions = [];
+  launchModels = [];
+  launchModelsReady = false;
+  launchLoading = false;
+  $('launch-session').replaceChildren(launchOption('', t('sessionPlaceholder')), launchOption('new', t('newSession')));
+  $('launch-model').replaceChildren(launchOption('', t('hostDefault')));
+  $('launch-thinking').replaceChildren(launchOption('', t('hostDefault')));
+  $('launch-new-settings').hidden = true;
+}
+async function loadLaunchChoices(isNew = false) {
+  const request = ++launchRequest;
+  launchLoading = true;
+  launchModelsReady = false;
+  text('launch-status', t(isNew ? 'modelsLoading' : 'sessionsLoading'));
+  updateLaunchControls();
+  try {
+    const data: any = await invoke('governance.operation', { action: isNew ? 'models' : 'sessions' });
+    if (request !== launchRequest || !launchContext || !$('launch-dialog').open) return;
+    if (data.workspace !== launchContext.workspace) throw Error(t('switched'));
+    if (isNew) {
+      if (!Array.isArray(data.models)) throw Error(t('noModels'));
+      launchModels = data.models;
+      launchModelsReady = true;
+      $('launch-model').replaceChildren(launchOption('', t('hostDefault')),
+        ...launchModels.map(row => launchOption(row.key, `${row.providerName} · ${row.label}`)));
+      updateThinkingChoices();
+    } else {
+      if (!Array.isArray(data.sessions) || data.sessions.some(row => !row || typeof row.id !== 'string' || !row.id || typeof row.title !== 'string') ||
+        new Set(data.sessions.map(row => row.id)).size !== data.sessions.length) throw Error(t('noSessions'));
+      launchSessions = data.sessions;
+      $('launch-session').replaceChildren(launchOption('', t('sessionPlaceholder')),
+        ...launchSessions.map(row => launchOption('existing:' + row.id, row.title)), launchOption('new', t('newSession')));
+      if (launchSessions.length === 1) $('launch-session').value = 'existing:' + launchSessions[0].id;
+      text('launch-status', t(launchSessions.length ? 'sessionsReady' : 'noSessions'));
+    }
+  } catch (error) {
+    if (request !== launchRequest || !launchContext) return;
+    if (isNew) launchModelsReady = false;
+    text('launch-status', t(isNew ? 'modelOptionsError' : 'sessionsError', error.message));
+  } finally {
+    if (request === launchRequest) {
+      launchLoading = false;
+      updateLaunchControls();
+    }
+  }
 }
 function updateThinkingChoices() {
   const model = launchModels.find((row) => row.key === $('launch-model').value);
@@ -1332,7 +1388,7 @@ function closeLaunch() {
   if (busy) return;
   launchRequest++;
   launchContext = null;
-  launchLoading = false;
+  clearLaunchChoices();
   $('launch-dialog').close();
   updateLaunchControls();
 }
@@ -1341,44 +1397,39 @@ async function startOperation(kind) {
   if (busy || !projectSnapshot || !snapshot?.state?.task || !navigator.onLine) return;
   if ($('launch-dialog').open) return;
   if (kind === 'design' && (!designSnapshot?.draft || designSnapshot.error || designSnapshot.draft.taskId !== snapshot.state.task)) return;
-  const request = ++launchRequest;
+  launchRequest++;
   launchContext = {
     kind,
     ...(kind === 'design' ? { designRevision: designSnapshot.revision } : {}),
     revision: projectSnapshot.revision,
     workspace: snapshot.workspace
   };
-  launchModels = [];
-  launchLoading = true;
-  $('launch-model').replaceChildren(launchOption('', t('hostDefault')));
-  $('launch-thinking').replaceChildren(launchOption('', t('hostDefault')));
+  clearLaunchChoices();
   text('launch-title', `${t('launchSettings')} · ${t(operationLabel(kind))}`);
   text(
     'launch-scope',
     snapshot.workspace
   );
-  text('launch-status', t('modelsLoading'));
+  text('launch-status', t('sessionsLoading'));
   $('launch-dialog').showModal();
   updateLaunchControls();
   $('launch-cancel').focus();
-  try {
-    const data: any = await invoke('governance.operation', { action: 'models' });
-    if (request !== launchRequest || !$('launch-dialog').open) return;
-    if (data.workspace !== launchContext.workspace) throw Error(t('switched'));
-    launchModels = data.models;
-    $('launch-model').replaceChildren(
-      launchOption('', t('hostDefault')),
-      ...launchModels.map((row) => launchOption(row.key, `${row.providerName} · ${row.label}`))
-    );
-    launchLoading = false;
-    updateThinkingChoices();
-  } catch (error) {
-    if (request !== launchRequest) return;
-    launchLoading = false;
-    text('launch-status', t('modelOptionsError', error.message));
+  await loadLaunchChoices();
+}
+$('launch-session').addEventListener('change', () => {
+  launchRequest++;
+  launchLoading = false;
+  launchModels = [];
+  launchModelsReady = false;
+  $('launch-model').replaceChildren(launchOption('', t('hostDefault')));
+  $('launch-thinking').replaceChildren(launchOption('', t('hostDefault')));
+  if ($('launch-session').value === 'new') void loadLaunchChoices(true);
+  else if (!launchSessions.length) void loadLaunchChoices();
+  else {
+    text('launch-status', t('sessionsReady'));
     updateLaunchControls();
   }
-}
+});
 $('launch-model').addEventListener('change', updateThinkingChoices);
 for (const id of ['launch-close', 'launch-cancel']) $(id).addEventListener('click', closeLaunch);
 $('launch-dialog').addEventListener('cancel', (event) => {
@@ -1388,15 +1439,18 @@ $('launch-dialog').addEventListener('cancel', (event) => {
 $('launch-form').addEventListener('submit', async (event) => {
   event.preventDefault();
   if (busy || launchLoading || !launchContext || !navigator.onLine) return;
+  const session = selectedLaunchSession();
+  const isNew = $('launch-session').value === 'new';
+  if (isNew ? !launchModelsReady : !session) return;
   const owner = workspaceEpoch;
   const context = { ...launchContext };
   const modelKey = $('launch-model').value,
     thinkingLevel = $('launch-thinking').disabled ? '' : $('launch-thinking').value;
   const model = launchModels.find((row) => row.key === modelKey);
-  if (modelKey && !model) return;
+  if (isNew && modelKey && !model) return;
   lock(true);
   try {
-    const selectionLabel = t(
+    const selectionLabel = !isNew ? t('existingSelection', session.title) : t(
       'launchSelection',
       model ? `${model.providerName} · ${model.label}` : t('hostDefault'),
       thinkingLevel ? t(('thinking_' + thinkingLevel) as CopyKey) : t('hostDefault')
@@ -1415,12 +1469,14 @@ $('launch-form').addEventListener('submit', async (event) => {
     await invoke('governance.operation', {
       action: 'start',
       ...context,
-      ...(modelKey ? { modelKey } : {}),
-      ...(thinkingLevel ? { thinkingLevel } : {}),
+      ...(isNew ? { sessionMode: 'new', ...(modelKey ? { modelKey } : {}), ...(thinkingLevel ? { thinkingLevel } : {}) }
+        : { sessionMode: 'existing', sessionId: session.id }),
       confirmed: true
     });
+    if (owner !== workspaceEpoch) return;
     launchRequest++;
     launchContext = null;
+    clearLaunchChoices();
     $('launch-dialog').close();
     notify(t('operationStarted'));
     if (!$('operations-dialog').open) $('operations-dialog').showModal();
@@ -1481,6 +1537,7 @@ async function loadOperations() {
   const owner = workspaceEpoch;
   try {
     const data: any = await invoke('governance.operation', { action: 'list' });
+    if (owner !== workspaceEpoch) return;
     if (snapshot && data.workspace !== snapshot.workspace) throw Error(t('switched'));
     $('operation-runs').replaceChildren();
     text('operations-notice', data.runs.length ? t('progressHintReal') : t('noOperations'));
@@ -1491,12 +1548,13 @@ async function loadOperations() {
       heading.textContent = `${t(operationLabel(run.kind))} · ${labels[run.phase]}`;
       const note = document.createElement('p');
       note.textContent = `${run.updatedAt} · ${run.modelKey || t('hostDefault')} · ${run.thinkingLevel ? t(('thinking_' + run.thinkingLevel) as CopyKey) : t('hostDefault')}${run.error ? ' · ' + run.error : ''}`;
+      if (run.sessionMode === 'existing') note.textContent += ' · ' + t('existingStop');
       row.append(heading, note);
       if (run.sessionId)
         for (const [key, action] of [
           ['inspectResult', 'status'],
           ['openSession', 'open'],
-          ...(['creating', 'created', 'running', 'unknown'].includes(run.phase)
+          ...(run.sessionMode !== 'existing' && ['creating', 'created', 'running', 'unknown'].includes(run.phase)
             ? [['cancelOperation', 'cancel']]
             : [])
         ]) {
@@ -1510,7 +1568,8 @@ async function loadOperations() {
           });
           row.append(button);
         }
-      if (!run.sessionId && ['creating', 'created', 'unknown'].includes(run.phase)) {
+      if ((!run.sessionId && ['creating', 'created', 'unknown'].includes(run.phase)) ||
+          (run.sessionMode === 'existing' && ['created', 'unknown'].includes(run.phase))) {
         const button = document.createElement('button');
         button.type = 'button';
         button.textContent = t('resolveOperation');
@@ -1574,6 +1633,7 @@ window.pluginBridge?.on?.('workspace:changed', (workspace) => {
   document.querySelectorAll<HTMLDialogElement>('dialog[open]').forEach(dialog => dialog.close('cancel'));
   launchRequest++;
   launchContext = null;
+  clearLaunchChoices();
   selectedItem = editingItem = null;
   searchQuery = '';
   $('board-search').value = '';

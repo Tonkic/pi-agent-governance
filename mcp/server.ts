@@ -29,9 +29,13 @@ async function noLinks(file: string) {
   }
 }
 async function bindWorkspace(args: string[]) {
-  if (args.length !== 2 || args[0] !== '--workspace' || !path.isAbsolute(args[1]) || args[1].includes('\0'))
-    throw Error('Usage: node build/mcp/server.js --workspace <absolute-existing-directory>');
-  const root = path.resolve(args[1]);
+  let supplied: string | undefined;
+  if (args.length === 2 && args[0] === '--workspace') supplied = args[1];
+  else if (args.length === 2 && args[0] === '--host' && args[1] === 'claude-code')
+    supplied = process.env.CLAUDE_PROJECT_DIR; // Official MCP-child launch project, never process.cwd().
+  if (!supplied || !path.isAbsolute(supplied) || supplied.includes('\0'))
+    throw Error('Explicit workspace or supported host project context required');
+  const root = path.resolve(supplied);
   await noLinks(root);
   if (!(await fs.stat(root)).isDirectory()) throw Error('Workspace must be an existing directory');
   return root;
@@ -102,6 +106,6 @@ async function main() {
   await server.connect(transport);
 }
 main().catch(() => {
-  process.stderr.write('Agent Governance MCP startup failed. Use --workspace with an absolute existing, non-linked trusted directory and a complete Skill package.\n');
+  process.stderr.write('Agent Governance MCP startup failed. Use --workspace <absolute-directory> or --host claude-code with official CLAUDE_PROJECT_DIR; require an existing non-linked trusted project and complete Skill package.\n');
   process.exitCode = 1;
 });

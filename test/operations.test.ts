@@ -59,6 +59,7 @@ async function fixture(t) {
       root,
       {
         action: 'start',
+        sessionMode: 'new',
         kind,
         revision: (await g.run({ action: 'project_snapshot' })).revision,
         confirmed: true,
@@ -145,7 +146,7 @@ test('stale workspace and human intent changes before prompting preserve session
   await assert.rejects(
     operationInvoke(
       f.root,
-      { action: 'start', kind: 'analysis', revision: old, confirmed: true },
+      { action: 'start', sessionMode: 'new', kind: 'analysis', revision: old, confirmed: true },
       f.desktop
     ),
     /stale/
@@ -167,6 +168,7 @@ test('stale workspace and human intent changes before prompting preserve session
       b.root,
       {
         action: 'start',
+        sessionMode: 'new',
         kind: 'analysis',
         revision: (await b.g.run({ action: 'project_snapshot' })).revision,
         confirmed: true
@@ -327,7 +329,7 @@ test('model metadata is projected without secrets; explicit selection validates 
   assert.deepEqual(options.models[0].thinkingLevels, ['low', 'high']);
   assert.deepEqual(options.models[1].thinkingLevels, []);
   const revision = (await f.g.run({ action: 'project_snapshot' })).revision;
-  const start = { action: 'start', kind: 'architecture', confirmed: true, revision };
+  const start = { action: 'start', sessionMode: 'new', kind: 'architecture', confirmed: true, revision };
   for (const selection of [
     { modelKey: 'missing', thinkingLevel: 'high' },
     { modelKey: 'configured/plain', thinkingLevel: 'high' },
@@ -386,6 +388,7 @@ test('model lookup reserves submission before awaiting; a duplicate cannot relea
   };
   const args = {
     action: 'start',
+    sessionMode: 'new',
     kind: 'analysis',
     confirmed: true,
     modelKey: 'fixture/model',
@@ -766,4 +769,84 @@ test('explicitly removed old operation records stay absent on reads and do not b
   assert.equal(f.calls.filter(c => c.operation === 'agent/prompt').length, 2);
   const saved = JSON.parse(await fs.readFile(file, 'utf8'));
   assert.deepEqual(saved.runs.map(run => run.id), [next.id]);
+});
+
+test('reuse lists only local project sessions and sends into the same conversation without model changes', async (t) => {
+  const f = await fixture(t);
+  const prior = f.desktop.invoke;
+  f.desktop.listOperations = async () => ['session/list', 'session/get', 'agent/getStatus', 'agent/prompt', 'session/open', 'agent/abort'].map(id => ({ id }));
+  f.desktop.invoke = async (request) => {
+    f.calls.push(request);
+    const session = { id: 'existing', title: 'Existing context', projectPath: f.root, mode: 'agent', providerId: 'ready', modelId: 'same', thinkingLevel: 'high' };
+    if (request.operation === 'session/list') return { sessions: [session, { ...session, id: 'other', projectPath: path.dirname(f.root) }, { ...session, id: 'scheduled', scheduledRun: true }, { ...session, id: 'remote', remoteWorkspace: { hostKey: 'remote' } }] };
+    if (request.operation === 'session/get') return { session: { ...session, messages: [{ content: 'Do not copy this transcript' }] } };
+    if (request.operation === 'agent/getStatus') return { status: { isRunning: false, sessionId: 'existing' } };
+    if (request.operation === 'agent/prompt') return { accepted: true };
+    return prior(request);
+  };
+  const list = await operationInvoke(f.root, { action: 'sessions' }, f.desktop);
+  assert.deepEqual(list.sessions, [{ id: 'existing', title: 'Existing context', modelKey: 'ready/same', thinkingLevel: 'high' }]);
+  assert.doesNotMatch(JSON.stringify(list), /Do not copy|scheduled|remote/);
+  const run = await f.start('analysis', { sessionMode: 'existing', sessionId: 'existing' });
+  assert.equal(run.sessionId, 'existing'); assert.equal(run.sessionMode, 'existing'); assert.equal(run.phase, 'running');
+  assert.equal(f.calls.filter(c => c.operation === 'session/create' || c.operation === 'session/configure').length, 0);
+  const prompt = f.calls.find(c => c.operation === 'agent/prompt');
+  assert.equal(prompt.args[0].sessionId, 'existing'); assert.doesNotMatch(prompt.args[0].content, /Do not copy/);
+  const gets = f.calls.filter(c => c.operation === 'session/get'); assert.ok(gets.length >= 2);
+  assert.ok(gets.every(c => c.args[0].messageLimit === 1 && c.args[0].contentLimit === 1));
+  await assert.rejects(operationInvoke(f.root, { action: 'cancel', id: run.id, confirmed: true }, f.desktop), /shared|host/i);
+  assert.equal(f.calls.filter(c => c.operation === 'agent/abort').length, 0);
+});
+
+test('reuse fails closed for missing identity, foreign/busy/unsupported sessions and never silently creates', async (t) => {
+  for (const mode of ['missing', 'foreign', 'busy', 'plan', 'remote', 'moved', 'model']) {
+    const f = await fixture(t); let reads = 0;
+    f.desktop.invoke = async request => {
+      f.calls.push(request);
+      if (request.operation === 'session/get') return { session: { id: 'existing', title: 'Existing', projectPath: mode === 'foreign' || (mode === 'moved' && ++reads > 1) ? path.dirname(f.root) : f.root, mode: mode === 'plan' ? 'plan' : 'agent', ...(mode === 'remote' ? { remoteWorkspace: {} } : {}) } };
+      if (request.operation === 'agent/getStatus') return { status: { isRunning: mode === 'busy' } };
+      throw Error('No mutations expected');
+    };
+    await assert.rejects(f.start('analysis', { sessionMode: 'existing', ...(mode !== 'missing' ? { sessionId: 'existing' } : {}), ...(mode === 'model' ? { modelKey: 'override/model' } : {}) }));
+    assert.equal(f.calls.filter(c => ['session/create', 'agent/prompt', 'session/configure'].includes(c.operation)).length, 0, mode);
+  }
+  const f = await fixture(t);
+  await assert.rejects(f.start('analysis', { sessionMode: undefined }), /session/i);
+  assert.equal(f.calls.length, 0);
+});
+
+test('shared unknown submission releases only after inspection without abort/replay; moved sessions cannot reconcile', async t => {
+  const f = await fixture(t);
+  let moved = false;
+  const original = f.desktop.invoke;
+  f.desktop.invoke = async request => request.operation === 'session/get'
+    ? { session: { id: 'shared', mode: 'agent', projectPath: moved ? path.dirname(f.root) : f.root } }
+    : original(request);
+  f.streaming = false;
+  f.failPrompt = true;
+  await assert.rejects(f.start('analysis', { sessionMode: 'existing', sessionId: 'shared' }), /ambiguous timeout/);
+  let run = (await operationInvoke(f.root, { action: 'list' }, f.desktop)).runs[0];
+  assert.equal(run.phase, 'unknown');
+  await assert.rejects(operationInvoke(f.root, { action: 'resolve', id: run.id }, f.desktop), /Confirm/);
+  const before = f.calls.length;
+  await operationInvoke(f.root, { action: 'resolve', id: run.id, confirmed: true }, f.desktop);
+  assert.equal(f.calls.length, before);
+  assert.equal((await operationInvoke(f.root, { action: 'list' }, f.desktop)).runs[0].phase, 'failed');
+  f.failPrompt = false;
+  run = await f.start('analysis', { sessionMode: 'existing', sessionId: 'shared' });
+  // Simulate process exit after durable reuse binding but before crossing agent/prompt.
+  const file = path.join(f.root, '.governance/operations.json');
+  const interrupted = JSON.parse(await fs.readFile(file, 'utf8'));
+  interrupted.runs.find(r => r.id === run.id).phase = 'created';
+  await fs.writeFile(file, JSON.stringify(interrupted, null, 2) + '\n');
+  const promptCount = f.calls.filter(c => c.operation === 'agent/prompt').length;
+  await assert.rejects(operationInvoke(f.root, { action: 'resolve', id: run.id }, f.desktop), /Confirm/);
+  await operationInvoke(f.root, { action: 'resolve', id: run.id, confirmed: true }, f.desktop);
+  assert.equal(f.calls.filter(c => c.operation === 'agent/prompt').length, promptCount);
+  run = await f.start('analysis', { sessionMode: 'existing', sessionId: 'shared' });
+  moved = true;
+  await assert.rejects(operationInvoke(f.root, { action: 'list' }, f.desktop), /Cannot verify previous operation/);
+  const stored = JSON.parse(await fs.readFile(path.join(f.root, '.governance/operations.json'), 'utf8'));
+  assert.equal(stored.runs.find(r => r.id === run.id).phase, 'running');
+  assert.equal(f.calls.filter(c => c.operation === 'agent/abort' || c.operation === 'session/create').length, 0);
 });
