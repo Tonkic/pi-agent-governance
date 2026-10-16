@@ -20,6 +20,18 @@
       "gitTaskId": null
     },
     {
+      "id": "host-context",
+      "title": "复用宿主项目、会话与上下文",
+      "description": "开发和源码交付完成：原项目/已有会话复用、安全恢复、Claude环境/Codex只读Hook，共享核心。163测试、98+7图、10行为和Linux/Windows CI38975005223通过；main c79f838已正常同步，官方62文件包权限/版本不变。真实安装客户端未冒充通过；证据changes/active/project-board-release/host-context.md。",
+      "blocker": "",
+      "stage": "done",
+      "taskId": "project-board-release",
+      "criteria": [],
+      "architectureImpact": "affects",
+      "gitTaskId": null,
+      "completedAt": "2026-10-16T22:33:08.488Z"
+    },
+    {
       "id": "mcp-skills-release",
       "title": "共享MCP/Skills与大版本GitHub发布",
       "description": "共享核心MCP/Skills、多目标构建与仅稳定vN.0.0 GitHub Release Action已完成。本地及真实Ubuntu/Windows CI38782258411全部通过：ci/类型/构建/152测试/行为/浏览器；解包生产安装和官方PI61文件713439字节通过。main45a2f87已普通推送核对。两次CI问题已复现修复，不放宽门禁。0.7.8不建标签/真实Release/市场/npm发布/安装；原宿主检查保留。",
@@ -229,18 +241,6 @@
       "gitTaskId": null
     },
     {
-      "id": "host-context",
-      "title": "复用宿主项目、会话与上下文",
-      "description": "复用宿主已有项目、会话与上下文；PI工具/面板、Claude环境、Codex只读Hook已实现，163测试/98+7图/10行为通过，正式包及文档已更新，交付收尾中。证据changes/active/project-board-release/host-context.md。",
-      "blocker": "",
-      "stage": "doing",
-      "taskId": "project-board-release",
-      "criteria": [],
-      "architectureImpact": "affects",
-      "gitTaskId": null,
-      "completedAt": null
-    },
-    {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
       "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
@@ -262,5 +262,5 @@
       "completedAt": "2026-10-15T19:41:35.780Z"
     }
   ],
-  "updatedAt": "2026-10-16T22:11:45.923Z"
+  "updatedAt": "2026-10-16T22:33:08.488Z"
 }
