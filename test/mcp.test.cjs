@@ -149,7 +149,7 @@ test('MCP source fingerprints and design draft identity remain separate shared-c
   await assert.rejects(f.call({ action: 'architecture_design_confirm' }), /Invalid governance arguments/);
 });
 
-test('real downloadable MCP target installs production-only lock and serves tools without repository or host dependencies', { timeout: 120000 }, async t => {
+test('real downloadable MCP target installs production-only lock and serves tools without repository or host dependencies', { timeout: 240000 }, async t => {
   const { execFileSync } = require('node:child_process');
   const { buildDistributions, sharedModules, skillFiles, consoleFiles, hostFiles } = require('../scripts/build-distributions.cjs');
   const { safeFile } = require('../scripts/release-safety.cjs');
@@ -185,7 +185,8 @@ test('real downloadable MCP target installs production-only lock and serves tool
   assert.ok(names.includes('npm-shrinkwrap.json'));
   assert.ok(names.includes('plugin/skills/architecture-copilot/LICENSE'));
   for (const name of names) assert.doesNotMatch(name, /(?:^|\/)(?:node_modules|\.pi|\.governance|\.secrets|STATE.json|test)(?:\/|$)/);
-  execFileSync(process.execPath, [process.env.npm_execpath, 'ci', '--omit=dev', '--ignore-scripts', '--offline', '--no-audit', '--no-fund'], { cwd: unpack, encoding: 'utf8', timeout: 90000, env: { ...process.env, NODE_PATH: '' } });
+  // Hosted Windows runs hit the 90s install limit; allow 180s once, retaining a finite bound and every assertion.
+  execFileSync(process.execPath, [process.env.npm_execpath, 'ci', '--omit=dev', '--ignore-scripts', '--offline', '--no-audit', '--no-fund'], { cwd: unpack, encoding: 'utf8', timeout: 180000, env: { ...process.env, NODE_PATH: '' } });
   await assert.rejects(fs.stat(path.join(unpack, 'node_modules/playwright')));
   await assert.rejects(fs.stat(path.join(unpack, 'node_modules/typescript')));
   const f = await fixture(t, path.join(unpack, 'build/mcp/server.js'), unpack);
