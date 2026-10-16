@@ -13,16 +13,18 @@
 
 ## 实际证据
 
-实现阶段提交`d5f0ca81a5d514139cb87220a02c0ed4c86ef48d`；UI受管提交`1f212384456590540bcfd5cc00dc9f95ece22a0f`，集成`96b46941d238147ea1e305cbd9352fb4675ab95e`。最终交付SHA与产物校验在后续段更新。
+实现阶段`d5f0ca81a5d514139cb87220a02c0ed4c86ef48d`；UI受管`1f212384456590540bcfd5cc00dc9f95ece22a0f`，集成`96b46941d238147ea1e305cbd9352fb4675ab95e`。最终实现`aa5b5ac8d193e7536f8a912d8850b152906f7e14`已git_verify；main集成`c79f83891b3a409659ae43702a81706cc114f35b`重测并正常推送，远端完整SHA核对一致。
 
 - 实际npm ci：0漏洞；typecheck/build/full测试163/163，无跳过。真实SDK子进程验证Claude环境绑定、空目录无自动init、跨cwd不串写和缺失/相对/文件/链接拒绝；Hook进程验证两项目/子目录/worktree与坏输入、无历史读取和状态字节不变。
 - PI入口VM使用编译后的真实核心：调用会话项目A与可见项目B隔离；session元数据查询有界。后端覆盖无ID/忙碌/异项目/模型覆盖/发送前移动拒绝、原会话prompt且无create/configure/abort。
 - Edge面板98张截图和真实HTTP7张截图通过；包含多候选/显式new/错误不fallback/晚到结果/离线/工作区切换/共享取消隐藏及解除确认。截图自动生成，不声明安装宿主或人工目视已验收。
 - 一次静态复核找到shared created退出恢复缺口；新增回归真实失败`Only unresolved sessionless creation or shared unknown submission can be released`，修复后full163通过。仅修复具体缺陷，未重启广泛复核。
 - 行为契约原关联源码增长至505629字符，被500000预算真实拦截；独立会话浏览器契约用例拆到`test/host-context-browser.cjs`并继续串行执行，原10场景、指纹和预算不变，之后行为检查通过。新增离线用例改为等待页面事件后断言，不弱化要求。
-- 官方PluginCheck通过62文件；PluginPack已执行。最终包哈希及提交后分发检查待最终记录。入口shim仍有既有两项unused提示与显式高风险授权提示，不增加权限。
+- 官方PluginCheck/Pack通过62文件743444字节，SHA256 `6f1777c9c7e20bc7febe01fb384952a29e09d720cd973d304ed66c83ae5d3df6`。提交后与main分别重跑ci/typecheck/build/163测试、98+7图、10行为、build:distributions与readAssets完整校验；通用包在实现SHA为128415字节，SHA `ebdb2bff0d76df088c40bed4d24d9d0c2e4b25e3f20320b6d88b860b0b549c22`。release plan始终publish:false/mutation:false。入口shim既有两项unused提示和高风险授权提示保留，权限不增。
 
-日志保存在当前会话scratch的`host-context-*.log`；截图`host-context-combined-browser/`与`host-context-behaviors/`。日志为本机证据，不进入发布载荷。曾误用不存在的check:i18n脚本，未据此声称双语检查通过；双语UI由实际浏览器覆盖，正式静态检查单独记录。
+日志在当前会话scratch的`host-context-*.log`；提交后截图`host-context-postcommit/`、main截图`host-context-main/`。曾误用不存在的check:i18n脚本，未据此声称静态双语检查通过；中英文由实际浏览器覆盖。日志不进入载荷。
+
+实际[Tests CI 38975005223](https://github.com/Tonkic/pi-agent-governance/actions/runs/38975005223)的Linux/Windows均完整通过。同一提交首次Windows162/163通过，唯一失败为既有解包生产npm ci子进程90秒ETIMEDOUT；只重跑失败job一次后全部通过，未修改源码/断言/预算/超时。失败与重跑日志均保留，不称首次全部通过。
 
 ## 能力边界
 
