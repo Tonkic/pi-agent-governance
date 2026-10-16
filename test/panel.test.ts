@@ -83,6 +83,7 @@ test('browser bundle starts without Node globals and reports static preview', as
   const elements = new Map();
   const document = {
     addEventListener() {}, documentElement: { dataset: {} }, querySelectorAll: () => [], querySelector: () => ({ hidden: false }),
+    createElement: () => ({ value: '', textContent: '' }),
     getElementById: id => {
       if (!elements.has(id)) elements.set(id, { textContent: '', classList: { toggle() {} }, reset() {}, setAttribute() {}, addEventListener() {}, replaceChildren() {} });
       return elements.get(id);
@@ -258,14 +259,22 @@ test('renderer operation buttons honor offline state both on render and on unloc
     searchQuery: '', t: key => key, operationLabel: key => key, labels: {}, text() {},
     updateLaunchControls() {}, updateItemNavigation() {}, updateDesignControls() {},
     invoke: async () => ({ workspace: 'fixture', runs: [
+      { id: 'shared', kind: 'analysis', phase: 'running', sessionId: 'host-session', sessionMode: 'existing' },
+      { id: 'new', kind: 'analysis', phase: 'running', sessionId: 'new-session', sessionMode: 'new' },
       { id: 'unknown', kind: 'analysis', phase: 'unknown' },
       { id: 'running', kind: 'analysis', phase: 'running', sessionId: 'session' }
     ] }) };
   const load = await rendererSeam('async function loadOperations(', "$('documentation-start')", context);
   await load();
   const buttons = $('operation-runs').children.flatMap(row => row.children.filter(child => child.type === 'button'));
-  const assertButtons = () => assert.deepEqual(buttons.map(button => !!button.disabled), [false, false, true, true]);
+  const assertButtons = () => {
+    assert.deepEqual(buttons.slice(0, 4).map(button => !!button.disabled), [false, false, true, true]);
+    assert.deepEqual(buttons.slice(4).map(button => !!button.disabled), [false, false, true, false, false]);
+  };
   assertButtons();
+  const shared = $('operation-runs').children.at(-1);
+  assert.match(shared.children[1].textContent, /existingStop/);
+  assert.deepEqual(shared.children.filter(child => child.type === 'button').map(button => button.textContent), ['inspectResult', 'openSession']);
   const lock = await rendererSeam('function lock(', 'async function invoke(', context);
   lock(true); assert.ok(buttons.every(button => button.disabled));
   lock(false); assertButtons();
@@ -306,7 +315,7 @@ test('three-stage renderer folds accepted snapshots into done without mutating h
   assert.doesNotMatch(css, /data-stage=['"]accepted|card-review-actions|review-button|accept-dialog|criterion-check/);
 });
 test('renderer cannot launch new acceptance operations, even programmatically', async () => {
-  const start = await rendererSeam('async function startOperation(', "$('launch-model').addEventListener", {});
+  const start = await rendererSeam('async function startOperation(', "$('launch-session').addEventListener", {});
   // No DOM or bridge context: a legacy kind must return before touching either.
   await start('acceptance');
 });
