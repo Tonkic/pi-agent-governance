@@ -233,152 +233,8 @@ const models = {
   const rootColor = (p, name) =>
     p.locator('html').evaluate((el, key) => el.style.getPropertyValue(key), name);
   try {
-    // Real browser + explicit metadata-only operation contract, independent of the worker's old backend.
-    {
-      const requests = [], starts = [];
-      let sessions = [{ id: 'host-one', title: '<Host project chat>', modelKey: 'kept/model', thinkingLevel: 'high' }];
-      let catalogError = false, catalogWorkspace = null, holdCatalog = false, releaseCatalog;
-      let rejectSession = false, contractRun = null, holdModelContract = false, releaseModelContract;
-      const awaitRequest = async ready => {
-        const deadline = Date.now() + 5000;
-        while (!ready() && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 5));
-        assert.ok(ready(), 'Expected held bridge request within five seconds');
-      };
-      const p = await makePage('en', async (payload, workspace) => {
-        requests.push(payload);
-        if (payload.action === 'sessions') {
-          const result = { workspace: catalogWorkspace || workspace, sessions: [...sessions] };
-          if (holdCatalog) await new Promise(resolve => { releaseCatalog = resolve; });
-          return catalogError ? { ok: false, error: 'catalog unsupported fixture' } : { ok: true, result };
-        }
-        if (payload.action === 'models') {
-          if (holdModelContract) await new Promise(resolve => { releaseModelContract = resolve; });
-          return { ok: true, result: { workspace, models: modelRows } };
-        }
-        if (payload.action === 'start') {
-          starts.push(payload);
-          if (rejectSession) return { ok: false, error: 'Selected session no longer available' };
-          contractRun = { id: 'contract-run', kind: payload.kind, phase: 'running', updatedAt: 'fixture', ...payload };
-          return { ok: true, result: { workspace, run: contractRun } };
-        }
-        return { ok: true, result: { workspace, runs: contractRun ? [contractRun] : [] } };
-      });
-      const open = async () => {
-        await p.locator('#analysis-start').click();
-        await p.waitForFunction(() => !document.querySelector('#launch-status').textContent.includes('Loading'));
-      };
-      const submit = async () => {
-        await p.locator('#launch-start').click();
-        await p.locator('#confirm-dialog button[value="confirm"]').click();
-        await settled(p);
-      };
-      await open();
-      assert.equal(await p.locator('#launch-session').inputValue(), 'existing:host-one');
-      assert.equal(await p.locator('#launch-new-settings').isVisible(), false);
-      assert.equal(requests.filter(r => r.action === 'models').length, 0);
-      await capture(p, 'existing-session-sole');
-      await p.locator('#launch-start').click();
-      assert.match(await p.locator('#confirm-description').textContent(), /<Host project chat>/);
-      assert.match(await p.locator('#confirm-description').textContent(), /context.*retained|context are retained/);
-      assert.match(await p.locator('#confirm-description').textContent(), /charges/);
-      assert.equal(await p.locator('#confirm-description Host').count(), 0, 'Session titles are text, not HTML');
-      await p.locator('#confirm-dialog button[value="cancel"]').click();
-      await settled(p);
-      assert.equal(await p.locator('#launch-dialog').evaluate(el => el.contains(document.activeElement)), true);
-      await submit();
-      assert.equal(starts.length, 1);
-      assert.equal(starts[0].sessionMode, 'existing');
-      assert.equal(starts[0].sessionId, 'host-one');
-      assert.equal('modelKey' in starts[0], false);
-      assert.equal('thinkingLevel' in starts[0], false);
-      assert.equal('transcript' in starts[0], false);
-      assert.equal(requests.filter(r => r.action === 'models').length, 0);
-      assert.equal(await p.getByRole('button', { name: 'Cancel task', exact: true }).count(), 0);
-      assert.match(await p.locator('.operation-run').textContent(), /stop in the host/);
-      assert.equal(await p.getByRole('button', { name: 'Open Agent session', exact: true }).count(), 1);
-      await capture(p, 'existing-session-progress');
-      await p.locator('#operations-close').click();
-      sessions.push({ id: 'host-two', title: 'Second project chat', modelKey: null, thinkingLevel: null });
-      await open();
-      assert.equal(await p.locator('#launch-session').inputValue(), '');
-      assert.match(await p.locator('#launch-session option').first().textContent(), /no current session/);
-      assert.equal(await p.locator('#launch-start').isDisabled(), true);
-      await p.locator('#launch-session').selectOption('existing:host-two');
-      await capture(p, 'existing-session-multiple');
-      rejectSession = true;
-      await submit();
-      assert.match(await p.locator('#launch-status').textContent(), /no longer available/);
-      assert.equal(starts.at(-1).sessionId, 'host-two');
-      assert.equal(requests.filter(r => r.action === 'models').length, 0);
-      rejectSession = false;
-      await p.locator('#launch-session').selectOption('new');
-      await p.waitForFunction(() => !document.querySelector('#launch-model').disabled);
-      await p.locator('#launch-model').selectOption('fixture/reasoning');
-      await p.locator('#launch-thinking').selectOption('high');
-      await submit();
-      assert.equal(starts.at(-1).sessionMode, 'new');
-      assert.equal(starts.at(-1).modelKey, 'fixture/reasoning');
-      assert.equal(starts.at(-1).thinkingLevel, 'high');
-      assert.equal('sessionId' in starts.at(-1), false);
-      await p.locator('#operations-close').click();
-      const beforeErrors = starts.length, modelsBeforeErrors = requests.filter(r => r.action === 'models').length;
-      for (const problem of ['empty', 'error', 'workspace']) {
-        sessions = [];
-        catalogError = problem === 'error'; catalogWorkspace = problem === 'workspace' ? roots[1] : null;
-        await open();
-        assert.equal(await p.locator('#launch-start').isDisabled(), true);
-        assert.equal(await p.locator('#launch-session').isDisabled(), false);
-        assert.equal(await p.locator('#launch-session').inputValue(), '');
-        assert.match(await p.locator('#launch-status').textContent(), problem === 'empty' ? /activeSession API/ : /Session list unavailable/);
-        await p.locator('#launch-cancel').click();
-      }
-      assert.equal(starts.length, beforeErrors);
-      assert.equal(requests.filter(r => r.action === 'models').length, modelsBeforeErrors);
-      // Catalog failure must not prevent explicitly choosing new.
-      await open();
-      await chooseNew(p);
-      assert.equal(await p.locator('#launch-new-settings').isVisible(), true);
-      await p.locator('#launch-cancel').click();
-      catalogError = false; catalogWorkspace = null;
-      sessions = [{ id: 'late-session', title: 'Late session', modelKey: null, thinkingLevel: null }];
-      holdCatalog = true;
-      await p.locator('#analysis-start').click();
-      await p.waitForFunction(() => document.querySelector('#launch-dialog').open);
-      await awaitRequest(() => releaseCatalog);
-      await p.keyboard.press('Escape');
-      holdCatalog = false; releaseCatalog(); releaseCatalog = null;
-      await p.waitForTimeout(30);
-      assert.equal(await p.locator('#launch-session').inputValue(), '');
-      assert.equal(await p.locator('#launch-dialog').evaluate(el => el.open), false);
-      // A new-mode request cannot overwrite a subsequent existing selection.
-      await open();
-      holdModelContract = true;
-      await p.locator('#launch-session').selectOption('new');
-      await awaitRequest(() => releaseModelContract);
-      await p.locator('#launch-session').selectOption('existing:late-session');
-      holdModelContract = false; releaseModelContract();
-      await p.waitForTimeout(30);
-      assert.equal(await p.locator('#launch-new-settings').isVisible(), false);
-      assert.equal(await p.locator('#launch-model option').count(), 1);
-      await p.context().setOffline(true);
-      assert.equal(await p.locator('#launch-start').isDisabled(), true);
-      await p.context().setOffline(false);
-      await p.locator('#launch-cancel').click();
-      // Switching projects closes the launch and discards late metadata, not drafts.
-      holdCatalog = true;
-      await p.locator('#analysis-start').click();
-      await awaitRequest(() => releaseCatalog);
-      const originalRoot = root; root = roots[1];
-      await p.evaluate(next => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path: next } })), root);
-      await settled(p);
-      holdCatalog = false; releaseCatalog();
-      await p.waitForTimeout(30);
-      assert.equal(await p.locator('#launch-dialog').evaluate(el => el.open), false);
-      assert.equal(await p.locator('#launch-session option').count(), 2);
-      assert.equal(await p.locator('#launch-session').inputValue(), '');
-      root = originalRoot;
-      await p.close();
-    }
+    await require('./host-context-browser.cjs')({ assert, makePage, modelRows, capture, chooseNew, settled, roots,
+      getRoot: () => root, setRoot: value => { root = value; } });
     const page = await makePage();
     root = roots[1];
     await page.evaluate((path) => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root);
@@ -1023,23 +879,23 @@ const models = {
     const writesBeforeResolve = operationWrites.length;
     await page.context().setOffline(true);
     await page.waitForFunction(() => document.querySelector('[data-operation-write]').disabled);
-    assert.equal(await page.getByRole('button', { name: '已核对 — 解除创建阻塞', exact: true }).isDisabled(), true);
+    assert.equal(await page.getByRole('button', { name: '已核对 — 解除操作阻塞', exact: true }).isDisabled(), true);
     await page.context().setOffline(false);
     await page.waitForFunction(() => !document.querySelector('[data-operation-write]').disabled);
-    await page.getByRole('button', { name: '已核对 — 解除创建阻塞', exact: true }).click();
+    await page.getByRole('button', { name: '已核对 — 解除操作阻塞', exact: true }).click();
     await page.context().setOffline(true);
     await confirm(page);
     assert.equal(operationWrites.length, writesBeforeResolve, 'Disconnect during resolve confirmation must not invoke the bridge');
     await page.context().setOffline(false);
     await page.waitForFunction(() => !document.querySelector('[data-operation-write]').disabled);
-    await page.getByRole('button', { name: '已核对 — 解除创建阻塞', exact: true }).click();
+    await page.getByRole('button', { name: '已核对 — 解除操作阻塞', exact: true }).click();
     await confirm(page, false);
     assert.equal(
       hostCalls.filter((c) => c.operation === 'agent/prompt').length,
       promptsBeforeRecovery
     );
     await capture(page, 'creation-recovery');
-    await page.getByRole('button', { name: '已核对 — 解除创建阻塞', exact: true }).click();
+    await page.getByRole('button', { name: '已核对 — 解除操作阻塞', exact: true }).click();
     await confirm(page);
     assert.equal(
       hostCalls.filter((c) => c.operation === 'agent/prompt').length,

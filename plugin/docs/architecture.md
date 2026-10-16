@@ -9,13 +9,13 @@
 
 | 文件 | 职责 | 先看哪里 |
 | --- | --- | --- |
-| `main.ts` | 注册 Agent 工具、命令和面板桥接 | `onLoad`、`execute` |
+| `main.ts` | 注册工具/面板；工具以可信调用会话绑定项目，面板跟随主工作区 | `onLoad`、`execute` |
 | `tool.ts` | 定义工具动作及参数 | 动作与参数定义 |
 | `core.ts` | 管理任务状态、验证、归档和文件锁 | `Governance.run` |
 | `panel.ts` | 限定面板操作，检查确认与版本 | `panelInvoke` |
 | `project.ts` | 保存看板、架构和源码指纹 | `ProjectData.run` |
 | `git.ts` | 管理 worktree、范围和提交验证 | `GitGovernance.run` |
-| `operations.ts` | 创建独立任务会话，校验模型、记录状态和取消 | `operationInvoke`、`taskPrompt` |
+| `operations.ts` | 默认复用同项目会话，显式新建、身份/空闲校验与安全恢复 | `operationInvoke`、`localSession` |
 | `behaviors.ts` | 安全读取行为正文、关联与本机验证状态 | `behaviorSnapshot`、`behaviorState` |
 | `design.ts`、`renderer/design.ts` | 管理独立设计草案、追加基线及画板交互 | `ArchitectureDesign.run`、`designWrite` |
 | `renderer/panel.ts` | 加载数据、展示状态、提交表单 | `load`、`mutate` |
@@ -38,7 +38,7 @@ core.ts → git.ts → Git common directory
 
 `project.ts` 复用 `core.ts` 提供的锁、状态和文件操作。面板写入使用动作白名单、确认和版本校验；Git 写入及任务关闭使用 Agent 工具或 CLI。
 
-`mcp/server.ts`绑定显式绝对工作区，限制输入缓冲和固定Skill资源；每次调用创建新核心对象，避免共享修订令牌。它不引用PI宿主接口，不自动初始化项目或运行Agent。MCP客户端负责用户确认，核心继续校验修订/锁/路径与受管Git范围。用法与限制见 [MCP](mcp.md)。
+`mcp/server.ts`绑定显式绝对工作区或Claude官方启动项目环境；输入缓冲/Skill资源固定，每次调用创建新核心对象。`mcp/context-hook.ts`从官方Hook stdin读取session/cwd，仅向原会话返回当前项目状态；不持久化会话库、读历史或动态重绑MCP。两者不引用PI接口、不自动初始化或运行Agent，核心继续校验修订/锁/路径/Git。用法见 [MCP](mcp.md)。
 
 `web/server.ts`仅监听loopback，固定工作区、随机会话凭据及Host/Origin检查后分发白名单面板动作；静态资源也用固定清单。复用renderer，不复制状态或Agent实现。独立网页允许人工基线确认，但不提供任意工具、Git写入或宿主会话控制。见 [本地控制台](web-console.md)。
 

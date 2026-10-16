@@ -419,9 +419,9 @@ async function operationInvoke(
     if (payload.confirmed !== true)
       throw Error('Confirm that the interrupted operation has been inspected in the host');
     if (inFlight.has(g.root)) throw Error('Wait for session submission to settle');
-    const sharedUnknown = run?.sessionMode === 'existing' && run?.phase === 'unknown';
-    if (!run || (!sharedUnknown && (run.sessionId || !activePhases.includes(run.phase))))
-      throw Error('Only unresolved sessionless creation or shared unknown submission can be released');
+    const sharedInterrupted = run?.sessionMode === 'existing' && ['created', 'unknown'].includes(run?.phase);
+    if (!run || (!sharedInterrupted && (run.sessionId || !activePhases.includes(run.phase))))
+      throw Error('Only unresolved sessionless creation or shared interrupted submission can be released');
     return updateRun(g.root, run.id, {
       phase: 'failed',
       error:

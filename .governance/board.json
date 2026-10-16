@@ -231,7 +231,7 @@
     {
       "id": "host-context",
       "title": "复用宿主项目、会话与上下文",
-      "description": "附着PI/Codex/Claude Code支持的官方扩展入口，不重复选目录；默认复用同项目已有会话，不复制历史或静默新建，检查切换/忙碌/身份与资源回收。",
+      "description": "复用宿主已有项目、会话与上下文；PI工具/面板、Claude环境、Codex只读Hook已实现，163测试/98+7图/10行为通过，正式包及文档已更新，交付收尾中。证据changes/active/project-board-release/host-context.md。",
       "blocker": "",
       "stage": "doing",
       "taskId": "project-board-release",
@@ -262,5 +262,5 @@
       "completedAt": "2026-10-15T19:41:35.780Z"
     }
   ],
-  "updatedAt": "2026-10-16T21:46:55.290Z"
+  "updatedAt": "2026-10-16T22:11:45.923Z"
 }

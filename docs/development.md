@@ -13,7 +13,7 @@ npm run build
 npm test
 ```
 
-构建成功后，插件 JS 位于 `plugin/runtime/`，MCP入口位于 `build/mcp/server.js`，CLI和测试位于 `build/`。MCP启动与客户端配置见 [MCP与Skill](mcp.md)。读取当前目录的治理状态：
+构建后插件JS在`plugin/runtime/`，MCP入口在`build/mcp/server.js`，只读宿主Hook在`build/mcp/context-hook.js`，CLI/测试在`build/`。宿主绑定和配置见 [MCP与Skill](mcp.md)。读取当前目录的治理状态：
 
 ```powershell
 '{"action":"status"}' | node build/scripts/governance.js
@@ -54,11 +54,11 @@ npm run test:browser
 | 看板与架构 | `plugin/project.ts` | `test/project.test.ts` |
 | Git 协作 | `plugin/git.ts` | `test/git.test.ts` |
 | 界面与语言 | `plugin/renderer/`、`plugin/panel.ts` | `test/panel.test.ts`、`test/browser.cjs` |
-| Agent 任务与模型 | `plugin/operations.ts` | `test/operations.test.ts` |
+| Agent任务、已有会话复用/工具项目绑定 | `plugin/operations.ts`、`plugin/main.ts` | `test/operations.test.ts`、`test/host-context.test.cjs` |
 | 说明与生成规则 | `docs/`、`scripts/build-docs.cjs` | `test/layout.test.cjs` |
 | 行为文档与场景证据 | `plugin/behaviors.ts`、`scripts/check-behaviors.cjs` | `test/behaviors.test.cjs`、`npm run check:behaviors` |
 | 构建路径 | `tsconfig.json`、`scripts/build.cjs` | `test/layout.test.cjs` |
-| MCP工具/Skill资源/提示 | `mcp/server.ts`、`plugin/skills/architecture-copilot/` | `test/mcp.test.cjs`、真实SDK协议测试 |
+| MCP/只读宿主Hook/Skill资源 | `mcp/server.ts`、`mcp/context-hook.ts`、`plugin/skills/architecture-copilot/` | `test/mcp.test.cjs`，真实SDK与stdin fixtures，非安装客户端E2E |
 | 本地浏览器控制台 | `web/server.ts`、`web/bridge.js` | `test/web.test.cjs`、`test/web-browser.cjs`，由test:browser串行执行 |
 | 多目标分发与GitHub发布 | `scripts/build-distributions.cjs`、`scripts/github-release.cjs`、`.github/workflows/` | `test/distributions.test.cjs`、`test/release.test.cjs` |
 

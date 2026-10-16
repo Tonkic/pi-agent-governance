@@ -14,13 +14,13 @@ node build/mcp/server.js --workspace D:/projects/example
 
 开发仓库先运行 `npm ci`、`npm run build`，再执行同一条 node 命令。不要把 `npm run build` 或带日志的包装脚本配置成 stdio 入口。
 
-`--workspace` 必须是显式、已存在的绝对目录。不接受相对路径、额外参数、符号链接或自动切换项目。启动和查询不会自动初始化；用户明确授权后才调用 `governance` 的 `init` 动作。
+固定模式`--workspace`必须是显式、已存在的绝对目录。Claude Code可改用`--host claude-code`，由服务内部读取官方MCP子进程环境`CLAUDE_PROJECT_DIR`，无需再填项目路径；缺失、相对、文件或链接路径均拒绝，不回退cwd/home/工具目录。两种模式互斥，均不自动初始化或切换；明确授权后才调用`init`。
 
 服务在 stdin/stdout 上交换 MCP 消息；诊断仅写 stderr。单条输入缓冲上限1MiB，断开输入后退出。只连接可信本地客户端，不开放 HTTP 端口。
 
 ## 客户端配置
 
-包中的 `mcp/clients/` 提供示例；把 node、server.js 和 workspace 三个路径改成实际绝对路径。Linux/macOS 可用 `/usr/bin/node`、`/opt/agent-governance/build/mcp/server.js`、`/home/me/project`，不要照搬 Windows 示例。
+包中`mcp/clients/`提供示例。只把node和工具安装路径改成实际绝对路径；Claude示例自动绑定宿主启动项目，Codex/Pi固定MCP示例还需指定workspace。Linux/macOS使用本机路径，不照搬Windows示例。
 
 | 客户端 | 示例 | 合并位置 |
 | --- | --- | --- |
@@ -29,6 +29,16 @@ node build/mcp/server.js --workspace D:/projects/example
 | Pi | `pi.json` | `.pi/mcp.json` 或 `~/.pi/agent/mcp.json` 的 `mcpServers` |
 
 保留既有配置，不覆盖其它服务。各客户端版本与信任/权限界面不同，按其官方说明启用；仓库不自动安装或配置客户端。这里提供配置示例，不声称已在各客户端完成端到端测试。
+
+### 复用项目和当前会话
+
+- Claude Code的`CLAUDE_PROJECT_DIR`是启动项目，不随会话中的cd自动改变。进入另一项目/worktree后重建对应MCP连接；不把roots中的第一项或额外授权目录当活动项目。旧版未提供该环境时明确失败，可人工配置固定模式。
+- Codex可将`codex-hooks.json`的hooks合并到官方`~/.codex/hooks.json`或受信项目`.codex/hooks.json`，只替换helper安装路径，保留已有hooks并按宿主要求审阅信任。SessionStart/UserPromptSubmit从官方stdin读取session_id/cwd，将有界只读状态注入原会话；不读transcript_path，不持久化会话注册表、不初始化、不调用模型。helper也支持`--host claude-code`的同类Hook。
+- Hook从cwd向上找最近STATE，遇未初始化的checkout/worktree立即拒绝，不串回父仓库；输入限64KiB/3秒，不接受缺失身份或链接。它是只读上下文提示，不是MCP动态重绑器或写入授权；普通MCP仍绑定启动项目。
+- 在已加载的原会话继续调用治理工具/Architecture Copilot Skill，即使用宿主已有上下文与模型；不调用codex exec、claude -p或另开SDK聊天。Claude Skill不应设context:fork。这里不提供各CLI原生插件安装器或新上下文数据库。
+- 首次加载/重载依客户端版本；Codex原生插件安装后官方要求新session，不静默代办。CLI/IDE/cloud/WSL/SSH能力不同，本地Hook不证明通用内嵌面板或远程localhost可达。当前验证为真实SDK/本地进程fixtures，非各客户端安装后端到端验收。
+
+接口依据：[Claude MCP](https://code.claude.com/docs/en/mcp)、[Claude Hooks](https://code.claude.com/docs/en/hooks)、[Codex Hooks](https://developers.openai.com/codex/hooks)。不扫描`~/.codex`/`~/.claude`私有会话或凭据。
 
 ## 工具与 Skill
 

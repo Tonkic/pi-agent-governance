@@ -1566,7 +1566,8 @@ async function loadOperations() {
                     });
                     row.append(button);
                 }
-            if (!run.sessionId && ['creating', 'created', 'unknown'].includes(run.phase)) {
+            if ((!run.sessionId && ['creating', 'created', 'unknown'].includes(run.phase)) ||
+                (run.sessionMode === 'existing' && ['created', 'unknown'].includes(run.phase))) {
                 const button = document.createElement('button');
                 button.type = 'button';
                 button.textContent = t('resolveOperation');

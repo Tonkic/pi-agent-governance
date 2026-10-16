@@ -834,6 +834,16 @@ test('shared unknown submission releases only after inspection without abort/rep
   assert.equal((await operationInvoke(f.root, { action: 'list' }, f.desktop)).runs[0].phase, 'failed');
   f.failPrompt = false;
   run = await f.start('analysis', { sessionMode: 'existing', sessionId: 'shared' });
+  // Simulate process exit after durable reuse binding but before crossing agent/prompt.
+  const file = path.join(f.root, '.governance/operations.json');
+  const interrupted = JSON.parse(await fs.readFile(file, 'utf8'));
+  interrupted.runs.find(r => r.id === run.id).phase = 'created';
+  await fs.writeFile(file, JSON.stringify(interrupted, null, 2) + '\n');
+  const promptCount = f.calls.filter(c => c.operation === 'agent/prompt').length;
+  await assert.rejects(operationInvoke(f.root, { action: 'resolve', id: run.id }, f.desktop), /Confirm/);
+  await operationInvoke(f.root, { action: 'resolve', id: run.id, confirmed: true }, f.desktop);
+  assert.equal(f.calls.filter(c => c.operation === 'agent/prompt').length, promptCount);
+  run = await f.start('analysis', { sessionMode: 'existing', sessionId: 'shared' });
   moved = true;
   await assert.rejects(operationInvoke(f.root, { action: 'list' }, f.desktop), /Cannot verify previous operation/);
   const stored = JSON.parse(await fs.readFile(path.join(f.root, '.governance/operations.json'), 'utf8'));
