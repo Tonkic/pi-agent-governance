@@ -28,6 +28,8 @@
 
 后续仅记录提交的CI38976691347：Linux全通过，Windows163单元测试通过，但行为浏览器在`test/browser.cjs`恢复按钮短暂重建时直接读空节点.disabled而失败。提取真实源码条件的最小Edge复现产生同样TypeError；六处同类等待改为节点存在且disabled精确匹配true/false，无预算/超时/断言放宽。实际复现green、98+7图及10行为再次通过。日志`host-context-dom-wait-{red,green}.log`与`host-context-ci-wait-*`；运行代码/权限/官方包不变。
 
+CI38978807830的Linux全通过，Windows又在同一生产依赖安装子进程90秒ETIMEDOUT，不能继续当偶发首次故障忽略。仅该测试的安装等待一次调整为180秒、外层240秒；保留offline/omit-dev/ignore-scripts/锁文件、解包、真实SDK/Web及全部断言，不改产品/协议/读取/安全预算，也不无限等待或重试。此为CI安装时间预算调整，不声称已证明底层runner根因。
+
 ## 能力边界
 
 PI公开接口无可靠active-session事件，面板不猜前台会话；支持范围仅本地Agent。MCP不是聊天API，Claude启动项目不随cd自动切换；Codex普通MCP仍固定绑定，Hook不改变该绑定。Codex原生插件新安装官方要求新会话，不暗中创建；IDE/cloud/SSH/WSL与热载入未实测。不声称已安装PI/Codex/Claude E2E、付费模型、原总体真实宿主/换行指纹/一次启动接续检查通过。总体STATE继续working，原阻塞保留。
