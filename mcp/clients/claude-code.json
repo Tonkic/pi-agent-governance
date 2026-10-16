@@ -3,7 +3,7 @@
     "governance": {
       "type": "stdio",
       "command": "C:/Program Files/nodejs/node.exe",
-      "args": ["C:/tools/agent-governance/build/mcp/server.js", "--workspace", "D:/projects/example"]
+      "args": ["C:/tools/agent-governance/build/mcp/server.js", "--host", "claude-code"]
     }
   }
 }

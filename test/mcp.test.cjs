@@ -151,11 +151,11 @@ test('MCP source fingerprints and design draft identity remain separate shared-c
 
 test('real downloadable MCP target installs production-only lock and serves tools without repository or host dependencies', { timeout: 120000 }, async t => {
   const { execFileSync } = require('node:child_process');
-  const { buildDistributions, sharedModules, skillFiles, consoleFiles } = require('../scripts/build-distributions.cjs');
+  const { buildDistributions, sharedModules, skillFiles, consoleFiles, hostFiles } = require('../scripts/build-distributions.cjs');
   const { safeFile } = require('../scripts/release-safety.cjs');
   const buildRoot = await fs.mkdtemp(path.join(process.env.PI_SCRATCH_DIR || os.tmpdir(), 'mcp-source-'));
   t.after(() => fs.rm(buildRoot, { recursive: true, force: true }));
-  for (const file of ['package.json', 'package-lock.json', 'build/mcp/server.js', ...consoleFiles, ...sharedModules.map(n => `build/plugin/${n}.js`), ...skillFiles.map(n => `plugin/skills/architecture-copilot/${n}`), ...['codex.toml', 'claude-code.json', 'pi.json'].map(n => `mcp/clients/${n}`)]) {
+  for (const file of ['package.json', 'package-lock.json', 'build/mcp/server.js', ...hostFiles, ...consoleFiles, ...sharedModules.map(n => `build/plugin/${n}.js`), ...skillFiles.map(n => `plugin/skills/architecture-copilot/${n}`), ...['codex.toml', 'claude-code.json', 'pi.json'].map(n => `mcp/clients/${n}`)]) {
     const dest = safeFile(buildRoot, file);
     await fs.mkdir(path.dirname(dest), { recursive: true });
     await fs.copyFile(path.join(repo, file), dest);
@@ -202,4 +202,69 @@ test('real downloadable MCP target installs production-only lock and serves tool
     const response = await fetch(web.origin + '/api/invoke', { method: 'POST', headers: { Origin: web.origin, 'Content-Type': 'application/json', 'X-Governance-Token': web.url.split('#')[1] }, body: JSON.stringify({ channel: 'governance.snapshot' }) });
     assert.equal((await response.json()).result.state.status, 'idle');
   } finally { await web.close(); }
+});
+
+test('Claude official project environment binds MCP without cwd fallback or automatic initialization', async t => {
+  const root = await fs.mkdtemp(path.join(process.env.PI_SCRATCH_DIR || os.tmpdir(), 'claude-project-'));
+  const visible = await fs.mkdtemp(path.join(process.env.PI_SCRATCH_DIR || os.tmpdir(), 'claude-visible-'));
+  t.after(async () => { await fs.rm(root, { recursive: true, force: true }); await fs.rm(visible, { recursive: true, force: true }); });
+  const transport = new StdioClientTransport({ command: process.execPath,
+    args: [server, '--host', 'claude-code'], cwd: visible,
+    env: { ...process.env, CLAUDE_PROJECT_DIR: root }, stderr: 'pipe' });
+  const client = new Client({ name: 'host-project-fixture', version: '1' });
+  t.after(() => client.close());
+  await client.connect(transport, { timeout: 10000 });
+  assert.deepEqual(await fs.readdir(root), []);
+  await client.callTool({ name: 'governance', arguments: { action: 'init' } });
+  assert.equal(JSON.parse(await fs.readFile(path.join(root, 'STATE.json'), 'utf8')).status, 'idle');
+  assert.deepEqual(await fs.readdir(visible), []);
+  await client.close();
+  const link = path.join(visible, 'linked');
+  await fs.symlink(root, link, process.platform === 'win32' ? 'junction' : 'dir');
+  for (const value of ['', '.', path.join(root, 'missing'), path.join(root, 'STATE.json'), link]) {
+    const result = spawnSync(process.execPath, [server, '--host', 'claude-code'], {
+      cwd: root, env: { ...process.env, CLAUDE_PROJECT_DIR: value }, input: '', encoding: 'utf8', timeout: 10000 });
+    assert.equal(result.status, 1, result.stderr);
+    assert.equal(result.stdout, '');
+    assert.match(result.stderr, /MCP startup failed/);
+  }
+});
+
+test('official Hook context is read-only, project-specific, worktree-aware and bounded without transcript access', async t => {
+  const root = await fs.mkdtemp(path.join(process.env.PI_SCRATCH_DIR || os.tmpdir(), 'hook-project-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const { Governance } = require('../build/plugin/core');
+  const projects = [path.join(root, 'one'), path.join(root, 'two')];
+  for (const dir of projects) { await fs.mkdir(path.join(dir, 'src'), { recursive: true }); await new Governance(dir).run({ action: 'init' }); }
+  const hook = path.join(repo, 'build/mcp/context-hook.js');
+  const run = (payload, host = 'codex') => spawnSync(process.execPath, [hook, '--host', host], {
+    cwd: projects[1], input: typeof payload === 'string' ? payload : JSON.stringify(payload), encoding: 'utf8', timeout: 10000 });
+  const before = await Promise.all(projects.map(dir => fs.readFile(path.join(dir, 'STATE.json'), 'utf8')));
+  const input = { session_id: 'current', cwd: path.join(projects[0], 'src'), hook_event_name: 'SessionStart', transcript_path: 'never-open-secret', prompt: 'never-copy-secret' };
+  for (const host of ['codex', 'claude-code']) {
+    const result = run(input, host);
+    assert.equal(result.status, 0, result.stderr);
+    const output = JSON.parse(result.stdout).hookSpecificOutput;
+    assert.equal(output.hookEventName, 'SessionStart');
+    assert.ok(output.additionalContext.includes(JSON.stringify(projects[0])));
+    assert.ok(!output.additionalContext.includes(JSON.stringify(projects[1])));
+    assert.doesNotMatch(result.stdout, /never-open-secret|never-copy-secret/);
+    assert.ok(result.stdout.length < 2000);
+  }
+  const nested = path.join(projects[0], 'worktree');
+  await fs.mkdir(nested); await fs.writeFile(path.join(nested, '.git'), 'gitdir: ignored');
+  const link = path.join(root, 'linked');
+  await fs.symlink(projects[0], link, process.platform === 'win32' ? 'junction' : 'dir');
+  for (const payload of [{ ...input, session_id: '' }, { ...input, cwd: '.' }, { ...input, cwd: nested },
+    { ...input, cwd: link }, { ...input, hook_event_name: 'Stop' }, 'not-json-secret', 'x'.repeat(65537)]) {
+    const result = run(payload);
+    assert.equal(result.status, 1, result.stderr);
+    assert.equal(result.stdout, '');
+    assert.doesNotMatch(result.stderr, /not-json-secret|never-open-secret/);
+  }
+  await new Governance(nested).run({ action: 'init' });
+  const isolated = run({ ...input, cwd: nested, hook_event_name: 'UserPromptSubmit' });
+  assert.equal(isolated.status, 0, isolated.stderr);
+  assert.ok(JSON.parse(isolated.stdout).hookSpecificOutput.additionalContext.includes(JSON.stringify(nested)));
+  assert.deepEqual(await Promise.all(projects.map(dir => fs.readFile(path.join(dir, 'STATE.json'), 'utf8'))), before);
 });

@@ -3,6 +3,7 @@ const { Governance } = require('./core');
 const { ProjectData } = require('./project');
 const { ArchitectureDesign } = require('./design');
 const { randomUUID } = require('node:crypto');
+const { resolve, isAbsolute } = require('node:path');
 const operationFile = '.governance/operations.json';
 const activePhases = ['creating', 'created', 'running', 'unknown'];
 const inFlight = new Set<string>();
@@ -40,6 +41,7 @@ async function readRuns(g) {
       typeof r.id !== 'string' ||
       !/^[a-f0-9-]{36}$/.test(r.id) ||
       !['analysis', 'architecture', 'design', 'acceptance', 'documentation'].includes(r.kind) ||
+      (r.sessionMode !== undefined && !['existing', 'new'].includes(r.sessionMode)) ||
       ![...activePhases, 'completed', 'canceled', 'failed'].includes(r.phase) ||
       r.workspace !== g.root ||
       (r.sessionId !== null &&
@@ -212,7 +214,8 @@ async function reconcileRunning(g, call, isCurrent) {
       session = await probe('session/get', [
         { id: run.sessionId, messageLimit: 1, contentLimit: 1 }
       ]);
-      if (session?.session?.id !== run.sessionId)
+      if (session?.session?.id !== run.sessionId ||
+          (run.sessionMode === 'existing' && !localSession(session.session, g.root)))
         throw Error('Previous session cannot be confirmed; inspect its recorded session');
     } catch (error) {
       throw Error('Cannot verify previous operation; record retained. ' + String(error.message));
@@ -235,6 +238,25 @@ async function reconcileRunning(g, call, isCurrent) {
     });
   }
 }
+function localSession(session, root) {
+  return isRecord(session) && typeof session.id === 'string' && session.id.length > 0 && session.id.length <= 200
+    && typeof session.projectPath === 'string' && isAbsolute(session.projectPath) && resolve(session.projectPath) === root
+    && session.mode === 'agent' && (session.source === undefined || session.source === 'desktop')
+    && !session.remoteWorkspace && !session.remoteHostKey && !session.worktree && !session.scheduledRun && !session.readOnlyReason;
+}
+function sessionMetadata(session) {
+  return { id: session.id, title: typeof session.title === 'string' ? session.title.slice(0, 500) : session.id,
+    modelKey: typeof session.providerId === 'string' && typeof session.modelId === 'string' ? `${session.providerId}/${session.modelId}` : null,
+    thinkingLevel: thinkingLevels.includes(session.thinkingLevel) ? session.thinkingLevel : null };
+}
+async function existingSession(call, root, id, idle = true) {
+  const value = await call('session/get', [{ id, messageLimit: 1, contentLimit: 1 }]);
+  if (!localSession(value?.session, root) || value.session.id !== id)
+    throw Error('Existing session is unavailable, unsupported or belongs to another project');
+  if (idle && runtimeBusy(await call('agent/getStatus', [id]), id))
+    throw Error('Existing session is busy; continue or stop it in the host first');
+  return sessionMetadata(value.session);
+}
 async function operationInvoke(
   root: string,
   payload: any,
@@ -253,6 +275,15 @@ async function operationInvoke(
   };
   const action = payload?.action;
   if (action === 'models') return { workspace: g.root, models: await availableModels(models) };
+  if (action === 'sessions') {
+    if (!(await isCurrent())) throw Error('Workspace switched; refresh');
+    const value = await call('session/list', []);
+    if (!Array.isArray(value?.sessions) || value.sessions.length > 5000) throw Error('Invalid host session list');
+    const sessions = value.sessions.filter(row => localSession(row, g.root)).map(sessionMetadata);
+    if (sessions.length > 500 || new Set(sessions.map(row => row.id)).size !== sessions.length) throw Error('Host session list is ambiguous or too large');
+    if (!(await isCurrent())) throw Error('Workspace switched; refresh');
+    return { workspace: g.root, sessions };
+  }
   if (action === 'list') {
     if (!inFlight.has(g.root)) await reconcileRunning(g, call, isCurrent);
     return g.locked(async () => ({ workspace: g.root, ...(await readRuns(g)) }));
@@ -262,12 +293,18 @@ async function operationInvoke(
     if (!['analysis', 'architecture', 'design', 'documentation'].includes(payload.kind))
       throw Error('Unknown project operation');
     if (inFlight.has(g.root)) throw Error('A project operation is already being submitted');
-    for (const operation of ['session/create', 'agent/prompt', 'agent/getStatus', 'session/get'])
+    const mode = payload.sessionMode ?? 'existing';
+    if (!['existing', 'new'].includes(mode)) throw Error('Invalid session mode');
+    if (mode === 'existing' && (typeof payload.sessionId !== 'string' || !payload.sessionId || payload.sessionId.length > 200))
+      throw Error('Select an existing project session; no session is created automatically');
+    if (mode === 'existing' && (payload.modelKey || payload.thinkingLevel)) throw Error('Existing session keeps its host model and context');
+    if (mode === 'new' && payload.sessionId !== undefined) throw Error('New session must not specify an existing identity');
+    for (const operation of [...(mode === 'new' ? ['session/create'] : []), 'agent/prompt', 'agent/getStatus', 'session/get'])
       if (!allowed.has(operation)) throw Error('Host operation unavailable: ' + operation);
     inFlight.add(g.root);
     let run, state, designContext;
     try {
-      const selection = await launchSelection(payload, models);
+      const selection = mode === 'new' ? await launchSelection(payload, models) : {};
       // Validate intent before any old-session probe, then revalidate after asynchronous host reads.
       await g.locked(async () => {
         const state = await g.state(),
@@ -276,6 +313,7 @@ async function operationInvoke(
           throw Error('Project stale or workspace switched; refresh');
       });
       await reconcileRunning(g, call, isCurrent);
+      const reused = mode === 'existing' ? await existingSession(call, g.root, payload.sessionId) : null;
       run = await g.locked(async () => {
         state = await g.state();
         const snapshot = await new ProjectData(g).snapshot();
@@ -301,10 +339,11 @@ async function operationInvoke(
           workspace: g.root,
           taskId: state.task,
           ...(designContext ? { designRevision: designContext.revision } : {}),
-          modelKey: selection.providerId ? `${selection.providerId}/${selection.modelId}` : null,
-          thinkingLevel: selection.thinkingLevel || null,
-          sessionId: null,
-          phase: 'creating',
+          sessionMode: mode,
+          modelKey: reused ? reused.modelKey : selection.providerId ? `${selection.providerId}/${selection.modelId}` : null,
+          thinkingLevel: reused ? reused.thinkingLevel : selection.thinkingLevel || null,
+          sessionId: reused ? reused.id : null,
+          phase: reused ? 'created' : 'creating',
           startedAt: now,
           updatedAt: now,
           error: ''
@@ -313,6 +352,7 @@ async function operationInvoke(
         await g.write(operationFile, JSON.stringify(data, null, 2) + '\n');
         return next;
       });
+      if (mode === 'new') {
       const created = await call('session/create', [
         {
           title: `Governance · ${run.kind}`,
@@ -325,6 +365,9 @@ async function operationInvoke(
       if (typeof sessionId !== 'string' || !sessionId || sessionId.length > 200)
         throw Error('Host did not return a durable session ID; inspect before retrying');
       run = await updateRun(g.root, run.id, { sessionId, phase: 'created' });
+      } else {
+        await existingSession(call, g.root, run.sessionId);
+      }
       // Human intent/workspace may change while the host creates a session. Never send stale work.
       const fresh = new Governance(g.root);
       const latest = await fresh.run({ action: 'project_snapshot' });
@@ -341,18 +384,18 @@ async function operationInvoke(
       ) {
         run = await updateRun(g.root, run.id, {
           phase: 'failed',
-          error: 'Project changed before prompt; created session retained, no task sent'
+          error: 'Project changed before prompt; session retained, no task sent'
         });
         throw Error('Project changed before prompt; refresh');
       }
       // Mark submission ambiguous before crossing host boundary. A timeout must never replay this prompt.
       run = await updateRun(g.root, run.id, { phase: 'unknown' });
-      await call('agent/prompt', [{ sessionId, content: taskPrompt(run, state, designContext) }]);
+      await call('agent/prompt', [{ sessionId: run.sessionId, content: taskPrompt(run, state, designContext) }]);
       return await updateRun(g.root, run.id, { phase: 'running' });
     } catch (e) {
       if (run && run.phase !== 'failed')
         await updateRun(g.root, run.id, {
-          phase:
+          phase: run.sessionMode === 'existing' && run.phase !== 'unknown' ? 'failed' :
             !run.sessionId &&
             [
               'PERMISSION_DENIED',
@@ -374,22 +417,25 @@ async function operationInvoke(
   const run = data.runs.find((r) => r.id === payload.id);
   if (action === 'resolve') {
     if (payload.confirmed !== true)
-      throw Error('Confirm that the interrupted creation has been inspected');
+      throw Error('Confirm that the interrupted operation has been inspected in the host');
     if (inFlight.has(g.root)) throw Error('Wait for session submission to settle');
-    if (!run || run.sessionId || !activePhases.includes(run.phase))
-      throw Error('Only unresolved sessionless creation can be released');
+    const sharedUnknown = run?.sessionMode === 'existing' && run?.phase === 'unknown';
+    if (!run || (!sharedUnknown && (run.sessionId || !activePhases.includes(run.phase))))
+      throw Error('Only unresolved sessionless creation or shared unknown submission can be released');
     return updateRun(g.root, run.id, {
       phase: 'failed',
       error:
-        'User inspected interrupted creation; no prompt replayed or unidentified session aborted'
+        'User inspected interrupted operation; no prompt replayed or host session aborted'
     });
   }
   if (!run || !run.sessionId) throw Error('No owned session for this operation');
   if (action === 'open') {
+    if (run.sessionMode === 'existing') await existingSession(call, g.root, run.sessionId, false);
     await call('session/open', [run.sessionId]);
     return run;
   }
   if (action === 'cancel') {
+    if (run.sessionMode === 'existing') throw Error('Shared existing session is not owned by this operation; stop it in the host');
     if (payload.confirmed !== true) throw Error('Confirm cancellation');
     if (inFlight.has(g.root)) throw Error('Wait for submission to settle before canceling');
     if (!activePhases.includes(run.phase)) throw Error('Operation is not active');
@@ -397,6 +443,7 @@ async function operationInvoke(
     return updateRun(g.root, run.id, { phase: 'canceled' });
   }
   if (action === 'status') {
+    if (run.sessionMode === 'existing') await existingSession(call, g.root, run.sessionId, false);
     const status = await call('agent/getStatus', [run.sessionId]);
     const session = await call('session/get', [
       { id: run.sessionId, messageLimit: 12, contentLimit: 16000 }
@@ -417,4 +464,4 @@ async function operationInvoke(
   }
   throw Error('Unsupported project operation action');
 }
-module.exports = { operationInvoke, runtimeBusy };
+module.exports = { operationInvoke, runtimeBusy, localSession };

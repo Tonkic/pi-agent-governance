@@ -6,7 +6,7 @@ const path = require('node:path');
 const os = require('node:os');
 const zlib = require('node:zlib');
 const { execFileSync } = require('node:child_process');
-const { buildDistributions, verifyPi, piFiles, sharedModules, skillFiles, consoleFiles, readZip, crc32, runtimeMetadata } = require('../scripts/build-distributions.cjs');
+const { buildDistributions, verifyPi, piFiles, sharedModules, skillFiles, consoleFiles, hostFiles, readZip, crc32, runtimeMetadata } = require('../scripts/build-distributions.cjs');
 const { readAssets } = require('../scripts/github-release.cjs');
 const { safeFile, gitAt } = require('../scripts/release-safety.cjs');
 // Synthetic ZIP fixtures only; production piplug bytes MUST come from official PluginPack.
@@ -32,7 +32,7 @@ function fixture(t) {
   for (const name of piFiles) put(`plugin/${name}`, name === 'manifest.json' ? JSON.stringify({ id: 'io.github.tonkic.agent-governance', version: pkg.version, permissions: ['ui.panel'], fs: { read: true } }) : `fixture ${name}\n`);
   for (const name of sharedModules) put(`build/plugin/${name}.js`, `exports.fixture = 'shared';\n`);
   put('build/mcp/server.js', "#!/usr/bin/env node\nconsole.log(require('../../package.json').version + ' ' + require('../plugin/core').fixture);\n");
-  for (const name of consoleFiles) if (!fs.existsSync(path.join(root, name))) put(name, `fixture ${name}\n`);
+  for (const name of [...consoleFiles, ...hostFiles]) if (!fs.existsSync(path.join(root, name))) put(name, `fixture ${name}\n`);
   for (const name of ['codex.toml', 'claude-code.json', 'pi.json']) put(`mcp/clients/${name}`, name.endsWith('.json') ? '{}' : '# fixture');
   for (const name of ['.pi/local', '.governance/private', '.secrets/never-read.token', 'STATE.json', 'node_modules/private/index.js']) put(name, 'private fixture must not be packed');
   const artifact = `plugin/dist/io.github.tonkic.agent-governance-${pkg.version}.piplug`;

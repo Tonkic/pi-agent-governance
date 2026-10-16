@@ -229,6 +229,18 @@
       "gitTaskId": null
     },
     {
+      "id": "host-context",
+      "title": "复用宿主项目、会话与上下文",
+      "description": "附着PI/Codex/Claude Code支持的官方扩展入口，不重复选目录；默认复用同项目已有会话，不复制历史或静默新建，检查切换/忙碌/身份与资源回收。",
+      "blocker": "",
+      "stage": "doing",
+      "taskId": "project-board-release",
+      "criteria": [],
+      "architectureImpact": "affects",
+      "gitTaskId": null,
+      "completedAt": null
+    },
+    {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
       "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
@@ -250,5 +262,5 @@
       "completedAt": "2026-10-15T19:41:35.780Z"
     }
   ],
-  "updatedAt": "2026-10-15T19:41:35.780Z"
+  "updatedAt": "2026-10-16T21:46:55.290Z"
 }
