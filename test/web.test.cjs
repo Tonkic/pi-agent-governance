@@ -75,3 +75,26 @@ test('web and real MCP share project data, preserve confirmation/revisions and d
   assert.equal((await f.value('governance.design', { action: 'snapshot' })).baseline.number, 1);
   assert.equal(await fs.readFile(path.join(f.root, 'STATE.json'), 'utf8'), before);
 });
+test('lease requests share the eight-request body budget and old incomplete requests cannot invoke after close', async t => {
+  const f = await fixture(t), requests = [];
+  t.after(() => requests.forEach(req => req.destroy()));
+  const headers = { Origin: f.app.origin, 'Content-Type': 'application/json', 'X-Governance-Token': f.token, 'Content-Length': '1000' };
+  for (let n = 0; n < 8; n++) {
+    const req = http.request(f.app.origin + '/api/invoke', { method: 'POST', headers });
+    req.on('error', () => {}); req.write('{'); requests.push(req);
+  }
+  await new Promise(resolve => setTimeout(resolve, 60));
+  assert.equal((await f.post('governance.lease', { id: 'a'.repeat(32), event: 'join' })).status, 429);
+  for (const req of requests) req.destroy();
+  await new Promise(resolve => setTimeout(resolve, 30));
+  const body = JSON.stringify({ channel: 'governance.snapshot', payload: {} });
+  let req;
+  const response = new Promise((resolve, reject) => {
+    req = http.request(f.app.origin + '/api/invoke', { method: 'POST', headers: { ...headers, 'Content-Length': Buffer.byteLength(body) } }, res => { res.resume(); resolve(res.statusCode); });
+    req.on('error', reject); req.write(body.slice(0, -1));
+  });
+  await new Promise(resolve => setTimeout(resolve, 30));
+  const closed = f.app.close(); req.end(body.slice(-1));
+  assert.equal(await response, 403); await closed;
+  assert.deepEqual(await fs.readdir(f.root), []);
+});

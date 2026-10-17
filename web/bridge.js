@@ -34,6 +34,63 @@
       query.addEventListener('change', e => handler({ theme: e.matches ? 'dark' : 'light' }));
     }
   });
+  // A random ID per document activation (never sessionStorage: duplicated tabs must differ).
+  // Failures stop the loop; only pageshow/online can resume it. No queued retry backlog.
+  let leaseId = '';
+  let leaseTimer;
+  let leaseRequest;
+  let generation = 0;
+  let hidden = false;
+  let unmanaged = false;
+  const leasePost = (id, event, extra = {}) => fetch('/api/invoke', {
+    method: 'POST', credentials: 'omit', cache: 'no-store',
+    headers: { 'Content-Type': 'application/json', 'X-Governance-Token': token },
+    body: JSON.stringify({ channel: 'governance.lease', payload: { id, event } }), ...extra
+  });
+  const renew = async (event, epoch) => {
+    if (hidden || unmanaged || epoch !== generation || leaseRequest || !/^[a-f0-9]{64}$/.test(token)) return;
+    const controller = new AbortController();
+    leaseRequest = controller;
+    // The only timer also bounds this request; replace it with the next heartbeat on success.
+    leaseTimer = setTimeout(() => controller.abort(), 20000);
+    let scheduled = false;
+    try {
+      const response = await leasePost(leaseId, event, { signal: controller.signal });
+      if (!response.ok) return;
+      const message = await response.json();
+      if (!message.ok || epoch !== generation || hidden) return;
+      if (message.result?.managed === false) { unmanaged = true; return; }
+      const delay = message.result?.heartbeatMs;
+      if (message.result?.managed !== true || !Number.isSafeInteger(delay) || delay <= 0) return;
+      clearTimeout(leaseTimer);
+      leaseTimer = setTimeout(() => { leaseTimer = undefined; void renew('heartbeat', epoch); }, delay);
+      scheduled = true;
+    } catch { /* Offline/closed server: no automatic retry. */ }
+    finally {
+      if (leaseRequest === controller) {
+        leaseRequest = undefined;
+        // Clear only the request timeout on failure, not a scheduled heartbeat.
+        if (!scheduled) { clearTimeout(leaseTimer); leaseTimer = undefined; }
+      }
+    }
+  };
+  const resume = () => {
+    if (unmanaged || leaseRequest || leaseTimer || !/^[a-f0-9]{64}$/.test(token)) return;
+    hidden = false;
+    if (!leaseId) leaseId = Array.from(crypto.getRandomValues(new Uint8Array(16)), n => n.toString(16).padStart(2, '0')).join('');
+    void renew('join', ++generation);
+  };
+  window.addEventListener('pagehide', () => {
+    hidden = true; generation++;
+    clearTimeout(leaseTimer); leaseTimer = undefined;
+    leaseRequest?.abort(); leaseRequest = undefined;
+    if (leaseId && !unmanaged) void leasePost(leaseId, 'leave', { keepalive: true }).catch(() => {});
+    leaseId = '';
+  });
+  window.addEventListener('pageshow', resume);
+  window.addEventListener('online', () => { if (!hidden) resume(); });
+  resume();
+
   const info = document.createElement('section');
   info.id = 'local-console-info';
   info.setAttribute('aria-label', zh ? '本地控制台连接' : 'Local console connection');
