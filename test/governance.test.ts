@@ -100,7 +100,7 @@ test('PI adapter registers, executes and unregisters', async t => {
   assert.equal((await tool.execute({ action: 'close' }, { sessionId: 'caller' })).ok, false);
   assert.equal(command.id, 'governance.open');
   assert.match(command.title, /browser/);
-  assert.equal(adapter.onPanelInvoke, undefined);
+  assert.equal((await adapter.onPanelInvoke('governance.snapshot', {})).ok, false);
   await assert.rejects(command.run(), /lifecycle events/);
   global.pi.workspace.get = async () => null;
   await assert.rejects(command.run(), /Open a project/);

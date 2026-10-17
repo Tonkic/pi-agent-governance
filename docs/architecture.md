@@ -10,6 +10,7 @@
 | --- | --- | --- |
 | `main.ts` | PI工具/浏览器命令、可信调用会话绑定、工作区事件和卸载 | `onLoad`、`workspaceRoot` |
 | `workbench-tool.ts` | PI/MCP共用open/close/status及确认校验，无路径/URL参数 | `invokeWorkbench` |
+| `entry-bridge.ts`、`entry/` | Alt+空格和右侧插件视图共用轻量页，只读连接状态与版本绑定的显式打开 | `entryBridge`、`entry.js` |
 | `workbench.ts` | 单服务所有权、串行打开、切换/关闭/在途撤销 | `BrowserWorkbench` |
 | `browser.ts` | loopback HTTP、固定资产/API、认证与有界页面租约 | `startBrowserConsole` |
 | `browser-open.ts` | 固定平台打开器、严格本地URL、有界超时 | `openBrowser` |
@@ -55,7 +56,7 @@ HTTP只监听127.0.0.1，精确Host/Origin/token/JSON及固定资源/动作白�
 | `.governance/behavior-evidence.json` | 忽略的本机实际检查证据，不代表整体通过 |
 | Git common directory的 `pi-governance/` | 本机任务/worktree/提交验证登记 |
 
-没有新增服务/聊天注册表，私有URL只在拥有服务和浏览器内存中。旧兼容代码/测试不代表当前开放另一套PI入口。
+没有新增服务/聊天注册表，私有URL只在拥有服务和浏览器内存。PI的ui.panel/contributes.views指向同一entry/index.html，只有状态/刷新/打开按钮；onPanelInvoke仅governance.entry状态和确认打开，拒绝核心/会话操作。版本绑定可见项目与代次，迟到/切换请求拒绝；不接受路径/URL，不返回origin/私有片段。不是第二套业务工作台。
 
 ## 限制
 

@@ -6,7 +6,7 @@
 
 ## 开始使用
 
-1. PI-Desktop：在插件页手动安装本仓库 `plugin/dist/` 的对应包并确认权限，打开项目后运行 **Agent Governance: 打开浏览器工作台**。
+1. PI-Desktop：手动安装 `plugin/dist/` 包并确认权限。打开项目后，按 **Alt+空格**搜索“Agent 项目治理”，或从**右侧工作面板的插件列表**选“项目治理工作台”，在轻量入口点击“打开浏览器工作台”。也可按 **Ctrl+Shift+P** 运行同名命令直接打开。
 2. Codex、Claude Code或Pi：按 [MCP与Skill](docs/mcp.md) 配置本地stdio连接，在原会话请求“打开当前项目工作台”。宿主调用 `governance_ui`，参数 `{"action":"open","confirmed":true}`。
 3. 所有入口打开同一浏览器页面。已有项目直接读取；未初始化项目须明确确认。先读 `status` 和项目README，只接续获批范围。
 
@@ -16,7 +16,7 @@ PI工具绑定可信调用会话的项目；命令使用宿主可见项目。缺
 
 `governance_ui` 另支持 `status` 与需确认的 `close`。同项目复用服务；切换、卸载、MCP断开或页面租约到期回收自有服务。显式重复打开可能另开标签页，不承诺跨浏览器聚焦。SSH/WSL/远程环境不保证能打开用户本机浏览器。独立手动启动方式见 [浏览器工作台](docs/web-console.md)。
 
-PI新增经批准的 `shell.openExternal`，只打开自身生成的本地工作台链接，不接受任意URL；移除 `ui.panel` 和 `models.list`。仍须安装时授予权限，不自动安装/扩权。
+PI的 `shell.openExternal` 只打开自身生成的本地链接；本次明确批准 `ui.panel`、`ui.view`，仅用于同一轻量入口页，不内嵌看板/聊天。入口只读状态，显式点击才打开；恢复/切换不自动弹浏览器。无models.list，不自动安装或扩权。左侧聊天/项目栏不是本次扩展位置。
 
 ## 工作方式
 

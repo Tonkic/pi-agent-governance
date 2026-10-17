@@ -13,7 +13,7 @@ const safe = reply => { assert.doesNotMatch(JSON.stringify(reply), /#[a-f0-9]{64
 test('PI uses one real browser service, original calling project and no host Agent/model control', async t => {
   const f = await fixture(t);
   assert.deepEqual([...f.tools.keys()], ['governance', 'governance_ui']);
-  assert.equal(f.adapter.onPanelInvoke, undefined); assert.equal(f.opened.length, 0);
+  assert.equal((await f.adapter.onPanelInvoke('governance.snapshot', {})).ok, false); assert.equal(f.opened.length, 0);
   assert.equal((await f.ui.execute({ action: 'status' }, ctx)).result.open, false);
   for (const args of [{ action: 'open' }, { action: 'close' }, { action: 'open', confirmed: 'yes' }, { action: 'open', confirmed: true, url: 'https://example.invalid' }, { action: 'open', confirmed: true, workspace: f.b }])
     assert.equal((await f.ui.execute(args, ctx)).ok, false);
@@ -70,8 +70,9 @@ test('PI missing permission/lifecycle and stale asynchronous project identity fa
 });
 test('manifest and installed web assets expose one entry and only approved permissions', async () => {
   const manifest = JSON.parse(await fs.readFile('plugin/manifest.json', 'utf8'));
-  assert.equal(manifest.ui, undefined);
-  assert.deepEqual(manifest.permissions, ['agent.tool.register', 'desktop.control', 'agent.prompt.inject', 'shell.openExternal']);
+  assert.equal(manifest.ui.panel, 'entry/index.html');
+  assert.equal(manifest.contributes.views[0].entry, manifest.ui.panel);
+  assert.deepEqual(manifest.permissions, ['agent.tool.register', 'desktop.control', 'agent.prompt.inject', 'shell.openExternal', 'ui.panel', 'ui.view']);
   assert.deepEqual(manifest.contributes.agentTools.map(t => t.name), ['governance', 'governance_ui']);
   for (const file of ['bridge.js', 'console.css']) assert.deepEqual(await fs.readFile('plugin/runtime/web/' + file), await fs.readFile('web/' + file));
 });

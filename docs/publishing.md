@@ -53,6 +53,6 @@ Community ID：`io.github.tonkic.agent-governance`。源码仓库：`Tonkic/pi-a
 
 - 使用 PI-Desktop 插件页自行安装/更新并确认权限，不自动安装或调用市场。旧 ID `pi.agent-governance` 不跨 ID 更新：先备份 STATE/`.governance/`，停用旧实例再安装新 ID，不删除项目数据。
 - 市场已发布版本和 GitHub 下载产物是不同通道；本仓库不再自动提交市场，也不读取旧市场凭据。保留已有凭据与发布历史，不迁移、不打印、不上传。
-- 本次统一入口明确获批shell.openExternal，仅打开生成的本地工作台URL；移除ui.panel/models.list，desktop.control仅核实调用身份。仍需宿主安装页确认权限，不自动安装或扩权。0.7.0历史权限见 [发布记录](../notes/release-0.7.0.md)。
+- shell.openExternal仅打开生成本地URL。用户本次明确批准ui.panel/ui.view，仅用于Alt+空格/右侧插件视图的共用轻量入口（状态、刷新、显式打开），不恢复内嵌业务或models.list；安装仍需人工授权。既有安装不会因源码更新生效，需手动更新/重载。0.7.0历史见 [记录](../notes/release-0.7.0.md)。
 - 浏览器按navigator.language选择中/英文，主题跟随系统；PI命令按宿主语言。用户内容和底层诊断不翻译。改变浏览器语言后重新打开页面。
 - PI-Desktop 0.16.1 本地 MCP 不开放安装或插件更新接口；不能借内部服务绕过宿主注册操作。GitHub 发布成功不等于真实宿主/目视验收完成。

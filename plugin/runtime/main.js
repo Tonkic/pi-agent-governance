@@ -60,9 +60,11 @@ async function execute(fn, context) {
         return { ok: false, error: error.message };
     }
 }
-async function uiAction(args, context) {
+async function uiAction(args, context, expected) {
     const owner = epoch;
     return execute(async (root) => {
+        if (expected && (expected.workspace !== root || expected.epoch !== owner))
+            throw Error('Project changed; refresh');
         if (!loaded || !workbench)
             throw Error('Browser workbench is unavailable');
         if (args?.action === 'open' && !workspaceHooked)
@@ -136,4 +138,4 @@ async function onUnload() {
         await disposal;
     }
 }
-module.exports = { onLoad, onUnload };
+module.exports = { onLoad, onUnload, onPanelInvoke: require('./entry-bridge').entryBridge(uiAction, async () => ({ workspace: await workspaceRoot(), epoch })) };

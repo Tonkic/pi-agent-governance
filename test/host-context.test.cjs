@@ -13,7 +13,7 @@ test('PI tool stays in its calling session project when the visible workspace di
   assert.equal(await fs.readFile(path.join(f.b, 'STATE.json'), 'utf8'), before);
   assert.equal(f.calls.length, 1); assert.equal(f.calls[0].operation, 'session/get');
   assert.deepEqual(JSON.parse(JSON.stringify(f.calls[0].args)), [{ id: 'origin', messageLimit: 1, contentLimit: 1 }]);
-  assert.equal(f.adapter.onPanelInvoke, undefined);
+  assert.equal((await f.adapter.onPanelInvoke('governance.snapshot', {})).ok, false);
   const browser = await f.command().run();
   assert.equal(browser.workspace, f.b); assert.equal(browser.opened, true);
 });

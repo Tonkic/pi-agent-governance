@@ -5,7 +5,7 @@ PI-Desktop、Codex、Claude Code和Pi共用同一个浏览器界面、治理核�
 
 ## 从宿主打开
 
-- PI-Desktop：安装官方包并确认权限，打开项目后运行 **Agent Governance: 打开浏览器工作台**。
+- PI-Desktop：安装并授予入口权限后，Alt+空格搜索“Agent 项目治理”，或右侧工作面板插件列表选“项目治理工作台”，再点“打开浏览器工作台”。两个位置共用轻量入口页；Ctrl+Shift+P命令仍直接打开，不经过入口页。
 - MCP宿主：配置 [本地stdio连接](mcp.md)，在原会话明确请求打开工作台，调用 `governance_ui`：`{"action":"open","confirmed":true}`。
 - 状态：`{"action":"status"}` 不启动服务；关闭：`{"action":"close","confirmed":true}`。工具不接受项目路径、URL、端口或租约参数。
 
@@ -13,7 +13,9 @@ PI工具以可信调用会话绑定项目，不跟随其它前台聊天；命令
 
 只打开本次服务生成的127.0.0.1私有地址。完整链接直接交给系统浏览器，不进入工具结果、聊天、日志或会话注册表；结果只包含项目、origin和状态。浏览器将片段凭据读入标签页sessionStorage并移出地址栏；不要分享/截图/提交完整链接。浏览器存储的清理行为由浏览器管理，重开服务需重新请求打开。
 
-PI新增经用户批准的 `shell.openExternal`；仅用于这一生成地址。`desktop.control`只核实有界调用会话元数据，不启动或终止聊天。移除 `ui.panel`、`models.list`；安装和权限授予仍需人工执行。
+PI的shell.openExternal仍仅打开生成链接。经用户明确批准，ui.panel/ui.view只挂载同一入口页，显示项目状态、手动刷新和打开按钮，无业务看板/聊天。加载/恢复/view:open不自动打开，切换后旧按钮失效；状态版本绑定项目与插件代次，点击前后重核对。入口不接收路径/URL、不返回私有地址，也不修改项目数据。desktop.control只核实调用元数据；无models.list，安装权限仍需人工确认。
+
+“侧边栏入口”指右侧工作面板的插件视图列表，不是左侧聊天/项目栏。入口对应官方ui.panel/contributes.views（ui.view），不是renderer注入或宿主改造；所需支持依宿主版本。没显示时检查启用、权限及激活范围。
 
 ## 生命周期与切换
 

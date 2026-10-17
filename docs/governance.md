@@ -24,7 +24,7 @@ Git 分支/worktree、范围检查、提交验证、集成及恢复，见 [Git �
 
 ## 可视化面板
 
-所有宿主使用同一浏览器工作台。PI命令「Agent Governance: 打开浏览器工作台」（governance.open）绑定可见项目，需shell.openExternal；原会话可调用需确认的governance_ui open。无ui.panel；工具另需agent.tool.register，PI调用会话身份核对需desktop.control。详见 [浏览器入口](web-console.md)。
+所有宿主使用同一浏览器工作台。PI的Alt+空格启动器和右侧工作面板插件列表提供同一轻量入口（ui.panel/ui.view），只看连接状态并显式打开浏览器。Ctrl+Shift+P命令governance.open直接打开；原会话工具governance_ui需确认。shell.openExternal仅生成链接，desktop.control仅核实调用身份。详见 [浏览器入口](web-console.md)。
 
 面板展示目标、检查条件、范围、进度、阻塞和Git记录。未初始化可补缺失入口；待命可开始获批任务；活动任务可更新进度。安全写入确认与版本守卫保留，修改进度使旧技术验证失效。
 
