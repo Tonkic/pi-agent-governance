@@ -35,4 +35,8 @@
 
 后端worker `c0ee947eb3038a6aeb8b6793635c7b4a4e627261`已受管验证并集成；界面接入 `007ec7098ae56af8d3efd980ad1702e214e60293`，合并 `b2708fc2da3fae82c0d1184311a64b7a0e5ffe82`。
 
-官方PluginCheck/Pack已通过：82文件、896550字节、SHA256 `9e7ac263f50b59dbaf3cc2e7124c2e5e9a677e00a4e4b59c9d28bf3b22bcfbb7`，全部82条规范化源码一致；通用包145506字节（main eadb678构建）SHA `bc2cc4d270c849f924201b7a3434e64f5f4130a0dfeb137a7ab9b6f8b830d73c`。仅既有权限/转接入口静态扫描提示，无新增权限。提交后和main本机完整检查已通过，首次实际CI的测试时序修正正在交付；完成后更新此记录，本项看板仍doing。总任务working及原宿主安装/完整交互等阻塞保留，不自动安装/升版/建标签/发布市场或npm。
+官方PluginCheck/Pack通过：82文件、896550字节、SHA256 `9e7ac263f50b59dbaf3cc2e7124c2e5e9a677e00a4e4b59c9d28bf3b22bcfbb7`，全部82条规范化源码一致；通用包145506字节（main a286652构建）SHA `bc2cc4d270c849f924201b7a3434e64f5f4130a0dfeb137a7ab9b6f8b830d73c`。仅既有权限/转接入口静态扫描提示，无新增权限。
+
+最终实现 `d020aeb904d08163f072c17d78d2fde52b29db1b`、导航等待修正 `25b03985807f457e15abf86df4f9636be161405e`，各自提交后与main集成实际完整检查通过。main `a286652925ddad9cfbafcecb583c22017cd88b25` 已正常推送且完整远端SHA一致；实际CI39079566860 Windows与Ubuntu所有步骤成功，公开API逐步核实，JSON日志reader-ci-fixed.json。首次失败CI与受控red/green证据保留，不跳过检查。
+
+两个顺序工作项现均done；只剩完成记录同步。STATE总任务仍working，原宿主安装/完整交互/历史总体目视等阻塞保留，本次四图目视不冒充全部宿主验收。无新的获批可执行followUp；不自动安装/升版/建标签/发布市场或npm。
