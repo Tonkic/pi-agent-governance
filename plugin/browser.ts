@@ -5,7 +5,7 @@ import type { Socket } from 'node:net';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 const { panelInvoke } = require('./panel');
 const MAX_BODY = 1024 * 1024;
-const rendererFiles = ['i18n', 'graph-model', 'graph', 'design', 'panel'];
+const rendererFiles = ['i18n', 'graph-model', 'graph', 'design', 'panel', 'documents'];
 export async function noLinks(file: string) {
   let current = path.resolve(file);
   for (;;) {
@@ -43,6 +43,7 @@ async function assets(assetRoot: string, webAssetsRoot: string) {
     ['/panel/', path.join(assetRoot, 'renderer/index.html'), 'text/html; charset=utf-8'],
     ['/panel/panel.css', path.join(assetRoot, 'renderer/panel.css'), 'text/css; charset=utf-8'],
     ['/panel/views.css', path.join(assetRoot, 'renderer/views.css'), 'text/css; charset=utf-8'],
+    ['/panel/documents.css', path.join(assetRoot, 'renderer/documents.css'), 'text/css; charset=utf-8'],
     ['/console/bridge.js', path.join(webAssetsRoot, 'bridge.js'), 'text/javascript; charset=utf-8'],
     ['/console/console.css', path.join(webAssetsRoot, 'console.css'), 'text/css; charset=utf-8'],
     ...rendererFiles.map(name => [`/runtime/renderer/${name}.js`, path.join(assetRoot, `runtime/renderer/${name}.js`), 'text/javascript; charset=utf-8'] as [string, string, string])
@@ -67,6 +68,7 @@ async function assets(assetRoot: string, webAssetsRoot: string) {
 function allowed(channel: string, payload: any) {
   const reads = ['governance.snapshot', 'governance.git', 'governance.project', 'governance.behaviors'];
   if (reads.includes(channel)) return true;
+  if (channel === 'governance.documents') return ['list', 'read'].includes(payload.action);
   if (channel === 'governance.workitem') return ['board_create', 'board_update', 'board_move'].includes(payload.args?.action);
   if (channel === 'governance.mutate') return ['init', 'start', 'progress'].includes(payload.args?.action);
   if (channel === 'governance.design') return ['snapshot', 'begin', 'confirm', 'discard'].includes(payload.action);

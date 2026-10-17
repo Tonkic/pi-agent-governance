@@ -6,7 +6,7 @@
   "scripts": {
     "build": "node scripts/build.cjs",
     "typecheck": "tsc --project tsconfig.json --noEmit && tsc --project plugin/renderer/tsconfig.json --noEmit",
-    "test": "npm run build && node --test build/test/git.test.js build/test/governance.test.js build/test/panel.test.js build/test/project.test.js build/test/operations.test.js test/release.test.cjs test/layout.test.cjs test/behaviors.test.cjs test/design.test.cjs test/mcp.test.cjs test/distributions.test.cjs test/web.test.cjs test/host-context.test.cjs test/workbench.test.cjs test/unified-browser.test.cjs test/entry.test.cjs",
+    "test": "npm run build && node --test build/test/git.test.js build/test/governance.test.js build/test/panel.test.js build/test/project.test.js build/test/operations.test.js test/release.test.cjs test/layout.test.cjs test/behaviors.test.cjs test/design.test.cjs test/mcp.test.cjs test/distributions.test.cjs test/web.test.cjs test/host-context.test.cjs test/workbench.test.cjs test/unified-browser.test.cjs test/entry.test.cjs test/documents.test.cjs test/documents-http.test.cjs",
     "test:browser": "npm run build && node test/browser.cjs && node test/web-browser.cjs && node test/workbench-browser.cjs && node test/entry-browser.cjs",
     "check:behaviors": "npm run build && node scripts/check-behaviors.cjs",
     "release:auto": "node scripts/release-auto.cjs",

@@ -7,19 +7,19 @@ const zlib = require('node:zlib');
 const { execFileSync } = require('node:child_process');
 const { fullSha, gitAt, safeFile, containsCredential, clean } = require('./release-safety.cjs');
 const pluginId = 'io.github.tonkic.agent-governance';
-const sharedModules = ['core', 'git', 'project', 'design', 'behaviors', 'tool', 'panel', 'browser', 'browser-open', 'workbench', 'workbench-tool'];
-const consoleFiles = ['build/web/server.js', 'web/bridge.js', 'web/console.css', 'plugin/renderer/index.html', 'plugin/renderer/panel.css', 'plugin/renderer/views.css', ...['i18n', 'graph-model', 'graph', 'design', 'panel'].map(f => `plugin/runtime/renderer/${f}.js`)];
+const sharedModules = ['core', 'git', 'project', 'design', 'behaviors', 'tool', 'panel', 'documents', 'browser', 'browser-open', 'workbench', 'workbench-tool'];
+const consoleFiles = ['build/web/server.js', 'web/bridge.js', 'web/console.css', 'plugin/renderer/index.html', 'plugin/renderer/panel.css', 'plugin/renderer/views.css', 'plugin/renderer/documents.css', ...['i18n', 'graph-model', 'graph', 'design', 'panel', 'documents'].map(f => `plugin/runtime/renderer/${f}.js`)];
 const skillFiles = ['SKILL.md', 'SOURCE.md', 'LICENSE', ...['README', 'web-and-product', 'transactional', 'realtime-and-storage', 'ai-native', 'agent-and-org', 'embedded-industrial', 'signals', 'glossary'].map(f => `references/${f}.md`)];
 const hostFiles = ['build/mcp/context-hook.js', 'mcp/clients/codex-hooks.json'];
 const piFiles = [
   'manifest.json', 'main.js', 'main.ts', 'runtime/main.js',
   'entry-bridge.ts', 'runtime/entry-bridge.js', 'entry/index.html', 'entry/entry.js', 'entry/entry.css',
-  ...['core', 'git', 'panel', 'project', 'tool', 'operations', 'behaviors', 'design', 'browser', 'browser-open', 'workbench', 'workbench-tool'].flatMap(f => [`${f}.ts`, `runtime/${f}.js`]),
+  ...['core', 'git', 'panel', 'project', 'tool', 'operations', 'behaviors', 'design', 'documents', 'browser', 'browser-open', 'workbench', 'workbench-tool'].flatMap(f => [`${f}.ts`, `runtime/${f}.js`]),
   'runtime/web/bridge.js', 'runtime/web/console.css',
   ...skillFiles.map(f => `skills/architecture-copilot/${f}`),
   'README.md', ...['architecture-design', 'README', 'governance', 'git', 'project', 'mcp', 'web-console', 'documentation', 'architecture', 'development', 'doc-driven', 'behavior-workspace', 'publishing', 'releasing', 'ui-sources'].map(f => `docs/${f}.md`),
-  'renderer/index.html', 'renderer/panel.css', 'renderer/views.css', 'renderer/tsconfig.json',
-  ...['design', 'panel', 'graph', 'graph-model', 'i18n'].flatMap(f => [`renderer/${f}.ts`, `runtime/renderer/${f}.js`])
+  'renderer/index.html', 'renderer/panel.css', 'renderer/views.css', 'renderer/documents.css', 'renderer/tsconfig.json',
+  ...['design', 'panel', 'graph', 'graph-model', 'i18n', 'documents'].flatMap(f => [`renderer/${f}.ts`, `runtime/renderer/${f}.js`])
 ].sort();
 const sha256 = data => crypto.createHash('sha256').update(data).digest('hex');
 const json = value => JSON.stringify(value, null, 2) + '\n';

@@ -5,6 +5,7 @@
 <meta name="pi-plugin-chrome" content="v2">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'none'">
 <title data-i18n="app"></title><link rel="stylesheet" href="panel.css"><link rel="stylesheet" href="views.css">
+<link rel="stylesheet" href="documents.css">
 </head>
 <body>
 <main class="app-shell">
@@ -15,6 +16,7 @@
     <a href="#board-section"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16M15 4v16M5 8h2M11 8h2M17 8h2"/></svg><span data-i18n="navBoard"></span></a>
     <a href="#git-section"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="6" r="2"/><path d="M6 7v10M18 8v3a5 5 0 0 1-5 5H6"/></svg><span data-i18n="navGit"></span></a>
     <button id="nav-behaviors" type="button" aria-haspopup="dialog"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7"/></svg><span data-i18n="behaviorDocs"></span></button>
+    <a href="#documents-section"><span class="icon" aria-hidden="true">▤</span><span data-i18n="navDocuments"></span></a>
     <span class="nav-note" data-i18n="local"></span>
   </nav>
   <header class="topbar">
@@ -98,6 +100,7 @@
     <div class="git-summary-row"><p id="git-summary" class="muted" data-i18n="gitLoading"></p><span class="git-legend" data-i18n="manualRefresh"></span></div>
     <div id="git-tasks" class="git-tasks"></div>
   </section>
+  <section id="documents-section" class="panel documents-panel" aria-label="Project documents" hidden></section>
 
   <footer><span data-i18n="app"></span><span id="updated"></span></footer>
 </main>
@@ -149,4 +152,5 @@
 <dialog id="workspace-drafts-dialog" class="action-dialog"><header class="dialog-header"><h2 data-i18n="workspaceDrafts"></h2><button id="workspace-drafts-close" type="button" data-i18n-aria-label="closeDetails">×</button></header><p data-i18n="draftsLifetime"></p><textarea id="workspace-drafts-text" readonly rows="16" data-i18n-aria-label="workspaceDrafts"></textarea></dialog>
 <dialog id="confirm-dialog"><form method="dialog"><div class="dialog-mark" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3 4.5 7.2v9.6L12 21l7.5-4.2V7.2L12 3Z"/><path d="M12 8v4M12 16v.1"/></svg></div><p class="eyebrow" data-i18n="writeConfirmation"></p><h2 data-i18n="confirmTitle"></h2><p id="confirm-description"></p><p id="confirm-workspace" class="path"></p><div class="actions"><button value="cancel" data-i18n="cancel"></button><button value="confirm" class="primary" data-i18n="confirm"></button></div></form></dialog>
 <script src="../runtime/renderer/i18n.js"></script><script src="../runtime/renderer/graph-model.js"></script><script src="../runtime/renderer/graph.js"></script><script src="../runtime/renderer/design.js"></script><script src="../runtime/renderer/panel.js"></script>
+<script src="../runtime/renderer/documents.js"></script>
 </body></html>

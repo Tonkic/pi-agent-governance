@@ -93,6 +93,7 @@ function lock(value) {
     updateLaunchControls();
     updateItemNavigation();
     updateDesignControls();
+    window.dispatchEvent(new Event('documents-controls'));
 }
 async function invoke(channel, payload = {}) {
     if (!window.pluginBridge?.invoke)
@@ -147,6 +148,7 @@ function renderWorkbenchSummary(loading = false) {
 function render(data) {
     snapshot = data;
     observedWorkspace = data.workspace;
+    window.dispatchEvent(new Event('documents-context'));
     $('initialize-workspace').hidden = !!data.state;
     const s = data.state;
     const status = s ? labels[s.status] || s.status : t('uninitialized');
@@ -487,14 +489,14 @@ $('show-workflow').addEventListener('click', () => {
     graphView = 'workflow';
     renderProjectGraph();
 });
-const pageIds = ['board-section', 'architecture', 'git-section'];
+const pageIds = ['board-section', 'architecture', 'git-section', 'documents-section'];
 function highlightNavigation() {
     const requested = location.hash.slice(1);
     const active = pageIds.includes(requested) ? requested : 'board-section';
     const pageTitles = {
         architecture: 'navArchitecture',
         'board-section': 'navBoard',
-        'git-section': 'navGit'
+        'git-section': 'navGit', 'documents-section': 'navDocuments'
     };
     text('page-title', t(pageTitles[active]));
     for (const id of pageIds)
@@ -1662,6 +1664,7 @@ window.pluginBridge?.on?.('workspace:changed', (workspace) => {
     const retained = retainWorkspaceDrafts();
     const owner = ++workspaceEpoch;
     loadRevision++;
+    window.dispatchEvent(new Event('documents-reset'));
     observedWorkspace = next;
     // Closing a confirmation resolves false under the new epoch. Never send its old intent.
     document.querySelectorAll('dialog[open]').forEach(dialog => dialog.close('cancel'));

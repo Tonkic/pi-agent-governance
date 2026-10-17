@@ -2,6 +2,7 @@
 // Plugin-owned copy only. Never translate project data or error payloads by matching text.
 const copy = {
   en: {
+    navDocuments: 'Project documents',
     completedHistory: 'All completed items',
     viewAllCompleted: 'View all ({0})',
     recentCompleted: 'Showing {0} of {1} · most recent first',
@@ -371,6 +372,7 @@ const copy = {
     viewRelations: 'View responsibility and relationships'
   },
   'zh-CN': {
+    navDocuments: '项目文档',
     completedHistory: '全部已完成',
     viewAllCompleted: '查看全部 ({0})',
     recentCompleted: '显示 {0} / 共 {1} 项 · 近期优先',
