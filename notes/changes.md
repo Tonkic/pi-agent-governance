@@ -139,3 +139,11 @@
 - 增：单服务所有权、切换/断开/卸载/在途撤销和有界页面租约；HTTP仍拒绝Agent/model/session/任意Git写入。旧兼容记录及暂停桌面保留。
 - 检查：完整184项、98+7+2浏览器图/10行为、官方72文件包/分发及提交后/main重测通过，20循环HTTP无残留TCP Server；main1ea354b实际Linux+Windows CI39028637631全部成功。独立历史视觉循环拆分保持500000预算与全部场景，完整交付见changes/active/project-board-release/unified-browser.md。
 - 坑：唯一复核发现相对宿主项目会隐式resolve到cwd；新回归实际red→green，先检查绝对原值。3旧内嵌面板断言迁移为无面板和真实HTTP隔离，不删安全检查。未安装客户端/收费模型/总体验收不冒称通过。
+
+## 0.7.8 — 官方启动器与工作面板轻量入口
+
+- 增：Alt+空格ui.panel和右侧contributes.views共用entry/index.html，仅项目状态、刷新及显式打开浏览器；不复制看板/聊天，加载/恢复不自动打开。
+- 权限：用户明确批准ui.panel/ui.view仅作入口；原shell.openExternal仅生成链接、项目/会话/Git边界不变，不覆盖宿主快捷键或注入左侧栏。
+- 检查：类型/构建、完整188测试零跳过、98+7+2+8浏览器图与原10行为通过；系统打开器/原生入口摆放模拟，真实HTTP，非安装客户端E2E。最终包及交付见changes/active/project-board-release/lightweight-entry.md。
+- 坑：此前把“纯命令入口”和“可显示轻量页”混淆，官方Hello/Browser示例证明后者可用。入口版本绑定项目/代次，旧按钮不跨项目；独立历史种子拆出模块，保留全部断言和500000预算。
+- 边界：需手动更新/重载并确认权限，不自动安装/升版/发布；原总体阻塞、暂停桌面和未合并工作保留。

@@ -175,7 +175,7 @@ test('community manifest and distribution allowlist exclude credentials and old 
   assert.equal(manifest.id, 'io.github.tonkic.agent-governance');
   for (const locale of ['en', 'zh-CN']) {
     for (const key of ['name', 'description', 'safetyNotes']) assert.ok(manifest.i18n[locale][key].trim());
-    assert.equal(manifest.ui, undefined, 'No second embedded panel contribution');
+    assert.equal(manifest.ui.panel, 'entry/index.html', 'Only a lightweight entry, not the workbench renderer');
   }
   assert.equal(typeof manifest.contributes.commands[0].title, 'string', 'installer requires a plain command title');
   const { piFiles } = require('../../scripts/build-distributions.cjs');

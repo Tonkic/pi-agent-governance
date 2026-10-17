@@ -6,7 +6,7 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const root = path.resolve(__dirname, '..');
 test('compiled JavaScript is separated and runtime exactly matches compiler output', () => {
-  const sources = ['main', 'core', 'git', 'panel', 'project', 'tool', 'operations', 'behaviors', 'design', 'browser', 'browser-open', 'workbench', 'workbench-tool'];
+  const sources = ['main', 'core', 'git', 'panel', 'project', 'tool', 'operations', 'behaviors', 'design', 'browser', 'browser-open', 'workbench', 'workbench-tool', 'entry-bridge'];
   const renderer = ['i18n', 'graph-model', 'graph', 'panel', 'design'];
   for (const file of [
     ...sources.map((f) => `${f}.js`),
@@ -28,7 +28,8 @@ test('compiled JavaScript is separated and runtime exactly matches compiler outp
   const manifest = require('../plugin/manifest.json');
   assert.equal(manifest.main, 'main.js');
   assert.equal(typeof require(path.join(root, 'plugin', manifest.main)).onLoad, 'function');
-  assert.equal(manifest.ui, undefined);
+  assert.equal(manifest.ui.panel, 'entry/index.html');
+  assert.equal(manifest.contributes.views[0].entry, manifest.ui.panel);
   const html = fs.readFileSync(path.join(root, 'plugin/renderer/index.html'), 'utf8');
   for (const [, src] of html.matchAll(/<script src="([^"]+)"/g))
     assert.ok(fs.existsSync(path.resolve(root, 'plugin/renderer', src)), src);

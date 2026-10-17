@@ -13,6 +13,7 @@ const skillFiles = ['SKILL.md', 'SOURCE.md', 'LICENSE', ...['README', 'web-and-p
 const hostFiles = ['build/mcp/context-hook.js', 'mcp/clients/codex-hooks.json'];
 const piFiles = [
   'manifest.json', 'main.js', 'main.ts', 'runtime/main.js',
+  'entry-bridge.ts', 'runtime/entry-bridge.js', 'entry/index.html', 'entry/entry.js', 'entry/entry.css',
   ...['core', 'git', 'panel', 'project', 'tool', 'operations', 'behaviors', 'design', 'browser', 'browser-open', 'workbench', 'workbench-tool'].flatMap(f => [`${f}.ts`, `runtime/${f}.js`]),
   'runtime/web/bridge.js', 'runtime/web/console.css',
   ...skillFiles.map(f => `skills/architecture-copilot/${f}`),

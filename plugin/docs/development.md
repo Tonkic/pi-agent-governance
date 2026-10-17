@@ -36,6 +36,7 @@ test:browser串行执行模拟桥接工作台与真实HTTP浏览器；单元测�
 | `mcp/` | stdio协议适配和客户端示例；复用同一核心，不含宿主模型/会话接口 |
 | `web/` | 共享HTTP服务的人工CLI薄wrapper、同一网页桥接/CSS；无外部Agent启动 |
 | `plugin/renderer/` | 浏览器 TS、HTML 和 CSS |
+| `plugin/entry/`、`plugin/entry-bridge.ts` | 同一PI轻量入口HTML/CSS/JS与受限桥接，不复制业务renderer |
 | `plugin/runtime/` | 生成运行JS和从web/复制的web资产，供宿主/发布使用 |
 | `plugin/manifest.json`、`plugin/main.js` | 生成清单和市场所需固定入口；main.js只转接runtime/main.js，不手改 |
 | `plugin/README.md`、`plugin/docs/` | 从 `docs/` 生成并提交的安装包说明，不手改 |
@@ -56,6 +57,7 @@ test:browser串行执行模拟桥接工作台与真实HTTP浏览器；单元测�
 | Git 协作 | `plugin/git.ts` | `test/git.test.ts` |
 | 界面与语言 | `plugin/renderer/`、`plugin/panel.ts` | `test/panel.test.ts`、`test/browser.cjs` |
 | PI项目绑定与浏览器命令/工具 | `plugin/main.ts`、`plugin/workbench-tool.ts` | `test/host-context.test.cjs`、`test/unified-browser.test.cjs` |
+| 启动器/右侧插件视图轻量入口 | `plugin/entry/`、`plugin/entry-bridge.ts`、manifest构建 | `test/entry.test.cjs`、`test/entry-browser.cjs`；原浏览器命令后串行执行，桥接/原生摆放模拟，服务真实 |
 | 说明与生成规则 | `docs/`、`scripts/build-docs.cjs` | `test/layout.test.cjs` |
 | 行为文档与场景证据 | `plugin/behaviors.ts`、`scripts/check-behaviors.cjs` | `test/behaviors.test.cjs`、`npm run check:behaviors` |
 | 构建路径 | `tsconfig.json`、`scripts/build.cjs` | `test/layout.test.cjs` |
