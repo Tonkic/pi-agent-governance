@@ -97,3 +97,78 @@ module.exports.seedWorkbench = async ({ mutate, refresh, page, makePage, confirm
   assert.equal(await card(english, enId).locator('h4 b').count(), 0);
   return english;
 };
+// Independent appearance/CSP assertions, still executed serially before board creation.
+module.exports.palette = async ({ assert, page, sendAppearance, rootColor }) => {
+    // Host-injected drag chrome styles must still survive CSP; inline scripts remain blocked.
+    const chrome = await page.evaluate(() => {
+      const host = document.createElement('pi-plugin-panel-chrome');
+      const s = host.attachShadow({ mode: 'open' });
+      const style = document.createElement('style');
+      style.textContent =
+        '.drag{position:fixed;height:46px;-webkit-app-region:drag}.control{-webkit-app-region:no-drag}';
+      const d = document.createElement('div');
+      d.className = 'drag';
+      const b = document.createElement('button');
+      b.className = 'control';
+      s.append(style, d, b);
+      document.documentElement.append(host);
+      const r = {
+        region: getComputedStyle(d).getPropertyValue('-webkit-app-region'),
+        height: getComputedStyle(d).height,
+        button: getComputedStyle(b).getPropertyValue('-webkit-app-region')
+      };
+      host.remove();
+      return r;
+    });
+    assert.deepEqual(chrome, { region: 'drag', height: '46px', button: 'no-drag' });
+    assert.match(
+      await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content'),
+      /script-src 'self';/
+    );
+    // Host palette remains opt-in, only color values are applied.
+    await page.locator('#palette-toggle').click();
+    await sendAppearance(page, {
+      base: 'dark',
+      pluginTheme: {
+        id: 'fixture',
+        base: 'dark',
+        css: ':root[data-theme="dark"]{--brand:#82b89a;--ds-accent:var(--brand);--ds-bg-primary:#15251c}:root{--ds-accent:red}body{display:none}'
+      }
+    });
+    assert.equal(await rootColor(page, '--accent'), '#82b89a');
+    assert.equal(await rootColor(page, '--bg'), '#15251c');
+    assert.equal(await page.locator('#board-new').isVisible(), true);
+    await sendAppearance(page, {
+      base: 'dark',
+      pluginTheme: {
+        id: 'important',
+        base: 'dark',
+        css: ':root[data-theme="dark"]{--ds-accent:green}:root{--ds-accent:red!important}'
+      }
+    });
+    assert.equal(await rootColor(page, '--accent'), 'red');
+    const huge =
+      ':root{--ds-accent:var(--v0);' +
+      Array.from({ length: 7 }, (_, i) => `--v${i}:${`var(--v${i + 1}) `.repeat(30)};`).join('') +
+      '--v7:red}';
+    await sendAppearance(page, {
+      base: 'dark',
+      pluginTheme: { id: 'budget', base: 'dark', css: huge }
+    });
+    assert.equal(await rootColor(page, '--accent'), '');
+    await sendAppearance(page, {
+      base: 'dark',
+      pluginTheme: {
+        id: 'invalid',
+        base: 'dark',
+        css: ':root{--ds-bg-primary:url(https://example.invalid);--loop:var(--loop);--ds-accent:var(--loop);--ds-text-muted:var(--missing,#aabbcc)}'
+      }
+    });
+    assert.equal(await rootColor(page, '--bg'), '');
+    assert.equal(await rootColor(page, '--accent'), '');
+    assert.equal(await rootColor(page, '--muted'), '#aabbcc');
+    await sendAppearance(page, { base: 'light' });
+    assert.equal(await rootColor(page, '--muted'), '');
+    await page.locator('#palette-toggle').click();
+    assert.equal(await page.locator('html').getAttribute('data-palette'), 'pebrel');
+};

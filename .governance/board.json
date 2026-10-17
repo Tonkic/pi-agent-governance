@@ -289,6 +289,22 @@
       "gitTaskId": null
     },
     {
+      "id": "document-reader",
+      "title": "浏览器项目文档阅读",
+      "description": "依赖reference-ui完成后开始。只读Markdown文档列表、文件名搜索、正文和标题导航，复用已美化界面；保留路径/敏感资源隔离，无编辑、脚本、命令或远程资源执行。",
+      "blocker": "",
+      "stage": "doing",
+      "taskId": "project-board-release",
+      "criteria": [
+        "浏览器内可浏览搜索阅读项目文档与标题目录",
+        "只读并拒绝敏感/越界/链接路径及HTML脚本/外部资源执行",
+        "完整回归包与提交后交付通过"
+      ],
+      "architectureImpact": "none",
+      "gitTaskId": null,
+      "completedAt": null
+    },
+    {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
       "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
@@ -308,22 +324,7 @@
       "architectureImpact": "affects",
       "gitTaskId": null,
       "completedAt": "2026-10-15T19:41:35.780Z"
-    },
-    {
-      "id": "document-reader",
-      "title": "浏览器项目文档阅读",
-      "description": "依赖reference-ui完成后开始。只读Markdown文档列表、文件名搜索、正文和标题导航，复用已美化界面；保留路径/敏感资源隔离，无编辑、脚本、命令或远程资源执行。",
-      "blocker": "",
-      "stage": "todo",
-      "taskId": "project-board-release",
-      "criteria": [
-        "浏览器内可浏览搜索阅读项目文档与标题目录",
-        "只读并拒绝敏感/越界/链接路径及HTML脚本/外部资源执行",
-        "完整回归包与提交后交付通过"
-      ],
-      "architectureImpact": "none",
-      "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-17T22:33:49.488Z"
+  "updatedAt": "2026-10-17T22:47:00.226Z"
 }
