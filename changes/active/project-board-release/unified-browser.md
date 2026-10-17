@@ -16,6 +16,14 @@ PI/MCP共用governance_ui及BrowserWorkbench，移除manifest.ui、ui.panel和mo
 - 干净npm ci（0漏洞）、类型/构建及完整184/184通过，零跳过。PluginCheck/PluginPack实际通过，官方包72文件804806字节，SHA256 6e91ef0a69efe8885de7fdf5dbf8fe7c7d17303806b72042df7802bae8a3e273；权限需人工授予，固定入口静态unused调用实际位于runtime/main.js。最终提交后/main/CI结果继续按实际更新。
 - 实现45ac322提交后实际类型、184测试、98+7+2浏览器图通过；行为读取500234字符超500000被门禁拒绝。只把独立完成历史的六组响应式截图循环抽到history-themes-browser.cjs，原调用点串行执行全部断言/截图，WS/AD切换/迟到/草稿守卫仍在原绑定文件，未删绑定/场景或提高预算；499500字符及原10场景重跑通过。该测试拆分不改变官方包字节。
 
+## 交付
+
+- 最终实现bf12e02c1f95aaadf3eb11402e93ed205f3b680f提交后类型/构建、184测试零跳过、98+7+2浏览器截图、10行为场景全部通过；受管git_verify已登记。通用包133443字节SHA264d367bcd9df2f74d4033e32a8643e000015302301890962b9d55d3d2da7a9a；官方PI包如上。分发/4资产readAssets核对通过，发布计划publish:false/mutation:false。
+- main集成1ea354bc1e8bce82b9737939114ce668949aabf9：重新npm ci（0漏洞）/类型/构建/184测试/98+7+2图/10行为及分发/只读发布计划均通过，正常推送后ls-remote完整SHA相同，工作区干净。
+- 实际[Tests39028637631](https://github.com/Tonkic/pi-agent-governance/actions/runs/39028637631)对应1ea354b，Ubuntu+Windows全部步骤success，包括生成物无差异、184测试、行为和完整浏览器。Actions的Node20/runner镜像迁移是平台提示，不是测试失败，本次不扩展依赖升级。
+- 当前宿主已加载治理工具报not a git repository，登记未成功；改用明确受管cwd的同一治理CLI通过原Git门禁登记验证，没有伪造状态或绕过。PowerShell对成功merge/push的正常stderr提示返回非零时已核对实际HEAD/远端，不重复变更。
+- 只完成unified-browser工作项，总体仍working并保留既有外部检查。没有新的可执行获批followUp，不自动启动下一需求。占用中的已合并worktree分支保留，暂停桌面与未合并历史不清理。记录提交仍按正常main集成/重测/同步，不自动安装或发Release。
+
 ## 边界与保留阻塞
 
 测试使用真实loopback/SDK/进程、VM和模拟系统打开器，不等于安装后的PI/Codex/Claude真实E2E，不启动收费模型。SSH/WSL/远端不保证本机浏览器；普通MCP仍固定绑定，不从roots/cwd/最近会话猜活动项目。浏览器冻结可能租约到期，需重新明确打开。

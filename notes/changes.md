@@ -137,5 +137,5 @@
 - 改：PI/Codex/Claude共用同一浏览器UI和核心，移除PI内嵌面板；共用governance_ui显式open/close/status，不接受路径/URL、不返回私有凭据，原会话保留模型/思考/历史。
 - 权限：用户明确批准shell.openExternal，仅打开本次生成本地URL；移除ui.panel/models.list，desktop.control仅核实可信调用会话元数据。不自动安装、扩权、建聊天或发布。
 - 增：单服务所有权、切换/断开/卸载/在途撤销和有界页面租约；HTTP仍拒绝Agent/model/session/任意Git写入。旧兼容记录及暂停桌面保留。
-- 检查：完整183项、98+7浏览器图/10行为通过；受管真实标签页2图验证刷新/多页/最后页回收，20循环HTTP无残留TCP Server。最终提交/包与交付结果以changes/active/project-board-release/unified-browser.md为准。
+- 检查：完整184项、98+7+2浏览器图/10行为、官方72文件包/分发及提交后/main重测通过，20循环HTTP无残留TCP Server；main1ea354b实际Linux+Windows CI39028637631全部成功。独立历史视觉循环拆分保持500000预算与全部场景，完整交付见changes/active/project-board-release/unified-browser.md。
 - 坑：唯一复核发现相对宿主项目会隐式resolve到cwd；新回归实际red→green，先检查绝对原值。3旧内嵌面板断言迁移为无面板和真实HTTP隔离，不删安全检查。未安装客户端/收费模型/总体验收不冒称通过。
