@@ -85,7 +85,7 @@ test('browser bundle starts without Node globals and reports static preview', as
     addEventListener() {}, documentElement: { dataset: {} }, querySelectorAll: () => [], querySelector: () => ({ hidden: false }),
     createElement: () => ({ value: '', textContent: '' }),
     getElementById: id => {
-      if (!elements.has(id)) elements.set(id, { textContent: '', classList: { toggle() {} }, reset() {}, setAttribute() {}, addEventListener() {}, replaceChildren() {} });
+      if (!elements.has(id)) elements.set(id, { textContent: '', style: { setProperty() {} }, classList: { toggle() {} }, reset() {}, setAttribute() {}, addEventListener() {}, replaceChildren() {} });
       return elements.get(id);
     }
   };

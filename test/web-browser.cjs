@@ -8,7 +8,7 @@ const { startConsole } = require('../build/web/server');
 const { Governance } = require('../build/plugin/core');
 (async () => {
   const root = await fs.mkdtemp(path.join(process.env.PI_SCRATCH_DIR || os.tmpdir(), 'web-browser-'));
-  const screenshots = path.join(process.env.PI_SCRATCH_DIR || os.tmpdir(), 'local-console-screenshots');
+  const screenshots = path.join(process.env.PI_SCREENSHOT_DIR || process.env.PI_SCRATCH_DIR || os.tmpdir(), 'http-console');
   await fs.mkdir(screenshots, { recursive: true });
   const g = new Governance(root);
   await g.run({ action: 'init' });
@@ -94,6 +94,7 @@ const { Governance } = require('../build/plugin/core');
     await lost.waitForFunction(() => document.querySelector('#notice').classList.contains('error'));
     assert.match(await lost.locator('#notice').textContent(), /private URL/); await disconnected.close();
     assert.deepEqual(errors, []);
+    await require('./reference-ui-browser.cjs')({ browser, screenshots });
     console.log(`PASS real local HTTP console: confirmations, shared updates, stale writes, design review, docs, session reload, disconnected state, bilingual responsive/themes; 7 screenshots: ${screenshots}`);
   } catch (error) {
     if (page) await page.screenshot({ path: path.join(screenshots, 'failure.png') }).catch(() => {});
