@@ -9,11 +9,12 @@
 <body>
 <main class="app-shell">
   <nav class="workspace-nav" data-i18n-aria-label="navigation">
-    <span class="nav-brand">G <span data-i18n="brand"></span></span>
+    <span class="nav-brand"><span class="nav-logo" aria-hidden="true">PI</span><span>PI Agent<br><span data-i18n="brand"></span></span></span>
     <span class="nav-label" data-i18n="workspace"></span>
     <a href="#architecture"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="8" y="3" width="8" height="5" rx="1.5"/><path d="M12 8v5M5 16v-3h14v3"/><rect x="2" y="16" width="6" height="5" rx="1.5"/><rect x="16" y="16" width="6" height="5" rx="1.5"/></svg><span data-i18n="navArchitecture"></span></a>
     <a href="#board-section"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16M15 4v16M5 8h2M11 8h2M17 8h2"/></svg><span data-i18n="navBoard"></span></a>
     <a href="#git-section"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="6" r="2"/><path d="M6 7v10M18 8v3a5 5 0 0 1-5 5H6"/></svg><span data-i18n="navGit"></span></a>
+    <button id="nav-behaviors" type="button" aria-haspopup="dialog"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7"/></svg><span data-i18n="behaviorDocs"></span></button>
     <span class="nav-note" data-i18n="local"></span>
   </nav>
   <header class="topbar">
@@ -25,9 +26,20 @@
         <p class="eyebrow" data-i18n="overview"></p>
         <h1 id="page-title" data-i18n="navArchitecture"></h1>
       </div>
+      <p class="page-subtitle" data-i18n="workbenchSubtitle"></p>
     </div>
     <span id="status" class="badge">—</span>
   </header>
+  <section class="welcome-banner" data-page-control="board-section" aria-labelledby="welcome-title">
+    <div><p class="eyebrow" data-i18n="welcomeEyebrow"></p><h2 id="welcome-title" data-i18n="welcomeTitle"></h2><p data-i18n="welcomeHint"></p><div class="welcome-tags"><span data-i18n="welcomeTasks"></span><span data-i18n="navArchitecture"></span><span data-i18n="behaviorDocs"></span><span data-i18n="navGit"></span><span data-i18n="local"></span></div></div>
+    <svg class="welcome-art" viewBox="0 0 260 144" fill="none" aria-hidden="true"><rect x="62" y="10" width="158" height="108" rx="14" fill="currentColor" opacity=".06" transform="rotate(10 62 10)"/><rect x="30" y="24" width="168" height="112" rx="12" fill="var(--surface)" stroke="currentColor" stroke-opacity=".16"/><path d="M30 50h168" stroke="currentColor" opacity=".15"/><circle cx="44" cy="38" r="3" fill="currentColor" opacity=".4"/><circle cx="55" cy="38" r="3" fill="currentColor" opacity=".2"/><rect x="44" y="64" width="40" height="50" rx="5" fill="currentColor" opacity=".08"/><rect x="94" y="64" width="40" height="36" rx="5" fill="currentColor" opacity=".16"/><rect x="144" y="64" width="40" height="42" rx="5" fill="currentColor" opacity=".1"/><path d="m192 104 9 9 18-21" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </section>
+  <section id="workbench-metrics" class="workbench-metrics" data-page-control="board-section" data-i18n-aria-label="projectMetrics" aria-busy="true">
+    <article class="summary-metric"><span class="metric-symbol" aria-hidden="true">▤</span><div><span data-i18n="totalItems"></span><strong id="summary-total">—</strong></div></article>
+    <article class="summary-metric"><span class="metric-symbol" aria-hidden="true">◷</span><div><span data-i18n="doing"></span><strong id="summary-doing">—</strong></div></article>
+    <article class="summary-metric"><span class="metric-symbol" aria-hidden="true">✓</span><div><span data-i18n="done"></span><strong id="summary-done">—</strong></div></article>
+    <article class="summary-metric"><span class="metric-symbol" aria-hidden="true">◇</span><div><span data-i18n="impactAffects"></span><strong id="summary-impact">—</strong></div></article>
+  </section>
   <section id="action-panel" class="action-panel-bar" data-i18n-aria-label="actionPanel">
     <div class="action-group" role="group" data-i18n-aria-label="pageActions"><span class="action-group-label" data-i18n="pageActions"></span><div class="action-group-controls"><button id="refresh" type="button" data-i18n="refresh" data-i18n-aria-label="refreshState"></button><button id="board-new" class="primary" type="button" data-page-control="board-section" data-i18n="newItem"></button><button id="architecture-check" type="button" data-page-control="architecture" data-i18n="checkArchitectureSources" hidden></button><button id="architecture-analyze" class="primary" type="button" data-page-control="architecture" data-i18n="reanalyzeArchitecture" hidden></button></div></div>
     <div class="action-group" role="group" data-i18n-aria-label="projectTasks"><span class="action-group-label" data-i18n="projectTasks"></span><div class="action-group-controls"><button id="project-open" type="button" data-i18n="projectControls"></button><button id="behavior-docs-open" type="button" data-i18n="behaviorDocs"></button><button id="analysis-start" type="button" data-i18n="startAnalysis"></button><button id="documentation-start" type="button" data-i18n="updateDocumentation"></button><button id="operations-open" type="button" data-i18n="analysisProgress"></button></div></div>
@@ -68,7 +80,13 @@
     <h2 id="board-title" class="sr-only" data-i18n="navBoard"></h2>
     <p id="board-status" class="board-status" role="status" data-i18n="boardWaiting"></p>
     <div id="board-empty" class="empty-state" hidden><h3 data-i18n="noResults"></h3><button id="search-clear" type="button" data-i18n="clearSearch"></button></div>
-    <div id="board-columns" class="board-columns"></div>
+    <div class="workbench-layout"><div id="board-columns" class="board-columns"></div>
+      <aside class="project-overview" aria-labelledby="project-overview-title">
+        <section class="overview-card"><h2 id="project-overview-title" data-i18n="projectOverview"></h2><h3 id="summary-workspace-name">—</h3><code id="summary-workspace-path">—</code><dl class="overview-details"><dt data-i18n="stateStatus"></dt><dd id="summary-state">—</dd><dt data-i18n="currentTask"></dt><dd id="summary-task">—</dd></dl><p id="summary-availability" class="muted" role="status" data-i18n="reading"></p></section>
+        <section class="overview-card"><h2 data-i18n="completionRatio"></h2><div class="completion-visual"><div id="summary-ring" class="completion-ring" role="img" data-i18n-aria-label="completionRatio"><strong id="summary-percent">—</strong></div></div><dl class="completion-counts"><div><dt data-i18n="todo"></dt><dd id="summary-todo">—</dd></div><div><dt data-i18n="doing"></dt><dd id="summary-doing-count">—</dd></div><div><dt data-i18n="done"></dt><dd id="summary-done-count">—</dd></div></dl><p class="muted" data-i18n="summarySource"></p></section>
+        <section class="overview-card overview-links"><h2 data-i18n="projectViews"></h2><button type="button" data-project-view="architecture" data-i18n="navArchitecture"></button><button type="button" data-project-view="git-section" data-i18n="navGit"></button></section>
+      </aside>
+    </div>
 
   </section>
 
