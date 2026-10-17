@@ -26,7 +26,7 @@ npm test
 npm run test:browser
 ```
 
-浏览器检查使用模拟宿主桥接；尚未执行的真实安装和宿主交互检查保持未验证，不增加测试后的重复人工验收。
+test:browser串行执行模拟桥接工作台与真实HTTP浏览器；单元测试另用真实服务/SDK、模拟系统打开器和stdin EOF检查回收。不是安装后的PI/Codex/Claude真实客户端或付费模型验证。
 
 ## 目录
 
@@ -34,9 +34,9 @@ npm run test:browser
 | --- | --- |
 | `plugin/*.ts` | 主进程源码 |
 | `mcp/` | stdio协议适配和客户端示例；复用同一核心，不含宿主模型/会话接口 |
-| `web/` | 本地HTTP白名单服务及网页桥接/CSS；复用工作台，不含外部Agent启动 |
+| `web/` | 共享HTTP服务的人工CLI薄wrapper、同一网页桥接/CSS；无外部Agent启动 |
 | `plugin/renderer/` | 浏览器 TS、HTML 和 CSS |
-| `plugin/runtime/` | 已提交的运行 JS，供宿主及发布载荷使用 |
+| `plugin/runtime/` | 生成运行JS和从web/复制的web资产，供宿主/发布使用 |
 | `plugin/manifest.json`、`plugin/main.js` | 生成清单和市场所需固定入口；main.js只转接runtime/main.js，不手改 |
 | `plugin/README.md`、`plugin/docs/` | 从 `docs/` 生成并提交的安装包说明，不手改 |
 | `plugin/dist/` | 只保留当前可用安装包；旧版本按需从对应Git提交取回 |
@@ -55,12 +55,12 @@ npm run test:browser
 | 看板与架构 | `plugin/project.ts` | `test/project.test.ts` |
 | Git 协作 | `plugin/git.ts` | `test/git.test.ts` |
 | 界面与语言 | `plugin/renderer/`、`plugin/panel.ts` | `test/panel.test.ts`、`test/browser.cjs` |
-| Agent任务、已有会话复用/工具项目绑定 | `plugin/operations.ts`、`plugin/main.ts` | `test/operations.test.ts`、`test/host-context.test.cjs` |
+| PI项目绑定与浏览器命令/工具 | `plugin/main.ts`、`plugin/workbench-tool.ts` | `test/host-context.test.cjs`、`test/unified-browser.test.cjs` |
 | 说明与生成规则 | `docs/`、`scripts/build-docs.cjs` | `test/layout.test.cjs` |
 | 行为文档与场景证据 | `plugin/behaviors.ts`、`scripts/check-behaviors.cjs` | `test/behaviors.test.cjs`、`npm run check:behaviors` |
 | 构建路径 | `tsconfig.json`、`scripts/build.cjs` | `test/layout.test.cjs` |
 | MCP/只读宿主Hook/Skill资源 | `mcp/server.ts`、`mcp/context-hook.ts`、`plugin/skills/architecture-copilot/` | `test/mcp.test.cjs`，真实SDK与stdin fixtures，非安装客户端E2E |
-| 本地浏览器控制台 | `web/server.ts`、`web/bridge.js` | `test/web.test.cjs`、`test/web-browser.cjs`，由test:browser串行执行 |
+| 共享浏览器服务/租约/打开器 | `plugin/browser.ts`、`plugin/workbench.ts`、`plugin/browser-open.ts`、`web/` | `test/web.test.cjs`、`test/workbench.test.cjs`、`test/web-browser.cjs` |
 | 多目标分发与GitHub发布 | `scripts/build-distributions.cjs`、`scripts/github-release.cjs`、`.github/workflows/` | `test/distributions.test.cjs`、`test/release.test.cjs` |
 
 ## 交付

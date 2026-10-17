@@ -10,7 +10,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import Ajv from 'ajv';
 import { BrowserWorkbench } from '../plugin/workbench';
-import { workbenchTool, invokeWorkbench } from '../plugin/workbench-tool';
+const { workbenchTool, invokeWorkbench } = require('../plugin/workbench-tool');
 const { Governance } = require('../plugin/core');
 const tool = require('../plugin/tool');
 const { version } = require('../../package.json');

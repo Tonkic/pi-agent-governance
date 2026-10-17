@@ -1,67 +1,64 @@
 # 架构
 
-共享核心提供任务状态、项目看板、源码架构和Git协作；PI-Desktop图形适配器与本地stdio MCP复用同一实现和项目数据，不需要Web服务或数据库。
+一个浏览器工作台、共享治理核心，PI/MCP是薄宿主连接器。STATE和项目数据保留在仓库；会话历史、模型和思考设置保留在原宿主，不新增上下文数据库或常驻桌面。
 
 ## 模块与代码入口
 
-以下路径相对于 `plugin/`。阅读源码使用 `.ts`，不要修改生成的 `runtime/` 文件。
+以下路径相对plugin/。阅读修改TS，不手改生成runtime。
 
-| 文件 | 职责 | 先看哪里 |
+| 文件 | 职责 | 入口 |
 | --- | --- | --- |
-| `main.ts` | 注册工具/面板；工具以可信调用会话绑定项目，面板跟随主工作区 | `onLoad`、`execute` |
-| `tool.ts` | 定义工具动作及参数 | 动作与参数定义 |
-| `core.ts` | 管理任务状态、验证、归档和文件锁 | `Governance.run` |
-| `panel.ts` | 限定面板操作，检查确认与版本 | `panelInvoke` |
-| `project.ts` | 保存看板、架构和源码指纹 | `ProjectData.run` |
-| `git.ts` | 管理 worktree、范围和提交验证 | `GitGovernance.run` |
-| `operations.ts` | 默认复用同项目会话，显式新建、身份/空闲校验与安全恢复 | `operationInvoke`、`localSession` |
-| `behaviors.ts` | 安全读取行为正文、关联与本机验证状态 | `behaviorSnapshot`、`behaviorState` |
-| `design.ts`、`renderer/design.ts` | 管理独立设计草案、追加基线及画板交互 | `ArchitectureDesign.run`、`designWrite` |
-| `renderer/panel.ts` | 加载数据、展示状态、提交表单 | `load`、`mutate` |
-| `renderer/graph-model.ts`、`graph.ts` | 计算图布局、绘制与交互 | 布局与渲染函数 |
-| `renderer/i18n.ts` | 提供中英文界面文字 | 语言表 |
+| `main.ts` | PI工具/浏览器命令、可信调用会话绑定、工作区事件和卸载 | `onLoad`、`workspaceRoot` |
+| `workbench-tool.ts` | PI/MCP共用open/close/status及确认校验，无路径/URL参数 | `invokeWorkbench` |
+| `workbench.ts` | 单服务所有权、串行打开、切换/关闭/在途撤销 | `BrowserWorkbench` |
+| `browser.ts` | loopback HTTP、固定资产/API、认证与有界页面租约 | `startBrowserConsole` |
+| `browser-open.ts` | 固定平台打开器、严格本地URL、有界超时 | `openBrowser` |
+| `tool.ts`、`core.ts` | 治理schema、STATE、验证、归档和锁 | `Governance.run` |
+| `panel.ts` | UI动作白名单、确认与修订校验，不依赖PI | `panelInvoke` |
+| `project.ts`、`design.ts` | 看板/指纹与独立设计草案/追加基线 | `ProjectData.run`、`ArchitectureDesign.run` |
+| `git.ts` | worktree、范围与提交验证 | `GitGovernance.run` |
+| `operations.ts` | 保留历史兼容实现；当前PI入口仅使用localSession身份过滤 | `localSession` |
+| `behaviors.ts` | 安全读取行为正文/关联/本机证据 | `behaviorSnapshot` |
+| `renderer/` | 同一工作台、双语、图布局及设计画板 | `panel.ts`、`graph.ts`、`design.ts` |
 
 ## 调用关系
 
 ```text
-Agent 工具 → main.ts → core.ts → STATE.json
-CLI → scripts/governance.ts → core.ts
-MCP客户端 → mcp/server.ts → tool.schema校验 → core.ts
-MCP资源/提示、PI Skill → plugin/skills/architecture-copilot/
-面板 → 宿主桥接 → main.ts → panel.ts → core.ts
-浏览器 → web/bridge.js → 127.0.0.1 web/server.ts → panel.ts → core.ts
-面板任务 → main.ts → operations.ts → 宿主 session/agent API
-core.ts → project.ts → .governance/
+PI治理工具 → main.ts → core.ts → STATE / .governance
+MCP治理工具 → mcp/server.ts → tool.schema → core.ts
+PI命令 / PI或MCP governance_ui → workbench-tool → BrowserWorkbench
+BrowserWorkbench → browser.ts → 127.0.0.1 + 私有片段URL → 系统浏览器
+浏览器 → web/bridge.js → browser.ts白名单 → panel.ts → core.ts
+人工CLI → web/server.ts薄wrapper → 同一个browser.ts
+MCP资源/提示、PI Skill → skills/architecture-copilot/
 core.ts → git.ts → Git common directory
 ```
 
-`project.ts` 复用 `core.ts` 提供的锁、状态和文件操作。面板写入使用动作白名单、确认和版本校验；Git 写入及任务关闭使用 Agent 工具或 CLI。
+PI工具只用可信ToolExecContext.sessionId的有界session/get核实项目，缺失/外来/不支持会话拒绝；显式命令用宿主可见项目。工作区事件撤销旧服务，不重定向旧能力。PI只通过公开shell.openExternal打开自身生成地址，不调用Agent/create/prompt/abort或models.list。
 
-`mcp/server.ts`绑定显式绝对工作区或Claude官方启动项目环境；输入缓冲/Skill资源固定，每次调用创建新核心对象。`mcp/context-hook.ts`从官方Hook stdin读取session/cwd，仅向原会话返回当前项目状态；不持久化会话库、读历史或动态重绑MCP。两者不引用PI接口、不自动初始化或运行Agent，核心继续校验修订/锁/路径/Git。用法见 [MCP](mcp.md)。
+MCP固定绑定显式绝对项目或Claude官方启动项目环境。普通连接/状态/资源读取不监听HTTP、不自动初始化。确认open才启动；断开输入/传输、信号关闭时撤销在途打开并dispose。只读context-hook读取官方session_id/cwd，将有界状态带回原会话，不读历史或动态重绑MCP。见 [MCP](mcp.md)。
 
-`web/server.ts`仅监听loopback，固定工作区、随机会话凭据及Host/Origin检查后分发白名单面板动作；静态资源也用固定清单。复用renderer，不复制状态或Agent实现。独立网页允许人工基线确认，但不提供任意工具、Git写入或宿主会话控制。见 [本地控制台](web-console.md)。
+BrowserWorkbench同项目复用服务，切换先关闭，启动前后/打开前复核身份。close/dispose立即失效在途请求，迟到服务回收。结果与错误不含私有URL。页面租约限制16个，心跳/TTL/退出宽限与服务连接超时均有界。独立CLI直到Ctrl+C，不套用宿主页生命周期。
+
+HTTP只监听127.0.0.1，精确Host/Origin/token/JSON及固定资源/动作白名单。复用renderer和原确认/修订/范围/锁，不提供Agent/model/session或任意Git写入。凭据不落盘，片段由浏览器移入标签页sessionStorage。参数和租约配置不从工具/网页接受任意路径或URL。见 [浏览器工作台](web-console.md)。
 
 ## 数据位置
 
-| 位置 | 保存内容 |
+| 位置 | 内容 |
 | --- | --- |
-| `STATE.json` | 总目标、范围、检查条件、进度和阻塞 |
+| `STATE.json` | 总目标、范围、条件、进度和阻塞 |
 | `.governance/board.json` | 三栏工作项与保留的旧检查历史 |
-| `.governance/architecture.json` | 模块关系、源码指纹及更新时间 |
-| `.governance/architecture-design.json` | 独立设计正文/画板、当前草案和人工确认历史，不是源码事实 |
-| `.governance/operations.json` | 项目 Agent 会话 ID、模型选择与运行状态 |
-| `docs/behavior-bindings.json`、对应Markdown | 当前行为正文与场景/文件关联 |
-| `.governance/behavior-evidence.json` | Git忽略的本机检查证据；不是获批任务或整体通过记录 |
-| Git common directory 下的 `pi-governance/` | 本机受管任务、worktree 与提交验证登记 |
+| `.governance/architecture.json` | 源码图与指纹，不是设计 |
+| `.governance/architecture-design.json` | 独立草案和人工确认历史，不是实现证据 |
+| `.governance/operations.json` | 如存在则为旧会话操作记录；统一入口不新建或重放 |
+| `docs/behavior-bindings.json`、Markdown | 可读行为与固定场景关联 |
+| `.governance/behavior-evidence.json` | 忽略的本机实际检查证据，不代表整体通过 |
+| Git common directory的 `pi-governance/` | 本机任务/worktree/提交验证登记 |
+
+没有新增服务/聊天注册表，私有URL只在拥有服务和浏览器内存中。旧兼容代码/测试不代表当前开放另一套PI入口。
 
 ## 限制
 
-- 已完成表示工作项结束，不自动证明覆盖范围外的检查；没有独立验收阶段。
-- 测试由调用方运行，证据由调用方提交；插件不独立证明测试结果。
-- 插件不拦截其他工具；仅在用户确认后发起固定 Agent 任务，不后台轮询。
-- 锁和写前比较不能防御恶意并发修改。
-- 外层窗口与安装更新由 PI-Desktop 管理。
+仅用于可信仓库；锁/路径不防恶意并发。测试由调用方实际执行和陈述，卡片/会话结束不证明检查通过。浏览器和安装权限由宿主/系统管理，不支持时明确拒绝，不访问私有API/数据库。SSH/WSL等不保证用户本机浏览器可达。
 
-构建与修改方法见 [开发](development.md)。动作参数见 [治理用法](governance.md)、[项目接口](project.md)，文档整理见 [文档维护](documentation.md)。
-
-可选架构Skill及画板见 [架构设计](architecture-design.md)。功能按分层文档开发和测试，不强制先画图；没有额外流程协调器。
+功能按 [分层文档](doc-driven.md) 实现和测试；[架构设计](architecture-design.md) 可选。构建见 [开发](development.md)，动作见 [治理](governance.md)、[项目](project.md)、[Git](git.md)。

@@ -89,20 +89,22 @@ test('close recovers archive-before-state crash', async t => {
   assert.equal((await g.state()).task, null);
 });
 test('PI adapter registers, executes and unregisters', async t => {
-  const g = await fixture(t); let registered, removed, command, removedCommand, opened;
-  global.pi = { workspace: { get: async () => ({ path: g.root }) }, agent: { registerTool: async tool => { registered = tool; }, unregisterTool: async name => { removed = name; } }, commands: { register: async value => { command = value; }, unregister: async id => { removedCommand = id; } }, ui: { openPanel: async value => { opened = value; } } };
+  const g = await fixture(t); const registered = new Map(), removed = []; let command, removedCommand;
+  global.pi = { workspace: { get: async () => ({ path: g.root }) }, agent: { registerTool: async tool => { registered.set(tool.name, tool); }, unregisterTool: async name => { removed.push(name); } }, commands: { register: async value => { command = value; }, unregister: async id => { removedCommand = id; } } };
   global.pi.desktop = { listOperations: async () => [{ id: 'session/get', description: 'Read session', risk: 'read' }], invoke: async () => ({ session: { id: 'caller', projectPath: g.root, mode: 'agent' } }) };
   t.after(() => { delete global.pi; });
   const adapter = require('../plugin/main'); await adapter.onLoad();
-  assert.equal(registered.name, 'governance');
-  assert.equal((await registered.execute({ action: 'status' }, { sessionId: 'caller' })).result.status, 'idle');
-  assert.equal((await registered.execute({ action: 'close' }, { sessionId: 'caller' })).ok, false);
-  assert.equal(command.id, 'governance.open'); await command.run(); assert.equal(opened.title, 'Agent Governance');
-  assert.equal((await adapter.onPanelInvoke('governance.snapshot')).result.state.status, 'idle');
-  assert.equal((await adapter.onPanelInvoke('unknown')).ok, false);
+  assert.deepEqual([...registered.keys()], ['governance', 'governance_ui']);
+  const tool = registered.get('governance');
+  assert.equal((await tool.execute({ action: 'status' }, { sessionId: 'caller' })).result.status, 'idle');
+  assert.equal((await tool.execute({ action: 'close' }, { sessionId: 'caller' })).ok, false);
+  assert.equal(command.id, 'governance.open');
+  assert.match(command.title, /browser/);
+  assert.equal(adapter.onPanelInvoke, undefined);
+  await assert.rejects(command.run(), /lifecycle events/);
   global.pi.workspace.get = async () => null;
-  assert.equal((await adapter.onPanelInvoke('governance.snapshot')).ok, false);
-  await adapter.onUnload(); assert.equal(removed, 'governance'); assert.equal(removedCommand, 'governance.open');
+  await assert.rejects(command.run(), /Open a project/);
+  await adapter.onUnload(); assert.deepEqual(removed, ['governance', 'governance_ui']); assert.equal(removedCommand, 'governance.open');
 });
 test('minimal initialization and task have no empty documentation artifacts', async t => {
   const root = await fs.mkdtemp(path.join(process.env.PI_SCRATCH_DIR || os.tmpdir(), 'minimal-'));

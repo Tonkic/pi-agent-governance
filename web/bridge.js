@@ -11,7 +11,7 @@
   } else {
     try { token = sessionStorage.getItem(key) || ''; } catch { /* Ask user to reopen startup link. */ }
   }
-  const missing = zh ? '请使用启动终端输出的完整本地地址连接；服务重启后需打开新地址。' : 'Open the full private URL printed by the startup terminal. Reopen the new URL after restarting the service.';
+  const missing = zh ? '请回到宿主重新打开浏览器工作台；手动CLI模式请使用终端新输出的完整私有地址。' : 'Reopen the browser workbench from your host; for manual CLI mode use its newly printed full private URL.';
   window.pluginBridge = Object.freeze({
     invoke: async (channel, payload = {}) => {
       if (channel === 'app.getLocale') return navigator.language;
@@ -97,10 +97,10 @@
   const title = document.createElement('strong');
   title.textContent = zh ? '本地项目控制台' : 'Local project console';
   const description = document.createElement('p');
-  description.textContent = zh ? '仅本机 · 绑定启动时的项目。CLI / 桌面客户端通过 MCP 共享看板和架构；保存后手动刷新。这里不启动模型或 Agent。' : 'Local only · Bound to the startup project. CLI / desktop MCP clients share its board and architecture; refresh after changes. No model or Agent launches here.';
+  description.textContent = zh ? '所有宿主共用此浏览器工作台 · 固定绑定当前项目。开发、模型和历史保留在原宿主会话；保存后刷新。这里不启动模型或 Agent。' : 'One browser workbench for all hosts · Bound to this project. Development, model and history stay in the original host conversation; refresh after changes. No model or Agent launches here.';
   const design = document.createElement('p');
   design.className = 'muted';
-  design.textContent = zh ? '设计协作：在此创建草案 → 让已配置 MCP 的客户端保存方案 → 刷新并人工审阅确认。确认设计不会授权代码实施。' : 'Design: create a draft here → save a proposal from an MCP client → refresh and review it here. Confirming a design does not authorize code changes.';
+  design.textContent = zh ? '设计协作：在此创建草案 → 回原宿主会话保存方案 → 刷新并人工审阅确认。确认设计不会授权代码实施。' : 'Design: create a draft here → save a proposal in your original host conversation → refresh and review it here. Confirming a design does not authorize code changes.';
   info.append(title, description, design);
   document.querySelector('.topbar').after(info);
 })();

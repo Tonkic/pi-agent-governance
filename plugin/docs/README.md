@@ -3,13 +3,13 @@
 
 先按问题定位专题，不必顺序读完。每篇先给用途与常用操作，参数和限制在后面的具名章节；可直接搜索动作名。
 
-Three-column workbench, document-based development, optional architecture design and isolated Git collaboration. Implement and run relevant tests, then complete; there is no separate human/Agent acceptance stage.
+One browser workbench for all hosts: shared project data, original host conversation/model, document-based development and optional architecture. Implement and run relevant tests, then complete; no separate acceptance stage.
 
 | 要解决的问题 | 先读 | 需要深入时 |
 | --- | --- | --- |
 | 接手目标、更新进度、验证关闭 | [治理用法](governance.md#接手与执行) | 同页“验证与关闭” |
 | Codex、Claude Code、Pi 接入 | [MCP 与 Skill](mcp.md) | 同页“客户端配置”“安全与排错” |
-| 无PI-Desktop的浏览器控制台 | [本地Web控制台](web-console.md) | 同页“共享数据”“访问与安全” |
+| 所有宿主统一打开/关闭浏览器工作台 | [浏览器工作台](web-console.md) | 同页“从宿主打开”“生命周期与切换” |
 | 三栏工作项、完成与历史记录 | [项目接口](project.md#工作项) | 同页“三栏工作台” |
 | 可选架构方向与可视化 | [架构设计](architecture-design.md) | 同页“数据与接口” |
 | 整理当前项目文档 | [文档维护](documentation.md) | [可选Agent操作](project.md#可选项目agent操作) |

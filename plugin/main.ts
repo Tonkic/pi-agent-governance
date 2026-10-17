@@ -1,7 +1,7 @@
 'use strict';
 const { Governance } = require('./core');
 const { localSession } = require('./operations');
-const { resolve } = require('node:path');
+const { resolve, isAbsolute } = require('node:path');
 const { BrowserWorkbench } = require('./workbench');
 const { workbenchTool, invokeWorkbench } = require('./workbench-tool');
 const tool = require('./tool');
@@ -32,13 +32,13 @@ async function workspaceRoot(context?: any) {
     const reply: any = await bounded(pi.desktop.invoke({ operation: 'session/get', args: [{ id, messageLimit: 1, contentLimit: 1 }] }));
     if (reply?.ok === false || reply?.success === false || reply?.isError) throw Error('Calling session could not be verified');
     const session = (reply?.result ?? reply)?.session;
-    if (session?.id !== id || typeof session.projectPath !== 'string' ||
+    if (session?.id !== id || typeof session.projectPath !== 'string' || !isAbsolute(session.projectPath) || session.projectPath.includes('\0') ||
         !localSession(session, resolve(session.projectPath)) || context.signal?.aborted)
       throw Error('Calling session has no supported local project; no project fallback');
     return resolve(session.projectPath);
   }
   const workspace = await bounded(pi.workspace.get()) as any;
-  if (!workspace?.path)
+  if (typeof workspace?.path !== 'string' || !isAbsolute(workspace.path) || workspace.path.includes('\0'))
     throw Error((await isChinese()) ? '请先在宿主打开项目' : 'Open a project in the host first');
   return resolve(workspace.path);
 }
@@ -52,8 +52,10 @@ async function uiAction(args, context?: any) {
     if (!loaded || !workbench) throw Error('Browser workbench is unavailable');
     if (args?.action === 'open' && !workspaceHooked)
       throw Error('Host workspace lifecycle events are unavailable; browser startup refused');
-    const current = async () => loaded && owner === epoch &&
-      (await workspaceRoot(context)) === root;
+    const current = async () => {
+      const same = (await workspaceRoot(context)) === root;
+      return loaded && owner === epoch && same;
+    };
     return invokeWorkbench(workbench, root, args, current);
   }, context);
 }
@@ -100,13 +102,14 @@ async function onUnload() {
   epoch++;
   const owned = workbench;
   workbench = null;
+  const disposal = owned?.dispose();
   try {
     const cleanup = [() => pi.agent.unregisterTool(tool.name), () => pi.agent.unregisterTool(workbenchTool.name), () => pi.commands.unregister(command.id)];
-    if (workspaceHooked) cleanup.push(() => Promise.resolve(pi.events.off('workspace:changed', workspaceChanged)));
+    if (workspaceHooked) cleanup.push(async () => { await pi.events.off('workspace:changed', workspaceChanged); });
     workspaceHooked = false;
     const settled = await Promise.allSettled(cleanup.map(fn => Promise.resolve().then(fn)));
     const failed = settled.find(row => row.status === 'rejected') as PromiseRejectedResult;
     if (failed) throw failed.reason;
-  } finally { await owned?.dispose(); }
+  } finally { await disposal; }
 }
 module.exports = { onLoad, onUnload };

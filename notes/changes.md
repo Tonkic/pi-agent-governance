@@ -131,3 +131,11 @@
 - 检查：类型/构建163测试、面板98图与HTTP7图通过，原10行为场景通过；官方62文件包已检查生成，最终提交/分发证据见host-context记录。
 - 坑：复核的created退出恢复回归red→green；独立会话浏览器测试拆出模块，保留全部断言和500000读取预算，不放宽门禁。
 - 边界：无安装/付费回合/新权限/新版本/标签发布；真实PI/Codex/Claude客户端与原总体阻塞不冒充通过。
+
+## 0.7.8 — 所有宿主统一浏览器工作台
+
+- 改：PI/Codex/Claude共用同一浏览器UI和核心，移除PI内嵌面板；共用governance_ui显式open/close/status，不接受路径/URL、不返回私有凭据，原会话保留模型/思考/历史。
+- 权限：用户明确批准shell.openExternal，仅打开本次生成本地URL；移除ui.panel/models.list，desktop.control仅核实可信调用会话元数据。不自动安装、扩权、建聊天或发布。
+- 增：单服务所有权、切换/断开/卸载/在途撤销和有界页面租约；HTTP仍拒绝Agent/model/session/任意Git写入。旧兼容记录及暂停桌面保留。
+- 检查：完整183项、98+7浏览器图/10行为通过；受管真实标签页2图验证刷新/多页/最后页回收，20循环HTTP无残留TCP Server。最终提交/包与交付结果以changes/active/project-board-release/unified-browser.md为准。
+- 坑：唯一复核发现相对宿主项目会隐式resolve到cwd；新回归实际red→green，先检查绝对原值。3旧内嵌面板断言迁移为无面板和真实HTTP隔离，不删安全检查。未安装客户端/收费模型/总体验收不冒称通过。

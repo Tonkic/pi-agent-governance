@@ -3,16 +3,16 @@
 
 只有需要明确架构方向、讨论关键取舍或查看架构图时才使用Architecture Copilot。普通功能开发直接按分层文档实现与测试，不要求先设计架构。已确定的设计保持稳定，普通更新不重画；显式架构修订才形成新基线。设计基线确认不是开发后的验收。
 
-「分析架构」默认先加载同一Architecture Copilot Skill的源码现状分析模式，读取源码证据并保存来源图；不要求先创建设计草案。「设计方案」使用方案设计模式，只保存草案。Skill不可用时报告并停止，不回退旧提示词。新提示词只影响新发起会话，不修改或重发旧会话。
+在原宿主会话加载同一Architecture Copilot Skill：源码现状模式先读证据再保存来源图，不要求草案；设计模式只保存已明确发起的草案。Skill不可用时停止，不回退旧提示词。浏览器不发起或切换模型会话。
 
 ## 开始设计
 
 1. 打开「项目架构 → 设计方案」，点击「设计架构」，填写本次范围并确认创建草案。
-2. 点击「与Agent共创」，选择模型并确认。独立会话先加载Skill的方案设计模式，再按需读取参考资料，只保存当前设计草案。
+2. 回到原宿主会话，请Agent按Skill设计模式读取当前草案和必要参考，携带当前版本/草案ID保存proposal。沿用原模型、思考和历史，不从网页创建独立会话。
 3. 保存后刷新画板看职责和关系；展开「ASCII架构图」查看同一设计的方框/箭头文本，正文中也保留图。无需draw.io或CLI。
 4. 点击「审阅草案」，填写审阅人、结论，声明已看过正文、图和差异；再确认形成基线。
 
-需活动STATE任务及宿主授予desktop.control、models.list（自选模型）和agent.prompt.inject（提供Skill）。模型会产生费用。启动、状态、打开、取消沿用现有会话机制，不自动轮询或重发。
+设计写入需活动STATE任务和明确授权；Skill由宿主按需提供。模型权限/费用仍由原宿主管理，浏览器不列模型、不发提示词、不停止聊天，也不自动轮询/重发。
 
 ## 稳定基线与显式修订
 
@@ -47,7 +47,7 @@ ASCII方框用稳定模块ID对应画板节点，方向箭头与关系标签对�
 
 独立数据保存在 `.governance/architecture-design.json`，包含当前草案和追加的确认历史。读取缺省项目不创建文件；损坏记录保留并报错，不能覆盖“恢复默认”。
 
-Agent工具只开放 `architecture_design_snapshot`、`architecture_design_begin`、`architecture_design_save`；Skill要求明确发起草案后才保存，携带设计快照expectedRevision及绑定expectedDraft。确认和放弃仅由PI面板或 [本地Web控制台](web-console.md) 的人工确认白名单提供，不注册Agent/MCP确认动作。配置见 [MCP与Skill](mcp.md)。
+Agent工具只开放 `architecture_design_snapshot`、`architecture_design_begin`、`architecture_design_save`；Skill要求明确发起草案后才保存，携带设计快照expectedRevision及expectedDraft。确认和放弃仅在 [统一浏览器工作台](web-console.md) 人工确认白名单提供，不注册Agent/MCP确认动作。配置见 [MCP与Skill](mcp.md)。
 
 proposal包含title、可读document、nodes和edges；每节点id/title/description/files，关系from/to/label。通常3–5个核心职责，一张图一个层级，箭头说明实际设计含义。files可为空，不要求未来代码已经存在，不代表源码验证。
 
