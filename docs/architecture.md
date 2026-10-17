@@ -20,6 +20,7 @@
 | `git.ts` | worktree、范围与提交验证 | `GitGovernance.run` |
 | `operations.ts` | 保留历史兼容实现；当前PI入口仅使用localSession身份过滤 | `localSession` |
 | `behaviors.ts` | 安全读取行为正文/关联/本机证据 | `behaviorSnapshot` |
+| `documents.ts`、`renderer/documents.ts` | 受限Markdown元数据/正文只读与安全DOM阅读、标题导航；无锁或初始化写入 | `documents`、`governance.documents` |
 | `renderer/` | 同一工作台、双语、图布局及设计画板 | `panel.ts`、`graph.ts`、`design.ts` |
 
 ## 调用关系
@@ -31,6 +32,7 @@ PI命令 / PI或MCP governance_ui → workbench-tool → BrowserWorkbench
 BrowserWorkbench → browser.ts → 127.0.0.1 + 私有片段URL → 系统浏览器
 浏览器 → web/bridge.js → browser.ts白名单 → panel.ts → core.ts
 人工CLI → web/server.ts薄wrapper → 同一个browser.ts
+浏览器文档阅读 → panel.ts → documents.ts → 固定根Markdown / docs / notes（只读）
 MCP资源/提示、PI Skill → skills/architecture-copilot/
 core.ts → git.ts → Git common directory
 ```

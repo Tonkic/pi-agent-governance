@@ -78,9 +78,35 @@ module.exports = async ({ browser, screenshots }) => {
     assert.match(await page.locator('#documents-body').textContent(), /纯文本/); assert.equal(await page.locator('#documents-body pre').count(), 1);
     await page.route('**/api/invoke', async route => { const data = route.request().postDataJSON(); if (data.channel === 'governance.documents' && data.payload.action === 'list') { const response = await route.fetch(), json = await response.json(); json.result.truncated = true; return route.fulfill({ json }); } return route.continue(); });
     await page.locator('#documents-refresh').click(); await listed(page); assert.match(await page.locator('#documents-count').textContent(), /最多 500/); await page.unroute('**/api/invoke');
+    // A same-project global refresh temporarily clears snapshot; pending ownership must still settle.
+    for (const action of ['list', 'read']) {
+      if (action === 'read') { await page.locator('#documents-refresh').click(); await listed(page); }
+      let releaseDocument, releaseSnapshot, enteredDocument, enteredSnapshot;
+      const documentHeld = new Promise(resolve => { enteredDocument = resolve; }), snapshotHeld = new Promise(resolve => { enteredSnapshot = resolve; });
+      await page.route('**/api/invoke', async route => {
+        const input = route.request().postDataJSON();
+        if (input.channel === 'governance.documents' && input.payload.action === action) { const response = await route.fetch(); enteredDocument(); await new Promise(resolve => { releaseDocument = resolve; }); return route.fulfill({ response }); }
+        if (input.channel === 'governance.snapshot') { const response = await route.fetch(); enteredSnapshot(); await new Promise(resolve => { releaseSnapshot = resolve; }); return route.fulfill({ response }); }
+        return route.continue();
+      });
+      if (action === 'list') await page.locator('#documents-refresh').click(); else await page.locator('[data-document="docs/guide.md"]').click();
+      await documentHeld; await page.locator('#refresh').click(); await snapshotHeld;
+      const responseDone = page.waitForResponse(response => response.url().endsWith('/api/invoke') && response.request().postDataJSON()?.channel === 'governance.documents');
+      releaseDocument(); await responseDone;
+      try { await page.waitForFunction(action => document.querySelector(action === 'list' ? '#documents-section' : '#documents-body').getAttribute('aria-busy') === 'false', action, { timeout: 3000 }); }
+      finally { releaseSnapshot(); }
+      await ready(page); assert.equal(await page.locator('#documents-refresh').isDisabled(), false); await page.unroute('**/api/invoke');
+    }
+    const longPath = 'docs/' + ('a'.repeat(210) + '/').repeat(5) + 'page.md';
+    await page.route('**/api/invoke', async route => { const input = route.request().postDataJSON(); if (input.channel === 'governance.documents' && input.payload.action === 'list') { const response = await route.fetch(), json = await response.json(); json.result.files.push({ path: longPath, bytes: 1 }); return route.fulfill({ json }); } return route.continue(); });
+    await page.locator('#documents-refresh').click(); await listed(page); assert.equal(await page.locator('[data-document]').evaluateAll((nodes, expected) => nodes.some(node => node.dataset.document === expected), longPath), true); assert.ok(await page.locator('[data-document="README.md"]').count()); await page.unroute('**/api/invoke');
+    await page.locator('#documents-refresh').click(); await listed(page);
     // Compile-time lifecycle integration: simulate the same project-epoch switch event, not a new filesystem route.
-    await read(page, 'docs/guide.md');
+    let releaseOld, oldEntered; const oldHeld = new Promise(resolve => { oldEntered = resolve; });
+    await page.route('**/api/invoke', async route => { if (route.request().postDataJSON()?.channel === 'governance.documents') { const response = await route.fetch(); oldEntered(); await new Promise(resolve => { releaseOld = resolve; }); return route.fulfill({ response }); } return route.continue(); });
+    await page.locator('[data-document="docs/guide.md"]').click(); await oldHeld;
     await page.evaluate(() => { workspaceEpoch++; snapshot = null; window.dispatchEvent(new Event('documents-reset')); });
+    const oldDone = page.waitForResponse(response => response.url().endsWith('/api/invoke') && response.request().postDataJSON()?.channel === 'governance.documents'); releaseOld(); await oldDone; await page.unroute('**/api/invoke');
     assert.equal(await page.locator('#documents-body').textContent(), ''); assert.equal(await page.locator('[data-document]').count(), 0); assert.equal(await page.locator('#documents-refresh').isDisabled(), true);
     assert.deepEqual(await fs.readFile(path.join(root, 'STATE.json')), before, 'Reading never rewrites project state'); assert.deepEqual(errors, []);
     console.log(`PASS document reader: real HTTP/search/body/TOC, literal HTML and resource rejection, keyboard/offline/errors/late selection/project reset/limits, ${shots} bilingual responsive/theme screenshots`);

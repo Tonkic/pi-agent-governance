@@ -257,6 +257,7 @@ test('renderer operation buttons honor offline state both on render and on unloc
     snapshot: { workspace: 'fixture' }, projectSnapshot: null, editingItem: null,
     searchQuery: '', t: key => key, operationLabel: key => key, labels: {}, text() {},
     updateLaunchControls() {}, updateItemNavigation() {}, updateDesignControls() {},
+    window: { dispatchEvent(event) { assert.equal(event.type, 'documents-controls'); } }, Event: class { type: string; constructor(type) { this.type = type; } },
     invoke: async () => ({ workspace: 'fixture', runs: [
       { id: 'shared', kind: 'analysis', phase: 'running', sessionId: 'host-session', sessionMode: 'existing' },
       { id: 'new', kind: 'analysis', phase: 'running', sessionId: 'new-session', sessionMode: 'new' },

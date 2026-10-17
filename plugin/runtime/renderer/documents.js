@@ -51,7 +51,8 @@
     let entries = [], selected = '', loaded = false, truncated = false;
     let listMessage = '', readMessage = '', hasBody = false, attempted = false;
     const active = () => location.hash === '#documents-section';
-    const current = (owner, project, request) => owner === workspaceEpoch && owner === epoch && project === root && snapshot?.workspace === root && request === sequence;
+    const owns = (owner, project, request) => owner === workspaceEpoch && owner === epoch && project === root && request === sequence;
+    const current = (owner, project, request) => owns(owner, project, request) && snapshot?.workspace === root;
     function controls() {
         refresh.disabled = !root || !snapshot || busy || listing || readingFile || !navigator.onLine;
         search.disabled = !loaded; // Local filtering and TOC are usable offline and while writes are busy.
@@ -64,6 +65,7 @@
         status.classList.toggle('reader-error', readMessage === w().error);
     }
     function renderList() {
+        const focused = document.activeElement?.dataset.document;
         const query = search.value.trim().toLocaleLowerCase();
         const matching = entries.filter(item => item.path.toLocaleLowerCase().includes(query));
         files.replaceChildren(...matching.map(item => {
@@ -79,6 +81,8 @@
             files.append(el('p', loaded ? w().empty : w().waiting, 'muted'));
         messages();
         controls();
+        if (focused)
+            Array.from(files.querySelectorAll('button')).find(button => button.dataset.document === focused)?.focus({ preventScroll: true });
     }
     function reset() {
         sequence++;
@@ -239,8 +243,10 @@
                 readMessage = w().error;
         }
         finally {
-            if (current(owner, project, request)) {
+            if (owns(owner, project, request)) {
                 readingFile = false;
+                if (readMessage === w().loading)
+                    readMessage = w().error;
                 body.setAttribute('aria-busy', 'false');
                 messages();
                 controls();
@@ -268,7 +274,7 @@
             const result = await invoke('governance.documents', { action: 'list' });
             if (!current(owner, project, request))
                 return;
-            if (result.workspace !== project || !Array.isArray(result.files) || result.files.length > 500 || result.files.some(item => typeof item.path !== 'string' || item.path.length > 1024 || !Number.isSafeInteger(item.bytes) || item.bytes < 0))
+            if (result.workspace !== project || !Array.isArray(result.files) || result.files.length > 500 || result.files.some(item => typeof item.path !== 'string' || item.path.length > 2048 || !Number.isSafeInteger(item.bytes) || item.bytes < 0))
                 throw Error('Invalid document list');
             entries = result.files;
             loaded = true;
@@ -280,8 +286,10 @@
                 listMessage = readMessage = w().error;
         }
         finally {
-            if (current(owner, project, request)) {
+            if (owns(owner, project, request)) {
                 listing = false;
+                if (listMessage === w().loading)
+                    listMessage = readMessage = w().error;
                 host.setAttribute('aria-busy', 'false');
                 renderList();
                 if (loaded && entries.some(item => item.path === previous))
@@ -326,6 +334,7 @@
     window.addEventListener('offline', () => { sequence++; listing = readingFile = false; host.setAttribute('aria-busy', 'false'); body.setAttribute('aria-busy', 'false'); readMessage = ''; messages(); controls(); });
     window.addEventListener('online', () => { messages(); controls(); });
     window.addEventListener('pagehide', reset);
+    window.addEventListener('pageshow', context);
     localize();
     void localeReady.then(() => { localize(); context(); });
 })();
