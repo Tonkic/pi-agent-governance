@@ -6,7 +6,7 @@ module.exports = async ({ browser, screenshots }) => {
   const output = path.join(screenshots, 'documents'); await fs.mkdir(output, { recursive: true });
   const g = new Governance(root); let app, page, shots = 0; const contexts = [], errors = [], requests = [];
   const ready = p => p.waitForFunction(() => document.querySelector('#board-section').getAttribute('aria-busy') === 'false' && !document.querySelector('#refresh').disabled);
-  const listed = p => p.waitForFunction(() => document.querySelector('#documents-section').getAttribute('aria-busy') === 'false' && !document.querySelector('#documents-refresh').disabled);
+  const listed = p => p.waitForFunction(() => !document.querySelector('#documents-section').hidden && document.querySelector('#documents-section').getAttribute('aria-busy') === 'false' && !document.querySelector('#documents-refresh').disabled);
   const read = async (p, file) => { await p.locator('[data-document]').filter({ hasText: file }).click(); await p.waitForFunction(() => document.querySelector('#documents-body').getAttribute('aria-busy') === 'false'); };
   try {
     await g.run({ action: 'init' }); await fs.mkdir(path.join(root, 'docs'), { recursive: true }); await fs.mkdir(path.join(root, 'notes'), { recursive: true });
