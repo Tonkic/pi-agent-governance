@@ -20,6 +20,22 @@
       "gitTaskId": null
     },
     {
+      "id": "reference-ui",
+      "title": "参考图美化统一浏览器工作台",
+      "description": "参考图美化完成：导航/欢迎区/真实统计/三栏和右摘要，双语明暗/窄屏，原交互保留。188测试/135图/10行为、官方包与分发、main重测推送及CI39074954295双系统通过，宽屏及390明暗已实际看图。第二项未开始，继续只读文档阅读。",
+      "blocker": "",
+      "stage": "done",
+      "taskId": "project-board-release",
+      "criteria": [
+        "参考图视觉语言、双语明暗与响应式可用",
+        "数据真实，原看板/画板/确认/隔离交互不退化",
+        "完整回归官方包与提交后交付通过"
+      ],
+      "architectureImpact": "none",
+      "gitTaskId": null,
+      "completedAt": "2026-10-17T22:33:49.488Z"
+    },
+    {
       "id": "lightweight-entry",
       "title": "启动器与右侧工作面板轻量入口",
       "description": "官方ui.panel/ui.view同一轻量页已实现；仅状态/刷新/显式打开浏览器，绑定项目版本，无自动打开/业务副本。188测试、115图/10行为、官方77文件包/分发、提交后与main重测推送通过，实际Linux+Windows CI39033694625成功。需人工更新/权限，非安装后E2E，总体阻塞保留。",
@@ -273,22 +289,6 @@
       "gitTaskId": null
     },
     {
-      "id": "reference-ui",
-      "title": "参考图美化统一浏览器工作台",
-      "description": "按用户图片重排导航、欢迎区、真实统计、三栏看板与项目摘要；保留现有安全与完整交互。先完成本项再做文档阅读。",
-      "blocker": "",
-      "stage": "doing",
-      "taskId": "project-board-release",
-      "criteria": [
-        "参考图视觉语言、双语明暗与响应式可用",
-        "数据真实，原看板/画板/确认/隔离交互不退化",
-        "完整回归官方包与提交后交付通过"
-      ],
-      "architectureImpact": "none",
-      "gitTaskId": null,
-      "completedAt": null
-    },
-    {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
       "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
@@ -325,5 +325,5 @@
       "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-17T21:49:00.736Z"
+  "updatedAt": "2026-10-17T22:33:49.488Z"
 }

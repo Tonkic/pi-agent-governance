@@ -22,3 +22,11 @@
 无新业务资产/路由或依赖。新增统计只投影现有snapshot/projectSnapshot，缺失显示—而不是假零；历史accepted兼容。独立视觉场景/演示种子抽到已有history-themes-browser.cjs串行执行全部原断言，未删绑定或提升预算，实际27文件499652/500000字符、10场景通过。官方包/最终提交后/main/CI结果待实际补充。第二项仍todo，未实现文档读取。
 
 官方PluginCheck/PluginPack实际通过，77文件839930字节，SHA256 eebef839b3a4dfae90efb113d2e2d42f60e764776dadcbfe8d580e448e991914。既有高风险/固定入口静态unused提示保留，不自动授予或安装。包内仅更新已有前端与生成说明，接口/权限不扩展；最终提交后验证及main交付待补充。
+
+## 工作项一交付
+
+- 最终协调b9209f24bd4a6939d072cdcbcc9f2dea9cf16105提交后实际类型/构建、188测试零跳过、135图与10行为全部通过；受管git_verify登记。分发/readAssets四资产通过：通用136526字节SHA dfe7b4a75dfcf2e5528e404d9d901a31fa5c630a0953dcc9d27f4bd480863484；官方PI包如上。发布计划publish:false/mutation:false。
+- main4b191681e072bcb3f12f6a28ec522abf6fcd1c3e重新npm ci0漏洞、类型/构建/188测试、135图/10行为及分发/只读计划通过，正常push/full远端SHA一致。实际[CI39074954295](https://github.com/Tonkic/pi-agent-governance/actions/runs/39074954295) Windows与Ubuntu全部步骤success，公开API与job步骤均核实。
+- 分发首次被未跟踪门禁拦截：本次PowerShell Set-Content位置参数误把SHA作文件名，内容仅scratch路径；Read核对后只删除该自建临时文件，改命名参数保存scratch，分发重新通过，不放宽clean门禁。CI最终gh查询TLS超时，改只读公开API确认成功，未重复推送/重跑CI。
+- 第一项完成；document-reader仍待办，尚无读取后端或第二项界面实现。状态/记录同步后继续用户已授权第二项。总任务仍working，原总体阻塞保留；这次截图已实际看过，不以此代替真实安装宿主、物理触屏或旧总体检查。
+- 无新增权限依赖/版本/自动安装/模型调用/标签或发布，不恢复暂停桌面；已有占用工作区和未合并工作保留。
