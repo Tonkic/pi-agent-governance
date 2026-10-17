@@ -20,6 +20,22 @@
       "gitTaskId": null
     },
     {
+      "id": "lightweight-entry",
+      "title": "启动器与右侧工作面板轻量入口",
+      "description": "官方ui.panel/ui.view同一轻量页已实现；仅状态/刷新/显式打开浏览器，绑定项目版本，无自动打开/业务副本。188测试、115图/10行为、官方77文件包/分发、提交后与main重测推送通过，实际Linux+Windows CI39033694625成功。需人工更新/权限，非安装后E2E，总体阻塞保留。",
+      "blocker": "",
+      "stage": "done",
+      "taskId": "project-board-release",
+      "criteria": [
+        "两官方入口可发现且同页",
+        "无自动打开/任意URL或跨项目点击",
+        "完整回归官方包及真实交付"
+      ],
+      "architectureImpact": "none",
+      "gitTaskId": "lightweight-entry",
+      "completedAt": "2026-10-17T12:52:59.691Z"
+    },
+    {
       "id": "unified-browser",
       "title": "所有宿主统一浏览器工作台",
       "description": "统一浏览器入口已实现。PI/MCP共享显式工具与服务，项目隔离/页面租约/断开卸载回收实际通过；184测试、98+7+2图/10行为、官方72文件包/分发及main集成重测推送完成，实际Linux+Windows CI39028637631成功。不自动安装/发布，原总体宿主阻塞保留。",
@@ -257,22 +273,6 @@
       "gitTaskId": null
     },
     {
-      "id": "lightweight-entry",
-      "title": "启动器与右侧工作面板轻量入口",
-      "description": "用户明确批准ui.panel/ui.view；共用同一轻量页，仅状态和显式打开浏览器按钮，不恢复内嵌业务界面、不改宿主。",
-      "blocker": "",
-      "stage": "doing",
-      "taskId": "project-board-release",
-      "criteria": [
-        "两官方入口可发现且同页",
-        "无自动打开/任意URL或跨项目点击",
-        "完整回归官方包及真实交付"
-      ],
-      "architectureImpact": "none",
-      "gitTaskId": "lightweight-entry",
-      "completedAt": null
-    },
-    {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
       "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
@@ -294,5 +294,5 @@
       "completedAt": "2026-10-15T19:41:35.780Z"
     }
   ],
-  "updatedAt": "2026-10-17T12:22:51.355Z"
+  "updatedAt": "2026-10-17T12:52:59.691Z"
 }
