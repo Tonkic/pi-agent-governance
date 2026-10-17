@@ -2,30 +2,26 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const tool = require('../plugin/tool');
+const { workbenchTool } = require('../plugin/workbench-tool');
 const en = {
   name: 'Agent Governance',
-  description: 'Repository handoff, project boards, source-backed architecture and Git collaboration with isolated worktrees and commit-bound verification.',
+  description: 'One browser workbench for project boards, source-backed architecture and repository handoff; shared core with local MCP and portable Skills.',
   safetyNotes: 'Uses Node fs and execFile(git) directly, outside host filesystem/exec gateways. Git actions create branches/worktrees and commits and merge only registered worker commits into their coordinator. Registry/worktrees live under the Git common directory, which may be outside the opened linked worktree. No push, fetch, reset, stash or automatic main merge. Git hooks, signing, fsmonitor and diff helpers are disabled for plugin commands; trusted Git configuration/attributes are still required (filters or merge drivers may execute). Other tools are not intercepted. Evidence and owner labels are caller-attested. No protection against malicious concurrent writers; inspect stale locks and interrupted operations before recovery.'
 };
 const zh = {
   name: 'Agent 项目治理',
-  description: '从仓库接手任务，管理工作项看板与有源码依据的架构；通过隔离工作区、绑定提交的验证和受控集成协作。',
-  safetyNotes: '直接使用 Node fs 和 execFile(git)，不经过宿主文件系统或命令网关。Git 操作可创建分支、工作区与提交，仅将已登记执行任务的提交合并到其协调任务。登记和工作区位于 Git 公共目录，可能在当前打开的关联工作区之外。不执行推送、拉取、reset、stash 或自动合并主分支。插件命令禁用 Git hooks、签名、fsmonitor 和 diff 辅助程序；仍须信任 Git 配置和属性，过滤器或合并驱动可能执行程序。不拦截其他工具。证据和所有者标签由调用方声明。不防御恶意并发写入；恢复前须检查遗留锁和中断操作。'
+  description: '统一浏览器工作台，管理项目看板、源码架构与仓库接续；与本地MCP和可移植Skill共用核心。',
+  safetyNotes: '直接使用 Node fs 和 execFile(git)，不经过宿主文件系统或命令网关。Git 操作可创建分支、工作区与提交，仅将已登记执行任务的提交合并到其协调任务。登记和工作区位于 Git 公共目录，可能在当前打开的关联工作区之外。不执行推送、拉取、reset、stash 或自动合并主分支。插件命令禁用 Git hooks、签名、fsmonitor 和 diff 辅助程序；仍须信任 Git 配置和属性，过滤器或合并驱动可能执行程序。不拦截其它工具。证据和所有者标签由调用方声明。不防御恶意并发写入；恢复前须检查遗留锁和中断操作。'
 };
-en.safetyNotes += ' User-confirmed optional panel actions use desktop.control for project analysis, architecture design and documentation sessions, bounded status/results, opening and canceling owned sessions. Models may incur charges. No local MCP token access. Board stages are todo/doing/done with no separate acceptance task; completed turns or card moves do not prove checks passed. Historical review records are retained.';
-zh.safetyNotes += ' 经用户确认的可选面板操作使用desktop.control进行项目分析、架构设计和文档会话，读取有限状态/结果、打开和取消所属会话。模型可能收费，不读取MCP令牌。看板只有待办/进行中/已完成，没有独立验收任务；会话结束或移动卡片不证明测试通过，旧检查历史保留。';
-en.safetyNotes += ' Reads enabled model names and supported thinking levels through models.list; explicit choices apply only to the new task session, never host defaults.';
-zh.safetyNotes += ' 通过models.list只读已启用模型名称和支持的思考强度，显式选择仅作用于新任务会话，不修改宿主默认设置。';
-en.safetyNotes += ' Documentation maintenance may write current-project docs/, notes/ and necessary root entry links. Prompt boundaries are not a security sandbox; host Agent permissions still apply. Canceling a task does not roll back files already written.';
-zh.safetyNotes += ' 文档维护可写当前项目docs/、notes/和必要根入口链接。提示词限制不是安全沙箱，Agent工具权限仍由宿主管理；取消任务不撤销已写入文件。';
-en.safetyNotes += ' Provides an opt-in architecture design Skill through agent.prompt.inject. Design drafts and confirmed baselines are separate from source architecture; confirmation is caller-attested, not authentication or implementation approval.';
-zh.safetyNotes += ' 通过agent.prompt.inject提供按需架构设计Skill；设计草案和确认基线独立于源码架构。确认记录由调用方声明，不是身份认证或代码实施授权。';
+en.safetyNotes += ' Explicit browser commands/tools start an owned 127.0.0.1 service for the verified project. shell.openExternal opens only its generated private local workbench URL, never a supplied URL. desktop.control reads bounded calling-session metadata only; missing/foreign context rejects without fallback. No embedded panel, model listing, new chats, prompts or aborts. Existing host conversation/history/model remain in the host. Browser API rejects Agent/model/session operations and arbitrary Git writes. Pages use expiring leases; workspace switch, unload and explicit close revoke owned services. No automatic installation or MCP-token access.';
+zh.safetyNotes += ' 显式浏览器命令/工具为核实的项目启动自有127.0.0.1服务。shell.openExternal仅打开其生成的本地私有工作台链接，不接受传入URL。desktop.control只读取有界调用会话元数据；缺失或外来上下文拒绝，不回退其它项目。无内嵌面板、模型列表、新建聊天、发提示词或终止会话。原会话/历史/模型仍在宿主。浏览器API拒绝Agent/模型/会话操作和任意Git写入。页面使用到期租约，切换项目、卸载及显式关闭回收自有服务。不自动安装或读取MCP令牌。';
+en.safetyNotes += ' Board stages are todo/doing/done with no separate acceptance task; completed turns or card moves do not prove checks passed. Provides an opt-in architecture Skill through agent.prompt.inject. Design drafts and confirmed baselines are separate from source architecture; confirmation is caller-attested, not authentication or implementation approval. Host Agent permissions still apply.';
+zh.safetyNotes += ' 看板只有待办/进行中/已完成，没有独立验收任务；会话结束或移动卡片不证明测试通过。通过agent.prompt.inject提供按需架构Skill；设计草案和确认基线独立于源码架构，确认由调用方声明，不是身份认证或实现授权。Agent工具权限仍由宿主管理。';
 const manifest = {
   schemaVersion: 1, id: 'io.github.tonkic.agent-governance', ...en, version: require('../../package.json').version,
-  i18n: { en, 'zh-CN': zh },
-  main: 'main.js', ui: { panel: 'renderer/index.html', title: { en: en.name, 'zh-CN': zh.name } },
-  contributes: { agentTools: [tool], skills: [{ id: 'architecture-copilot', path: 'skills/architecture-copilot/SKILL.md' }], commands: [{ id: 'governance.open', title: 'Agent Governance: Open panel / 打开治理面板', keywords: ['governance', '治理', '任务', 'git'] }] },
-  permissions: ['agent.tool.register', 'ui.panel', 'desktop.control', 'models.list', 'agent.prompt.inject'],
+  i18n: { en, 'zh-CN': zh }, main: 'main.js',
+  contributes: { agentTools: [tool, workbenchTool], skills: [{ id: 'architecture-copilot', path: 'skills/architecture-copilot/SKILL.md' }], commands: [{ id: 'governance.open', title: 'Agent Governance: Open browser workbench / 打开浏览器工作台', keywords: ['governance', '治理', '任务', 'browser'] }] },
+  permissions: ['agent.tool.register', 'desktop.control', 'agent.prompt.inject', 'shell.openExternal'],
   engines: { piDesktop: '>=0.1.0' }, activationEvents: ['onStartup', 'onCommand:governance.open']
 };
 fs.writeFileSync(path.join(__dirname, '../../plugin/manifest.json'), JSON.stringify(manifest, null, 2) + '\n');

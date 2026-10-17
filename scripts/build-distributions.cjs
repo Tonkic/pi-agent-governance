@@ -7,13 +7,14 @@ const zlib = require('node:zlib');
 const { execFileSync } = require('node:child_process');
 const { fullSha, gitAt, safeFile, containsCredential, clean } = require('./release-safety.cjs');
 const pluginId = 'io.github.tonkic.agent-governance';
-const sharedModules = ['core', 'git', 'project', 'design', 'behaviors', 'tool', 'panel'];
+const sharedModules = ['core', 'git', 'project', 'design', 'behaviors', 'tool', 'panel', 'browser', 'browser-open', 'workbench', 'workbench-tool'];
 const consoleFiles = ['build/web/server.js', 'web/bridge.js', 'web/console.css', 'plugin/renderer/index.html', 'plugin/renderer/panel.css', 'plugin/renderer/views.css', ...['i18n', 'graph-model', 'graph', 'design', 'panel'].map(f => `plugin/runtime/renderer/${f}.js`)];
 const skillFiles = ['SKILL.md', 'SOURCE.md', 'LICENSE', ...['README', 'web-and-product', 'transactional', 'realtime-and-storage', 'ai-native', 'agent-and-org', 'embedded-industrial', 'signals', 'glossary'].map(f => `references/${f}.md`)];
 const hostFiles = ['build/mcp/context-hook.js', 'mcp/clients/codex-hooks.json'];
 const piFiles = [
   'manifest.json', 'main.js', 'main.ts', 'runtime/main.js',
-  ...['core', 'git', 'panel', 'project', 'tool', 'operations', 'behaviors', 'design'].flatMap(f => [`${f}.ts`, `runtime/${f}.js`]),
+  ...['core', 'git', 'panel', 'project', 'tool', 'operations', 'behaviors', 'design', 'browser', 'browser-open', 'workbench', 'workbench-tool'].flatMap(f => [`${f}.ts`, `runtime/${f}.js`]),
+  'runtime/web/bridge.js', 'runtime/web/console.css',
   ...skillFiles.map(f => `skills/architecture-copilot/${f}`),
   'README.md', ...['architecture-design', 'README', 'governance', 'git', 'project', 'mcp', 'web-console', 'documentation', 'architecture', 'development', 'doc-driven', 'behavior-workspace', 'publishing', 'releasing', 'ui-sources'].map(f => `docs/${f}.md`),
   'renderer/index.html', 'renderer/panel.css', 'renderer/views.css', 'renderer/tsconfig.json',
@@ -116,6 +117,7 @@ function buildMcp(ctx) {
     ]);
     const guide = files.get('README.md').toString('utf8');
     files.set('README.md', Buffer.from(guide + '\nHost reuse: Claude Code may use `--host claude-code` instead of --workspace, reading official child CLAUDE_PROJECT_DIR with no cwd fallback. Merge mcp/clients/codex-hooks.json into supported trusted Codex Hook settings after editing only the helper installation path. The helper reads official session_id/cwd and injects read-only project metadata into the original conversation, not transcript content. It does not initialize data, start chats/models, persist a session registry or dynamically rebind MCP. Existing loaded tools/Skills retain host history. Client/version smoke remains required; see docs/mcp.md online.\n'));
+    files.set('README.md', Buffer.from(files.get('README.md').toString('utf8') + '\nUnified browser entry: ask the host to call governance_ui with action open and confirmed true. The project is bound by the connector, not tool arguments. Only the generated local URL goes to the system opener; tool results contain safe origin/status, never the private fragment. action close also requires confirmed true. MCP disconnect closes its owned service; managed pages expire after inactivity. Known SSH/WSL sessions cannot promise a local browser. There is no separate PI embedded panel and no browser Agent control.\n'));
     for (const file of ['build/mcp/server.js', ...hostFiles, ...consoleFiles, ...sharedModules.map(f => `build/plugin/${f}.js`), ...skillFiles.map(f => `plugin/skills/architecture-copilot/${f}`), ...['codex.toml', 'claude-code.json', 'pi.json'].map(f => `mcp/clients/${f}`)]) files.set(file, read(ctx.root, file));
     for (const [name, bytes] of files) {
       if (containsCredential('', bytes, process.env.GITHUB_TOKEN)) fail('Credential-like bundle content');
