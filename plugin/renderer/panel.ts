@@ -128,6 +128,28 @@ function list(id, values) {
     })
   );
 }
+// Read-only projections of already loaded snapshots. Never infer missing counts or dates.
+function renderWorkbenchSummary(loading = false) {
+  const workspace = snapshot?.workspace;
+  text('summary-workspace-name', workspace ? workspace.replace(/[\\/]+$/, '').split(/[\\/]/).pop() || workspace : '—');
+  text('summary-workspace-path', workspace || '—');
+  text('summary-state', snapshot ? (snapshot.state ? labels[snapshot.state.status] || snapshot.state.status : t('uninitialized')) : '—');
+  text('summary-task', snapshot?.state?.task || (snapshot ? t('noTask') : '—'));
+  const items = projectSnapshot?.board && !projectSnapshot.boardError ? projectSnapshot.board.items : null;
+  const counts = items ? boardStages.map(stage => items.filter(item => effectiveStage(item) === stage).length) : null;
+  const total = items?.length;
+  const percent = counts && total ? Math.round(counts[2] / total * 100) : counts ? 0 : null;
+  for (const [id, value] of [
+    ['summary-total', total], ['summary-doing', counts?.[1]], ['summary-done', counts?.[2]],
+    ['summary-impact', items?.filter(item => item.architectureImpact === 'affects').length],
+    ['summary-todo', counts?.[0]], ['summary-doing-count', counts?.[1]], ['summary-done-count', counts?.[2]]
+  ]) text(id, value == null ? '—' : String(value));
+  text('summary-percent', percent == null ? '—' : `${percent}%`);
+  $('summary-ring').style.setProperty('--completion', `${percent ?? 0}%`);
+  $('summary-ring').setAttribute('aria-label', percent == null ? t('summaryUnavailable') : t('summaryRatio', percent, counts[2], total));
+  text('summary-availability', loading ? t('reading') : !items ? t('summaryUnavailable') : !navigator.onLine ? t('summaryOffline') : !total ? t('summaryEmpty') : t('summaryLoaded'));
+  $('workbench-metrics').setAttribute('aria-busy', String(loading));
+}
 function render(data) {
   snapshot = data;
   observedWorkspace = data.workspace;
@@ -163,6 +185,7 @@ function render(data) {
     $(`new-${key}`).value = Array.isArray(v) ? v.join('\n') : v || '';
   }
   edited = false;
+  renderWorkbenchSummary(true);
 }
 function renderGit(g) {
   if (snapshot && g.workspace !== snapshot.workspace) throw Error(t('switched'));
@@ -214,6 +237,7 @@ async function load(checkSources = false) {
   if ($('launch-dialog').open) $('launch-dialog').close();
   resetCompletedHistory(false);
   projectSnapshot = null;
+  renderWorkbenchSummary(true);
   resetWorkitem();
   $('workitem-form').hidden = true;
   if ($('item-sheet').open) $('item-sheet').close();
@@ -268,7 +292,10 @@ async function load(checkSources = false) {
     if (!current()) return;
     text('git-summary', t('gitError', error.message));
   }
-  if (current()) $('board-section').setAttribute('aria-busy', 'false');
+  if (current()) {
+    $('board-section').setAttribute('aria-busy', 'false');
+    renderWorkbenchSummary();
+  }
 }
 function confirmWrite(description) {
   const owner = workspaceEpoch;
@@ -490,6 +517,7 @@ window.addEventListener('hashchange', () => {
   highlightNavigation();
 });
 highlightNavigation();
+$('nav-behaviors').addEventListener('click', () => $('behavior-docs-open').click());
 // Read theme colors, never inject a contributed stylesheet into the panel.
 const themeColors = {
   '--ds-bg-primary': '--bg',
@@ -921,6 +949,7 @@ function stopLongPress() {
   longPress = null;
 }
 function renderBoard() {
+  renderWorkbenchSummary();
   const data = projectSnapshot;
   closeItemMenu(false);
   stopLongPress();
@@ -1714,3 +1743,10 @@ $('behavior-docs-open').addEventListener('click', async () => {
   finally { if (owner === workspaceEpoch) { lock(false); if ($('behavior-docs-dialog').open) $('behavior-docs-close').focus(); } }
 });
 $('behavior-docs-close').addEventListener('click', () => { if (!busy) $('behavior-docs-dialog').close(); });
+document.querySelectorAll<HTMLButtonElement>('[data-project-view]').forEach(button => {
+  button.addEventListener('click', () => {
+    const link = document.querySelector<HTMLAnchorElement>(`.workspace-nav a[href="#${button.dataset.projectView}"]`);
+    link.focus();
+    link.click();
+  });
+});
