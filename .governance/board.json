@@ -241,6 +241,22 @@
       "gitTaskId": null
     },
     {
+      "id": "unified-browser",
+      "title": "所有宿主统一浏览器工作台",
+      "description": "PI不再提供独立面板，PI/MCP显式入口复用原项目并打开同一浏览器界面；用户批准shell.openExternal。共享服务/租约回收与入口/生产包并行实现，实际检查后交付。",
+      "blocker": "",
+      "stage": "doing",
+      "taskId": "project-board-release",
+      "criteria": [
+        "同一浏览器UI和可信宿主项目上下文，无新聊天/选目录",
+        "服务隔离与租约/断开/卸载/切换回收实际通过",
+        "完整回归官方包分发及提交后交付真实"
+      ],
+      "architectureImpact": "affects",
+      "gitTaskId": "unified-browser",
+      "completedAt": null
+    },
+    {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
       "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
@@ -262,5 +278,5 @@
       "completedAt": "2026-10-15T19:41:35.780Z"
     }
   ],
-  "updatedAt": "2026-10-16T22:33:08.488Z"
+  "updatedAt": "2026-10-17T10:46:07.229Z"
 }

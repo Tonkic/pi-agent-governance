@@ -35,7 +35,9 @@ declare var pi: {
     register(command: PiCommandRegistration): Promise<void>;
     unregister(id: string): Promise<void>;
   };
-  ui: {
-    openPanel(options: { title: string }): unknown;
+  shell?: { openExternal(url: string): Promise<void> };
+  events?: {
+    on(event: string, handler: (...args: any[]) => any): unknown;
+    off(event: string, handler: (...args: any[]) => any): unknown;
   };
 };

@@ -19,6 +19,11 @@ for (const config of ['tsconfig.json', 'plugin/renderer/tsconfig.json']) {
 execFileSync(process.execPath, [path.join(build, 'scripts/build-manifest.js')], { cwd: root, stdio: 'inherit' });
 fs.rmSync(runtime, { recursive: true, force: true });
 fs.cpSync(path.join(build, 'plugin'), runtime, { recursive: true });
+fs.mkdirSync(path.join(runtime, 'web'));
+for (const file of ['bridge.js', 'console.css']) {
+  const source = require('./release-safety.cjs').safeFile(root, `web/${file}`);
+  fs.copyFileSync(source, path.join(runtime, 'web', file));
+}
 require('./build-entry.cjs').generate(root);
 // Test fixtures use the compiled tree; installed HTML uses plugin/runtime scripts.
 fs.cpSync(runtime, path.join(build, 'plugin/runtime'), { recursive: true });

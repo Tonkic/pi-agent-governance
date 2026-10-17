@@ -1,0 +1,17 @@
+/* Standalone adapter only. The shared PI workbench layout is left unchanged. */
+body[data-local-console] #architecture-analyze,
+body[data-local-console] #analysis-start,
+body[data-local-console] #documentation-start,
+body[data-local-console] #operations-open,
+body[data-local-console] #design-start { display: none !important; }
+#local-console-info {
+  margin: 0 0 16px;
+  padding: 14px 18px;
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, #5388d6 7%, transparent);
+  line-height: 1.55;
+}
+#local-console-info strong { font-size: 13px; letter-spacing: .01em; }
+#local-console-info p { margin: 5px 0 0; font-size: 12px; text-wrap: pretty; }
+@media (max-width: 600px) { #local-console-info { padding: 12px; margin-bottom: 12px; } }

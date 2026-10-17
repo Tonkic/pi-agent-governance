@@ -175,7 +175,7 @@ test('community manifest and distribution allowlist exclude credentials and old 
   assert.equal(manifest.id, 'io.github.tonkic.agent-governance');
   for (const locale of ['en', 'zh-CN']) {
     for (const key of ['name', 'description', 'safetyNotes']) assert.ok(manifest.i18n[locale][key].trim());
-    assert.ok(manifest.ui.title[locale].trim());
+    assert.equal(manifest.ui, undefined, 'No second embedded panel contribution');
   }
   assert.equal(typeof manifest.contributes.commands[0].title, 'string', 'installer requires a plain command title');
   const { piFiles } = require('../../scripts/build-distributions.cjs');
@@ -194,27 +194,26 @@ test('item details use a modal and cannot shrink the board through open-state CS
   assert.match(css, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
 });
 
-test('real plugin entry rereads workspace and refuses an explicitly bound foreign project', async t => {
+test('real browser entry revokes the old workspace and refuses an explicitly bound foreign project', async t => {
   const a = await fixture(t), b = await fixture(t);
   await a.mutate({ action: 'init' });
-  const main = path.join(__dirname, '../plugin/main.js');
-  const vm = require('node:vm'), { createRequire } = require('node:module');
-  let workspace = { path: a.root };
-  const module = { exports: {} as any };
-  const context = { require: createRequire(main), module, exports: module.exports,
-    pi: { workspace: { get: async () => workspace }, app: { getLocale: async () => 'en' } } };
-  vm.runInNewContext(await fs.readFile(main, 'utf8'), context);
-  const invoke = module.exports.onPanelInvoke;
-  const old = await invoke('governance.snapshot');
-  assert.equal(old.result.workspace, a.root);
-  workspace = { path: b.root };
-  const fresh = await invoke('governance.snapshot');
+  const { BrowserWorkbench } = require('../plugin/workbench');
+  let privateUrl;
+  const manager = new BrowserWorkbench({ assetRoot: path.resolve(__dirname, '../../plugin'), webAssetsRoot: path.resolve(__dirname, '../../web'), openExternal: async url => { privateUrl = url; } });
+  t.after(() => manager.dispose());
+  const invoke = async (channel, payload = {}) => {
+    const url = new URL(privateUrl);
+    return fetch(url.origin + '/api/invoke', { method: 'POST', headers: { Origin: url.origin, 'Content-Type': 'application/json', 'X-Governance-Token': url.hash.slice(1) }, body: JSON.stringify({ channel, payload }) });
+  };
+  const old = await manager.open(a.root);
+  assert.equal((await (await invoke('governance.snapshot')).json() as any).result.workspace, a.root);
+  await manager.open(b.root);
+  await assert.rejects(fetch(old.origin + '/panel/'));
+  const fresh = await (await invoke('governance.snapshot')).json() as any;
   assert.equal(fresh.result.workspace, b.root);
   assert.equal(fresh.result.state, null);
-  const refused = await invoke('governance.mutate', { workspace: a.root,
-    args: { action: 'init' }, revision: fresh.result.revision, confirmed: true });
-  assert.equal(refused.ok, false);
-  assert.match(refused.error, /Workspace switched/);
+  const refused = await invoke('governance.mutate', { workspace: a.root, args: { action: 'init' }, revision: fresh.result.revision, confirmed: true });
+  assert.equal(refused.status, 409);
   assert.deepEqual(await fs.readdir(b.root), []);
 });
 

@@ -32,8 +32,8 @@ test('real SDK handshake exposes shared schema, no host control and no automatic
   assert.equal(f.client.getServerVersion().version, require('../package.json').version);
   assert.deepEqual(Object.keys(f.client.getServerCapabilities()).sort(), ['prompts', 'resources', 'tools']);
   const { tools } = await f.client.listTools();
-  assert.equal(tools.length, 1);
-  assert.equal(tools[0].name, 'governance');
+  assert.deepEqual(tools.map(t => t.name), ['governance', 'governance_ui']);
+  assert.deepEqual(tools[1].inputSchema, require('../build/plugin/workbench-tool').workbenchTool.schema);
   assert.deepEqual(tools[0].inputSchema, require('../build/plugin/tool').schema);
   assert.equal(tools[0].annotations.readOnlyHint, false);
   assert.ok(!tools[0].inputSchema.properties.action.enum.some(x => /session|model|accept|confirm/.test(x)));

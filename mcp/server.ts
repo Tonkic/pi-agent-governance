@@ -9,6 +9,8 @@ import {
   McpError, ErrorCode
 } from '@modelcontextprotocol/sdk/types.js';
 import Ajv from 'ajv';
+import { BrowserWorkbench } from '../plugin/workbench';
+const { workbenchTool, invokeWorkbench } = require('../plugin/workbench-tool');
 const { Governance } = require('../plugin/core');
 const tool = require('../plugin/tool');
 const { version } = require('../../package.json');
@@ -55,6 +57,9 @@ async function main() {
   // Fail closed at startup if the canonical Skill or its fixed reference inventory is missing.
   for (const file of skillFiles) await readSkill(file);
   const validate = new Ajv({ allErrors: false, strict: false }).compile(tool.schema);
+  const validateUi = new Ajv({ allErrors: false, strict: false }).compile(workbenchTool.schema);
+  const workbench = new BrowserWorkbench({ assetRoot: path.join(packageRoot, 'plugin'), webAssetsRoot: path.join(packageRoot, 'web') });
+  let closing = false;
   const server = new Server({ name: 'agent-governance', version }, {
     capabilities: { tools: {}, resources: {}, prompts: {} },
     instructions: 'Use only in a trusted repository. Read status and README first. Explicit user scope authorizes writes; prompts and Skills do not. No automatic init, Agent turn or host control. Tests/approvals remain caller-attested.'
@@ -62,16 +67,20 @@ async function main() {
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: [{
     name: tool.name, description: tool.description, inputSchema: tool.schema,
     annotations: { title: 'Repository governance', readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true }
+  }, {
+    name: workbenchTool.name, description: workbenchTool.description, inputSchema: workbenchTool.schema,
+    annotations: { title: 'Browser workbench', readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false }
   }] }));
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const args = request.params.arguments;
-    if (request.params.name !== tool.name || !args ||
-        Buffer.byteLength(JSON.stringify(args)) > MAX_BYTES || !validate(args))
+    const ui = request.params.name === workbenchTool.name;
+    if ((!ui && request.params.name !== tool.name) || !args || closing ||
+        Buffer.byteLength(JSON.stringify(args)) > MAX_BYTES || !(ui ? validateUi(args) : validate(args)))
       throw new McpError(ErrorCode.InvalidParams, 'Invalid governance arguments; see tools/list schema');
     try {
       // Each invocation gets a fresh core object: no shared mutable revision token across requests.
       await noLinks(root);
-      const result = await new Governance(root).run(args);
+      const result = ui ? await invokeWorkbench(workbench, root, args, async () => !closing) : await new Governance(root).run(args);
       return { content: [{ type: 'text', text: JSON.stringify(result) }] };
     } catch {
       // Core/Git errors can include caller-supplied paths or arguments. Never echo them over MCP.
@@ -102,8 +111,19 @@ async function main() {
   });
   const transport = new StdioServerTransport(process.stdin, process.stdout, { maxBufferSize: MAX_BYTES });
   server.onerror = () => { process.stderr.write('MCP request/transport error; request content omitted.\n'); };
-  process.stdin.once('end', () => { void server.close(); });
-  await server.connect(transport);
+  const shutdown = () => {
+    if (closing) return;
+    closing = true; // Invalidates in-flight opens before any asynchronous cleanup.
+    void workbench.dispose().catch(() => {}).finally(async () => {
+      await server.close().catch(() => {});
+      process.off('SIGINT', shutdown); process.off('SIGTERM', shutdown);
+    });
+  };
+  server.onclose = shutdown;
+  process.stdin.once('end', shutdown);
+  process.once('SIGINT', shutdown); process.once('SIGTERM', shutdown);
+  try { await server.connect(transport); }
+  catch (error) { shutdown(); throw error; }
 }
 main().catch(() => {
   process.stderr.write('Agent Governance MCP startup failed. Use --workspace <absolute-directory> or --host claude-code with official CLAUDE_PROJECT_DIR; require an existing non-linked trusted project and complete Skill package.\n');

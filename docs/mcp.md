@@ -1,6 +1,6 @@
 # MCP 与可移植 Skill
 
-同一治理核心可通过本地 stdio MCP 使用，也可由 PI-Desktop 面板调用。STATE、看板、源码图、设计草案的数据格式不变；无需数据库或网络服务。
+所有宿主共用 [同一个浏览器工作台](web-console.md)；本地stdio MCP和PI连接器复用核心及STATE/看板/源码图/设计数据，不新增数据库。开发/模型执行保留在原宿主会话，不从网页另开聊天。
 
 ## 安装和启动
 
@@ -15,7 +15,7 @@ node build/mcp/server.js --workspace D:/projects/example
 
 固定模式`--workspace`必须是显式、已存在的绝对目录。Claude Code可改用`--host claude-code`，由服务内部读取官方MCP子进程环境`CLAUDE_PROJECT_DIR`，无需再填项目路径；缺失、相对、文件或链接路径均拒绝，不回退cwd/home/工具目录。两种模式互斥，均不自动初始化或切换；明确授权后才调用`init`。
 
-服务在 stdin/stdout 上交换 MCP 消息；诊断仅写 stderr。单条输入缓冲上限1MiB，断开输入后退出。只连接可信本地客户端，不开放 HTTP 端口。
+MCP在stdin/stdout交换协议，诊断仅写stderr；单条缓冲1MiB。普通连接不开放HTTP，只有显式确认的governance_ui open才启动自有loopback工作台；输入/传输断开或SIGINT/SIGTERM清理服务并退出。
 
 ## 客户端配置
 
@@ -41,13 +41,14 @@ node build/mcp/server.js --workspace D:/projects/example
 
 ## 工具与 Skill
 
-- `tools/list` 返回一个 `governance` 工具，参数为既有完整JSON schema；例如 `{"action":"status"}`。先读状态与项目README，只接续获批范围。
+- `tools/list` 返回 `governance`（原完整schema，例如 `{"action":"status"}`）和 `governance_ui`。先读状态与项目README，只接续获批范围。
+- `governance_ui`只接受action（open/close/status）及可选confirmed布尔；open/close需用户明确意图后confirmed:true。绑定项目来自连接器，不接受路径/URL/端口。open只把私有链接交给系统打开器，结果只有workspace/origin/opened；status不启动服务，close不终止浏览器或其它进程。
 - 工具复用原核心的锁、来源指纹、修订、路径和Git范围检查。写项目数据先取 `project_snapshot.revision`；设计取 `architecture_design_snapshot.revision` 和明确启动的draftId。
 - `resources/list` 列出固定的Architecture Copilot正文、来源、许可与参考资料。只读这些资源，不提供任意文件URI读取。
 - `prompts/list` 提供 `architecture-analysis` 与 `architecture-design`，直接嵌入同一份Skill正文。取提示不运行Agent，不产生付费模型请求，也不授予写入权限。
 - 如需客户端原生Skill发现，可手动把包中 `plugin/skills/architecture-copilot/` 完整目录放入该客户端支持的Skill目录；与开发源路径相同。保留LICENSE、SOURCE.md和references，不复制旧提示词作为第二来源。
 
-源码分析与设计方案严格分开。MCP可在明确授权下创建/保存草案，不提供基线确认、宿主模型或会话/窗口控制。基线由PI面板或 [本地Web控制台](web-console.md) 人工审阅确认；网页与MCP绑定同一项目并手动刷新。普通功能不强制架构设计或单独验收。
+源码分析与设计严格分开。MCP可按授权创建/保存草案，不提供基线确认、模型或会话控制。基线只在 [统一浏览器工作台](web-console.md) 人工审阅确认；网页与MCP绑定同一项目并手动刷新。普通功能不强制架构或单独验收。
 
 ## 安全与排错
 

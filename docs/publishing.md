@@ -24,7 +24,7 @@ npm run build:distributions -- pi-desktop
 | pi-desktop | `io.github.tonkic.agent-governance-VERSION.piplug`；核对已提交的官方包，复制原始字节，不用 shell 打包 |
 | 两者 | `asset-manifest.json` 与 `SHA256SUMS`，绑定版本、来源完整 SHA、文件名、大小和 SHA256 |
 
-通用包包含metadata/安装锁、MCP和Web编译入口、共享core/git/project/design/behaviors/tool/panel模块、规范Skill及许可/来源/参考、客户端示例、固定工作台HTML/CSS/renderer JS和网页桥接。排除宿主operations/main适配、开发node_modules、项目STATE、`.governance/`、`.pi/`、`.secrets/`及本地证据。
+通用包包含metadata/安装锁、MCP/Web入口、共享core/git/project/design/behaviors/tool/panel及browser/browser-open/workbench/workbench-tool模块、规范Skill和许可/来源/参考、客户端示例及同一工作台静态资源。排除PI的operations/main适配、开发node_modules、项目STATE、`.governance/`、`.pi/`、`.secrets/`和本机证据。
 
 npm pack 不包含 package-lock.json，因此包内使用由根 package-lock 派生的 **npm-shrinkwrap.json**。它保留精确依赖图，运行依赖与根包一致；解包后 `npm ci --omit=dev` 可直接使用。包自身不包含生命周期脚本。
 
@@ -34,7 +34,7 @@ npm pack 不包含 package-lock.json，因此包内使用由根 package-lock 派
 2. 在解压后的 package 目录执行 `npm ci --omit=dev --ignore-scripts`。
 3. 使用 `node build/mcp/server.js --workspace D:/projects/example` 启动stdio MCP。按 `mcp/clients/` 示例替换node/server/项目的绝对路径；项目须已存在，不自动初始化，不把凭据写入配置。
 4. 按客户端支持的 Skill 位置选择复制 `plugin/skills/architecture-copilot/`。Skill 不授予代码变更或自动确认基线权限。
-5. 需要独立网页时运行 `node build/web/server.js --workspace D:/projects/example`，打开终端私有地址，限制见 [本地Web控制台](web-console.md)。不要配置公网代理。
+5. 在原宿主会话请求打开工作台：governance_ui action:open、confirmed:true。不再另配一套PI面板；手动CLI方式见 [浏览器工作台](web-console.md)，不配置公网代理。
 
 MCP 使用与现有插件相同的共享治理核心；数据、修订/锁和显式写入/Git边界不变。只在可信仓库使用；提示词和路径检查不是操作系统沙箱。客户端配置与协议用法见仓库 `docs/mcp.md`。
 
@@ -53,6 +53,6 @@ Community ID：`io.github.tonkic.agent-governance`。源码仓库：`Tonkic/pi-a
 
 - 使用 PI-Desktop 插件页自行安装/更新并确认权限，不自动安装或调用市场。旧 ID `pi.agent-governance` 不跨 ID 更新：先备份 STATE/`.governance/`，停用旧实例再安装新 ID，不删除项目数据。
 - 市场已发布版本和 GitHub 下载产物是不同通道；本仓库不再自动提交市场，也不读取旧市场凭据。保留已有凭据与发布历史，不迁移、不打印、不上传。
-- 同 ID 更高版本的宿主更新仍须确认新增权限。0.7.0 新增 desktop.control 和只读 models.list，说明见 [0.7.0](../notes/release-0.7.0.md)。
-- 面板启动时读取宿主语言，失败回退浏览器语言；中文为 zh-CN，其他为英文。用户内容及底层诊断不翻译。切换语言后重新打开面板。
+- 本次统一入口明确获批shell.openExternal，仅打开生成的本地工作台URL；移除ui.panel/models.list，desktop.control仅核实调用身份。仍需宿主安装页确认权限，不自动安装或扩权。0.7.0历史权限见 [发布记录](../notes/release-0.7.0.md)。
+- 浏览器按navigator.language选择中/英文，主题跟随系统；PI命令按宿主语言。用户内容和底层诊断不翻译。改变浏览器语言后重新打开页面。
 - PI-Desktop 0.16.1 本地 MCP 不开放安装或插件更新接口；不能借内部服务绕过宿主注册操作。GitHub 发布成功不等于真实宿主/目视验收完成。
