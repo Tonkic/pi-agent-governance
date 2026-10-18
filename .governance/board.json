@@ -344,9 +344,9 @@
     {
       "id": "unified-shell-081",
       "title": "统一工作台布局与可收起侧栏（0.8.1）",
-      "description": "文档/看板/架构/Git共用原工作台导航与顶部栏；侧栏手动展开收起并跨页面保持，文档内容区保留阅读排版/局部辅助控件。0.8.1仅源码和官方包，无标签Release/市场npm/安装。",
+      "description": "0.8.1统一布局已完成：四页原导航/顶栏一致，全局侧栏手动展开或64px收起，切页/刷新/主题/离线不重置；文档局部阅读优化保留，手机共享紧凑顶栏。208测试/239图/10行为和82文件官方包分发通过；main f063f9c正常同步，实际CI39155509173 Linux/Windows全部步骤成功。首轮框架已目视，最新微调截图保存但Browser前台未满足；原总体验收限制保留。",
       "blocker": "",
-      "stage": "doing",
+      "stage": "done",
       "taskId": "project-board-release",
       "criteria": [
         "全页面壳层一致，侧栏可收起可恢复、跨页状态稳定且键盘窄屏可用",
@@ -355,8 +355,8 @@
       ],
       "architectureImpact": "none",
       "gitTaskId": null,
-      "completedAt": null
+      "completedAt": "2026-10-18T18:54:06.186Z"
     }
   ],
-  "updatedAt": "2026-10-18T17:44:24.106Z"
+  "updatedAt": "2026-10-18T18:54:06.186Z"
 }
