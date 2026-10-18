@@ -42,7 +42,11 @@
   const resizeText = (delta: number) => { fontSize = Math.max(16, Math.min(20, fontSize + delta)); body.style.fontSize = `${fontSize}px`; size.textContent = String(fontSize); smaller.disabled = busy || fontSize <= 16; larger.disabled = busy || fontSize >= 20; };
   smaller.addEventListener('click', () => resizeText(-1)); larger.addEventListener('click', () => resizeText(1));
   focus.addEventListener('click', () => { const on = focus.getAttribute('aria-pressed') !== 'true'; focus.setAttribute('aria-pressed', String(on)); host.classList.toggle('reader-focused', on); });
-  back.addEventListener('click', () => { location.hash = '#board-section'; requestAnimationFrame(() => document.querySelector<HTMLAnchorElement>('.workspace-nav a[href="#board-section"]')?.focus({ preventScroll: true })); });
+  back.addEventListener('click', () => {
+    const restore = () => { if (location.hash === '#board-section') document.querySelector<HTMLAnchorElement>('.workspace-nav a[href="#board-section"]')?.focus({ preventScroll: true }); };
+    if (location.hash === '#board-section') restore();
+    else { window.addEventListener('hashchange', restore, { once: true }); location.hash = '#board-section'; }
+  });
   let root: string = null, epoch = -1, sequence = 0, listing = false, readingFile = false;
   let entries: Array<{ path: string; bytes: number }> = [], selected = '', loaded = false, truncated = false;
   let listMessage = '', readMessage = '', hasBody = false, attempted = false;

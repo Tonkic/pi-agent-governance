@@ -78,5 +78,14 @@
   .reader-files { max-height: 240px; } .reader-contents nav { max-height: 200px; }
   .reader-focused .reader-layout { display: flex; }
 }
-@media (max-width: 480px) { .reader-reading { padding: 20px 16px 32px; } .reader-toolbar h2 { flex: 1; } .reader-safety { margin-left: 4px; } .reader-prose h1 { font-size: 1.55em; } }
+@media (max-width: 480px) {
+  :root[data-view='documents-section'] .workspace-nav { display: none; }
+  .reader-reading { padding: 20px 16px 32px; }
+  .reader-toolbar { font-size: 12px; }
+  .reader-toolbar h2 { flex: 1; margin: 0; }
+  .reader-toolbar .badge { display: none; }
+  .reader-toolbar button { min-height: 32px; padding: 5px 8px; }
+  .reader-safety { margin-left: 4px; }
+  .reader-prose h1 { font-size: 1.55em; }
+}
 @media (prefers-reduced-motion: reduce) { .documents-panel * { scroll-behavior: auto; animation: none; transition: none; } }

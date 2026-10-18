@@ -47,11 +47,12 @@ module.exports = async ({ browser, screenshots }) => {
         await p.evaluate(() => scrollTo(0, 0));
         const metrics = await p.locator('#documents-body').evaluate(n => { const s = getComputedStyle(n), r = n.getBoundingClientRect(); return { font: s.fontFamily, size: s.fontSize, leading: s.lineHeight, align: s.textAlign, width: r.width, top: r.top, firstParagraph: n.querySelector('p').getBoundingClientRect().bottom, whiteSpace: getComputedStyle(n.querySelector('p')).whiteSpace, animation: s.animationName }; });
         assert.match(metrics.font, /Segoe UI/); assert.match(metrics.font, /Microsoft YaHei/); assert.equal(metrics.size, '18px'); assert.equal(metrics.leading, '32.4px'); assert.equal(metrics.align, 'left'); assert.equal(metrics.whiteSpace, 'normal'); assert.equal(metrics.animation, 'none');
-        assert.ok(metrics.top < 450 && metrics.firstParagraph < 700, `${language}/${width}: real article visible on first screen`);
+        assert.ok(metrics.top < 450 && metrics.firstParagraph < 700, `${language}/${width}: real article visible on first screen ${JSON.stringify(metrics)}`);
         assert.ok(metrics.width <= 720 && metrics.width >= (width <= 390 ? 240 : width <= 768 ? 500 : 540), `${width}: bounded real prose width ${metrics.width}`);
         assert.equal(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `${language}/${width}/${theme}: no whole-page overflow`);
         assert.equal(await p.locator('#local-console-info').isVisible(), false); assert.equal(await p.locator('#action-panel').isVisible(), false); assert.equal(await p.locator('.topbar').isVisible(), false);
         if (width <= 900) { assert.equal(await p.locator('.reader-library').evaluate(n => n.open), false); assert.equal(await p.locator('.reader-contents').evaluate(n => n.open), false); }
+        if (width <= 390) { assert.equal(await p.locator('.workspace-nav').isVisible(), false, 'Phone reader avoids duplicate global navigation'); assert.equal(await p.locator('.reader-back').isVisible(), true, 'Returning to the workbench remains available'); }
         assert.equal(await p.locator('#documents-body pre').evaluate(n => n.scrollWidth > n.clientWidth && getComputedStyle(n).overflowX === 'auto'), true);
         await shot(p, `${language}-${width}-${theme}`);
       }
