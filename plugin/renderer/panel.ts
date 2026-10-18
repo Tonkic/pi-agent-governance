@@ -496,6 +496,7 @@ const pageIds = ['board-section', 'architecture', 'git-section', 'documents-sect
 function highlightNavigation() {
   const requested = location.hash.slice(1);
   const active = pageIds.includes(requested) ? requested : 'board-section';
+  document.documentElement.dataset.view = active;
   const pageTitles: Record<string, CopyKey> = {
     architecture: 'navArchitecture',
     'board-section': 'navBoard',

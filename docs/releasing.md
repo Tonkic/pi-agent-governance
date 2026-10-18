@@ -1,8 +1,8 @@
 # GitHub 交付 / Checked delivery
 
-仅稳定主/次版本标签 `vX.Y.0`（X≥1，Y≥0）各自动创建一次 GitHub Release，例如 `v1.0.0`、`v1.1.0`、`v1.2.0`、`v2.0.0`。当前版本仍为 **0.7.8**：0.x、补丁非0、预发布、构建后缀或版本分量有前导零均不发布；标签必须与 package 版本完全一致。策略为 `stable-major-minor-tag-only`，取代仅主版本 `vN.0.0` 和旧 PI 市场自动提交规则。
+仅稳定主/次版本标签 `vX.Y.0`（X≥1，Y≥0）各自动创建一次 GitHub Release，例如 `v1.0.0`、`v1.1.0`、`v1.2.0`、`v2.0.0`。当前版本为 **0.8.0**，用户已批准升级版本并同步源码与安装包，明确不创建标签/Release；0.x、补丁非0、预发布、构建后缀或版本分量有前导零均不发布。标签必须与 package 版本完全一致；策略为 `stable-major-minor-tag-only`，取代仅主版本 `vN.0.0` 和旧PI市场自动提交规则。
 
-No npm publishing, marketplace calls, automatic installation, version bump or tag creation. The user creates an approved release tag separately; automation never invents one. Ordinary build/test does not push or publish.
+No npm publishing, marketplace calls, automatic installation or tag creation. Version bumps require explicit approval (0.8.0 is approved); a bump alone never authorizes a Release. The user creates an approved release tag separately. Ordinary build/test does not push or publish.
 
 ## 开发与源码交付
 

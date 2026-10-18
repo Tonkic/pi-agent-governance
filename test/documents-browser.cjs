@@ -45,7 +45,9 @@ module.exports = async ({ browser, screenshots }) => {
         await p.setViewportSize({ width, height: 1100 }); await p.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
         await p.waitForFunction(value => document.documentElement.dataset.base === value, theme);
         assert.equal(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `${language}/${width}/${theme}: no whole-page overflow`);
+        if (width <= 900) await p.locator('.reader-library summary').click();
         await p.locator('#documents-search').focus(); assert.ok(await p.evaluate(() => getComputedStyle(document.activeElement).outlineStyle !== 'none'));
+        if (width <= 900) await p.locator('.reader-library summary').click();
         await p.evaluate(() => scrollTo(0, 0)); await p.screenshot({ path: path.join(output, `${language}-${width}-${theme}.png`), fullPage: true }); shots++;
       }
     }
@@ -90,7 +92,7 @@ module.exports = async ({ browser, screenshots }) => {
         return route.continue();
       });
       if (action === 'list') await page.locator('#documents-refresh').click(); else await page.locator('[data-document="docs/guide.md"]').click();
-      await documentHeld; await page.locator('#refresh').click(); await snapshotHeld;
+      await documentHeld; await page.locator('#refresh').evaluate(button => button.click()); await snapshotHeld;
       const responseDone = page.waitForResponse(response => response.url().endsWith('/api/invoke') && response.request().postDataJSON()?.channel === 'governance.documents');
       releaseDocument(); await responseDone;
       try { await page.waitForFunction(action => document.querySelector(action === 'list' ? '#documents-section' : '#documents-body').getAttribute('aria-busy') === 'false', action, { timeout: 3000 }); }
