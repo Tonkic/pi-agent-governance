@@ -85,7 +85,7 @@ test('browser bundle starts without Node globals and reports static preview', as
     addEventListener() {}, documentElement: { dataset: {} }, querySelectorAll: () => [], querySelector: () => ({ hidden: false }),
     createElement: () => ({ value: '', textContent: '' }),
     getElementById: id => {
-      if (!elements.has(id)) elements.set(id, { textContent: '', style: { setProperty() {} }, classList: { toggle() {} }, reset() {}, setAttribute() {}, addEventListener() {}, replaceChildren() {} });
+      if (!elements.has(id)) elements.set(id, { attributes: { 'aria-expanded': id === 'sidebar-toggle' ? 'true' : null }, textContent: '', style: { setProperty() {} }, classList: { toggle() {} }, reset() {}, setAttribute(name, value) { this.attributes[name] = String(value); }, getAttribute(name) { return this.attributes[name] ?? null; }, addEventListener() {}, replaceChildren() {} });
       return elements.get(id);
     }
   };
@@ -94,6 +94,8 @@ test('browser bundle starts without Node globals and reports static preview', as
   assert.match(elements.get('notice-message').textContent, /静态预览/);
   assert.equal(elements.get('progress-form').hidden, true);
   assert.equal(document.documentElement.dataset['base'], 'light');
+  assert.equal(elements.get('sidebar-toggle').getAttribute('aria-expanded'), 'true');
+  assert.equal(elements.get('sidebar-toggle').getAttribute('aria-label'), '收起侧栏');
 });
 async function graphModel() {
   const script = await fs.readFile(path.join(__dirname, '../plugin/renderer/graph-model.js'), 'utf8');

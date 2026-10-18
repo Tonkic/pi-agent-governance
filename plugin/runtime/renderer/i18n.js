@@ -740,3 +740,16 @@ async function initializeLocale() {
     localizeStatic();
 }
 const localeReady = initializeLocale();
+// Shell labels belong to the shared locale layer, including names for icon-only navigation.
+function localizeNavigation(toggle) {
+    const expanded = toggle.getAttribute('aria-expanded') === 'true';
+    const label = locale === 'zh-CN' ? expanded ? '收起侧栏' : '展开侧栏' : expanded ? 'Collapse sidebar' : 'Expand sidebar';
+    document.getElementById('sidebar-label').textContent = label;
+    toggle.setAttribute('aria-label', label);
+    toggle.title = label;
+    document.querySelectorAll('.workspace-nav a, #nav-behaviors').forEach(link => {
+        const name = link.querySelector('[data-i18n]')?.textContent || '';
+        link.setAttribute('aria-label', name);
+        link.title = name;
+    });
+}

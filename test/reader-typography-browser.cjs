@@ -50,9 +50,9 @@ module.exports = async ({ browser, screenshots }) => {
         assert.ok(metrics.top < 450 && metrics.firstParagraph < 700, `${language}/${width}: real article visible on first screen ${JSON.stringify(metrics)}`);
         assert.ok(metrics.width <= 720 && metrics.width >= (width <= 390 ? 240 : width <= 768 ? 500 : 540), `${width}: bounded real prose width ${metrics.width}`);
         assert.equal(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `${language}/${width}/${theme}: no whole-page overflow`);
-        assert.equal(await p.locator('#local-console-info').isVisible(), false); assert.equal(await p.locator('#action-panel').isVisible(), false); assert.equal(await p.locator('.topbar').isVisible(), false);
+        assert.equal(await p.locator('#local-console-info').isVisible(), true); assert.equal(await p.locator('#local-console-info details').evaluate(n => n.open), false); assert.equal(await p.locator('#action-panel').isVisible(), true); assert.equal(await p.locator('.topbar').isVisible(), true);
         if (width <= 900) { assert.equal(await p.locator('.reader-library').evaluate(n => n.open), false); assert.equal(await p.locator('.reader-contents').evaluate(n => n.open), false); }
-        if (width <= 390) { assert.equal(await p.locator('.workspace-nav').isVisible(), false, 'Phone reader avoids duplicate global navigation'); assert.equal(await p.locator('.reader-back').isVisible(), true, 'Returning to the workbench remains available'); }
+        if (width <= 390) { assert.equal(await p.locator('.workspace-nav').isVisible(), true, 'Phone reader keeps the shared global navigation'); assert.equal(await p.locator('.workspace-nav a[href="#board-section"]').isVisible(), true, 'Returning to the workbench remains available'); }
         assert.equal(await p.locator('#documents-body pre').evaluate(n => n.scrollWidth > n.clientWidth && getComputedStyle(n).overflowX === 'auto'), true);
         await shot(p, `${language}-${width}-${theme}`);
       }
@@ -96,7 +96,7 @@ module.exports = async ({ browser, screenshots }) => {
       await read(p, 'docs/headings-demo.md'); assert.equal(await p.locator('#documents-toc button').count(), 200, 'Heading cap stays at 200');
       await read(p, 'docs/literal-demo.md'); assert.ok((await p.locator('#documents-body').textContent()).includes('['.repeat(60000)), 'Adversarial unclosed markers remain literal');
       await read(p, 'docs/long-heading-demo.md'); assert.ok((await p.locator('#documents-body h1').textContent()).endsWith('b'), 'A legal long heading cannot block the renderer');
-      await p.locator('.reader-back').click(); await p.waitForFunction(() => document.documentElement.dataset.view === 'board-section' && document.activeElement.hash === '#board-section'); await ready(p); assert.equal(await p.locator('#local-console-info').isVisible(), true); assert.equal(await p.locator('#action-panel').isVisible(), true); assert.equal(await p.locator('.topbar').isVisible(), true);
+      await p.locator('.workspace-nav a[href="#board-section"]').focus(); await p.keyboard.press('Enter'); await p.waitForFunction(() => document.documentElement.dataset.view === 'board-section' && document.activeElement.hash === '#board-section'); await ready(p); assert.equal(await p.locator('#local-console-info').isVisible(), true); assert.equal(await p.locator('#action-panel').isVisible(), true); assert.equal(await p.locator('.topbar').isVisible(), true);
       assert.equal(await p.evaluate(() => document.activeElement.hash), '#board-section', 'Return focuses workbench navigation');
     }
     assert.deepEqual(errors, []); assert.deepEqual(external, []); assert.deepEqual(await fs.readFile(path.join(root, 'STATE.json')), before);

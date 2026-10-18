@@ -97,6 +97,7 @@ const { Governance } = require('../build/plugin/core');
     await require('./reference-ui-browser.cjs')({ browser, screenshots });
     await require('./documents-browser.cjs')({ browser, screenshots });
     await require('./reader-typography-browser.cjs')({ browser, screenshots });
+    await require('./unified-shell-browser.cjs')({ browser, screenshots });
     console.log(`PASS real local HTTP console: confirmations, shared updates, stale writes, design review, docs, session reload, disconnected state, bilingual responsive/themes; 7 screenshots: ${screenshots}`);
   } catch (error) {
     if (page) await page.screenshot({ path: path.join(screenshots, 'failure.png') }).catch(() => {});

@@ -9,7 +9,8 @@
 </head>
 <body>
 <main class="app-shell">
-  <nav class="workspace-nav" data-i18n-aria-label="navigation">
+  <nav id="workspace-navigation" class="workspace-nav" data-i18n-aria-label="navigation">
+    <button id="sidebar-toggle" type="button" aria-expanded="true" aria-controls="workspace-navigation"><span class="icon" aria-hidden="true">☰</span><span id="sidebar-label"></span></button>
     <span class="nav-brand"><span class="nav-logo" aria-hidden="true">PI</span><span>PI Agent<br><span data-i18n="brand"></span></span></span>
     <span class="nav-label" data-i18n="workspace"></span>
     <a href="#architecture"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="8" y="3" width="8" height="5" rx="1.5"/><path d="M12 8v5M5 16v-3h14v3"/><rect x="2" y="16" width="6" height="5" rx="1.5"/><rect x="16" y="16" width="6" height="5" rx="1.5"/></svg><span data-i18n="navArchitecture"></span></a>
