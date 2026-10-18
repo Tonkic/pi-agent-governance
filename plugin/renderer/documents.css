@@ -75,7 +75,7 @@
 @media (max-width: 480px) {
   .reader-reading { padding: 16px 16px 32px; }
   .reader-toolbar { gap: 4px; font-size: 12px; }
-  .reader-toolbar .badge { max-width: none; }
+  .reader-toolbar .badge { display: none; }
   .reader-toolbar button { min-height: 32px; padding: 5px 8px; }
   .reader-status { margin-bottom: 4px; }
   .reader-prose h1 { font-size: 1.55em; }
