@@ -64,7 +64,7 @@ function lock(value) {
   busy = value;
   document
     .querySelectorAll(
-      'main button, main input, main textarea, #item-sheet button, #item-sheet input, #item-sheet textarea, #item-sheet select, .action-dialog button, .action-dialog input, .action-dialog textarea, .action-dialog select'
+      'main button:not(#sidebar-toggle), main input, main textarea, #item-sheet button, #item-sheet input, #item-sheet textarea, #item-sheet select, .action-dialog button, .action-dialog input, .action-dialog textarea, .action-dialog select'
     )
     .forEach((el) => {
       (el as HTMLButtonElement | HTMLInputElement | HTMLTextAreaElement).disabled = value;
@@ -493,6 +493,18 @@ $('show-workflow').addEventListener('click', () => {
   renderProjectGraph();
 });
 const pageIds = ['board-section', 'architecture', 'git-section', 'documents-section'];
+// Presentation only: no persistence, route-dependent defaults or project writes.
+const sidebarToggle = $('sidebar-toggle');
+sidebarToggle.addEventListener('click', () => {
+  const collapsed = sidebarToggle.getAttribute('aria-expanded') === 'true';
+  sidebarToggle.setAttribute('aria-expanded', String(!collapsed));
+  document.documentElement.dataset.sidebar = collapsed ? 'collapsed' : 'expanded';
+  localizeNavigation(sidebarToggle); window.dispatchEvent(new Event('resize'));
+});
+localizeNavigation(sidebarToggle); void localeReady.then(() => localizeNavigation(sidebarToggle));
+document.querySelectorAll<HTMLAnchorElement>('.workspace-nav a').forEach(link => link.addEventListener('click', () => {
+  if (location.hash !== link.hash) window.addEventListener('hashchange', () => { if (location.hash === link.hash) link.focus({ preventScroll: true }); }, { once: true });
+}));
 function highlightNavigation() {
   const requested = location.hash.slice(1);
   const active = pageIds.includes(requested) ? requested : 'board-section';

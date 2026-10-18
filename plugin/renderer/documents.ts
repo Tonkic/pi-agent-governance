@@ -11,16 +11,15 @@
     const node = document.createElement(tag); node.textContent = text; node.className = className; return node;
   };
   const id = (node: HTMLElement, value: string) => { node.id = value; return node; };
-  const head = el('div', '', 'reader-toolbar');
-  const back = el('button', '', 'reader-back') as HTMLButtonElement; back.type = 'button';
-  const heading = el('h2'); const badge = el('span', '', 'badge');
+  const head = el('div', '', 'reader-toolbar'); head.dataset.pageControl = 'documents-section'; head.hidden = true;
+  const badge = el('span', '', 'badge');
   const safety = el('details', '', 'reader-safety'); const safetyTitle = el('summary'); const hint = el('p'); safety.append(safetyTitle, hint);
   const refresh = id(el('button'), 'documents-refresh') as HTMLButtonElement; refresh.type = 'button';
   const smaller = id(el('button', 'A−'), 'documents-smaller') as HTMLButtonElement;
   const larger = id(el('button', 'A+'), 'documents-larger') as HTMLButtonElement;
   const size = el('output', '18', 'reader-size'); size.setAttribute('aria-live', 'polite');
   const focus = id(el('button'), 'documents-focus') as HTMLButtonElement; focus.setAttribute('aria-pressed', 'false');
-  head.append(back, heading, badge, refresh, smaller, size, larger, focus, safety);
+  head.append(badge, refresh, smaller, size, larger, focus, safety);
   const layout = el('div', '', 'reader-layout');
   const library = el('details', '', 'reader-library') as HTMLDetailsElement; const libraryTitle = el('summary');
   const label = el('label'); const labelText = el('span');
@@ -35,18 +34,19 @@
   const body = id(el('article', '', 'reader-prose'), 'documents-body'); body.tabIndex = -1;
   const contents = el('details', '', 'reader-contents') as HTMLDetailsElement; const tocTitle = el('summary');
   const toc = id(el('nav'), 'documents-toc'); contents.append(tocTitle, toc);
-  reading.append(path, status, body); layout.append(library, reading, contents); host.append(head, layout);
-  const narrow = matchMedia('(max-width: 900px)');
-  const fold = () => { library.open = contents.open = !narrow.matches; }; fold(); narrow.addEventListener('change', fold);
+  reading.append(path, status, body); layout.append(library, reading, contents); host.append(layout); document.getElementById('action-panel').append(head);
+  const narrow = () => host.clientWidth <= 1050;
+  let folded: boolean;
+  const fold = () => { if (!host.clientWidth) return; const next = narrow(); if (folded !== next) { library.open = contents.open = !next; folded = next; } };
+  new ResizeObserver(fold).observe(host);
+  // The same connection explanation stays available, compact by default only in the reader.
+  const info = document.getElementById('local-console-info'), explanation = el('details') as HTMLDetailsElement;
+  if (info) { const summary = el('summary'); summary.append(info.querySelector('strong')); explanation.append(summary, ...Array.from(info.childNodes)); info.append(explanation); explanation.open = true; }
+  let readerView = false;
   let fontSize = 18;
   const resizeText = (delta: number) => { fontSize = Math.max(16, Math.min(20, fontSize + delta)); body.style.fontSize = `${fontSize}px`; size.textContent = String(fontSize); smaller.disabled = busy || fontSize <= 16; larger.disabled = busy || fontSize >= 20; };
   smaller.addEventListener('click', () => resizeText(-1)); larger.addEventListener('click', () => resizeText(1));
   focus.addEventListener('click', () => { const on = focus.getAttribute('aria-pressed') !== 'true'; focus.setAttribute('aria-pressed', String(on)); host.classList.toggle('reader-focused', on); });
-  back.addEventListener('click', () => {
-    const restore = () => { if (location.hash === '#board-section') document.querySelector<HTMLAnchorElement>('.workspace-nav a[href="#board-section"]')?.focus({ preventScroll: true }); };
-    if (location.hash === '#board-section') restore();
-    else { window.addEventListener('hashchange', restore, { once: true }); location.hash = '#board-section'; }
-  });
   let root: string = null, epoch = -1, sequence = 0, listing = false, readingFile = false;
   let entries: Array<{ path: string; bytes: number }> = [], selected = '', loaded = false, truncated = false;
   let listMessage = '', readMessage = '', hasBody = false, attempted = false;
@@ -129,7 +129,7 @@
       flush(); const h = make(`h${level}`); inline(h, value); h.tabIndex = -1; body.append(h);
       if (++headings <= 200) {
         const button = make('button', value) as HTMLButtonElement; button.type = 'button'; button.dataset.level = String(level);
-        button.addEventListener('click', () => { if (narrow.matches) contents.open = false; h.scrollIntoView({ block: 'start', behavior: 'instant' }); h.focus({ preventScroll: true }); }); toc.append(button);
+        button.addEventListener('click', () => { if (narrow()) contents.open = false; h.scrollIntoView({ block: 'start', behavior: 'instant' }); h.focus({ preventScroll: true }); }); toc.append(button);
       }
     };
     const cells = (line: string) => line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(value => value.trim());
@@ -192,7 +192,7 @@
       if (!current(owner, project, request)) return;
       if (result.workspace !== project || result.path !== file || typeof result.content !== 'string' || result.content.length > 262144) throw Error('Invalid document response');
       renderMarkdown(result.content); hasBody = true; readMessage = '';
-      if (moveFocus && active()) { if (narrow.matches) library.open = contents.open = false; body.focus({ preventScroll: true }); body.scrollIntoView({ block: 'start', behavior: 'instant' }); }
+      if (moveFocus && active()) { if (narrow()) library.open = contents.open = false; body.focus({ preventScroll: true }); body.scrollIntoView({ block: 'start', behavior: 'instant' }); }
     } catch { if (current(owner, project, request)) readMessage = w().error; }
     finally { if (owns(owner, project, request)) { readingFile = false; if (readMessage === w().loading) readMessage = w().error; body.setAttribute('aria-busy', 'false'); messages(); controls(); } }
   }
@@ -215,6 +215,8 @@
     }
   }
   function context() {
+    head.hidden = !active(); fold();
+    if (readerView !== active()) { readerView = active(); explanation.open = !readerView; }
     if (epoch !== workspaceEpoch) reset();
     if (!snapshot?.workspace) return;
     if (root !== snapshot.workspace) { reset(); root = snapshot.workspace; epoch = workspaceEpoch; }
@@ -222,7 +224,7 @@
   }
   function localize() {
     const zh = locale === 'zh-CN';
-    back.textContent = zh ? '← 工作台' : '← Workbench'; heading.textContent = w().title; badge.textContent = w().read; hint.textContent = w().hint; refresh.textContent = w().refresh;
+    badge.textContent = w().read; hint.textContent = w().hint; refresh.textContent = w().refresh;
     safetyTitle.textContent = zh ? '阅读限制' : 'Reading limits'; focus.textContent = zh ? '专注阅读' : 'Focus';
     smaller.setAttribute('aria-label', zh ? '缩小正文' : 'Smaller text'); larger.setAttribute('aria-label', zh ? '放大正文' : 'Larger text');
     libraryTitle.textContent = w().library; labelText.textContent = w().search; search.placeholder = w().search; tocTitle.textContent = w().contents;

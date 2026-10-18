@@ -340,7 +340,23 @@
       "architectureImpact": "none",
       "gitTaskId": null,
       "completedAt": "2026-10-18T16:51:25.614Z"
+    },
+    {
+      "id": "unified-shell-081",
+      "title": "统一工作台布局与可收起侧栏（0.8.1）",
+      "description": "文档/看板/架构/Git共用原工作台导航与顶部栏；侧栏手动展开收起并跨页面保持，文档内容区保留阅读排版/局部辅助控件。0.8.1仅源码和官方包，无标签Release/市场npm/安装。",
+      "blocker": "",
+      "stage": "doing",
+      "taskId": "project-board-release",
+      "criteria": [
+        "全页面壳层一致，侧栏可收起可恢复、跨页状态稳定且键盘窄屏可用",
+        "保留文档阅读排版与原看板/架构/确认/离线/隔离功能安全",
+        "0.8.1版本及官方包一致，完整回归/main同步与双OS CI真实通过"
+      ],
+      "architectureImpact": "none",
+      "gitTaskId": null,
+      "completedAt": null
     }
   ],
-  "updatedAt": "2026-10-18T16:51:25.614Z"
+  "updatedAt": "2026-10-18T17:44:24.106Z"
 }
