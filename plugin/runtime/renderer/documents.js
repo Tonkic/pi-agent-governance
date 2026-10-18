@@ -67,7 +67,16 @@
     smaller.addEventListener('click', () => resizeText(-1));
     larger.addEventListener('click', () => resizeText(1));
     focus.addEventListener('click', () => { const on = focus.getAttribute('aria-pressed') !== 'true'; focus.setAttribute('aria-pressed', String(on)); host.classList.toggle('reader-focused', on); });
-    back.addEventListener('click', () => { location.hash = '#board-section'; requestAnimationFrame(() => document.querySelector('.workspace-nav a[href="#board-section"]')?.focus({ preventScroll: true })); });
+    back.addEventListener('click', () => {
+        const restore = () => { if (location.hash === '#board-section')
+            document.querySelector('.workspace-nav a[href="#board-section"]')?.focus({ preventScroll: true }); };
+        if (location.hash === '#board-section')
+            restore();
+        else {
+            window.addEventListener('hashchange', restore, { once: true });
+            location.hash = '#board-section';
+        }
+    });
     let root = null, epoch = -1, sequence = 0, listing = false, readingFile = false;
     let entries = [], selected = '', loaded = false, truncated = false;
     let listMessage = '', readMessage = '', hasBody = false, attempted = false;
