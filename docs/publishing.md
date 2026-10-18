@@ -1,6 +1,6 @@
 # 产物与安装 / Distributions
 
-支持 **通用MCP＋Skills＋本地Web控制台包**及 **PI-Desktop官方piplug**，附Codex、Claude Code、Pi配置示例；不是各CLI原生插件。当前 **0.8.0** 已获准升级版本、同步源码与安装包；用户明确选择不创建标签或GitHub Release，不发布市场/npm或自动安装。1.x起稳定主/次版本vX.Y.0发布规则不变，见 [交付规则](releasing.md)。
+支持 **通用MCP＋Skills＋本地Web控制台包**及 **PI-Desktop官方piplug**，附Codex、Claude Code、Pi配置示例；不是各CLI原生插件。当前 **0.8.1** 已获准补丁升级、同步源码与安装包；用户明确选择不创建标签或GitHub Release，不发布市场/npm或自动安装。1.x起稳定主/次版本vX.Y.0发布规则不变，见 [交付规则](releasing.md)。
 
 ## 构建目标
 
