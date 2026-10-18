@@ -15,9 +15,8 @@
     };
     const id = (node, value) => { node.id = value; return node; };
     const head = el('div', '', 'reader-toolbar');
-    const back = el('button', '', 'reader-back');
-    back.type = 'button';
-    const heading = el('h2');
+    head.dataset.pageControl = 'documents-section';
+    head.hidden = true;
     const badge = el('span', '', 'badge');
     const safety = el('details', '', 'reader-safety');
     const safetyTitle = el('summary');
@@ -31,7 +30,7 @@
     size.setAttribute('aria-live', 'polite');
     const focus = id(el('button'), 'documents-focus');
     focus.setAttribute('aria-pressed', 'false');
-    head.append(back, heading, badge, refresh, smaller, size, larger, focus, safety);
+    head.append(badge, refresh, smaller, size, larger, focus, safety);
     const layout = el('div', '', 'reader-layout');
     const library = el('details', '', 'reader-library');
     const libraryTitle = el('summary');
@@ -57,26 +56,31 @@
     contents.append(tocTitle, toc);
     reading.append(path, status, body);
     layout.append(library, reading, contents);
-    host.append(head, layout);
-    const narrow = matchMedia('(max-width: 900px)');
-    const fold = () => { library.open = contents.open = !narrow.matches; };
-    fold();
-    narrow.addEventListener('change', fold);
+    host.append(layout);
+    document.getElementById('action-panel').append(head);
+    const narrow = () => host.clientWidth <= 1050;
+    let folded;
+    const fold = () => { if (!host.clientWidth)
+        return; const next = narrow(); if (folded !== next) {
+        library.open = contents.open = !next;
+        folded = next;
+    } };
+    new ResizeObserver(fold).observe(host);
+    // The same connection explanation stays available, compact by default only in the reader.
+    const info = document.getElementById('local-console-info'), explanation = el('details');
+    if (info) {
+        const summary = el('summary');
+        summary.append(info.querySelector('strong'));
+        explanation.append(summary, ...Array.from(info.childNodes));
+        info.append(explanation);
+        explanation.open = true;
+    }
+    let readerView = false;
     let fontSize = 18;
     const resizeText = (delta) => { fontSize = Math.max(16, Math.min(20, fontSize + delta)); body.style.fontSize = `${fontSize}px`; size.textContent = String(fontSize); smaller.disabled = busy || fontSize <= 16; larger.disabled = busy || fontSize >= 20; };
     smaller.addEventListener('click', () => resizeText(-1));
     larger.addEventListener('click', () => resizeText(1));
     focus.addEventListener('click', () => { const on = focus.getAttribute('aria-pressed') !== 'true'; focus.setAttribute('aria-pressed', String(on)); host.classList.toggle('reader-focused', on); });
-    back.addEventListener('click', () => {
-        const restore = () => { if (location.hash === '#board-section')
-            document.querySelector('.workspace-nav a[href="#board-section"]')?.focus({ preventScroll: true }); };
-        if (location.hash === '#board-section')
-            restore();
-        else {
-            window.addEventListener('hashchange', restore, { once: true });
-            location.hash = '#board-section';
-        }
-    });
     let root = null, epoch = -1, sequence = 0, listing = false, readingFile = false;
     let entries = [], selected = '', loaded = false, truncated = false;
     let listMessage = '', readMessage = '', hasBody = false, attempted = false;
@@ -224,7 +228,7 @@
                 const button = make('button', value);
                 button.type = 'button';
                 button.dataset.level = String(level);
-                button.addEventListener('click', () => { if (narrow.matches)
+                button.addEventListener('click', () => { if (narrow())
                     contents.open = false; h.scrollIntoView({ block: 'start', behavior: 'instant' }); h.focus({ preventScroll: true }); });
                 toc.append(button);
             }
@@ -383,7 +387,7 @@
             hasBody = true;
             readMessage = '';
             if (moveFocus && active()) {
-                if (narrow.matches)
+                if (narrow())
                     library.open = contents.open = false;
                 body.focus({ preventScroll: true });
                 body.scrollIntoView({ block: 'start', behavior: 'instant' });
@@ -449,6 +453,12 @@
         }
     }
     function context() {
+        head.hidden = !active();
+        fold();
+        if (readerView !== active()) {
+            readerView = active();
+            explanation.open = !readerView;
+        }
         if (epoch !== workspaceEpoch)
             reset();
         if (!snapshot?.workspace)
@@ -464,8 +474,6 @@
     }
     function localize() {
         const zh = locale === 'zh-CN';
-        back.textContent = zh ? '← 工作台' : '← Workbench';
-        heading.textContent = w().title;
         badge.textContent = w().read;
         hint.textContent = w().hint;
         refresh.textContent = w().refresh;
