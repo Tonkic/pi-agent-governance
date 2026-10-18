@@ -1,15 +1,14 @@
 # 产物与安装 / Distributions
 
-支持 **通用MCP＋Skills＋本地Web控制台包**及 **PI-Desktop官方piplug**，附Codex、Claude Code、Pi配置示例；不是各CLI原生插件。当前 **0.8.1** 已获准补丁升级、同步源码与安装包；用户明确选择不创建标签或GitHub Release，不发布市场/npm或自动安装。1.x起稳定主/次版本vX.Y.0发布规则不变，见 [交付规则](releasing.md)。
+支持**通用MCP＋Skills＋本地Web控制台包**及**PI-Desktop官方piplug**，附Codex、Claude Code、Pi配置示例，不是各CLI原生插件。当前 **0.8.2** 已获准流程优化补丁、同步源码与安装包；不创建标签/Release，不发布市场/npm或自动安装。1.x稳定主/次版本vX.Y.0规则不变，见[交付规则](releasing.md)。
 
 ## 构建目标
 
 在干净、已构建且已审查的来源提交上执行：
 
 ```powershell
-npm ci
-npm run typecheck
-npm test
+# 先完成所选范围检查；已通过且内容等同就不重复，公共改动/大版本用 --full
+npm run check -- --full
 npm run build:distributions
 # 可单独检查命名目标；不接受任意shell命令
 npm run build:distributions -- mcp-skills
@@ -42,12 +41,12 @@ MCP 使用与现有插件相同的共享治理核心；数据、修订/锁和显
 
 Community ID：`io.github.tonkic.agent-governance`。源码仓库：`Tonkic/pi-agent-governance`。
 
-1. 插件源码/说明修改后执行干净构建、类型、全套测试、浏览器和官方 i18n 检查。
+1. 按影响范围完成[开发检查](development.md#检查命令)，复用已通过且输入/环境等同的结果；插件源码/说明变化保留干净构建、包核对和官方i18n，不因打包重复产品全量。
 2. 使用宿主 **PluginCheck / PluginPack 工具**检查并生成当前版本包，提交至 `plugin/dist/`。不得用脚本自制 piplug。当前目录只保留当前包；旧包可从已验证 Git 提交取回。
 3. CI 解读 ZIP，拒绝路径穿越、重复/大小写别名、链接、未知条目、私密文件、CRC/结构错误和过大内容。版本、manifest（含权限/fs/net）及完整允许文件清单必须匹配新构建源码；仅允许 CRLF→LF 归一化。
 4. 缺包、包未提交、源码不一致或篡改立即阻塞；CI 不修复或重打包。重新执行官方工具并审查后才能重建。构建器只核对产物，不能独立证明工具来源；PluginPack 检查事实仍需真实记录。
 
-本次迁移的共享 Skill、源码与说明集成后，必须由协调 Agent 重新生成官方包。旧包不能冒充新源码匹配。
+包必须对应最终源码/说明；来源内容变化就重新用官方工具生成并核对，旧包不能冒充新源码。纯STATE/看板/证据记录不在包内，不必重打包。
 
 ## 安装与更新边界
 

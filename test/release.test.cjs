@@ -19,10 +19,10 @@ test('only exact stable vX.Y.0 tags X>=1 qualify; 0.x/patch/prerelease/build/lea
   assert.throws(() => decision('v1.1.0', '1.2.0'), /mismatch/);
   for (const [key, value] of [['enabled', false], ['rule', 'stable-major-tag-only'], ['allowSupersede', true], ['npmPublish', true], ['marketplacePublish', true], ['autoInstall', true], ['createTags', true], ['repository', 'other/repo']]) assert.throws(() => validatePolicy({ ...policy, [key]: value }), /approval/);
 });
-test('approved 0.8.1 patch does not authorize tags, Release, npm, marketplace or installation', () => {
-  assert.equal(require('../package.json').version, '0.8.1');
-  assert.equal(decision('v0.8.1', '0.8.1').publish, false);
-  assert.equal(decision(undefined, '0.8.1').publish, false);
+test('approved 0.8.2 patch does not authorize tags, Release, npm, marketplace or installation', () => {
+  assert.equal(require('../package.json').version, '0.8.2');
+  assert.equal(decision('v0.8.2', '0.8.2').publish, false);
+  assert.equal(decision(undefined, '0.8.2').publish, false);
   for (const key of ['npmPublish', 'marketplacePublish', 'autoInstall', 'createTags']) assert.equal(policy[key], false);
 });
 test('immutable full SHA tag must be on main ancestry; no implicit tag creation', () => {
@@ -164,15 +164,19 @@ test('generated index refresh accepts only unstaged known outputs with normalize
 test('workflow gates both artifacts behind matrix checks and isolates write permission', () => {
   const source = fs.readFileSync(path.join(__dirname, '../.github/workflows/release.yml'), 'utf8');
   assert.equal((source.match(/contents: write/g) || []).length, 1); assert.match(source, /contents: read/); assert.match(source, /ubuntu-latest, windows-latest/); assert.match(source, /node-version: 22/);
-  for (const command of ['npm ci', 'npm run typecheck', 'npm test', 'npm run check:behaviors', 'npm run test:browser', 'npm run build:distributions', 'node scripts/github-release.cjs']) assert.ok(source.includes(command));
+  for (const command of ['npm ci', 'npm run check -- --full --ci', 'npm run build:distributions', 'node scripts/github-release.cjs']) assert.ok(source.includes(command));
+  const full = require('../scripts/checks.cjs').commands(require('../scripts/check-plan.cjs').fromScope('full'));
+  assert.equal(full.filter(a => a.includes('--noEmit')).length, 2);
+  assert.ok(full.some(a => a[0] === '--test' && a.includes('test/release.test.cjs') && a.includes('test/distributions.test.cjs')));
+  for (const file of ['scripts/check-behaviors.cjs', 'test/web-browser.cjs', 'test/workbench-browser.cjs', 'test/entry-browser.cjs']) assert.equal(full.filter(a => a[0] === file).length, 1);
   assert.doesNotMatch(source, /npm publish|submit_version|workflow_dispatch|--force/);
 });
 test('CI and release install Chromium before behavior checks that launch the browser', () => {
   for (const name of ['test.yml', 'release.yml']) {
     const workflow = fs.readFileSync(path.join(__dirname, '../.github/workflows', name), 'utf8');
     const install = workflow.indexOf('npx --no-install playwright install --with-deps chromium');
-    for (const command of ['npm run check:behaviors', 'npm run test:browser']) {
-      assert.ok(install >= 0 && install < workflow.indexOf(command), `${name}: install Chromium before ${command}`);
-    }
+    const command = name === 'release.yml' ? 'npm run check -- --full --ci' : 'npm run check -- --scope';
+    assert.ok(install >= 0 && install < workflow.indexOf(command), `${name}: install Chromium before ${command}`);
+    assert.doesNotMatch(workflow, /npm run check:behaviors|npm run test:browser/);
   }
 });

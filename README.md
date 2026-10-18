@@ -2,7 +2,7 @@
 
 **所有宿主共用一个浏览器工作台。** PI-Desktop、Codex、Claude Code只负责连接已有项目；看板、源码架构、设计草案与行为文档使用同一界面、核心和仓库文件。不再提供另一套PI内嵌面板，也不新增聊天数据库或独立桌面。
 
-社区 ID：`io.github.tonkic.agent-governance`。仓库版本 **0.8.1**；本次统一工作台壳层并新增可收起导航，市场仍为0.7.0，不会自动升级。经用户确认，仅同步源码与安装包，不建标签或GitHub Release，不发布市场/npm；见 [安装与发布](docs/publishing.md)。
+社区 ID：`io.github.tonkic.agent-governance`。仓库版本 **0.8.2**；本次简化开发检查：局部定向、公共/未知全量、记录快路、一次构建及共享浏览器行为证据。统一工作台与阅读体验保留。市场仍为0.7.0；仅同步源码与官方安装包，不建标签/Release，不发布市场/npm或自动安装；见[安装与发布](docs/publishing.md)。
 
 ## 开始使用
 
@@ -36,13 +36,12 @@ PI的 `shell.openExternal` 只打开自身生成的本地链接；本次明确�
 
 ## 开发检查
 
-需要Node.js 22+和Git。修改TS或docs后重建，不手改runtime、manifest或包内说明。
+小改定向测，公共/高风险/未知及大版本全量；提交/合并只按实际变化补测，不机械重跑。首次或锁文件变化后安装依赖：
 
 ```powershell
 npm ci
-npm run typecheck
-npm run build
-npm test
+npm run check -- --scope reader  # 示例：文档阅读局部改动
+npm run check -- --full          # 公共改动/完整交付：一次构建与完整检查
 ```
 
 浏览器与行为检查见 [开发](docs/development.md)。构建不推送、发布或安装；1.x起稳定 `vX.Y.0` 主/次版本各发布一次GitHub Release，不自行升版本、建标签、发布npm或提交市场。

@@ -1,23 +1,55 @@
 name: Tests
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  test:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      scope: ${{ steps.checks.outputs.scope }}
+      browser: ${{ steps.checks.outputs.browser }}
+      matrix: ${{ steps.checks.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm run build
-      - run: git diff --exit-code -- plugin scripts test
-      - run: npm test
-      - run: npx --no-install playwright install --with-deps chromium
-      - run: npm run check:behaviors
-      - run: npm run test:browser
+      - id: checks
+        run: node scripts/check-plan.cjs --github-output
+        env:
+          CHECK_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          CHECK_HEAD: ${{ github.sha }}
+          CHECK_FULL: ${{ github.event_name == 'workflow_dispatch' }}
+  test:
+    needs: plan
+    strategy:
+      matrix:
+        os: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - if: needs.plan.outputs.scope != 'records'
+        run: npm ci
+      - if: needs.plan.outputs.browser == 'true'
+        run: npx --no-install playwright install --with-deps chromium
+      - run: npm run check -- --scope "$CHECK_SCOPE" --ci
+        shell: bash
+        env:
+          CHECK_SCOPE: ${{ needs.plan.outputs.scope }}

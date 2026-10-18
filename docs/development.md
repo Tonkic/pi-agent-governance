@@ -1,75 +1,73 @@
 # 开发
 
-修改 `.ts` 源码后运行构建和测试。不要手改生成的 JS 或 `manifest.json`。
+**小改定向测，公共改动全面测；合并看实际变化，不重复测试。** 需要 Node.js 22+。修改 TS 或规范说明后构建，不手改生成 JS、manifest 或包内说明。
 
-## 构建与检查
+## 简洁流程
 
-需要 Node.js 22+。在仓库根目录运行：
+1. 确认目标，说明“改什么、影响哪里、测什么”。小任务默认由一个 Agent 直接完成，不额外拆分。
+2. 修改并补测试。开发中运行新增功能和直接受影响的旧测试；不要每调一行就全量。
+3. 完成后审查差异，更新必要说明，运行选定检查，再提交、合并、交付。
+4. 提交本身不要求重跑；合并时核对实际变化。无变化复用已测内容的证据，冲突解决/并行组合只补测受影响部分。
+5. 公共/安全/依赖/构建/未知改动及大版本交付，最终完整检查一次。拿不准就扩大范围，不能用“无Git冲突”当通过证据。
 
-```powershell
-npm ci
-npm run typecheck
-npm run build
-npm test
-```
+## 检查命令
 
-构建后插件JS在`plugin/runtime/`，MCP入口在`build/mcp/server.js`，只读宿主Hook在`build/mcp/context-hook.js`，CLI/测试在`build/`。宿主绑定和配置见 [MCP与Skill](mcp.md)。读取当前目录的治理状态：
-
-```powershell
-'{"action":"status"}' | node build/scripts/governance.js
-```
-
-浏览器检查使用锁定的Playwright。首次运行可执行 `npx playwright install chromium`；本机也可用 `PI_BROWSER` 指向已有Chromium/Edge，CI安装bundled Chromium：
+首次或锁文件变化后执行 `npm ci`，无需每轮重新安装。`check` 每轮仅构建一次；完整浏览器检查同时生成行为证据，不再重复核心场景。
 
 ```powershell
-npm run test:browser
+# 局部开发：选直接相关的范围，可用逗号组合 docs,reader,entry
+npm run check -- --scope reader
+npm run check -- --scope entry
+npm run check -- --scope docs
+# 仅完成记录：JSON结构与差异检查，无构建、依赖安装或产品测试
+npm run check -- --scope records
+# 公共/高风险/未知改动、大版本，或手动兜底；无参数也默认完整
+npm run check -- --full
+# 根据两个已提交的完整SHA自动选范围；不包含尚未提交的修改
+npm run check:plan -- --base BASE_FULL_SHA --head HEAD_FULL_SHA
+npm run check -- --base BASE_FULL_SHA --head HEAD_FULL_SHA
 ```
 
-test:browser串行执行模拟桥接工作台与真实HTTP浏览器；单元测试另用真实服务/SDK、模拟系统打开器和stdin EOF检查回收。不是安装后的PI/Codex/Claude真实客户端或付费模型验证。
+| 范围 | 自动识别与实际检查 |
+| --- | --- |
+| records | STATE、看板、notes/changes下的md/png/html；检查JSON与差异，不跑产品测试 |
+| docs | 根说明、docs及包内生成说明；构建一次，检查布局/链接/说明生成与分发，不开浏览器 |
+| reader | 仅文档renderer及其两个局部浏览器用例；文档只读/HTTP测试＋原阅读/排版/共享壳层浏览器回归 |
+| entry | 仅PI轻量页HTML/CSS/JS及其浏览器用例；入口单元和浏览器回归 |
+| full | 共享renderer、后端、安全、依赖、版本、包、检查脚本/CI、未知文件：类型、一次构建、全部测试及行为/浏览器 |
+
+映射固定在 `scripts/check-plan.cjs`，不是智能依赖分析。自动范围取完整差异，改名两端均检查；缺基准/浅历史/异常一律full。显式scope仅用于已确认影响范围的本地开发，不等于完整交付证据。可直接运行构建后的某个测试进一步缩小迭代范围。
+
+普通CI只监听main push、PR和手动执行：记录/文档/已知局部跑Linux，公共/未知跑Linux＋Windows；手动运行始终full。记录不安装依赖，其他范围使用npm下载缓存，需浏览器时才安装Chromium。`--ci`在构建后核对生成文件无差异；任一失败立即停止。大版本发布另强制双系统full，不因版本号小就免掉公共风险检查。
+
+`npm test`兼容执行全部非浏览器测试，`npm run test:browser`执行完整浏览器及行为证据，`npm run check:behaviors`可单独检查行为。三者各自独立会构建；需要组合时只运行一次 `check --full`，不要串起来。局部检查不会刷新“全量行为通过”状态。
 
 ## 目录
 
-| 路径 | 内容 |
+| 路径 | 职责与相关测试 |
 | --- | --- |
-| `plugin/*.ts` | 主进程源码 |
-| `mcp/` | stdio协议适配和客户端示例；复用同一核心，不含宿主模型/会话接口 |
-| `web/` | 共享HTTP服务的人工CLI薄wrapper、同一网页桥接/CSS；无外部Agent启动 |
-| `plugin/renderer/` | 浏览器 TS、HTML 和 CSS |
-| `plugin/entry/`、`plugin/entry-bridge.ts` | 同一PI轻量入口HTML/CSS/JS与受限桥接，不复制业务renderer |
-| `plugin/runtime/` | 生成运行JS和从web/复制的web资产，供宿主/发布使用 |
-| `plugin/manifest.json`、`plugin/main.js` | 生成清单和市场所需固定入口；main.js只转接runtime/main.js，不手改 |
-| `plugin/README.md`、`plugin/docs/` | 从 `docs/` 生成并提交的安装包说明，不手改 |
-| `plugin/dist/` | 只保留当前可用安装包；旧版本按需从对应Git提交取回 |
-| `scripts/`、`test/` | 工具与测试源码；`.cjs` 为手写文件 |
-| `build/` | Git 忽略的编译中间文件、CLI 和测试 JS |
+| plugin/*.ts | 主进程核心；任务/governance、project、git、operations等对应test；公共改动full |
+| plugin/renderer/ | 共享浏览器TS/HTML/CSS；panel/browser及各局部用例；共享壳层full |
+| plugin/entry/、entry-bridge.ts | PI同一轻量入口；entry单元/browser；bridge和manifest改动full |
+| mcp/ | stdio和只读宿主Hook、客户端配置；真实SDK/EOF测试；非安装客户端E2E |
+| web/、browser/workbench模块 | 同一HTTP服务/桥接/租约/打开器；web/workbench及真实HTTP浏览器回归 |
+| plugin/behaviors.ts、scripts/check-behaviors.cjs | 行为绑定和来源证据；behaviors测试，完整检查共享一次核心浏览器 |
+| scripts/、test/ | 手写工具和测试；发布/分发/检查入口属公共改动，full |
+| docs/ | 当前说明唯一手写来源；layout检查生成一致、链接和100行上限 |
+| plugin/runtime/ | 生成JS及web复制资产；宿主与发布使用，不手改 |
+| plugin/manifest.json、main.js | 生成清单与固定转接入口，不手改 |
+| plugin/README.md、plugin/docs/ | 从docs生成并提交的安装包说明 |
+| plugin/dist/ | 当前官方包；旧包可从Git取回 |
+| build/ | 忽略的编译中间文件、CLI/测试及分发产物 |
 
-本机宿主目标 `/.pi/` 与既有 `/changes/archive/redesign-governance-panel/` 经用户批准由Git忽略，文件不纳入源码提交。历史证据与有效项目数据保留；经明确批准可清理旧包、旧操作记录和确认无引用的废弃内容，不以忽略规则代替清理或放宽dirty门禁。
+`build.cjs`清理固定build/runtime，编译并生成说明/入口；生成器拒绝链接或未知手写文件。不要在生成目录放手写内容；构建期间保持可信、独占。普通build不推送、发布或安装。
 
-`build.cjs` 清理 `build/`、`plugin/runtime/`；`build-docs.cjs` 和 `build-entry.cjs` 只替换带生成标记的说明/入口，拒绝链接或未知手写文件。不要在生成目录放手写内容。构建不防恶意并发修改，运行期间保持目录可信、独占。
+构建后状态读取：`'{"action":"status"}' | node build/scripts/governance.js`。首次浏览器检查可运行 `npx playwright install chromium`，本机可用 `PI_BROWSER`指向已有Edge/Chromium。浏览器/服务测试不等于安装后宿主交互、物理触控或付费模型验证。
 
-## 修改入口
+本机`/.pi/`和既有`/changes/archive/redesign-governance-panel/`经批准忽略，保留内容；不扩大忽略或放宽dirty门禁。历史证据、许可、有效数据及暂停worktree保留。
 
-| 修改内容 | 源码 | 检查 |
-| --- | --- | --- |
-| 任务动作 | `plugin/tool.ts`、`plugin/core.ts` | `test/governance.test.ts` |
-| 看板与架构 | `plugin/project.ts` | `test/project.test.ts` |
-| Git 协作 | `plugin/git.ts` | `test/git.test.ts` |
-| 界面与语言 | `plugin/renderer/`、`plugin/panel.ts` | `test/panel.test.ts`、`test/browser.cjs` |
-| PI项目绑定与浏览器命令/工具 | `plugin/main.ts`、`plugin/workbench-tool.ts` | `test/host-context.test.cjs`、`test/unified-browser.test.cjs` |
-| 启动器/右侧插件视图轻量入口 | `plugin/entry/`、`plugin/entry-bridge.ts`、manifest构建 | `test/entry.test.cjs`、`test/entry-browser.cjs`；原浏览器命令后串行执行，桥接/原生摆放模拟，服务真实 |
-| 说明与生成规则 | `docs/`、`scripts/build-docs.cjs` | `test/layout.test.cjs` |
-| 行为文档与场景证据 | `plugin/behaviors.ts`、`scripts/check-behaviors.cjs` | `test/behaviors.test.cjs`、`npm run check:behaviors` |
-| 构建路径 | `tsconfig.json`、`scripts/build.cjs` | `test/layout.test.cjs` |
-| MCP/只读宿主Hook/Skill资源 | `mcp/server.ts`、`mcp/context-hook.ts`、`plugin/skills/architecture-copilot/` | `test/mcp.test.cjs`，真实SDK与stdin fixtures，非安装客户端E2E |
-| 共享浏览器服务/租约/打开器 | `plugin/browser.ts`、`plugin/workbench.ts`、`plugin/browser-open.ts`、`web/` | `test/web.test.cjs`、`test/workbench.test.cjs`、`test/web-browser.cjs` |
-| 多目标分发与GitHub发布 | `scripts/build-distributions.cjs`、`scripts/github-release.cjs`、`.github/workflows/` | `test/distributions.test.cjs`、`test/release.test.cjs` |
+## 交付与接续
 
-## 交付
+按[交付流程](releasing.md)审查提交、同步main/GitHub；插件变更用官方PluginCheck/PluginPack，不用shell自制包。证据来源和合并复用规则见[Git协作](git.md)。
 
-按 [交付流程](releasing.md) 提交、同步 GitHub、集成 main 并清理已合并分支。插件内容变更使用 PI PluginCheck/PluginPack 打包，不用 shell 自制安装包。普通构建不会推送、发布或安装。
-
-## 一次启动接续待办
-
-在 PI-Desktop「自动化」中运行本项目的手动任务「接续项目：已批准待办」。它在独立 Agent 会话中读取 AGENTS、STATE 和看板，连续处理已批准范围内的可执行项；完成、真实阻塞或需要新授权时停止。不是定时任务，不会后台自行唤醒，也不会自动安装或改权限模式。
-
-任务配置属于本机宿主，不随 Git clone 迁移。换机器时按相同规则创建手动任务，并绑定正确工作区。运行前结束同项目其他写入任务，不能让两个对话并发改共享目录。不要在已有回合还在开发时重复点击运行。
+PI-Desktop“自动化”手动任务“接续项目：已批准待办”在独立宿主会话读取AGENTS/STATE/看板，连续处理获批范围，完成/真实阻塞/需新授权时停止。不是定时唤醒；不自动安装、改权限或递归创建会话。本机配置不随clone迁移；启动前结束同项目其他写入，不重复点击。

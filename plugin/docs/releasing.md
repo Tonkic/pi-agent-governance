@@ -1,16 +1,16 @@
 <!-- Generated from docs/ by scripts/build-docs.cjs. Do not edit. -->
 # GitHub 交付 / Checked delivery
 
-仅稳定主/次版本标签 `vX.Y.0`（X≥1，Y≥0）各自动创建一次 GitHub Release，例如 `v1.0.0`、`v1.1.0`、`v1.2.0`、`v2.0.0`。当前版本为 **0.8.1**，用户已批准补丁升级并同步源码与安装包，明确不创建标签/Release；0.x、补丁非0、预发布、构建后缀或版本分量有前导零均不发布。标签必须与 package 版本完全一致；策略为 `stable-major-minor-tag-only`，取代仅主版本 `vN.0.0` 和旧PI市场自动提交规则。
+仅稳定主/次版本标签 `vX.Y.0`（X≥1，Y≥0）各自动创建一次 GitHub Release，例如 `v1.0.0`、`v1.1.0`、`v1.2.0`、`v2.0.0`。当前 **0.8.2** 已获准补丁升级、同步源码与官方安装包，不创建标签/Release；0.x、补丁非0、预发布、构建后缀或版本分量有前导零均不发布。标签必须与 package 版本一致；策略 `stable-major-minor-tag-only` 不变。
 
-No npm publishing, marketplace calls, automatic installation or tag creation. Version bumps require explicit approval (0.8.1 is approved); a bump alone never authorizes a Release. The user creates an approved release tag separately. Ordinary build/test does not push or publish.
+No npm publishing, marketplace calls, automatic installation or tag creation. Version bumps require explicit approval (0.8.2 is approved); a bump alone never authorizes a Release. The user creates an approved release tag separately. Ordinary build/test does not push or publish.
 
 ## 开发与源码交付
 
-1. 读取 STATE、README，调用 governance status/git_status；写入委派按 [Git 协作](git.md) 使用独立受管 worktree。
-2. 完成 typecheck、build、test、check:behaviors、test:browser、差异与敏感信息审查。插件变更执行官方 i18n、PluginCheck 和 PluginPack，见 [产物与安装](publishing.md)。
-3. 审查 git_diff → git_commit → 实际提交后测试 → git_verify。集成后重新测试。共享 STATE/AGENTS 由协调 Agent 维护；整体宿主/目视阻塞不得假报完成。
-4. 已授权的普通源码 main 集成和推送由治理流程执行，**不再由 release:auto 推送来源分支**。遵循保护，不 stash/reset/强推；只清理已合并且无活动工作的临时分支，保留旧发布追溯。
+1. 读取STATE/README、status/git_status；小任务默认直接实现，确需写入委派才按[Git协作](git.md)分配独立worktree。
+2. 说明改动/影响/测试，按[开发范围](development.md#检查命令)执行定向检查。公共/高风险/未知改动与大版本运行一次 `npm run check -- --full`；它包含类型、一次构建、全部测试和一次行为/浏览器执行，不再串联旧入口。保留差异与敏感信息审查。
+3. 审查git_diff→git_commit→git_verify；登记当前HEAD并区分实际执行/内容等同复用。提交或无变化合并不机械重跑；冲突解决、并行组合或新增变化只补测影响部分。main最终CI按范围执行；纯完成记录只走轻量检查，不触发产品全套。复用必须核对实际内容、测试输入与环境，不能把旧SHA冒充新SHA执行。
+4. 插件内容变化执行官方i18n、PluginCheck/PluginPack和包来源核对；不因打包再重跑已通过的功能测试。已授权main集成/正常推送不由release:auto执行；不stash/reset/强推。只清理已合并且无活动工作的临时分支；共享STATE/AGENTS由协调Agent维护，原整体宿主/目视阻塞保留。
 
 ```powershell
 # 只做本地/CI计划：检查已提交来源、工作区、远端URL、可达历史；不运行测试
@@ -26,7 +26,7 @@ npm run release:auto -- --plan FULL_SHA
 ## Action 合约
 
 - `.github/workflows/release.yml` 只监听标签 push。脚本精确匹配上述稳定主/次版本规则；不合格或 package 版本不符的标签不能进入后续 job。
-- 全量 checkout，绑定解析后的提交 SHA；Linux/Windows 干净 npm ci、类型、构建、单元、行为和 Chromium 浏览器检查全部通过才构建产物。
+- 全量checkout并绑定解析后SHA；Linux/Windows干净npm ci后运行 `npm run check -- --full --ci`，一次构建、全部单元/行为/Chromium浏览器通过才构建产物。正式发布不能使用局部或记录范围。
 - 使用 Node 22、锁定的实际运行依赖。浏览器从 Playwright 安装 Chromium；不依赖 Ubuntu 的 Edge。可本地用 `PI_BROWSER` 指定浏览器。
 - `npm run build:distributions` 构建通用 MCP/Skills tgz，核对并复制官方 PI piplug；另产出 `asset-manifest.json`、`SHA256SUMS`，绑定版本、来源 SHA、大小和哈希。缺任一产物即停止。
 - 仅最终 release job 授予 `contents:write`；其他 job 为 `contents:read`。最终 job 只从环境使用 GITHUB_TOKEN，不读取本机市场凭据。
