@@ -324,7 +324,23 @@
       "architectureImpact": "none",
       "gitTaskId": null,
       "completedAt": "2026-10-17T23:44:39.258Z"
+    },
+    {
+      "id": "reader-typography-080",
+      "title": "文档阅读体验优化与0.8.0交付",
+      "description": "参考用户提供的排版文章与字体网页，正文优先、安静字体/行距/行宽、按需文件库和目录、安全Markdown技术文档排版。版本0.8.0仅同步源码与官方包，不创建Release/标签/市场/npm或安装。",
+      "blocker": "",
+      "stage": "doing",
+      "taskId": "project-board-release",
+      "criteria": [
+        "长文正文优先，双语明暗与窄屏/键盘阅读舒适",
+        "Markdown常用文档格式可读，原只读/资源/路径/隔离回归不退化",
+        "0.8.0全版本一致、完整回归/官方包分发/main正常同步与实际CI"
+      ],
+      "architectureImpact": "none",
+      "gitTaskId": null,
+      "completedAt": null
     }
   ],
-  "updatedAt": "2026-10-17T23:44:39.258Z"
+  "updatedAt": "2026-10-18T15:44:15.181Z"
 }
