@@ -1,6 +1,6 @@
 # 产物与安装 / Distributions
 
-支持 **通用MCP＋Skills＋本地Web控制台包**及 **PI-Desktop官方piplug**，附Codex、Claude Code、Pi配置示例；不是各CLI原生插件。1.x起稳定主/次版本vX.Y.0各发布一次GitHub Release；当前0.7.8不发布，见 [交付规则](releasing.md)。
+支持 **通用MCP＋Skills＋本地Web控制台包**及 **PI-Desktop官方piplug**，附Codex、Claude Code、Pi配置示例；不是各CLI原生插件。当前 **0.8.0** 已获准升级版本、同步源码与安装包；用户明确选择不创建标签或GitHub Release，不发布市场/npm或自动安装。1.x起稳定主/次版本vX.Y.0发布规则不变，见 [交付规则](releasing.md)。
 
 ## 构建目标
 
@@ -24,7 +24,7 @@ npm run build:distributions -- pi-desktop
 | pi-desktop | `io.github.tonkic.agent-governance-VERSION.piplug`；核对已提交的官方包，复制原始字节，不用 shell 打包 |
 | 两者 | `asset-manifest.json` 与 `SHA256SUMS`，绑定版本、来源完整 SHA、文件名、大小和 SHA256 |
 
-通用包包含metadata/安装锁、MCP/Web入口、共享core/git/project/design/behaviors/tool/panel及browser/browser-open/workbench/workbench-tool模块、规范Skill和许可/来源/参考、客户端示例及同一工作台静态资源。排除PI的operations/main适配、开发node_modules、项目STATE、`.governance/`、`.pi/`、`.secrets/`和本机证据。
+通用包包含metadata/安装锁、MCP/Web入口、共享core/git/project/design/behaviors/documents/tool/panel及browser/browser-open/workbench/workbench-tool模块、规范Skill和许可/来源/参考、客户端示例及同一工作台静态资源。排除PI的operations/main适配、开发node_modules、项目STATE、`.governance/`、`.pi/`、`.secrets/`和本机证据。
 
 npm pack 不包含 package-lock.json，因此包内使用由根 package-lock 派生的 **npm-shrinkwrap.json**。它保留精确依赖图，运行依赖与根包一致；解包后 `npm ci --omit=dev` 可直接使用。包自身不包含生命周期脚本。
 
