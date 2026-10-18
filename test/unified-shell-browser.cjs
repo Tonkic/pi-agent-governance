@@ -41,6 +41,7 @@ module.exports = async ({ browser, screenshots }) => {
             assert.equal(await p.locator('#page-title').textContent(), await link.getAttribute('aria-label'), 'One page title uses the shared header');
             assert.equal(await p.locator('#sidebar-toggle').getAttribute('aria-expanded'), String(expanded), 'Navigation never changes the user choice');
             assert.equal(await p.locator('.topbar').isVisible(), true); assert.equal(await p.locator('.workspace-nav').isVisible(), true);
+            if (width <= 390) assert.equal(await p.locator('.topbar').evaluate(n => getComputedStyle(n).minHeight), '64px', 'Every phone view uses the same compact header');
             assert.equal(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `${language}/${width}/${theme}/${page}: no whole-page overflow`);
             const box = await geometry(p); if (!baseline) baseline = box; else { assert.deepEqual(box.nav, baseline.nav, 'Navigation geometry is identical across all four pages'); assert.deepEqual(box.header, baseline.header, 'Header geometry is identical across all four pages'); assert.equal(box.title[0], baseline.title[0]); assert.equal(box.title[1], baseline.title[1]); assert.equal(box.padding, baseline.padding); }
             if (width > 900) assert.ok(expanded ? box.nav[2] >= 190 && box.nav[2] <= 212 : box.nav[2] === 64, 'Desktop original sidebar / 64px rail');
