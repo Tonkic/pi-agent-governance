@@ -39,7 +39,7 @@
   const narrow = matchMedia('(max-width: 900px)');
   const fold = () => { library.open = contents.open = !narrow.matches; }; fold(); narrow.addEventListener('change', fold);
   let fontSize = 18;
-  const resizeText = (delta: number) => { fontSize += delta; body.style.fontSize = `${fontSize}px`; size.textContent = String(fontSize); smaller.disabled = fontSize <= 16; larger.disabled = fontSize >= 20; };
+  const resizeText = (delta: number) => { fontSize = Math.max(16, Math.min(20, fontSize + delta)); body.style.fontSize = `${fontSize}px`; size.textContent = String(fontSize); smaller.disabled = busy || fontSize <= 16; larger.disabled = busy || fontSize >= 20; };
   smaller.addEventListener('click', () => resizeText(-1)); larger.addEventListener('click', () => resizeText(1));
   focus.addEventListener('click', () => { const on = focus.getAttribute('aria-pressed') !== 'true'; focus.setAttribute('aria-pressed', String(on)); host.classList.toggle('reader-focused', on); });
   back.addEventListener('click', () => { location.hash = '#board-section'; requestAnimationFrame(() => document.querySelector<HTMLAnchorElement>('.workspace-nav a[href="#board-section"]')?.focus({ preventScroll: true })); });
@@ -51,6 +51,7 @@
   const current = (owner: number, project: string, request: number) => owns(owner, project, request) && snapshot?.workspace === root;
   function controls() {
     refresh.disabled = !root || !snapshot || busy || listing || readingFile || !navigator.onLine;
+    smaller.disabled = busy || fontSize <= 16; larger.disabled = busy || fontSize >= 20;
     search.disabled = !loaded; // Local filtering and TOC are usable offline and while writes are busy.
     files.querySelectorAll<HTMLButtonElement>('button').forEach(button => { button.disabled = !navigator.onLine || !snapshot || busy || listing; });
     toc.querySelectorAll<HTMLButtonElement>('button').forEach(button => { button.disabled = false; });
@@ -137,8 +138,14 @@
           continue;
         }
         if (mark) { flush(); fence = mark[1]; continue; }
-        const h = line.match(/^\s{0,3}(#{1,6})\s+(.+?)\s*#*\s*$/);
-        if (h) { addHeading(h[1].length, h[2]); continue; }
+        // Recognize only the prefix with regex; trailing hashes/space are scanned linearly.
+        const h = line.match(/^[ \t]{0,3}(#{1,6})(?:[ \t]+|$)/);
+        if (h) {
+          let value = line.slice(h[0].length).trimEnd(), end = value.length;
+          while (end > 0 && value[end - 1] === '#') end--;
+          if (end < value.length && (end === 0 || value[end - 1] === ' ' || value[end - 1] === '\t')) value = value.slice(0, end).trimEnd();
+          addHeading(h[1].length, value); continue;
+        }
         if (line.trim() && i + 1 < lines.length && /^\s{0,3}(=+|-+)\s*$/.test(lines[i + 1])) { addHeading(lines[++i].trim()[0] === '=' ? 1 : 2, line); continue; }
         if (!line.trim()) { flush(); continue; }
         if (/^\s{0,3}([-*_])(?:\s*\1){2,}\s*$/.test(line)) { flush(); body.append(make('hr')); continue; }

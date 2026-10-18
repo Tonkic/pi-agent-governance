@@ -63,7 +63,7 @@
     fold();
     narrow.addEventListener('change', fold);
     let fontSize = 18;
-    const resizeText = (delta) => { fontSize += delta; body.style.fontSize = `${fontSize}px`; size.textContent = String(fontSize); smaller.disabled = fontSize <= 16; larger.disabled = fontSize >= 20; };
+    const resizeText = (delta) => { fontSize = Math.max(16, Math.min(20, fontSize + delta)); body.style.fontSize = `${fontSize}px`; size.textContent = String(fontSize); smaller.disabled = busy || fontSize <= 16; larger.disabled = busy || fontSize >= 20; };
     smaller.addEventListener('click', () => resizeText(-1));
     larger.addEventListener('click', () => resizeText(1));
     focus.addEventListener('click', () => { const on = focus.getAttribute('aria-pressed') !== 'true'; focus.setAttribute('aria-pressed', String(on)); host.classList.toggle('reader-focused', on); });
@@ -76,6 +76,8 @@
     const current = (owner, project, request) => owns(owner, project, request) && snapshot?.workspace === root;
     function controls() {
         refresh.disabled = !root || !snapshot || busy || listing || readingFile || !navigator.onLine;
+        smaller.disabled = busy || fontSize <= 16;
+        larger.disabled = busy || fontSize >= 20;
         search.disabled = !loaded; // Local filtering and TOC are usable offline and while writes are busy.
         files.querySelectorAll('button').forEach(button => { button.disabled = !navigator.onLine || !snapshot || busy || listing; });
         toc.querySelectorAll('button').forEach(button => { button.disabled = false; });
@@ -239,9 +241,15 @@
                     fence = mark[1];
                     continue;
                 }
-                const h = line.match(/^\s{0,3}(#{1,6})\s+(.+?)\s*#*\s*$/);
+                // Recognize only the prefix with regex; trailing hashes/space are scanned linearly.
+                const h = line.match(/^[ \t]{0,3}(#{1,6})(?:[ \t]+|$)/);
                 if (h) {
-                    addHeading(h[1].length, h[2]);
+                    let value = line.slice(h[0].length).trimEnd(), end = value.length;
+                    while (end > 0 && value[end - 1] === '#')
+                        end--;
+                    if (end < value.length && (end === 0 || value[end - 1] === ' ' || value[end - 1] === '\t'))
+                        value = value.slice(0, end).trimEnd();
+                    addHeading(h[1].length, value);
                     continue;
                 }
                 if (line.trim() && i + 1 < lines.length && /^\s{0,3}(=+|-+)\s*$/.test(lines[i + 1])) {

@@ -10,7 +10,7 @@ module.exports = async ({ browser, screenshots }) => {
   const fixture = '# Reading, without the noise / 安静地阅读\n\nDemo document · 排版测试材料\n\n' + english.repeat(3) + '\n\n' + chinese.repeat(3) + '\n\n## Natural flow / 自然流动\n\n中文软换行\n应该自然拼接。\n\nEnglish soft wrapping\nuses one space.\n\nA hard break  \nstays a line break.\n\n*Emphasis* and _another emphasis_, **strong**, __also strong__, ~~removed~~, `inline_code`.\n\n## Structure / 结构\n\n- Parent list\n  - Child item\n    1. Nested ordered item\n  - Another child\n- [x] Completed task\n- [ ] Read-only task\n\n> A continuous quotation\n> flows as one paragraph.\n\n## Table / 表格\n\n| Option | Meaning | Value | Note |\n| --- | :--- | ---: | --- |\n| **Measure** | Comfortable reading | 70ch | Demo only |\n| Long token | ' + 'table-token-'.repeat(30) + ' | 18px | No clipping |\n\n## Code / 代码\n\n```ts\nconst preserve = "  spaces and line breaks";\n  const longToken = "' + 'code-token-'.repeat(80) + '";\n```\n\n' + 'long-token-'.repeat(100) + '\n\n## Literal resources / 资源原样显示\n\n![**image**](https://remote.invalid/a.png)\n[**link**](javascript:window.reader080Xss=1)\n<svg onload="window.reader080Xss=2"></svg>\nhttps://remote.invalid/file_with_underscores\n\n## Finish / 结尾\n\n' + english + chinese;
   let app, shots = 0; const contexts = [], errors = [], external = [];
   const ready = p => p.waitForFunction(() => document.querySelector('#board-section').getAttribute('aria-busy') === 'false' && !document.querySelector('#refresh').disabled);
-  const listed = p => p.waitForFunction(() => document.querySelector('#documents-section').getAttribute('aria-busy') === 'false' && !document.querySelector('#documents-refresh').disabled);
+  const listed = p => p.waitForFunction(() => !document.querySelector('#documents-section').hidden && document.querySelector('#documents-section').getAttribute('aria-busy') === 'false' && !document.querySelector('#documents-refresh').disabled);
   const openLibrary = async p => { if (!await p.locator('.reader-library').evaluate(n => n.open)) await p.locator('.reader-library summary').click(); };
   const read = async (p, file) => { await openLibrary(p); await p.locator(`[data-document="${file}"]`).click(); await p.waitForFunction(() => document.querySelector('#documents-body').getAttribute('aria-busy') === 'false' && document.querySelector('#documents-body').textContent.length > 0); };
   const shot = async (p, name, fullPage = false) => { await p.screenshot({ path: path.join(output, `reader080-ui-${name}.png`), fullPage }); shots++; };
@@ -21,6 +21,7 @@ module.exports = async ({ browser, screenshots }) => {
     await fs.writeFile(path.join(root, 'docs', 'budget-demo.md'), '# Budget demo\n\n' + '|x|y|\n|---|---|\n' + '|*one*|~~two~~|\n'.repeat(1000));
     await fs.writeFile(path.join(root, 'docs', 'headings-demo.md'), '# Heading\n\n'.repeat(201));
     await fs.writeFile(path.join(root, 'docs', 'literal-demo.md'), '# Literal demo\n\n' + '['.repeat(60000) + '\n\n' + '_'.repeat(60000));
+    await fs.writeFile(path.join(root, 'docs', 'long-heading-demo.md'), '# a' + ' '.repeat(100000) + 'b');
     const before = await fs.readFile(path.join(root, 'STATE.json')); app = await startConsole({ workspace: root });
     for (const language of ['zh-CN', 'en-US']) {
       const context = await browser.newContext({ locale: language, viewport: { width: 1672, height: 1000 }, reducedMotion: 'reduce' }); contexts.push(context);
@@ -74,8 +75,15 @@ module.exports = async ({ browser, screenshots }) => {
       await p.locator('#documents-body pre').focus(); await p.keyboard.press('ArrowRight');
       await p.waitForFunction(() => document.querySelector('#documents-body pre').scrollLeft > 0);
       for (let i = 0; i < 2; i++) await p.locator('#documents-larger').click(); assert.equal(await p.locator('#documents-larger').isDisabled(), true); assert.equal(await p.locator('#documents-body').evaluate(n => getComputedStyle(n).fontSize), '20px');
+      await context.setOffline(true); await p.waitForFunction(() => document.querySelector('#documents-refresh').disabled);
+      assert.equal(await p.locator('#documents-larger').isDisabled(), true, 'Global offline unlock preserves the upper size bound');
+      await p.locator('#documents-larger').evaluate(n => n.click()); assert.equal(await p.locator('#documents-body').evaluate(n => getComputedStyle(n).fontSize), '20px');
+      await context.setOffline(false); await listed(p); assert.equal(await p.locator('#documents-larger').isDisabled(), true);
       assert.equal(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
       for (let i = 0; i < 4; i++) await p.locator('#documents-smaller').click(); assert.equal(await p.locator('#documents-smaller').isDisabled(), true);
+      await p.locator('#refresh').evaluate(n => n.click()); await ready(p);
+      assert.equal(await p.locator('#documents-smaller').isDisabled(), true, 'Global refresh unlock preserves the lower size bound');
+      await p.locator('#documents-smaller').evaluate(n => n.click()); assert.equal(await p.locator('#documents-body').evaluate(n => getComputedStyle(n).fontSize), '16px');
       for (let i = 0; i < 2; i++) await p.locator('#documents-larger').click();
       await p.locator('#documents-focus').click(); assert.equal(await p.locator('.reader-library summary').isVisible(), false); assert.equal(await p.locator('#documents-focus').getAttribute('aria-pressed'), 'true');
       await p.evaluate(() => scrollTo(0, 0)); await shot(p, `${language}-focus`);
@@ -86,7 +94,8 @@ module.exports = async ({ browser, screenshots }) => {
       await read(p, 'docs/budget-demo.md'); assert.equal(await p.locator('#documents-body pre').count(), 1, 'Global node budget falls back to literal text');
       await read(p, 'docs/headings-demo.md'); assert.equal(await p.locator('#documents-toc button').count(), 200, 'Heading cap stays at 200');
       await read(p, 'docs/literal-demo.md'); assert.ok((await p.locator('#documents-body').textContent()).includes('['.repeat(60000)), 'Adversarial unclosed markers remain literal');
-      await p.locator('.reader-back').click(); await ready(p); assert.equal(await p.locator('#local-console-info').isVisible(), true); assert.equal(await p.locator('#action-panel').isVisible(), true); assert.equal(await p.locator('.topbar').isVisible(), true);
+      await read(p, 'docs/long-heading-demo.md'); assert.ok((await p.locator('#documents-body h1').textContent()).endsWith('b'), 'A legal long heading cannot block the renderer');
+      await p.locator('.reader-back').click(); await p.waitForFunction(() => document.documentElement.dataset.view === 'board-section' && document.activeElement.hash === '#board-section'); await ready(p); assert.equal(await p.locator('#local-console-info').isVisible(), true); assert.equal(await p.locator('#action-panel').isVisible(), true); assert.equal(await p.locator('.topbar').isVisible(), true);
       assert.equal(await p.evaluate(() => document.activeElement.hash), '#board-section', 'Return focuses workbench navigation');
     }
     assert.deepEqual(errors, []); assert.deepEqual(external, []); assert.deepEqual(await fs.readFile(path.join(root, 'STATE.json')), before);
