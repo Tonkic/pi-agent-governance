@@ -328,9 +328,9 @@
     {
       "id": "reader-typography-080",
       "title": "文档阅读体验优化与0.8.0交付",
-      "description": "参考用户提供的排版文章与字体网页，正文优先、安静字体/行距/行宽、按需文件库和目录、安全Markdown技术文档排版。版本0.8.0仅同步源码与官方包，不创建Release/标签/市场/npm或安装。",
+      "description": "0.8.0已完成：正文优先18px/1.8/受控行宽，折叠库目录、字号/专注、安全技术Markdown及手机紧凑首屏。208测试/175图/10行为与82文件官方包分发通过，桌面/手机明暗实际目视；main a4ccdb3正常同步，实际CI39146170388 Linux/Windows全部步骤成功。用户确认无标签/Release/市场/npm/自动安装。",
       "blocker": "",
-      "stage": "doing",
+      "stage": "done",
       "taskId": "project-board-release",
       "criteria": [
         "长文正文优先，双语明暗与窄屏/键盘阅读舒适",
@@ -339,8 +339,8 @@
       ],
       "architectureImpact": "none",
       "gitTaskId": null,
-      "completedAt": null
+      "completedAt": "2026-10-18T16:51:25.614Z"
     }
   ],
-  "updatedAt": "2026-10-18T15:44:15.181Z"
+  "updatedAt": "2026-10-18T16:51:25.614Z"
 }
