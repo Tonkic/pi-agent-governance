@@ -313,6 +313,18 @@
       "gitTaskId": null
     },
     {
+      "id": "git-history-polish-084",
+      "title": "优化Git图交互性能与0.8.4交付",
+      "description": "删除受管网页；main固定居中、branch清楚、hover信息/点击dialog；GitHub参考与加载提速；本轮补丁不市场，后续大更新自动版本/检查后提交市场。",
+      "blocker": "",
+      "stage": "doing",
+      "taskId": "project-board-release",
+      "criteria": [],
+      "architectureImpact": "affects",
+      "gitTaskId": null,
+      "completedAt": null
+    },
+    {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
       "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
@@ -404,18 +416,7 @@
       "architectureImpact": "none",
       "gitTaskId": null,
       "completedAt": "2026-10-19T08:25:19.973Z"
-    },
-    {
-      "id": "git-history-polish-084",
-      "title": "优化Git图交互性能与0.8.4交付",
-      "description": "删除受管网页；main固定居中、branch清楚、hover信息/点击dialog；GitHub参考与加载提速；本轮补丁不市场，后续大更新自动版本/检查后提交市场。",
-      "blocker": "",
-      "stage": "todo",
-      "taskId": "project-board-release",
-      "criteria": [],
-      "architectureImpact": "affects",
-      "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-19T10:24:36.875Z"
+  "updatedAt": "2026-10-19T10:39:51.259Z"
 }

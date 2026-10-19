@@ -170,10 +170,13 @@ class Reader {
     }
     async commit(sha, detail = false) {
         const raw = await this.git(['cat-file', 'commit', sha], { max: limits.metadataBytes, partial: true });
-        const boundary = raw.text.indexOf('\n\n');
+        return this.parseCommit(sha, raw.text, detail, raw.overflow);
+    }
+    parseCommit(sha, text, detail = false, truncated = false) {
+        const boundary = text.indexOf('\n\n');
         if (boundary < 0)
             fail('commit-metadata-too-large');
-        const header = raw.text.slice(0, boundary).split('\n');
+        const header = text.slice(0, boundary).split('\n');
         const parents = header.filter(x => x.startsWith('parent ')).map(x => x.slice(7));
         if (parents.some(x => !oid.test(x)))
             fail('invalid-commit-metadata');
@@ -188,10 +191,59 @@ class Reader {
             return { name: match[1].slice(0, limits.identity), email: match[2].slice(0, limits.identity), at: date.toISOString() };
         }
         const author = identity('author'), committer = identity('committer');
-        const message = raw.text.slice(boundary + 2), newline = message.indexOf('\n');
+        const message = text.slice(boundary + 2), newline = message.indexOf('\n');
         const subject = (newline < 0 ? message : message.slice(0, newline)).slice(0, limits.subject);
         const result = { sha, parents, subject, authorName: author.name, authorEmail: author.email, authoredAt: author.at, committedAt: committer.at };
-        return detail ? { ...result, body: message.slice(0, limits.body), bodyTruncated: raw.overflow || message.length > limits.body } : result;
+        return detail ? { ...result, body: message.slice(0, limits.body), bodyTruncated: truncated || message.length > limits.body } : result;
+    }
+    async commits(ids) {
+        if (!ids.length)
+            return [];
+        const sizes = (await this.git(['cat-file', '--batch-check=%(objectname) %(objecttype) %(objectsize)'], { input: ids.join('\n') + '\n' })).text.trim().split('\n');
+        if (sizes.length !== ids.length)
+            fail('invalid-commit-metadata');
+        const lengths = sizes.map((line, i) => {
+            const match = line.match(/^([a-f0-9]+) commit (\d+)$/);
+            if (!match || match[1] !== ids[i] || !Number.isSafeInteger(Number(match[2])))
+                fail('invalid-commit-metadata');
+            return Number(match[2]);
+        });
+        const result = [];
+        for (let start = 0; start < ids.length;) {
+            // Oversized messages keep the bounded-prefix path; normal commits share one process.
+            if (lengths[start] > limits.metadataBytes) {
+                result.push(await this.commit(ids[start++]));
+                continue;
+            }
+            let end = start, bytes = 0;
+            while (end < ids.length && lengths[end] <= limits.metadataBytes && bytes + lengths[end] + 100 <= limits.outputBytes) {
+                bytes += lengths[end++] + 100;
+            }
+            const batch = await this.git(['cat-file', '--batch'], { input: ids.slice(start, end).join('\n') + '\n' });
+            let position = 0;
+            for (let i = start; i < end; i++) {
+                const newline = batch.buffer.indexOf(10, position);
+                if (newline < 0 || batch.buffer.subarray(position, newline).toString('ascii') !== `${ids[i]} commit ${lengths[i]}`)
+                    fail('invalid-commit-metadata');
+                const begin = newline + 1, finish = begin + lengths[i];
+                if (finish >= batch.buffer.length || batch.buffer[finish] !== 10)
+                    fail('invalid-commit-metadata');
+                result.push(this.parseCommit(ids[i], batch.buffer.subarray(begin, finish).toString('utf8')));
+                position = finish + 1;
+            }
+            if (position !== batch.buffer.length)
+                fail('invalid-commit-metadata');
+            start = end;
+        }
+        return result;
+    }
+    async mainline(snapshot) {
+        const main = ['refs/heads/main', 'refs/heads/master', 'refs/remotes/origin/main', 'refs/remotes/origin/master'].map(name => snapshot.refs.find(r => r.name === name)).find(Boolean);
+        const tip = main?.sha || snapshot.head;
+        const ids = tip ? (await this.git(['rev-list', '--first-parent', `--max-count=${limits.offset + 1}`, tip, '--'])).text.trim().split('\n').filter(Boolean) : [];
+        if (ids.some(id => !oid.test(id)))
+            fail('invalid-commit-metadata');
+        return { ref: main?.name || null, tip, commits: ids.slice(0, limits.offset), truncated: ids.length > limits.offset };
     }
     async reachable(sha, starts) {
         const type = await this.git(['cat-file', '-t', sha], { allowFailure: true });
@@ -280,7 +332,7 @@ async function gitHistory(root, payload) {
     if (repository.failed) {
         if (a.action !== 'list')
             fail('not-repository');
-        return { workspace, status: 'not-repository', revision: '', head: null, branch: null, shallow: false, refs: [], commits: [], offset: a.offset, nextOffset: null, limited: false };
+        return { workspace, status: 'not-repository', revision: '', head: null, branch: null, shallow: false, refs: [], commits: [], mainline: { ref: null, tip: null, commits: [], truncated: false }, offset: a.offset, nextOffset: null, limited: false };
     }
     if (canonical(repository.text.trim()) !== canonical(workspace))
         fail('repository-root-mismatch');
@@ -292,12 +344,11 @@ async function gitHistory(root, payload) {
         const ids = snapshot.starts.length ? (await reader.git(['rev-list', '--topo-order', `--skip=${a.offset}`, `--max-count=${a.limit + 1}`, ...snapshot.starts, '--'])).text.trim().split('\n').filter(Boolean) : [];
         if (ids.some(id => !oid.test(id)))
             fail('invalid-commit-metadata');
-        const commits = [];
-        for (const sha of ids.slice(0, a.limit))
-            commits.push(await reader.commit(sha));
+        const commits = await reader.commits(ids.slice(0, a.limit));
+        const mainline = await reader.mainline(snapshot);
         const more = ids.length > a.limit, next = a.offset + commits.length;
         result = { workspace, status: snapshot.starts.length ? 'ready' : 'empty', revision: snapshot.revision, head: snapshot.head,
-            branch: snapshot.branch, shallow: snapshot.shallow, refs: snapshot.refs, commits, offset: a.offset,
+            branch: snapshot.branch, shallow: snapshot.shallow, refs: snapshot.refs, commits, mainline, offset: a.offset,
             nextOffset: more && next <= limits.offset ? next : null, limited: more && next > limits.offset };
     }
     else {

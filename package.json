@@ -1,6 +1,6 @@
 {
   "name": "pi-agent-governance",
-  "version": "0.8.3",
+  "version": "0.8.4",
   "private": true,
   "description": "Shared repository governance core, MCP/Skills and PI-Desktop adapter",
   "scripts": {
@@ -11,6 +11,7 @@
     "check:behaviors": "npm run build && node scripts/check-behaviors.cjs",
     "check": "node scripts/checks.cjs",
     "check:plan": "node scripts/check-plan.cjs",
+    "update:plan": "node scripts/update-plan.cjs",
     "release:auto": "node scripts/release-auto.cjs",
     "mcp": "node build/mcp/server.js",
     "web": "node build/web/server.js",

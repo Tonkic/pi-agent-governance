@@ -1,9 +1,9 @@
 <!-- Generated from docs/ by scripts/build-docs.cjs. Do not edit. -->
 # GitHub 交付 / Checked delivery
 
-仅稳定主/次版本标签 `vX.Y.0`（X≥1，Y≥0）各自动创建一次 GitHub Release，例如 `v1.0.0`、`v1.1.0`、`v1.2.0`、`v2.0.0`。当前 **0.8.3** 已获准补丁升级、同步源码与官方安装包，不创建标签/Release；0.x、补丁非0、预发布、构建后缀或版本分量有前导零均不发布。标签必须与 package 版本一致；策略 `stable-major-minor-tag-only` 不变。
+GitHub Release仍仅由稳定主/次版本标签 `vX.Y.0`（X≥1，Y≥0）各创建一次；标签由人另行创建。当前 **0.8.4** 是Git交互/性能补丁，仅同步源码和官方包，不提交市场、不建标签/Release。0.x/非0补丁/预发布等不触发GitHub Release，策略 `stable-major-minor-tag-only` 不变。
 
-No npm publishing, automatic marketplace calls, installation or tag creation. Version bumps require explicit approval (0.8.3 is approved); a bump alone never authorizes a Release. This one-off 0.8.3 marketplace submission requires the separate user authorization and checked delivery described in [publishing](publishing.md). The user creates an approved release tag separately. Ordinary build/test does not push or publish.
+2026-10-19用户授权后续已批准产品更新自动识别语义影响并升版本：修复、交互及性能优化为patch，不提交市场；新增完整能力为minor，不兼容改动1.x起major、0.x为minor。大更新完整检查、官方包、main双OS CI通过后，由当前Agent自动核对市场版本与待审状态并提交一次，不再逐次询问；未知写入不重试，不覆盖待审/已用版本，不自动安装/npm/建标签。日常build/CI不调用市场，市场与GitHub Release分开。
 
 ## 开发与源码交付
 
@@ -11,6 +11,13 @@ No npm publishing, automatic marketplace calls, installation or tag creation. Ve
 2. 说明改动/影响/测试，按[开发范围](development.md#检查命令)执行定向检查。公共/高风险/未知改动与大版本运行一次 `npm run check -- --full`；它包含类型、一次构建、全部测试和一次行为/浏览器执行，不再串联旧入口。保留差异与敏感信息审查。
 3. 审查git_diff→git_commit→git_verify；登记当前HEAD并区分实际执行/内容等同复用。提交或无变化合并不机械重跑；冲突解决、并行组合或新增变化只补测影响部分。main最终CI按范围执行；纯完成记录只走轻量检查，不触发产品全套。复用必须核对实际内容、测试输入与环境，不能把旧SHA冒充新SHA执行。
 4. 插件内容变化执行官方i18n、PluginCheck/PluginPack和包来源核对；不因打包再重跑已通过的功能测试。已授权main集成/正常推送不由release:auto执行；不stash/reset/强推。只清理已合并且无活动工作的临时分支；共享STATE/AGENTS由协调Agent维护，原整体宿主/目视阻塞保留。
+
+## 更新级别与版本核对
+
+- 每次产品交付都更新package/lock/生成manifest，不再复用同版本装不同源码。纯记录不升版；测试范围按风险，不按patch大小缩小。
+- Agent先根据获批目标与行为/契约判级，提交使用 `fix:`/`perf:`/`feat:`/`!`；不按文件数或代码行数猜大小。`npm run update:plan -- --base FULL_SHA --head FULL_SHA --check`核对版本与市场要求，只读且不发布。
+- 非标准提交或混合改动不清晰时计划返回needs-assessment；Agent审查实际差异后以 `--impact patch|minor|major`登记理由并核对，不能假称脚本理解任意语义。0.x升级稳定1.0需明确稳定契约目标，不为了行数自动跳1.0。
+- 市场所需凭据仅用于通过门禁的大更新，缺凭据/已有待审/未知提交结果如实阻塞；不打印或上传令牌。先写一次性attempt记录，提交与只读结果核对各一次，区分approved和published。
 
 ```powershell
 # 只做本地/CI计划：检查已提交来源、工作区、远端URL、可达历史；不运行测试
