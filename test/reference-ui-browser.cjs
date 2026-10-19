@@ -50,8 +50,8 @@ module.exports = async ({ browser, screenshots }) => {
     await page.locator('#search-clear').click();
     assert.equal(snapshotRequests, requests, 'Search and summary reuse the loaded snapshots');
     await page.locator('#nav-behaviors').focus(); await page.keyboard.press('Enter');
-    assert.equal(await page.locator('#behavior-docs-dialog').isVisible(), true);
-    await page.locator('#behavior-docs-close').click();
+    await page.locator('#behaviors-section').waitFor({ state: 'visible' });
+    await page.locator('a[href="#board-section"]').click(); await page.locator('#board-section').waitFor({ state: 'visible' });
     // Existing safe project-view controls perform real navigation, never a Git command.
     await page.locator('[data-project-view="architecture"]').click();
     await page.locator('#architecture').waitFor({ state: 'visible' });

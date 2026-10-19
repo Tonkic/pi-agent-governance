@@ -1,0 +1,44 @@
+'use strict';
+// Independent read-only history presentation checks, executed serially by browser.cjs.
+module.exports = async ({ assert, historyPage, card }) => {
+    const doneIds = () => historyPage.locator('[data-stage="done"] [data-workitem]').evaluateAll(cards => cards.map(card => card.dataset.workitem));
+    const rowIds = () => historyPage.locator('#completed-history-body tr').evaluateAll(rows => rows.map(row => row.dataset.historyItem));
+    assert.deepEqual(await doneIds(), ['history-1', 'history-3', 'history-4', 'history-2', 'history-5']);
+    assert.equal(await historyPage.locator('[data-stage="done"] .column-count').textContent(), '9');
+    assert.match(await historyPage.locator('[data-stage="done"] .completed-summary').first().textContent(), /5.*9/);
+    await card(historyPage, 'history-1').click();
+    await historyPage.locator('#item-next').click();
+    assert.equal(await historyPage.locator('#item-record-id').textContent(), 'history-3', 'Card navigation follows displayed recent order');
+    await historyPage.keyboard.press('Escape');
+    await historyPage.locator('#completed-history-open').focus();
+    await historyPage.keyboard.press('Enter');
+    assert.equal(await historyPage.locator('#completed-history-search').evaluate(el => el === document.activeElement), true);
+    assert.deepEqual(await rowIds(), ['history-1', 'history-3', 'history-4', 'history-2', 'history-5', 'history-0', 'history-6', 'history-7', 'history-8']);
+    assert.match(await historyPage.locator('[data-history-item="history-5"] td').nth(1).textContent(), /2021.*历史记录日期/);
+    for (const id of ['history-6', 'history-7', 'history-8'])
+      assert.equal(await historyPage.locator(`[data-history-item="${id}"] td`).nth(1).textContent(), '未记录');
+    assert.equal(await historyPage.locator('#completed-history-body img').count(), 0, 'Titles render as text, never HTML');
+    assert.match(await historyPage.locator('[data-history-item="history-0"] td').nth(2).textContent(), /2.*criterion-0/);
+    assert.match(await historyPage.locator('[data-history-item="history-1"] td').nth(3).textContent(), /影响架构/);
+    assert.equal((await historyPage.locator('#completed-history-body').textContent()).includes('2030'), false);
+    await historyPage.locator('#completed-history-search').fill('criterion-0');
+    assert.deepEqual(await rowIds(), ['history-0']);
+    await historyPage.locator('[data-history-item="history-0"] button').click();
+    assert.equal(await historyPage.locator('dialog[open]').count(), 1, 'History closes before details open');
+    assert.equal(await historyPage.locator('#item-record-id').textContent(), 'history-0');
+    assert.equal(await historyPage.locator('#item-next').isDisabled(), true, 'Details navigation uses table search results');
+    await historyPage.keyboard.press('Escape');
+    assert.equal(await historyPage.locator('#completed-history-open').evaluate(el => el === document.activeElement), true);
+    await historyPage.locator('#board-search').fill('Completed fixture');
+    assert.equal((await doneIds()).length, 8, 'Global board search bypasses the recent-five limit');
+    assert.equal(await card(historyPage, 'history-8').getAttribute('draggable'), 'false');
+    await historyPage.locator('#completed-history-open').click();
+    assert.deepEqual(await rowIds(), ['history-0'], 'Table search is independent of global search');
+    await historyPage.locator('#completed-history-search').fill('');
+    await historyPage.locator('[data-history-item="history-0"] button').click();
+    await historyPage.locator('#item-next').click();
+    assert.equal(await historyPage.locator('#item-record-id').textContent(), 'history-6');
+    await historyPage.keyboard.press('Escape');
+    await historyPage.locator('#board-search').fill('');
+    await historyPage.locator('#completed-history-open').click();
+};

@@ -5,6 +5,7 @@ let projectSnapshot = null, editingItem = null, draggedItem = null;
 const dirtyForms = new Set();
 let launchContext = null, launchModels = [], launchSessions = [], launchModelsReady = false, launchLoading = false, launchRequest = 0;
 let workspaceEpoch = 0, loadRevision = 0, observedWorkspace = null;
+let behaviorRequest = 0, behaviorLoading = false, behaviorLoaded = false;
 const retainedDrafts = new Map();
 const impactLabel = (value) => value === 'affects' ? 'impactAffects' : value === 'none' ? 'impactNone' : 'impactUnassessed';
 function discardWarning(submitted) {
@@ -52,7 +53,7 @@ function notify(message, error = false) {
 function lock(value) {
     busy = value;
     document
-        .querySelectorAll('main button:not(#sidebar-toggle), main input, main textarea, #item-sheet button, #item-sheet input, #item-sheet textarea, #item-sheet select, .action-dialog button, .action-dialog input, .action-dialog textarea, .action-dialog select')
+        .querySelectorAll('main button, main input, main textarea, #item-sheet button, #item-sheet input, #item-sheet textarea, #item-sheet select, .action-dialog button, .action-dialog input, .action-dialog textarea, .action-dialog select')
         .forEach((el) => {
         el.disabled = value;
     });
@@ -94,6 +95,7 @@ function lock(value) {
     updateItemNavigation();
     updateDesignControls();
     window.dispatchEvent(new Event('documents-controls'));
+    updateBehaviorControls();
 }
 async function invoke(channel, payload = {}) {
     if (!window.pluginBridge?.invoke)
@@ -225,6 +227,7 @@ function renderGit(g) {
 async function load(checkSources = false) {
     const owner = workspaceEpoch, request = ++loadRevision;
     const current = () => owner === workspaceEpoch && request === loadRevision;
+    resetBehaviorDocuments();
     snapshot = null;
     resetDesign();
     $('initialize-workspace').hidden = true;
@@ -489,19 +492,22 @@ $('show-workflow').addEventListener('click', () => {
     graphView = 'workflow';
     renderProjectGraph();
 });
-const pageIds = ['board-section', 'architecture', 'git-section', 'documents-section'];
-// Presentation only: no persistence, route-dependent defaults or project writes.
-const sidebarToggle = $('sidebar-toggle');
-sidebarToggle.addEventListener('click', () => {
-    const collapsed = sidebarToggle.getAttribute('aria-expanded') === 'true';
-    sidebarToggle.setAttribute('aria-expanded', String(!collapsed));
-    document.documentElement.dataset.sidebar = collapsed ? 'collapsed' : 'expanded';
-    localizeNavigation(sidebarToggle);
-    window.dispatchEvent(new Event('resize'));
-});
-localizeNavigation(sidebarToggle);
-void localeReady.then(() => localizeNavigation(sidebarToggle));
-document.querySelectorAll('.workspace-nav a').forEach(link => link.addEventListener('click', () => {
+const pageIds = ['board-section', 'architecture', 'git-section', 'documents-section', 'behaviors-section'];
+localizeNavigation();
+void localeReady.then(() => { localizeNavigation(); highlightNavigation(); });
+const workspaceNavigation = $('workspace-navigation');
+workspaceNavigation.addEventListener('pointermove', () => { if (!workspaceNavigation.dataset.dismissed)
+    workspaceNavigation.dataset.hovered = 'true'; });
+workspaceNavigation.addEventListener('pointerleave', () => { delete workspaceNavigation.dataset.hovered; delete workspaceNavigation.dataset.dismissed; });
+workspaceNavigation.addEventListener('click', (event) => { if (event.detail) {
+    delete workspaceNavigation.dataset.hovered;
+    workspaceNavigation.dataset.dismissed = 'true';
+} });
+document.querySelectorAll('.workspace-nav a').forEach(link => link.addEventListener('click', (event) => {
+    if (event.detail) {
+        link.blur();
+        return;
+    }
     if (location.hash !== link.hash)
         window.addEventListener('hashchange', () => { if (location.hash === link.hash)
             link.focus({ preventScroll: true }); }, { once: true });
@@ -513,7 +519,7 @@ function highlightNavigation() {
     const pageTitles = {
         architecture: 'navArchitecture',
         'board-section': 'navBoard',
-        'git-section': 'navGit', 'documents-section': 'navDocuments'
+        'git-section': 'navGit', 'documents-section': 'navDocuments', 'behaviors-section': 'behaviorDocs'
     };
     text('page-title', t(pageTitles[active]));
     for (const id of pageIds)
@@ -531,6 +537,7 @@ function highlightNavigation() {
     });
     if (active === 'architecture')
         window.dispatchEvent(new Event('resize'));
+    updateBehaviorControls();
 }
 window.addEventListener('hashchange', () => {
     closeItemMenu(false);
@@ -538,7 +545,6 @@ window.addEventListener('hashchange', () => {
     highlightNavigation();
 });
 highlightNavigation();
-$('nav-behaviors').addEventListener('click', () => $('behavior-docs-open').click());
 // Read theme colors, never inject a contributed stylesheet into the panel.
 const themeColors = {
     '--ds-bg-primary': '--bg',
@@ -1736,20 +1742,39 @@ $('architecture-check').addEventListener('click', async () => {
             lock(false);
     }
 });
-$('behavior-docs-open').addEventListener('click', async () => {
-    if (busy || !snapshot)
-        return;
-    const owner = workspaceEpoch;
-    lock(true);
+function resetBehaviorDocuments() {
+    behaviorRequest++;
+    behaviorLoading = behaviorLoaded = false;
     $('behavior-docs-content').replaceChildren();
+    text('behavior-docs-status', '');
+    $('behaviors-section').setAttribute('aria-busy', 'false');
+}
+function updateBehaviorControls() {
+    $('behavior-refresh').disabled = busy || behaviorLoading || !snapshot || !navigator.onLine;
+    if (!navigator.onLine)
+        text('behavior-docs-status', t('offlineNotice'));
+    else if (!snapshot)
+        text('behavior-docs-status', t(busy ? 'waiting' : 'disconnected'));
+    if (location.hash === '#behaviors-section' && !busy && snapshot && !behaviorLoaded && !behaviorLoading && navigator.onLine)
+        void loadBehaviorDocuments();
+}
+async function loadBehaviorDocuments() {
+    if (busy || behaviorLoading || !snapshot || !navigator.onLine)
+        return;
+    const owner = workspaceEpoch, root = snapshot.workspace, request = ++behaviorRequest;
+    const owns = () => owner === workspaceEpoch && request === behaviorRequest;
+    const current = () => owns() && snapshot?.workspace === root;
+    behaviorLoading = behaviorLoaded = true;
+    $('behavior-refresh').disabled = true;
+    $('behaviors-section').setAttribute('aria-busy', 'true');
     text('behavior-docs-status', t('waiting'));
-    $('behavior-docs-dialog').showModal();
     try {
         const data = await invoke('governance.behaviors');
-        if (owner !== workspaceEpoch)
+        if (!current())
             return;
-        if (data.workspace !== snapshot.workspace)
+        if (data.workspace !== root)
             throw Error(t('switched'));
+        $('behavior-docs-content').replaceChildren();
         text('behavior-docs-status', data.behaviors.length ? '' : t('behaviorEmpty'));
         const statusKeys = { passed: 'behaviorPassed', unverified: 'behaviorUnverified', stale: 'behaviorStale', incomplete: 'behaviorIncomplete', failed: 'behaviorFailed', checking: 'behaviorChecking' };
         for (const item of data.behaviors) {
@@ -1780,19 +1805,18 @@ $('behavior-docs-open').addEventListener('click', async () => {
         }
     }
     catch (error) {
-        if (owner === workspaceEpoch)
+        if (current())
             text('behavior-docs-status', error.message);
     }
     finally {
-        if (owner === workspaceEpoch) {
-            lock(false);
-            if ($('behavior-docs-dialog').open)
-                $('behavior-docs-close').focus();
+        if (owns()) {
+            behaviorLoading = false;
+            $('behaviors-section').setAttribute('aria-busy', 'false');
+            updateBehaviorControls();
         }
     }
-});
-$('behavior-docs-close').addEventListener('click', () => { if (!busy)
-    $('behavior-docs-dialog').close(); });
+}
+$('behavior-refresh').addEventListener('click', () => { void loadBehaviorDocuments(); });
 document.querySelectorAll('[data-project-view]').forEach(button => {
     button.addEventListener('click', () => {
         const link = document.querySelector(`.workspace-nav a[href="#${button.dataset.projectView}"]`);
