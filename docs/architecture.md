@@ -18,6 +18,7 @@
 | `panel.ts` | UI动作白名单、确认与修订校验，不依赖PI | `panelInvoke` |
 | `project.ts`、`design.ts` | 看板/指纹与独立设计草案/追加基线 | `ProjectData.run`、`ArchitectureDesign.run` |
 | `git.ts` | worktree、范围与提交验证 | `GitGovernance.run` |
+| `git-history.ts`、`renderer/git-history.ts` | 有界本地历史/第一父提交文件差异，快照隔离及只读提交DAG/二级详情；与写入型Git登记分开 | `gitHistory`、`governance.gitHistory` |
 | `operations.ts` | 保留历史兼容实现；当前PI入口仅使用localSession身份过滤 | `localSession` |
 | `behaviors.ts` | 安全读取行为正文/关联/本机证据 | `behaviorSnapshot` |
 | `documents.ts`、`renderer/documents.ts` | 受限Markdown元数据/正文只读与安全DOM阅读、标题导航；无锁或初始化写入 | `documents`、`governance.documents` |

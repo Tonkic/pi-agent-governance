@@ -9,6 +9,7 @@ const fingerprint = (g, raw) =>
 async function panelInvoke(root: string, channel: string, payload: any = {}) {
   const g = new Governance(root);
   if (channel === 'governance.documents') return require('./documents').documents(root, payload);
+  if (channel === 'governance.gitHistory') return require('./git-history').gitHistory(root, payload);
   if (channel === 'governance.behaviors') return g.locked(() => behaviorSnapshot(g));
   if (channel === 'governance.design') {
     const { ArchitectureDesign } = require('./design');

@@ -5,7 +5,7 @@ import type { Socket } from 'node:net';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 const { panelInvoke } = require('./panel');
 const MAX_BODY = 1024 * 1024;
-const rendererFiles = ['i18n', 'graph-model', 'graph', 'design', 'panel', 'documents'];
+const rendererFiles = ['i18n', 'graph-model', 'graph', 'design', 'panel', 'documents', 'git-history'];
 export async function noLinks(file: string) {
   let current = path.resolve(file);
   for (;;) {
@@ -68,6 +68,7 @@ async function assets(assetRoot: string, webAssetsRoot: string) {
 function allowed(channel: string, payload: any) {
   const reads = ['governance.snapshot', 'governance.git', 'governance.project', 'governance.behaviors'];
   if (reads.includes(channel)) return true;
+  if (channel === 'governance.gitHistory') return ['list', 'detail', 'diff'].includes(payload.action);
   if (channel === 'governance.documents') return ['list', 'read'].includes(payload.action);
   if (channel === 'governance.workitem') return ['board_create', 'board_update', 'board_move'].includes(payload.args?.action);
   if (channel === 'governance.mutate') return ['init', 'start', 'progress'].includes(payload.args?.action);

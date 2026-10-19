@@ -5,6 +5,8 @@
 
 本次行为读取/内部文档链接修复不自行升版本；仓库0.8.3包经官方工具重新生成，不能与此前市场approved包混同。市场版本不覆盖/重提，不自动安装；修复源码、包哈希及验证见[修复记录](https://github.com/Tonkic/pi-agent-governance/blob/main/changes/active/project-board-release/behavior-reader-fixes.md)。
 
+后续只读Git提交图随仓库当前包提供，用户本轮未授权升版本或市场重提。插件已包含本地浏览器服务/界面，安装后无需下载本源码仓库；需PI-Desktop启用插件、授权并打开自己的项目。源码CLI命令仅是独立运行方式，不是插件启动的前置条件。
+
 ## 构建目标
 
 在干净、已构建且已审查的来源提交上执行：

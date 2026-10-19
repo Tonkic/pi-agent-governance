@@ -99,6 +99,7 @@ const { Governance } = require('../build/plugin/core');
     await require('./reader-typography-browser.cjs')({ browser, screenshots });
     await require('./unified-shell-browser.cjs')({ browser, screenshots });
     await require('./behaviors-page-browser.cjs')({ browser, screenshots });
+    await require('./git-history-browser.cjs')({ browser, screenshots });
     console.log(`PASS real local HTTP console: confirmations, shared updates, stale writes, design review, docs, session reload, disconnected state, bilingual responsive/themes; 7 screenshots: ${screenshots}`);
   } catch (error) {
     if (page) await page.screenshot({ path: path.join(screenshots, 'failure.png') }).catch(() => {});

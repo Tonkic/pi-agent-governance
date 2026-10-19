@@ -96,6 +96,7 @@ function lock(value) {
     updateDesignControls();
     window.dispatchEvent(new Event('documents-controls'));
     updateBehaviorControls();
+    window.dispatchEvent(new Event('git-history-context'));
 }
 async function invoke(channel, payload = {}) {
     if (!window.pluginBridge?.invoke)
@@ -228,6 +229,7 @@ async function load(checkSources = false) {
     const owner = workspaceEpoch, request = ++loadRevision;
     const current = () => owner === workspaceEpoch && request === loadRevision;
     resetBehaviorDocuments();
+    window.dispatchEvent(new Event('git-history-reset'));
     snapshot = null;
     resetDesign();
     $('initialize-workspace').hidden = true;

@@ -108,3 +108,15 @@ test('behavior read budget has a safe actionable message, not a write-confirmati
   assert.equal(response.status, 409); assert.equal(result.ok, false); assert.match(result.error, /500000/); assert.doesNotMatch(result.error, /Operation rejected|current revision/);
   assert.ok(!result.error.includes(f.root) && !result.error.includes(f.token) && !result.error.includes('src/example.ts'));
 });
+
+test('Git history HTTP is readonly, strictly allowlisted and works without project initialization', async t => {
+  const f = await fixture(t), { execFileSync } = require('node:child_process');
+  const git = (...args) => execFileSync('git', args, { cwd: f.root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  const absent = await f.value('governance.gitHistory', { action: 'list' }); assert.equal(absent.status, 'not-repository'); assert.deepEqual(await fs.readdir(f.root), []);
+  git('init', '-b', 'main');
+  const empty = await f.value('governance.gitHistory', { action: 'list' }); assert.equal(empty.status, 'empty'); assert.equal(empty.workspace, f.root);
+  for (const action of ['merge', 'checkout', 'fetch', 'reset', 'push', 'constructor']) assert.equal((await f.post('governance.gitHistory', { action })).status, 400);
+  for (const payload of [{ action: 'list', command: 'status' }, { action: 'detail', sha: '--all', revision: 'a'.repeat(64) }, { action: 'diff', sha: 'a'.repeat(40), path: '../secret', revision: empty.revision }, { action: 'list', offset: 1 }, { action: 'list', workspace: 'foreign' }]) assert.equal((await f.post('governance.gitHistory', payload)).status, 409);
+  assert.deepEqual(await fs.readdir(f.root), ['.git']);
+  assert.equal((await fetch(f.app.origin + '/runtime/renderer/git-history.js')).status, 200);
+});
