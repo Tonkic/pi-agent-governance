@@ -404,7 +404,18 @@
       "architectureImpact": "none",
       "gitTaskId": null,
       "completedAt": "2026-10-19T08:25:19.973Z"
+    },
+    {
+      "id": "git-history-polish-084",
+      "title": "优化Git图交互性能与0.8.4交付",
+      "description": "删除受管网页；main固定居中、branch清楚、hover信息/点击dialog；GitHub参考与加载提速；本轮补丁不市场，后续大更新自动版本/检查后提交市场。",
+      "blocker": "",
+      "stage": "todo",
+      "taskId": "project-board-release",
+      "criteria": [],
+      "architectureImpact": "affects",
+      "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-19T10:15:48.349Z"
+  "updatedAt": "2026-10-19T10:24:36.875Z"
 }
