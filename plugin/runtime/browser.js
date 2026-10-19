@@ -42,7 +42,7 @@ const http = __importStar(require("node:http"));
 const node_crypto_1 = require("node:crypto");
 const { panelInvoke } = require('./panel');
 const MAX_BODY = 1024 * 1024;
-const rendererFiles = ['i18n', 'graph-model', 'graph', 'design', 'panel', 'documents'];
+const rendererFiles = ['i18n', 'graph-model', 'graph', 'design', 'panel', 'documents', 'git-history'];
 async function noLinks(file) {
     let current = path.resolve(file);
     for (;;) {
@@ -96,6 +96,8 @@ function allowed(channel, payload) {
     const reads = ['governance.snapshot', 'governance.git', 'governance.project', 'governance.behaviors'];
     if (reads.includes(channel))
         return true;
+    if (channel === 'governance.gitHistory')
+        return ['list', 'detail', 'diff'].includes(payload.action);
     if (channel === 'governance.documents')
         return ['list', 'read'].includes(payload.action);
     if (channel === 'governance.workitem')

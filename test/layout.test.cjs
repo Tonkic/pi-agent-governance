@@ -6,8 +6,8 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const root = path.resolve(__dirname, '..');
 test('compiled JavaScript is separated and runtime exactly matches compiler output', () => {
-  const sources = ['main', 'core', 'git', 'panel', 'project', 'tool', 'operations', 'behaviors', 'documents', 'design', 'browser', 'browser-open', 'workbench', 'workbench-tool', 'entry-bridge'];
-  const renderer = ['i18n', 'graph-model', 'graph', 'panel', 'design', 'documents'];
+  const sources = ['main', 'core', 'git', 'panel', 'project', 'tool', 'operations', 'behaviors', 'documents', 'design', 'browser', 'browser-open', 'workbench', 'workbench-tool', 'entry-bridge', 'git-history'];
+  const renderer = ['i18n', 'graph-model', 'graph', 'panel', 'design', 'documents', 'git-history'];
   for (const file of [
     ...sources.map((f) => `${f}.js`),
     ...renderer.map((f) => `renderer/${f}.js`)
