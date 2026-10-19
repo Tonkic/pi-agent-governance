@@ -74,8 +74,8 @@ const { Governance } = require('../build/plugin/core');
     await page.waitForFunction(() => !document.querySelector('#design-confirm-dialog').open);
     await ready();
     assert.equal((await g.run({ action: 'architecture_design_snapshot' })).baseline.number, 1);
-    await page.locator('#behavior-docs-open').click(); await page.locator('#behavior-docs-status').waitFor();
-    assert.equal(await page.locator('#behavior-docs-dialog').isVisible(), true); await page.locator('#behavior-docs-close').click();
+    await page.locator('#nav-behaviors').click(); await page.locator('#behavior-docs-status').waitFor();
+    assert.equal(await page.locator('#behaviors-section').isVisible(), true); assert.equal(await page.locator('#behavior-docs-dialog').count(), 0);
     for (const width of [390, 768, 1280]) for (const mode of ['light', 'dark']) {
       await page.setViewportSize({ width, height: 900 }); await page.emulateMedia({ colorScheme: mode });
       await page.locator('a[href="#board-section"]').click();
@@ -98,6 +98,7 @@ const { Governance } = require('../build/plugin/core');
     await require('./documents-browser.cjs')({ browser, screenshots });
     await require('./reader-typography-browser.cjs')({ browser, screenshots });
     await require('./unified-shell-browser.cjs')({ browser, screenshots });
+    await require('./behaviors-page-browser.cjs')({ browser, screenshots });
     console.log(`PASS real local HTTP console: confirmations, shared updates, stale writes, design review, docs, session reload, disconnected state, bilingual responsive/themes; 7 screenshots: ${screenshots}`);
   } catch (error) {
     if (page) await page.screenshot({ path: path.join(screenshots, 'failure.png') }).catch(() => {});
