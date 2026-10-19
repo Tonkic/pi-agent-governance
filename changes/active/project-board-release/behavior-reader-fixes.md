@@ -19,8 +19,14 @@
 ## 检查与交付
 
 - 定向18项行为/HTTP测试与4图内部链接浏览器断言通过；覆盖真实LF/CRLF、原预算超限、路径/协议拒绝、标题/键盘/离线/迟到及无项目写入。
-- 最终完整检查、官方包与主仓库实际HTTP/浏览器入口验证结果待补充。
-- 不混淆修复后仓库0.8.3包与之前已提交市场包；原approved等待运营状态和历史包哈希保留，不重复市场请求。
+- 最终源码4012c7b9ffe6d563fae030f98cdfe38676bef7df，main f2dc852d5b0508357cd64b17640531062e2dd649树完全相同、正常推送且远端SHA一致。真实[CI39221478181](https://github.com/Tonkic/pi-agent-governance/actions/runs/39221478181)两OS全部步骤成功，各222测试/0失败/0跳过，原10行为及255截图断言通过。
+- 本地4ae23bc实际执行类型/一次构建及全222测试，其中221通过、1个新文档示例路径错误；8aafec4修正文档及重生成官方包，补测layout/distributions/behaviors共29项通过。4012c7b仅调整旧“所有链接为0”断言为精确合法内部链接/危险资源拒绝，未改产品；后续完整浏览器255图通过。已通过类型/其他单元明确复用，未冒充最终SHA重新全量运行；最终CI提供完整新SHA证据。
+- 原10行为/core98图在8aafec4通过；docs/web/managed/entry其余157图在4012c7b通过。原62行history测试逐字比较一致且串行执行。首轮完整检查的文档失败、direct-node分发测试缺npm_execpath、旧链接断言失败均已如实保留日志并定向补测，未弱化安全条件或重复宽泛审查。
+- 真实main构建前原始预算495877，LF487784、全CRLF498105；保留27个绑定文件和500000上限。实际HTTP行为读取200、7条说明可见，旧证据stale是正常的来源变化提示，不伪造绿色。
+- 实际main浏览器通过README“开发”链接键盘跳转docs/development.md，路由保持documents-section，无STATE/看板写入；[两张真实截图](behavior-reader-fixes-visual/index.html)已保存。短时服务已关闭；主仓库本地build已更新并严格证明HEAD=index=规范化生成内容，未重复本地产品全量。
+- 官方i18n0失败/12既有提示、PluginCheck/PluginPack通过（4条既有权限/转接入口警告）；修复版0.8.3包82文件938188字节，SHA256 `39f4acdc2f60dbafba75896da2525861c861e897ca39d5038996d5f60cf154de`，82条目均匹配来源。版本、manifest权限与依赖不变。
+- 通用包150800字节，SHA256 `82bc0233da8eb1405b1dae619bb8a67f9083acd40189dff43e395abf415608b2`，分发清单绑定4012c7b；release:auto --plan通过、publish:false/mutation:false。纯完成记录另走records快路，不重新生成包或跑产品全套。
+- 此前市场approved包来源1a03e65、平台SHA a5a9914d…、本地旧包SHA fdb5aaf8…保持历史记录；本轮不调用市场，未覆盖/重提。修复包不能冒充已更新市场版本。最终记录提交/CI由受管git_verify绑定实际结果。
 
 ## 限制
 
