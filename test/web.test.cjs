@@ -8,7 +8,7 @@ const http = require('node:http');
 const { startConsole, workspacePath } = require('../build/web/server');
 const { Governance } = require('../build/plugin/core');
 async function fixture(t) {
-  const root = await fs.mkdtemp(path.join(process.env.PI_SCRATCH_DIR || os.tmpdir(), 'console-'));
+  const root = require('node:fs').realpathSync.native(await fs.mkdtemp(path.join(process.env.PI_SCRATCH_DIR || os.tmpdir(), 'console-')));
   const app = await startConsole({ workspace: root });
   t.after(async () => { await app.close(); await fs.rm(root, { recursive: true, force: true, maxRetries: 5 }); });
   const token = app.url.split('#')[1];

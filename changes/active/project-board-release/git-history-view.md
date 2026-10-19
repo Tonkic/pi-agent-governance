@@ -32,7 +32,10 @@
 - 官方0.8.3：1043231字节，SHA256 `eb6a0f543bb34667f62e20ccdb03a54124971a06a34c2295d39174457429cc20`，官方工具真实生成。
 - 通用MCP/Skills：165495字节，SHA256 `2caf06655b48c4a60876fe0718b9afa384ee100cf7a3b2a815449a141ad04bcf`；asset-manifest绑定来源010d630。
 - 被替换reader修复包 `39f4acdc2f60dbafba75896da2525861c861e897ca39d5038996d5f60cf154de` 可从历史dd8d518取回；当前包也不是此前市场approved包。
-- main集成、实际仓库探测、正常推送及双OS CI：待实际执行后更新本记录，不提前记成功。
+- 首次main `303edaa98ccb4ffe7a0c5555d8367c916df9aed8` 文件树与协调记录提交7f52586一致；与已全测010d630仅STATE/证据/截图不同。正常push且远端SHA核对。
+- 真实main HTTP/浏览器探测：100提交、HEAD、详情、README文本diff、返回成功，0页面错误，STATE/看板字节不变；[实际图](git-history-visual/actual-graph.png)和[详情](git-history-visual/actual-detail.png)保存，短测试服务已关闭。
+- 首次CI39233866988：Linux全通过；Windows249/250，新增HTTP夹具临时根含RUNNER~1短名，未满足真实路径契约。未把失败记为通过。
+- 本机用真实8.3短名复现同一409，两个新夹具改native realpath；短名环境6HTTP＋Git24截图回归转绿。生产源码/包未变，不重复本地全量；最终修正main/双OS CI待实际结果。
 
 ## 边界
 
