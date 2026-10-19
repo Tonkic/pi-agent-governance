@@ -46,7 +46,7 @@ npm run check -- --scope reader  # 示例：文档阅读局部改动
 npm run check -- --full          # 公共改动/完整交付：一次构建与完整检查
 ```
 
-浏览器与行为检查见 [开发](docs/development.md)。构建不推送、发布或安装；1.x起稳定 `vX.Y.0` 主/次版本各发布一次GitHub Release，不自行升版本、建标签、发布npm或提交市场。
+浏览器与行为检查见 [开发](docs/development.md)。构建不推送、发布或安装；Agent按已批准产品变化评估升版，patch不市场，大更新检查后提交一次，见[交付规则](docs/releasing.md)。1.x起稳定 `vX.Y.0` 主/次版本各发布一次GitHub Release，标签仍由人创建，不自动发布npm或安装。
 
 ## 必要限制
 
