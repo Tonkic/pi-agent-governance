@@ -10,8 +10,12 @@ async function panelInvoke(root, channel, payload = {}) {
     const g = new Governance(root);
     if (channel === 'governance.documents')
         return require('./documents').documents(root, payload);
-    if (channel === 'governance.gitHistory')
-        return require('./git-history').gitHistory(root, payload);
+    if (channel === 'governance.gitHistory') {
+        if (payload?.workspace !== undefined && payload.workspace !== g.root)
+            throw Error('Git history workspace changed');
+        const { workspace, ...request } = payload || {};
+        return require('./git-history').gitHistory(root, request);
+    }
     if (channel === 'governance.behaviors')
         return g.locked(() => behaviorSnapshot(g));
     if (channel === 'governance.design') {

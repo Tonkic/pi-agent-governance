@@ -115,6 +115,7 @@ test('Git history HTTP is readonly, strictly allowlisted and works without proje
   const absent = await f.value('governance.gitHistory', { action: 'list' }); assert.equal(absent.status, 'not-repository'); assert.deepEqual(await fs.readdir(f.root), []);
   git('init', '-b', 'main');
   const empty = await f.value('governance.gitHistory', { action: 'list' }); assert.equal(empty.status, 'empty'); assert.equal(empty.workspace, f.root);
+  assert.equal((await f.value('governance.gitHistory', { action: 'list', workspace: f.root })).revision, empty.revision);
   for (const action of ['merge', 'checkout', 'fetch', 'reset', 'push', 'constructor']) assert.equal((await f.post('governance.gitHistory', { action })).status, 400);
   for (const payload of [{ action: 'list', command: 'status' }, { action: 'detail', sha: '--all', revision: 'a'.repeat(64) }, { action: 'diff', sha: 'a'.repeat(40), path: '../secret', revision: empty.revision }, { action: 'list', offset: 1 }, { action: 'list', workspace: 'foreign' }]) assert.equal((await f.post('governance.gitHistory', payload)).status, 409);
   assert.deepEqual(await fs.readdir(f.root), ['.git']);

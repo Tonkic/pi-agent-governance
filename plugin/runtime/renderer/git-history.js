@@ -384,7 +384,7 @@
                 throw Error('Invalid patch');
             remember(patches, key, r, 8);
             notice.textContent = r.kind === 'text' ? r.truncated ? w().truncated : '' : w()[r.kind === 'too-large' ? 'tooLarge' : r.kind];
-            const lines = r.patch.split('\n');
+            const lines = r.patch ? r.patch.split('\n') : [];
             if (lines.length > 4000)
                 pre.textContent = r.patch;
             else

@@ -142,9 +142,30 @@ class Reader {
         if (branch && branch.length > limits.pathBytes)
             fail('invalid-ref-metadata');
         const shallow = (await this.git(['rev-parse', '--is-shallow-repository'])).text.trim() === 'true';
+        let shallowBoundary = [];
+        if (shallow) {
+            const file = (await this.git(['rev-parse', '--path-format=absolute', '--git-path', 'shallow'])).text.replace(/\r?\n$/, '');
+            if (!path.isAbsolute(file) || canonical(fs.realpathSync.native(file)) !== canonical(file) || fs.lstatSync(file).isSymbolicLink())
+                fail('invalid-shallow-boundary');
+            const fd = fs.openSync(file, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW || 0));
+            try {
+                const stat = fs.fstatSync(fd);
+                if (!stat.isFile() || stat.size > limits.metadataBytes)
+                    fail('invalid-shallow-boundary');
+                const bytes = Buffer.alloc(limits.metadataBytes + 1), length = fs.readSync(fd, bytes, 0, bytes.length, 0);
+                if (length > limits.metadataBytes || !(0, node_buffer_1.isUtf8)(bytes.subarray(0, length)))
+                    fail('invalid-shallow-boundary');
+                shallowBoundary = bytes.subarray(0, length).toString('utf8').trim().split(/\r?\n/).sort();
+                if (!shallowBoundary.length || shallowBoundary.some(id => !oid.test(id)))
+                    fail('invalid-shallow-boundary');
+            }
+            finally {
+                fs.closeSync(fd);
+            }
+        }
         if (head)
             starts.add(head);
-        const revision = crypto.createHash('sha256').update(JSON.stringify({ refState: refData.text, head, branch, shallow })).digest('hex');
+        const revision = crypto.createHash('sha256').update(JSON.stringify({ refState: refData.text, head, branch, shallow, shallowBoundary })).digest('hex');
         return { refs, head, branch, shallow, revision, starts: head ? [head, ...[...starts].filter(id => id !== head)] : [...starts] };
     }
     async commit(sha, detail = false) {

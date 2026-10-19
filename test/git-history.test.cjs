@@ -392,3 +392,16 @@ test('missing objects fail with bounded public errors, not raw stderr or lazy fe
   const { revision } = await list(root);
   await assert.rejects(diff(root, sha, 'missing.txt', revision), errorCode('missing-object'));
 });
+
+test('shallow boundary changes invalidate revisions between and during reads', async t => {
+  const root = repo(t), first = commit(root, { 'a.txt': 'one\n' }), second = commit(root, { 'a.txt': 'two\n' }, [first]), third = commit(root, { 'a.txt': 'three\n' }, [second]);
+  const shallowFile = path.join(root, '.git', 'shallow'); fs.writeFileSync(shallowFile, third + '\n');
+  const before = await list(root); assert.equal(before.shallow, true); assert.equal(before.commits.length, 1);
+  fs.writeFileSync(shallowFile, second + '\n');
+  await assert.rejects(list(root, { offset: 1, revision: before.revision }), errorCode('stale-revision'));
+  const fresh = await list(root); assert.equal(fresh.shallow, true); assert.equal(fresh.commits.length, 2); assert.notEqual(fresh.revision, before.revision);
+  const original = child.execFile; let mutated = false;
+  child.execFile = function (command, args, ...rest) { if (!mutated && args.includes('cat-file')) { mutated = true; fs.writeFileSync(shallowFile, first + '\n'); } return original.call(this, command, args, ...rest); };
+  t.after(() => { child.execFile = original; });
+  await assert.rejects(list(root), errorCode('stale-revision')); assert.equal(mutated, true);
+});

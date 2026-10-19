@@ -174,7 +174,7 @@
       if (!current(owner, project, gen) || request !== diffRequest || detail.hidden || selected !== sha || data.revision !== revision) return;
       if (r.workspace !== project || r.revision !== revision || r.sha !== sha || r.path !== file || !['text', 'binary', 'restricted', 'too-large'].includes(r.kind) || typeof r.patch !== 'string' || r.patch.length > 131072) throw Error('Invalid patch');
       remember(patches, key, r, 8); notice.textContent = r.kind === 'text' ? r.truncated ? w().truncated : '' : w()[r.kind === 'too-large' ? 'tooLarge' : r.kind];
-      const lines = r.patch.split('\n');
+      const lines = r.patch ? r.patch.split('\n') : [];
       if (lines.length > 4000) pre.textContent = r.patch;
       else for (const line of lines) pre.append(make('span', line + '\n', line.startsWith('+') && !line.startsWith('+++') ? 'patch-add' : line.startsWith('-') && !line.startsWith('---') ? 'patch-delete' : line.startsWith('@@') ? 'patch-hunk' : ''));
     } catch { if (current(owner, project, gen) && request === diffRequest && selected === sha) notice.textContent = w().error; }
