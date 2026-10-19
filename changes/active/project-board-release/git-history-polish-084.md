@@ -19,8 +19,14 @@
 - 新性能/主线2回归实际先red：旧110进程及缺失mainline；修复后后端29/29通过，原路径/注入/无写入/浅克隆/环境隔离/SHA256等保留。
 - update-plan新增7/7通过：patch不市场、feature/breaking需市场、记录不升、未知待评估、严格版本/SHA、CLI不写入。脚本只读计划，Agent按真实目标补判，非任意语义自动理解。
 
-## 进度
+## 验证与交付
 
-- 协调工作区git-history-polish-084、独立界面worker git-history-polish-ui，严格分文件，不并发写同一路径。
-- 后端构建与29测试、更新计划7测试已执行；UI集成/真实浏览器/完整检查/官方包/main CI待完成后更新本记录。
-- 原总体人工目视、安装宿主E2E、0.8.3市场approved待运营发布与暂停桌面保留，不整体close，不安装/标签/Release/npm。
+- 界面worker `cd02f88da8dbd7917e07cddb8b6bada7c68e194e` 经受管审查/提交/验证后无冲突集成；main中轴使用新mainline，侧线保留真实父边/当前引用身份。节点44px命中区、零额外查询tooltip、原生showModal详情/关闭/Escape/背景/回焦滚动通过；无受管UI/自动governance.git。
+- 集成源码 `6f614441086c77a8e17beafb79df8e85b58c5e86` 实际执行一次 `npm run check -- --full --ci`：259测试、0失败/跳过、279截图、原10行为全部通过，包含真实LF/CRLF的500000字符硬预算回归。
+- 官方PluginCheck/PluginPack：0.8.4、86文件、1065669字节，SHA256 `766609afd0f19cb12cf2b0d434b9704947caad03b523a910b0ffdc2908125bae`；i18n 0失败/12既有review，官方4既有权限警告，无新增权限或依赖。
+- 最终产品/包提交 `1fc8bff0a8d87c8f60e9affc6494b2565e16d646`，仅比已测集成增加根README规则修正及官方包替换。build:distributions核对全部包条目/版本/来源通过；通用包168707字节，SHA256 `7d96b87635afaed2d76d6ceddc75b7e95bb0562ec4b8d3418cd6e09bf217e7a2`。旧0.8.3包由main历史d9a3cc6可取回。
+- update:plan按实际已批准交互/性能修复 `--impact patch --check`：0.8.3→0.8.4、marketplaceRequired:false、mutation:false。只读release计划publish:false/mutation:false。没有市场/凭据访问、安装/npm/标签/Release。
+- main `1a09abf7688e2b9269efdd5497856c4e28ee84f3` 与最终产品提交树相同，正常推送/完整远端SHA已核实；[CI39240834305](https://github.com/Tonkic/pi-agent-governance/actions/runs/39240834305) Linux170秒/Windows520秒全部步骤成功，各259测试/0失败/0跳过、279截图、原10行为通过。
+- 真实项目整页Git入口实测：集成代码429ms、main代码421ms，100提交/一次list、hover零额外调用、点击原生modal/关闭回焦、无受管调用/页面错误、STATE与board逐字节不变。首次探针把图最上节点误当HEAD，已改为核对真实HEAD节点与main轴；未改产品排序。
+- [截图对照](git-history-polish-084-visual/index.html) 保留真实main图/tooltip/dialog与手机/英文暗色fixture。BrowserPreview已请求，截图仍报当前会话未前台；不宣称人工目视、安装宿主或物理触屏通过。
+- 当前后续仅STATE/看板/本证据与截图记录，复用上述等同产品检查，不冒称记录SHA重跑全量；记录快路通过后同步main。原总体安装宿主E2E、人工目视、0.8.3市场approved待运营及暂停桌面保留，不整体close。
