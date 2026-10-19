@@ -8,7 +8,7 @@ const unitFiles = [
   'build/test/git.test.js', 'build/test/governance.test.js', 'build/test/panel.test.js', 'build/test/project.test.js', 'build/test/operations.test.js',
   'test/release.test.cjs', 'test/layout.test.cjs', 'test/behaviors.test.cjs', 'test/design.test.cjs', 'test/mcp.test.cjs', 'test/distributions.test.cjs',
   'test/web.test.cjs', 'test/host-context.test.cjs', 'test/workbench.test.cjs', 'test/unified-browser.test.cjs', 'test/entry.test.cjs', 'test/documents.test.cjs', 'test/documents-http.test.cjs', 'test/checks.test.cjs',
-  'test/git-history.test.cjs'
+  'test/git-history.test.cjs', 'test/update-plan.test.cjs'
 ];
 function commands(plan) {
   const groups = plan.scope.split(','), result = [];

@@ -192,43 +192,6 @@ function render(data) {
   edited = false;
   renderWorkbenchSummary(true);
 }
-function renderGit(g) {
-  if (snapshot && g.workspace !== snapshot.workspace) throw Error(t('switched'));
-  text(
-    'git-summary',
-    t('gitSummary', (g.head || '').slice(0, 12), g.dirty ? t('dirty') : t('clean'), g.tasks.length)
-  );
-  $('git-tasks').replaceChildren();
-  if (!g.tasks.length) {
-    text('git-tasks', t('noGitTasks'));
-    return;
-  }
-  for (const task of g.tasks) {
-    const card = document.createElement('article');
-    card.className = 'git-task';
-    const rows = [
-      ['h3', `${task.id} · ${task.role === 'coordinator' ? t('coordinator') : t('worker')}`],
-      ['p', task.goal],
-      [
-        'p',
-        `${labels[task.status] || task.status} · ${task.dirty ? t('dirty') : t('clean')} · ${task.verificationValid ? t('valid') : t('invalid')}`
-      ],
-      ['p', t('branch', task.branch)],
-      ['p', task.worktree, 'path'],
-      ['p', t('scopeValue', (task.allowedPaths || []).join(' / '))]
-    ];
-    if (task.error) rows[2] = ['p', t('unavailable')];
-    if (task.error) rows.push(['p', t('readFailed', task.error)]);
-    if (task.pendingMerge || task.mergeInProgress) rows.push(['p', t('incompleteMerge')]);
-    for (const [tag, value, cls] of rows) {
-      const el = document.createElement(tag);
-      el.textContent = value || '';
-      if (cls) el.className = cls;
-      card.append(el);
-    }
-    $('git-tasks').append(card);
-  }
-}
 async function load(checkSources = false) {
   const owner = workspaceEpoch, request = ++loadRevision;
   const current = () => owner === workspaceEpoch && request === loadRevision;
@@ -258,8 +221,6 @@ async function load(checkSources = false) {
   $('board-section').setAttribute('aria-busy', 'true');
   $('board-columns').replaceChildren();
   text('board-status', t('boardLoading'));
-  text('git-summary', t('gitLoading'));
-  $('git-tasks').replaceChildren();
   notify(t('workspaceLoading'));
   try {
     const data = await invoke('governance.snapshot');
@@ -291,14 +252,6 @@ async function load(checkSources = false) {
   if (!current()) return;
   renderProjectGraph();
   if (busy) lock(true);
-  try {
-    const data = await invoke('governance.git');
-    if (!current()) return;
-    renderGit(data);
-  } catch (error) {
-    if (!current()) return;
-    text('git-summary', t('gitError', error.message));
-  }
   if (current()) {
     $('board-section').setAttribute('aria-busy', 'false');
     renderWorkbenchSummary();

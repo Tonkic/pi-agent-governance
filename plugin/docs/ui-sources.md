@@ -31,3 +31,10 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## Git history graph (0.8.4)
+
+- [Gitgraph.js branch ordering](https://github.com/nicoespeon/gitgraph.js/blob/ed72d11d1e50ccd208326d9ded551f719cfa2b3a/packages/gitgraph-core/src/branches-order.ts), MIT: reference for an explicit preferred-branch order and consistent branch colors; its SVG hover approach was inspected too.
+- [VS Code Git Graph](https://github.com/mhutchie/vscode-git-graph/blob/d7f43f429a9e024e896bac9fc65fdc530935c812/web/graph.ts), MIT: reference for parent-derived lanes and colored branch paths.
+- Inspected GitHub source and license metadata at the pinned commits. This implementation borrows concepts, not copied code or assets; neither library is bundled. No new dependencies, remote resources, or React/VS Code runtime.
+- Local graph uses real commit parents and a snapshot-bound first-parent main axis; nodes reveal safe text on hover/focus and open a native modal on activation. The main axis stays centered; no history or branch names are invented.

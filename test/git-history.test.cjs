@@ -405,3 +405,25 @@ test('shallow boundary changes invalidate revisions between and during reads', a
   t.after(() => { child.execFile = original; });
   await assert.rejects(list(root), errorCode('stale-revision')); assert.equal(mutated, true);
 });
+
+test('list batches 100 commit objects instead of launching one process per commit', async t => {
+  const root = repo(t), input = [];
+  for (let i = 0; i < 100; i++) { const message = `Commit ${i} / 中文\n\nbody ${i}\n`; input.push(`commit refs/heads/main\ncommitter Name <test@example.test> ${1700000000 + i} +0000\ndata ${Buffer.byteLength(message)}\n${message}\n`); }
+  git(root, ['fast-import', '--quiet'], input.join('') + 'done\n');
+  const original = child.execFile, calls = []; child.execFile = function (command, args, ...rest) { calls.push(args); return original.call(this, command, args, ...rest); };
+  t.after(() => { child.execFile = original; });
+  const result = await list(root); assert.equal(result.commits.length, 100); assert.equal(result.commits[0].subject, 'Commit 99 / 中文');
+  assert.ok(calls.length <= 16, `100-commit read launched ${calls.length} processes`);
+  assert.ok(calls.some(a => a.includes('--batch')), 'bounded object batch is used');
+  assert.equal(result.mainline.ref, 'refs/heads/main'); assert.equal(result.mainline.tip, result.head);
+  assert.deepEqual(result.mainline.commits, result.commits.map(c => c.sha)); assert.equal(result.mainline.truncated, false);
+});
+
+test('mainline uses actual main first-parent chain, not current branch or dates', async t => {
+  const { root, base, merge } = graph(t); git(root, ['checkout', '-q', '-b', 'feature/current']); const feature = commit(root, { 'side.txt': 'after\n' }, [merge]);
+  const result = await list(root); assert.equal(result.head, feature); assert.equal(result.mainline.ref, 'refs/heads/main'); assert.equal(result.mainline.tip, merge);
+  assert.equal(result.mainline.commits[0], merge); assert.equal(result.mainline.commits.at(-1), base); assert.ok(!result.mainline.commits.includes(feature));
+  const paged = await list(root, { limit: 1 }); assert.deepEqual(paged.mainline, result.mainline);
+  git(root, ['branch', '-m', 'main', 'master']); assert.equal((await list(root)).mainline.ref, 'refs/heads/master');
+  git(root, ['branch', '-D', 'master']); const fallback = await list(root); assert.equal(fallback.mainline.ref, null); assert.equal(fallback.mainline.tip, feature);
+});

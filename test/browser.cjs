@@ -136,14 +136,14 @@ const models = {
         await new Promise(resolve => { releaseSnapshot = resolve; });
         return { ok: true, result };
       }
-      if (channel === 'governance.git' && requestRoot === delayedGitRoot) {
+      if (channel === 'governance.project' && requestRoot === delayedGitRoot) {
         let response;
         try { response = { ok: true, result: await panelInvoke(requestRoot, channel, payload) }; }
         catch (error) { response = { ok: false, error: error.message }; }
         await new Promise(resolve => { releaseDelayedGit = resolve; });
         return response;
       }
-      if (channel === 'governance.git' && holdGit)
+      if (channel === 'governance.project' && holdGit)
         await new Promise((resolve) => {
           releaseGit = resolve;
         });
@@ -1022,11 +1022,9 @@ const models = {
     holdGit = true;
     try {
       await page.locator('#refresh').click();
-      await page.waitForFunction(
-        () => document.querySelectorAll('.architecture-node').length === 2,
-        null,
-        { timeout: 2000 }
-      );
+      // The managed Git query is gone; hold the still-required project snapshot instead.
+      for (let tries = 0; !releaseGit && tries < 200; tries++) await page.waitForTimeout(10);
+      assert.equal(typeof releaseGit, 'function', 'Refresh reached delayed project snapshot');
       assert.equal(await page.locator('#board-new').isDisabled(), true);
       assert.equal(await page.locator('[data-workitem] button:enabled').count(), 0);
     } finally {
@@ -1034,6 +1032,7 @@ const models = {
       releaseGit?.();
     }
     await settled(page);
+    assert.equal(await page.locator('.architecture-node').count(), 2);
     await navigate(page, 'board-section');
     const english = await require('./history-themes-browser.cjs').seedWorkbench({ mutate, refresh, page, makePage, confirm, assert, card });
     shots += await require('./history-themes-browser.cjs').workbench({ assert, page, english, refresh, navigate, chooseNew, card, first, close, path, output, browser, url, sendAppearance });
@@ -1050,7 +1049,7 @@ const models = {
     await savePanel.locator('#workitem-save').click();
     await savePanel.locator('#confirm-dialog button[value="confirm"]').click();
     for (let tries = 0; !releaseDelayedGit && tries < 200; tries++) await savePanel.waitForTimeout(10);
-    assert.equal(typeof releaseDelayedGit, 'function', 'A save reload reached delayed Git');
+    assert.equal(typeof releaseDelayedGit, 'function', 'A save reload reached delayed project snapshot');
     root = roots[1];
     await savePanel.evaluate(path => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root);
     await settled(savePanel);

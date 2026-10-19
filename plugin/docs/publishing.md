@@ -1,11 +1,11 @@
 <!-- Generated from docs/ by scripts/build-docs.cjs. Do not edit. -->
 # 产物与安装 / Distributions
 
-支持**通用MCP＋Skills＋本地Web控制台包**及**PI-Desktop官方piplug**，附Codex、Claude Code、Pi配置示例，不是各CLI原生插件。当前 **0.8.3** 获准悬浮导航与行为文档一级页、源码与安装包交付，并单次同步插件市场；不创建标签/Release，不发布npm或自动安装。1.x稳定主/次版本vX.Y.0规则不变，见[交付规则](releasing.md)。
+支持**通用MCP＋Skills＋本地Web控制台包**及**PI-Desktop官方piplug**，附Codex、Claude Code、Pi配置示例。当前 **0.8.4** 修正Git图交互与性能，升补丁、同步源码和官方包，不提交市场；后续大更新自动版本评估及检查后市场提交见[交付规则](releasing.md)。不自动安装/npm/建标签，GitHub Release规则不变。
 
-本次行为读取/内部文档链接修复不自行升版本；仓库0.8.3包经官方工具重新生成，不能与此前市场approved包混同。市场版本不覆盖/重提，不自动安装；修复源码、包哈希及验证见[修复记录](https://github.com/Tonkic/pi-agent-governance/blob/main/changes/active/project-board-release/behavior-reader-fixes.md)。
+此前0.8.3市场包已approved待运营发布，与之后仓库Git/阅读修复包不是同一来源，保留[历史交付记录](https://github.com/Tonkic/pi-agent-governance/blob/main/changes/active/project-board-release/hover-behaviors-083.md)。不覆盖或重提已使用版本，当前补丁不访问市场；每次产品交付使用新版本。
 
-后续只读Git提交图随仓库当前包提供，用户本轮未授权升版本或市场重提。插件已包含本地浏览器服务/界面，安装后无需下载本源码仓库；需PI-Desktop启用插件、授权并打开自己的项目。源码CLI命令仅是独立运行方式，不是插件启动的前置条件。
+插件已包含本地浏览器服务/界面，安装后无需下载本源码仓库；需PI-Desktop启用插件、授权并打开自己的项目。源码CLI命令仅是独立运行方式，不是插件启动前提。
 
 ## 构建目标
 
@@ -56,7 +56,7 @@ Community ID：`io.github.tonkic.agent-governance`。源码仓库：`Tonkic/pi-a
 ## 安装与更新边界
 
 - 使用 PI-Desktop 插件页自行安装/更新并确认权限，不自动安装。旧 ID `pi.agent-governance` 不跨 ID 更新：先备份 STATE/`.governance/`，停用旧实例再安装新 ID，不删除项目数据。
-- 市场与GitHub是不同通道，日常构建和CI不调用市场。本次用户单独批准0.8.3：源码、官方包和实际main CI通过后，核实版本/待审状态并提交一次，记录真实结果；未知写入不重试、不覆盖待审版本。长期规则不变。已有凭据只供本次授权传输，不打印、复制或上传。
+- 市场与GitHub不同通道，日常构建和CI不调用市场。用户现已授权未来大更新由Agent按语义判级升版，在源码/官方包/main完整CI通过后核对版本/待审并提交一次；patch不提交。记录真实结果，未知写入不重试，不覆盖待审/已用版本。凭据仅供合规提交，不打印、复制或上传，缺失则如实阻塞。
 - shell.openExternal仅打开生成本地URL。用户本次明确批准ui.panel/ui.view，仅用于Alt+空格/右侧插件视图的共用轻量入口（状态、刷新、显式打开），不恢复内嵌业务或models.list；安装仍需人工授权。既有安装不会因源码更新生效，需手动更新/重载。0.7.0历史见 [记录](https://github.com/Tonkic/pi-agent-governance/blob/main/notes/release-0.7.0.md)。
 - 浏览器按navigator.language选择中/英文，主题跟随系统；PI命令按宿主语言。用户内容和底层诊断不翻译。改变浏览器语言后重新打开页面。
 - PI-Desktop 0.16.1 本地 MCP 不开放安装或插件更新接口；不能借内部服务绕过宿主注册操作。GitHub 发布成功不等于真实宿主/目视验收完成。
