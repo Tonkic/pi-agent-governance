@@ -1,7 +1,7 @@
 <!-- Generated from docs/ by scripts/build-docs.cjs. Do not edit. -->
 # 产物与安装 / Distributions
 
-支持**通用MCP＋Skills＋本地Web控制台包**及**PI-Desktop官方piplug**，附Codex、Claude Code、Pi配置示例。当前 **0.8.4** 修正Git图交互与性能，升补丁、同步源码和官方包，不提交市场；后续大更新自动版本评估及检查后市场提交见[交付规则](releasing.md)。不自动安装/npm/建标签，GitHub Release规则不变。
+支持**通用MCP＋Skills＋本地Web控制台包**及**PI-Desktop官方piplug**，附Codex、Claude Code、Pi配置示例。当前 **0.8.5** 精简Git常驻图例与引用标记，完整分支信息保留悬停；升补丁、同步源码和官方包，不提交市场。后续大更新自动版本评估及检查后市场提交见[交付规则](releasing.md)。不自动安装/npm/建标签，GitHub Release规则不变。
 
 此前0.8.3市场包已approved待运营发布，与之后仓库Git/阅读修复包不是同一来源，保留[历史交付记录](https://github.com/Tonkic/pi-agent-governance/blob/main/changes/active/project-board-release/hover-behaviors-083.md)。不覆盖或重提已使用版本，当前补丁不访问市场；每次产品交付使用新版本。
 
