@@ -301,18 +301,6 @@
       "gitTaskId": null
     },
     {
-      "id": "hover-behaviors-083",
-      "title": "悬停导航与行为文档一级页 · 0.8.3",
-      "description": "用户批准默认收起悬停/键盘展开无按钮导航、行为文档独立页，核查同步PI插件市场；不自动安装或改长期发布策略。",
-      "blocker": "",
-      "stage": "doing",
-      "taskId": "project-board-release",
-      "criteria": [],
-      "architectureImpact": "none",
-      "gitTaskId": null,
-      "completedAt": null
-    },
-    {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
       "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
@@ -380,7 +368,19 @@
       "architectureImpact": "none",
       "gitTaskId": null,
       "completedAt": "2026-10-18T18:54:06.186Z"
+    },
+    {
+      "id": "hover-behaviors-083",
+      "title": "悬停导航与行为文档一级页 · 0.8.3",
+      "description": "0.8.3两项及源码官方包已交付main1a03e65；219测试/251图/10行为及双OS CI39213296229通过。市场单次提交后approved、0阻塞，待运营发布，不等于published/安装。证据changes/active/project-board-release/hover-behaviors-083.md",
+      "blocker": "",
+      "stage": "done",
+      "taskId": "project-board-release",
+      "criteria": [],
+      "architectureImpact": "none",
+      "gitTaskId": null,
+      "completedAt": "2026-10-19T07:11:44.978Z"
     }
   ],
-  "updatedAt": "2026-10-19T06:29:54.236Z"
+  "updatedAt": "2026-10-19T07:11:44.978Z"
 }
