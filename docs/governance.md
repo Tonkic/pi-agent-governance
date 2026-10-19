@@ -13,9 +13,8 @@ Community plugin ID: `io.github.tonkic.agent-governance`. Repository handoff, pr
 源码和测试使用 TypeScript；构建生成 `plugin/runtime/` 和清单，CLI/测试位于忽略的 `build/`。安装包说明由仓库 `docs/` 生成，不手改。完整构建方法见 [开发](development.md)。
 
 ```powershell
-npm run typecheck
-npm run build
-npm test
+# 公共/高风险/未知改动使用完整入口；局部与记录范围见开发文档
+npm run check -- --full
 ```
 
 TypeScript 是开发依赖，不会进入插件运行时；PluginCheck 和 PluginPack 仍由 PI-Desktop 的插件工具负责生成 `.piplug` 安装包。

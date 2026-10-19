@@ -25,7 +25,7 @@ function refreshGeneratedIndex(runGit = safety.gitAt(root)) { return safety.refr
 function runChecks() {
   const npm = process.env.npm_execpath;
   if (!npm || !fs.existsSync(npm)) throw Error('Run through npm run release:auto');
-  for (const script of ['typecheck', 'build', 'test', 'check:behaviors', 'test:browser']) execFileSync(process.execPath, [npm, 'run', script], { cwd: root, stdio: 'inherit' });
+  execFileSync(process.execPath, [npm, 'run', 'check', '--', '--full'], { cwd: root, stdio: 'inherit' });
   refreshGeneratedIndex();
 }
 function main(args = process.argv.slice(2)) {

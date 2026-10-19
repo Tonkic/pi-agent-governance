@@ -7,7 +7,7 @@
 - 所有修改通过 Git 留痕；写入型子代理先分配 worktree，再启动。只读审查不需要分支。
 - 人批准总体目标；协调 Agent 分配子任务范围。STATE/AGENTS 由协调 Agent 维护，worker 不得修改。
 - 每个 worktree 同时只能有一个写入者；提交、验证和集成期间暂停写入。
-- 审查 diff 后提交，在该提交上实际测试，再登记验证。集成后重新测试。
+- 审查diff并实际运行选定检查；提交/合并本身不要求重跑。登记当前HEAD并如实区分执行来源与内容等同复用，规则见下文。
 - 只将 worker 合并到其受管 coordinator；主分支合并、远端推送需人工授权。
 - 不自动 stash、reset、强推、删除分支或清理用户修改。
 
@@ -47,10 +47,10 @@ allowedPaths 只允许准确相对文件名或以 `/` 结尾的目录前缀，�
 
 ## 3. 验证与集成
 
-在返回的实际提交上运行测试、审查结果，再调用：
+完成选定范围的实际检查后登记。优先在最终提交上执行；若此前已测且提交未改变内容，可复用，但须核对测试/配置/依赖/生成物及环境等同，记录原测试SHA或工作树事实与当前SHA的关系，不声称新SHA已执行。仅“无冲突”不够，无法证明等同则重测受影响部分。
 
 ```json
-{"action":"git_verify","id":"feature-x-worker","expectedHead":"实际测试的完整SHA","passed":true,"accepted":[true],"evidence":"实际命令与结果","diffReview":"实际审查结果"}
+{"action":"git_verify","id":"feature-x-worker","expectedHead":"当前登记的完整SHA","passed":true,"accepted":[true],"evidence":"实际命令/结果/执行来源；如复用，说明输入等同证据","diffReview":"实际审查结果"}
 ```
 
 accepted 与任务 criteria 一一对应；要求工作区干净。测试证据由调用方提交，插件不会执行测试或证明证据真实。
@@ -59,7 +59,7 @@ accepted 与任务 criteria 一一对应；要求工作区干净。测试证据�
 {"action":"git_integrate","id":"feature-x","source":"feature-x-worker","expectedHead":"协调分支当前完整SHA","sourceHead":"已验证worker完整SHA"}
 ```
 
-采用非快进合并。源、目标必须干净且属于登记的父子关系；过期验证拒绝集成。集成完成后协调任务的旧验证失效，必须重新测试和 git_verify。已集成 worker 不再通过工具修改，后续工作创建新任务。
+采用非快进合并。源/目标必须干净且属于登记父子关系；过期验证拒绝集成。集成后协调任务旧登记失效，必须重新git_verify，但不必机械重跑：核对最终变化，等同已测内容可按上述规则复用；冲突解决/并行组合补测相互影响部分，公共或未知影响按full处理。已集成worker不再通过工具修改，后续创建新任务。
 
 ## 4. 冲突与恢复
 

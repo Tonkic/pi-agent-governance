@@ -34,16 +34,16 @@ test('compiled JavaScript is separated and runtime exactly matches compiler outp
   for (const [, src] of html.matchAll(/<script src="([^"]+)"/g))
     assert.ok(fs.existsSync(path.resolve(root, 'plugin/renderer', src)), src);
 });
-test('0.8.1 package, lock and generated plugin identify the same approved patch', () => {
+test('0.8.2 package, lock and generated plugin identify the same approved patch', () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json')));
   const lock = JSON.parse(fs.readFileSync(path.join(root, 'package-lock.json')));
   const manifest = JSON.parse(fs.readFileSync(path.join(root, 'plugin/manifest.json')));
-  assert.equal(pkg.version, '0.8.1');
+  assert.equal(pkg.version, '0.8.2');
   assert.equal(lock.version, pkg.version); assert.equal(lock.packages[''].version, pkg.version);
   assert.equal(manifest.version, pkg.version);
   assert.equal(manifest.id, 'io.github.tonkic.agent-governance');
   assert.deepEqual(lock.packages[''].dependencies, pkg.dependencies);
-  for (const doc of ['README.md', 'docs/releasing.md', 'docs/publishing.md']) assert.match(fs.readFileSync(path.join(root, doc), 'utf8'), /0\.8\.1/);
+  for (const doc of ['README.md', 'docs/releasing.md', 'docs/publishing.md']) assert.match(fs.readFileSync(path.join(root, doc), 'utf8'), /0\.8\.2/);
 });
 test('compiled CLI runs from the repository without adjacent JS dependencies', () => {
   const result = JSON.parse(

@@ -45,12 +45,8 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
-      - run: npm run typecheck
-      - run: npm run build
-      - run: npm test
       - run: npx --no-install playwright install --with-deps chromium
-      - run: npm run check:behaviors
-      - run: npm run test:browser
+      - run: npm run check -- --full --ci
       - run: npm run release:auto -- --plan
   build:
     needs: [gate, validate]
