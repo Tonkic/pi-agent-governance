@@ -301,18 +301,6 @@
       "gitTaskId": null
     },
     {
-      "id": "behavior-reader-fixes",
-      "title": "行为读取与内部文档跳转修复",
-      "description": "修复真实CRLF签出预算超限和Markdown项目内链接；保留原预算/白名单，不升版本或覆盖市场包。",
-      "blocker": "",
-      "stage": "doing",
-      "taskId": "project-board-release",
-      "criteria": [],
-      "architectureImpact": "none",
-      "gitTaskId": null,
-      "completedAt": null
-    },
-    {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
       "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
@@ -392,7 +380,19 @@
       "architectureImpact": "none",
       "gitTaskId": null,
       "completedAt": "2026-10-19T07:11:44.978Z"
+    },
+    {
+      "id": "behavior-reader-fixes",
+      "title": "行为读取与内部文档跳转修复",
+      "description": "已修复真实CRLF行为预算拒绝与安全内部Markdown/标题跳转；mainf2dc852实际HTTP200/7条说明、README开发键盘跳转通过。双OS CI39221478181各222测试/255图/10行为通过；官方包82文件938188字节。不升版本或覆盖市场approved包；证据changes/active/project-board-release/behavior-reader-fixes.md。",
+      "blocker": "",
+      "stage": "done",
+      "taskId": "project-board-release",
+      "criteria": [],
+      "architectureImpact": "none",
+      "gitTaskId": null,
+      "completedAt": "2026-10-19T08:25:19.973Z"
     }
   ],
-  "updatedAt": "2026-10-19T08:00:27.674Z"
+  "updatedAt": "2026-10-19T08:25:19.973Z"
 }
