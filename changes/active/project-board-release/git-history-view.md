@@ -35,7 +35,9 @@
 - 首次main `303edaa98ccb4ffe7a0c5555d8367c916df9aed8` 文件树与协调记录提交7f52586一致；与已全测010d630仅STATE/证据/截图不同。正常push且远端SHA核对。
 - 真实main HTTP/浏览器探测：100提交、HEAD、详情、README文本diff、返回成功，0页面错误，STATE/看板字节不变；[实际图](git-history-visual/actual-graph.png)和[详情](git-history-visual/actual-detail.png)保存，短测试服务已关闭。
 - 首次CI39233866988：Linux全通过；Windows249/250，新增HTTP夹具临时根含RUNNER~1短名，未满足真实路径契约。未把失败记为通过。
-- 本机用真实8.3短名复现同一409，两个新夹具改native realpath；短名环境6HTTP＋Git24截图回归转绿。生产源码/包未变，不重复本地全量；最终修正main/双OS CI待实际结果。
+- 本机用真实8.3短名复现同一409，两个新夹具改native realpath；短名环境6HTTP＋Git24截图回归转绿。生产源码/包未变，不重复本地全量。
+- 测试修正来源 `42bdca2f908a6cf8d8fa2e4801592ba1b65f0e51`；main `385ae4aefde29f7d1002e201898d2f552c452c82` 树完全一致，正常push/远端核对成功。最终CI [39234951619](https://github.com/Tonkic/pi-agent-governance/actions/runs/39234951619) 全步骤成功：Linux160秒/Windows494秒，各250测试、0失败/0跳过，279截图/原10行为通过。
+- 完成记录仅STATE/看板/本证据，不改产品/包/测试输入；本地records检查通过，最终记录同步走轻量CI，不冒称记录SHA重新执行产品全量。
 
 ## 边界
 
