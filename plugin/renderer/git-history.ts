@@ -3,114 +3,155 @@
 (() => {
   const host = document.getElementById('git-section');
   const copy = {
-    en: { history: 'Commit history', managed: 'Managed workspaces', title: 'Every change, connected.', intro: 'Newest to oldest · real parent links · local history only', refresh: 'Refresh history', more: 'Load earlier commits', back: 'Back to commit graph', loading: 'Reading Git history…', choose: 'Select a commit to inspect its changes.', error: 'Could not read this snapshot. Refresh history before continuing.', offline: 'Offline · loaded history remains available. Reconnect and refresh for new reads.', empty: 'No commits yet', noRepo: 'This project is not a Git repository', noRepoHint: 'Open an existing local repository to explore its commits. Nothing is initialized here.', end: 'End of reachable history', earlier: 'Earlier commits have not been loaded yet', limited: 'Display limit reached · at most 5000 commits and 64 parallel lanes.', shallow: 'Shallow repository · older history may be missing.', root: 'Root', merge: 'Merge', detached: 'Detached HEAD', commits: 'commits loaded', detail: 'Commit details', author: 'Author', authored: 'Authored', committed: 'Committed', parents: 'Parents', files: 'Changed files', firstParent: 'Changes relative to the first parent; renames are shown as delete/add.', rootDiff: 'Initial commit · changes relative to an empty tree.', filesLimited: 'File list is limited to 500 entries.', bodyLimited: 'Commit message was shortened.', selectFile: 'Select a file to read its patch.', binary: 'Binary file · no text preview', restricted: 'Protected path or linked object · contents are not read', tooLarge: 'Patch exceeds the preview budget (128 KiB).', truncated: 'Preview is incomplete.', noFiles: 'No file changes relative to this parent.', noWrite: 'Read-only. No checkout, merge, reset, fetch or push.', snapshot: 'Loaded repository snapshot', refreshHint: 'Branches or HEAD may have changed. Refresh to read a new snapshot.' },
-    zh: { history: '提交历史', managed: '受管工作区', title: '每次变更，都有来路。', intro: '上新下旧 · 真实父子连线 · 仅本地历史', refresh: '刷新历史', more: '加载更早提交', back: '返回提交图', loading: '正在读取 Git 历史…', choose: '选择一个提交，查看说明与文件变更。', error: '无法读取此快照，请刷新历史后重试。', offline: '离线 · 已加载历史仍可查看。恢复连接后刷新以读取新内容。', empty: '仓库还没有提交', noRepo: '此项目不是 Git 仓库', noRepoHint: '打开已有本地仓库即可查看历史；这里不会初始化仓库。', end: '已到达可达历史的起点', earlier: '还有更早的提交尚未加载', limited: '已达显示上限：最多5000提交、64条并行线。', shallow: '浅克隆仓库：更早历史可能缺失。', root: '起点', merge: '合并', detached: '分离的 HEAD', commits: '个已加载提交', detail: '提交详情', author: '作者', authored: '创作时间', committed: '提交时间', parents: '父提交', files: '文件变更', firstParent: '默认相对第一父提交比较；重命名以删除/新增展示。', rootDiff: '初始提交：相对空树比较。', filesLimited: '文件列表最多展示500项。', bodyLimited: '提交说明已截短。', selectFile: '选择文件以读取文本差异。', binary: '二进制文件，不提供文本预览', restricted: '受保护路径或链接对象，不读取内容', tooLarge: '差异超过预览预算（128 KiB）。', truncated: '当前预览不完整。', noFiles: '相对该父提交没有文件变化。', noWrite: '只读，不执行切换、合并、重置、拉取或推送。', snapshot: '已加载仓库快照', refreshHint: '分支或 HEAD 可能已变化，请刷新后读取新快照。' }
+    en: { history: 'Commit history', intro: 'Newest to oldest · real parent links · local history only', refresh: 'Refresh history', more: 'Load earlier commits', loading: 'Reading Git history…', choose: 'Select a commit to inspect its changes.', error: 'Could not read this snapshot. Refresh history before continuing.', offline: 'Offline · loaded history remains available. Reconnect and refresh for new reads.', empty: 'No commits yet', noRepo: 'This project is not a Git repository', noRepoHint: 'Open an existing local repository to explore its commits. Nothing is initialized here.', end: 'End of reachable history', earlier: 'Earlier commits have not been loaded yet', limited: 'Display limit reached · at most 5000 commits and 64 parallel lanes.', shallow: 'Shallow repository · older history may be missing.', commits: 'commits loaded', detail: 'Commit details', author: 'Author', authored: 'Authored', committed: 'Committed', parents: 'Parents', files: 'Changed files', firstParent: 'Changes relative to the first parent; renames are shown as delete/add.', rootDiff: 'Initial commit · changes relative to an empty tree.', filesLimited: 'File list is limited to 500 entries.', bodyLimited: 'Commit message was shortened.', selectFile: 'Select a file to read its patch.', binary: 'Binary file · no text preview', restricted: 'Protected path or linked object · contents are not read', tooLarge: 'Patch exceeds the preview budget (128 KiB).', truncated: 'Preview is incomplete.', noFiles: 'No file changes relative to this parent.', noWrite: 'Read-only. No checkout, merge, reset, fetch or push.', refreshHint: 'Branches or HEAD may have changed. Refresh to read a new snapshot.' },
+    zh: { history: '提交历史', intro: '上新下旧 · 真实父子连线 · 仅本地历史', refresh: '刷新历史', more: '加载更早提交', loading: '正在读取 Git 历史…', choose: '选择一个提交，查看说明与文件变更。', error: '无法读取此快照，请刷新历史后重试。', offline: '离线 · 已加载历史仍可查看。恢复连接后刷新以读取新内容。', empty: '仓库还没有提交', noRepo: '此项目不是 Git 仓库', noRepoHint: '打开已有本地仓库即可查看历史；这里不会初始化仓库。', end: '已到达可达历史的起点', earlier: '还有更早的提交尚未加载', limited: '已达显示上限：最多5000提交、64条并行线。', shallow: '浅克隆仓库：更早历史可能缺失。', commits: '个已加载提交', detail: '提交详情', author: '作者', authored: '创作时间', committed: '提交时间', parents: '父提交', files: '文件变更', firstParent: '默认相对第一父提交比较；重命名以删除/新增展示。', rootDiff: '初始提交：相对空树比较。', filesLimited: '文件列表最多展示500项。', bodyLimited: '提交说明已截短。', selectFile: '选择文件以读取文本差异。', binary: '二进制文件，不提供文本预览', restricted: '受保护路径或链接对象，不读取内容', tooLarge: '差异超过预览预算（128 KiB）。', truncated: '当前预览不完整。', noFiles: '相对该父提交没有文件变化。', noWrite: '只读，不执行切换、合并、重置、拉取或推送。', refreshHint: '分支或 HEAD 可能已变化，请刷新后读取新快照。' }
   };
   const w = () => copy[locale === 'zh-CN' ? 'zh' : 'en'];
   const make = (tag: string, text = '', cls = '') => { const n = document.createElement(tag); n.textContent = text; n.className = cls; return n; };
   const button = (text: string, id: string) => { const n = make('button', text) as HTMLButtonElement; n.type = 'button'; n.id = id; return n; };
-  const tabs = make('div', '', 'history-tabs'); tabs.setAttribute('role', 'tablist');
-  const historyTab = button('', 'git-history-tab'), managedTab = button('', 'git-managed-tab');
-  historyTab.setAttribute('role', 'tab'); managedTab.setAttribute('role', 'tab'); tabs.append(historyTab, managedTab);
-  const managed = make('div'); managed.id = 'git-managed-view'; managed.setAttribute('role', 'tabpanel'); managed.setAttribute('aria-labelledby', managedTab.id); managed.hidden = true;
-  managed.append(host.querySelector('.git-summary-row'), document.getElementById('git-tasks'));
-  const pane = make('div', '', 'history-pane'); pane.id = 'git-history-view'; pane.setAttribute('role', 'tabpanel'); pane.setAttribute('aria-labelledby', historyTab.id);
-  historyTab.setAttribute('aria-controls', pane.id); managedTab.setAttribute('aria-controls', managed.id);
+  const pane = make('div', '', 'history-pane'); pane.id = 'git-history-view';
   const toolbar = make('div', '', 'history-toolbar'), lead = make('div'), title = make('h3'), subtitle = make('p', '', 'muted'), refresh = button('', 'git-history-refresh'); lead.append(title, subtitle); toolbar.append(lead, refresh);
   const status = make('p', '', 'history-status'); status.id = 'git-history-status'; status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
   const graphPane = make('div'); graphPane.id = 'git-history-graph-view';
   const summary = make('div', '', 'history-summary'); summary.id = 'git-history-summary';
+  const legend = make('div', '', 'history-legend'); legend.id = 'git-history-legend';
   const scroll = make('div', '', 'history-scroll'); scroll.id = 'git-history-scroll'; scroll.tabIndex = 0;
   const canvas = make('div', '', 'history-canvas'); canvas.id = 'git-history-canvas'; scroll.append(canvas);
-  const footer = make('div', '', 'history-footer'), ending = make('p', '', 'muted'), more = button('', 'git-history-more'); footer.append(ending, more); graphPane.append(summary, scroll, footer);
-  const detail = make('section', '', 'history-detail'); detail.id = 'git-history-detail'; detail.hidden = true;
-  const back = button('', 'git-history-back'), detailContent = make('div'); detailContent.id = 'git-history-detail-content'; detail.append(back, detailContent);
-  const safety = make('p', '', 'hint'); pane.append(toolbar, status, graphPane, detail, safety); host.append(tabs, pane, managed);
+  const tooltip = make('div', '', 'history-tooltip'); tooltip.id = 'git-history-tooltip'; tooltip.setAttribute('role', 'tooltip'); tooltip.hidden = true;
+  const footer = make('div', '', 'history-footer'), ending = make('p', '', 'muted'), more = button('', 'git-history-more'); footer.append(ending, more); graphPane.append(summary, legend, scroll, footer);
+  const detail = document.createElement('dialog'); detail.className = 'history-detail'; detail.id = 'git-history-detail'; detail.setAttribute('aria-labelledby', 'git-history-dialog-title');
+  const heading = make('header', '', 'history-dialog-header'), dialogTitle = make('h2'); dialogTitle.id = 'git-history-dialog-title';
+  const detailStatus = make('p', '', 'history-dialog-status'); detailStatus.setAttribute('role', 'status'); detailStatus.hidden = true;
+  const back = button('', 'git-history-back'), detailContent = make('div', '', 'history-detail-body'); detailContent.id = 'git-history-detail-content'; heading.append(dialogTitle, back); detail.append(heading, detailStatus, detailContent);
+  const safety = make('p', '', 'hint'); pane.append(toolbar, status, graphPane, safety); host.append(pane, tooltip, detail);
   let root: string = null, epoch = -1, generation = 0, listRequest = 0, detailRequest = 0, diffRequest = 0;
-  let listLoading = false, detailLoading = false, diffLoading = false, attempted = false, tab = 'history';
+  let listLoading = false, detailLoading = false, diffLoading = false, attempted = false;
   let data: any = null, commits: any[] = [], selected = '', origin = '', scrollY = 0, message = '', laneLimited = false;
+  let graphPosition = [0, 0], tooltipOwner: HTMLButtonElement = null, lastWidth = 0, centered = false;
+  let tooltipTimer: ReturnType<typeof setTimeout>;
+  const words = () => locale === 'zh-CN' ? { close: '关闭详情', axis: '第一父链 · 中轴', fallback: '后备中轴', side: '侧线历史（无当前分支名）', branch: '分支归属', hover: '悬停或聚焦查看摘要 · 点击或 Enter 打开详情', refs: '当前引用', bounded: '主轴链达到读取上限' } : { close: 'Close details', axis: 'First-parent · center axis', fallback: 'Fallback axis', side: 'Side history (no current branch name)', branch: 'Branch ancestry', hover: 'Hover or focus for summary · click or Enter for details', refs: 'Current refs', bounded: 'Axis chain reached its read limit' };
   const details = new Map<string, any>(), patches = new Map<string, any>();
   const hash = (s: unknown) => typeof s === 'string' && /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(s);
   const remember = (cache: Map<string, any>, key: string, value: any, max: number) => { cache.delete(key); cache.set(key, value); while (cache.size > max) cache.delete(cache.keys().next().value); };
   const commitOK = (c: any) => c && hash(c.sha) && Array.isArray(c.parents) && c.parents.length <= 64 && c.parents.every(hash) && ['subject', 'authorName', 'authorEmail', 'authoredAt', 'committedAt'].every(k => typeof c[k] === 'string' && c[k].length <= 20000);
-  const active = () => location.hash === '#git-section' && tab === 'history';
+  const active = () => location.hash === '#git-section';
   const owns = (owner: number, project: string, gen: number) => epoch === owner && workspaceEpoch === owner && root === project && generation === gen;
   const current = (owner: number, project: string, gen: number) => owns(owner, project, gen) && snapshot?.workspace === project;
   function controls() {
-    historyTab.disabled = managedTab.disabled = back.disabled = false;
+    back.disabled = false;
     refresh.disabled = busy || !root || !snapshot || !navigator.onLine || listLoading;
     more.disabled = refresh.disabled || !data || data.nextOffset === null || laneLimited || commits.length >= 5000;
     more.hidden = !data || data.nextOffset === null || laneLimited || commits.length >= 5000;
     status.textContent = !navigator.onLine ? w().offline : !root ? w().choose : listLoading ? w().loading : message;
     pane.setAttribute('aria-busy', String(listLoading || detailLoading || diffLoading));
+    detailContent.setAttribute('aria-busy', String(detailLoading || diffLoading));
+    detailStatus.textContent = !navigator.onLine ? w().offline : ''; detailStatus.hidden = navigator.onLine;
+    canvas.querySelectorAll<HTMLButtonElement>('[data-commit]').forEach(n => n.setAttribute('aria-disabled', String((busy || !navigator.onLine) && !details.has(n.dataset.commit))));
+    detailContent.querySelectorAll<HTMLButtonElement>('[data-git-file]').forEach(n => { n.disabled = busy || !navigator.onLine && !patches.has(`${selected}:${n.dataset.gitFile}`); });
+    detailContent.querySelectorAll<HTMLButtonElement>('[data-parent]').forEach(n => { n.disabled = busy || !navigator.onLine && !details.has(n.dataset.parent); });
   }
-  function switchTab(next: string) {
-    tab = next; pane.hidden = next !== 'history'; managed.hidden = next !== 'managed';
-    historyTab.setAttribute('aria-selected', String(next === 'history')); managedTab.setAttribute('aria-selected', String(next === 'managed'));
-    historyTab.tabIndex = next === 'history' ? 0 : -1; managedTab.tabIndex = next === 'managed' ? 0 : -1;
-    context();
+  function hideTooltip() { clearTimeout(tooltipTimer); tooltip.hidden = true; tooltipOwner?.removeAttribute('aria-describedby'); tooltipOwner = null; }
+  function leaveTooltip() { clearTimeout(tooltipTimer); tooltipTimer = setTimeout(() => { if (document.activeElement !== tooltipOwner) hideTooltip(); }, 120); }
+  tooltip.addEventListener('pointerenter', () => clearTimeout(tooltipTimer)); tooltip.addEventListener('pointerleave', leaveTooltip);
+  function placeTooltip() {
+    if (!tooltipOwner || tooltip.hidden) return;
+    const r = tooltipOwner.getBoundingClientRect(), bounds = scroll.getBoundingClientRect(), gap = 12;
+    if (r.bottom < bounds.top || r.top > bounds.bottom || r.right < bounds.left || r.left > bounds.right) { hideTooltip(); return; }
+    tooltip.style.maxHeight = `${Math.min(360, innerHeight - gap * 2)}px`;
+    const box = tooltip.getBoundingClientRect(), right = r.right + gap, left = r.left - gap - box.width;
+    const x = right + box.width <= innerWidth - gap ? right : left >= gap ? left : Math.max(gap, Math.min(innerWidth - box.width - gap, r.left));
+    let y = Math.max(gap, Math.min(innerHeight - box.height - gap, r.top));
+    if (x < r.right && x + box.width > r.left) {
+      const below = innerHeight - r.bottom - gap * 2, above = r.top - gap * 2, useBelow = below >= Math.min(box.height, above);
+      tooltip.style.maxHeight = `${Math.max(0, Math.min(360, useBelow ? below : above))}px`;
+      y = useBelow ? r.bottom + gap : r.top - gap - tooltip.getBoundingClientRect().height;
+    }
+    tooltip.style.left = `${x}px`; tooltip.style.top = `${y}px`;
   }
-  historyTab.addEventListener('click', () => switchTab('history')); managedTab.addEventListener('click', () => switchTab('managed'));
-  tabs.addEventListener('keydown', event => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) { event.preventDefault(); const next = event.key === 'Home' ? 'history' : event.key === 'End' ? 'managed' : tab === 'history' ? 'managed' : 'history'; switchTab(next); (next === 'history' ? historyTab : managedTab).focus(); } });
+  function showTooltip(node: HTMLButtonElement, c: any, membership: string, refs: any[]) {
+    if (detail.open) return;
+    hideTooltip(); tooltipOwner = node;
+    tooltip.replaceChildren(make('strong', c.subject), make('code', c.sha), make('span', `${w().author}: ${c.authorName} <${c.authorEmail}>`), make('span', `${w().committed}: ${c.committedAt}`), make('span', `${words().refs}: ${refs.map(r => r.name).join(' · ') || '—'}`), make('span', `${words().branch}: ${membership}`));
+    tooltip.hidden = false; node.setAttribute('aria-describedby', tooltip.id); placeTooltip();
+  }
   function reset() {
     generation++; listRequest++; detailRequest++; diffRequest++; listLoading = detailLoading = diffLoading = attempted = false;
-    data = null; commits = []; selected = origin = message = ''; details.clear(); patches.clear(); canvas.replaceChildren(); summary.replaceChildren(); detailContent.replaceChildren(); detail.hidden = true; graphPane.hidden = false; ending.textContent = ''; scroll.scrollTop = scroll.scrollLeft = 0; controls();
+    hideTooltip(); if (detail.open) detail.close();
+    data = null; commits = []; selected = origin = message = ''; centered = false; lastWidth = 0; details.clear(); patches.clear(); canvas.replaceChildren(); summary.replaceChildren(); legend.replaceChildren(); detailContent.replaceChildren(); ending.textContent = ''; scroll.scrollTop = scroll.scrollLeft = 0; controls();
   }
-  // Slots are owned by a pending parent until that commit is visited. Edges are never inferred from dates.
+  const axisRefs = ['refs/heads/main', 'refs/heads/master', 'refs/remotes/origin/main', 'refs/remotes/origin/master'];
+  const shortRef = (ref: string) => ref.replace(/^refs\/(heads|remotes|tags)\//, '');
+  function mainline(result: any, loaded: any[]) {
+    const chosen = axisRefs.map(name => result.refs.find(r => r.name === name)).find(Boolean), ref = chosen?.name || null, tip = chosen?.sha || result.head;
+    const known = new Map(loaded.map(c => [c.sha, c])), supplied = result.mainline;
+    if (supplied !== undefined) {
+      if (!supplied || supplied.ref !== ref || supplied.tip !== tip || typeof supplied.truncated !== 'boolean' || !Array.isArray(supplied.commits) || supplied.commits.length > 5000 || !supplied.commits.every(hash) || new Set(supplied.commits).size !== supplied.commits.length || (tip ? supplied.commits[0] !== tip : supplied.commits.length !== 0)) throw Error('Invalid mainline');
+      for (let i = 0; i < supplied.commits.length - 1; i++) { const c = known.get(supplied.commits[i]); if (c && c.parents[0] !== supplied.commits[i + 1]) throw Error('Invalid first-parent chain'); }
+      const last = known.get(supplied.commits[supplied.commits.length - 1]);
+      if (last?.parents.length && !supplied.truncated && !result.shallow) throw Error('Incomplete mainline');
+      return { ...supplied, label: ref ? shortRef(ref) : 'HEAD' };
+    }
+    // Compatibility with an older reader: never guess from date, branch order or second parents.
+    const chain: string[] = [], seen = new Set<string>(); let sha = tip;
+    while (sha && !seen.has(sha) && chain.length < 5000) { chain.push(sha); seen.add(sha); sha = known.get(sha)?.parents[0]; }
+    return { ref, tip, commits: chain, truncated: false, label: ref ? shortRef(ref) : 'HEAD' };
+  }
+  // Slot zero belongs exclusively to the actual first-parent chain. Pending parents own side slots.
   function layout() {
-    const lanes: Array<string | null> = [], nodes = [], pending = new Map<string, number>();
-    let width = 1;
-    const slot = () => { const free = lanes.indexOf(null); return free < 0 ? lanes.length : free; };
+    const axis = mainline(data, commits), main = new Set<string>(axis.commits), lanes = new Map<string, number>(), nodes = [], known = new Map(commits.map(c => [c.sha, c]));
+    let extent = 0;
+    const free = () => { const used = new Set(lanes.values()); for (let i = 1; i <= 63; i++) { const n = Math.ceil(i / 2) * (i % 2 ? 1 : -1); if (!used.has(n)) return n; } throw Error('Lane display limit'); };
     for (let row = 0; row < commits.length; row++) {
-      const c = commits[row]; let lane = lanes.indexOf(c.sha);
-      if (lane < 0) { lane = slot(); lanes[lane] = c.sha; }
-      lanes[lane] = null; pending.delete(c.sha);
-      for (let p = 0; p < c.parents.length; p++) { const parent = c.parents[p]; if (!lanes.includes(parent)) { const at = p === 0 && lanes[lane] === null ? lane : slot(); lanes[at] = parent; pending.set(parent, at); } }
-      width = Math.max(width, lanes.length, lane + 1);
-      nodes.push({ commit: c, row, lane });
-      if (width > 64) throw Error('Lane display limit');
+      const c = commits[row], lane = main.has(c.sha) ? 0 : lanes.get(c.sha) ?? free(); lanes.delete(c.sha);
+      for (let p = 0; p < c.parents.length; p++) { const parent = c.parents[p]; if (!main.has(parent) && !lanes.has(parent)) lanes.set(parent, p === 0 && lane !== 0 && !Array.from(lanes.values()).includes(lane) ? lane : free()); }
+      extent = Math.max(extent, Math.abs(lane), ...Array.from(lanes.values()).map(Math.abs)); nodes.push({ commit: c, row, lane });
     }
-    return { nodes, pending, width };
+    const memberships = new Map<string, Set<string>>();
+    for (const ref of data.refs.filter(r => r.kind !== 'tag' && r.name !== axis.ref)) {
+      const stack = [ref.sha], seen = new Set<string>();
+      while (stack.length) { const sha = stack.pop(); if (seen.has(sha) || main.has(sha)) continue; seen.add(sha); const c = known.get(sha); if (!c) continue; if (!memberships.has(sha)) memberships.set(sha, new Set()); memberships.get(sha).add(shortRef(ref.name)); stack.push(...c.parents); }
+    }
+    return { nodes, pending: lanes, extent, axis, main, memberships };
   }
+  const laneColor = (lane: number) => lane === 0 ? 0 : 1 + ((Math.abs(lane) * 2 - (lane > 0 ? 2 : 1)) % 5);
   function renderGraph() {
-    const remembered = [scroll.scrollTop, scroll.scrollLeft]; canvas.replaceChildren(); summary.replaceChildren(); laneLimited = false;
+    hideTooltip(); const remembered = [scroll.scrollTop, scroll.scrollLeft], oldWidth = lastWidth; canvas.replaceChildren(); summary.replaceChildren(); legend.replaceChildren(); laneLimited = false;
     if (!data) return;
-    const count = make('span', `${commits.length} ${w().commits}`, 'badge'); summary.append(count);
-    if (data.head) summary.append(make('code', `HEAD ${data.head.slice(0, 8)}`));
-    summary.append(make('span', data.branch || (data.head ? w().detached : '')));
+    summary.append(make('span', `${commits.length} ${w().commits}`, 'badge'), make('span', words().hover));
     if (data.shallow) summary.append(make('span', w().shallow, 'history-warning'));
-    if (!commits.length) {
-      canvas.append(make('div', data.status === 'not-repository' ? w().noRepo : w().empty, 'history-empty'), make('p', w().noRepoHint, 'muted')); ending.textContent = ''; controls(); return;
-    }
+    if (!commits.length) { canvas.style.minWidth = ''; canvas.append(make('div', data.status === 'not-repository' ? w().noRepo : w().empty, 'history-empty'), make('p', w().noRepoHint, 'muted')); ending.textContent = ''; controls(); return; }
     let result: ReturnType<typeof layout>;
     try { result = layout(); } catch { laneLimited = true; canvas.append(make('p', w().limited, 'hint')); controls(); return; }
-    const { nodes, pending, width } = result, step = 24, rowHeight = 72, inset = 20, graphWidth = inset * 2 + width * step;
-    const positions = new Map(nodes.map(n => [n.commit.sha, n]));
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.classList.add('history-lines'); svg.setAttribute('width', String(graphWidth)); svg.setAttribute('height', String(commits.length * rowHeight)); svg.setAttribute('aria-hidden', 'true');
-    const element = (name: string, attrs: Record<string, string>) => { const n = document.createElementNS('http://www.w3.org/2000/svg', name); for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v); return n; };
-    for (const n of nodes) for (const parent of n.commit.parents) {
-      const target = positions.get(parent), column = target?.lane ?? pending.get(parent);
-      if (column === undefined) continue;
-      const x = inset + n.lane * step, y = n.row * rowHeight + 36, px = inset + column * step, py = target ? target.row * rowHeight + 36 : commits.length * rowHeight;
-      if (target && target.row <= n.row) throw Error('Invalid topological order');
-      const path = element('path', { d: x === px ? `M${x},${y} V${py}` : `M${x},${y} C${x},${y + 24} ${px},${y + 24} ${px},${y + 40} V${py}`, class: `history-edge history-lane-${column % 6}`, 'data-child': n.commit.sha, 'data-parent': parent });
-      if (!target) path.setAttribute('stroke-dasharray', '4 4'); svg.append(path);
-    }
-    const rows = make('ol', '', 'history-rows');
+    const { nodes, pending, extent, axis, main, memberships } = result, step = 64;
+    canvas.style.minWidth = `${Math.max(640, (extent * step + 280) * 2)}px`;
+    const graphWidth = canvas.clientWidth, center = graphWidth / 2; lastWidth = graphWidth; canvas.dataset.axis = String(center); canvas.dataset.axisRef = axis.ref || 'HEAD';
+    const key = (text: string, color: number) => { const n = make('span', text, `history-key history-lane-${color}`); legend.append(n); };
+    key(`${axis.ref !== 'refs/heads/main' ? words().fallback + ' · ' : ''}${axis.label} · ${words().axis}`, 0);
+    if (axis.truncated) summary.append(make('span', words().bounded, 'history-warning'));
+    const rows = make('ol', '', 'history-rows'), entries = [], keys = new Set<string>();
     for (const n of nodes) {
-      const c = n.commit, li = make('li'), row = button('', ''); row.className = 'history-commit'; row.dataset.commit = c.sha; row.setAttribute('aria-pressed', String(selected === c.sha)); row.style.paddingLeft = `${graphWidth + 12}px`;
-      const top = make('span', '', 'history-row-top'); top.append(make('strong', c.subject || c.sha.slice(0, 8)));
-      if (c.sha === data.head) top.append(make('span', 'HEAD', 'history-ref history-head'));
-      for (const ref of data.refs.filter(r => r.sha === c.sha)) top.append(make('span', ref.name, `history-ref history-ref-${ref.kind}`));
-      if (c.parents.length > 1) top.append(make('span', `${w().merge} · ${c.parents.length}`, 'history-ref'));
-      if (!c.parents.length && !data.shallow) top.append(make('span', w().root, 'history-ref'));
-      const meta = make('span', '', 'history-row-meta'); meta.append(make('code', c.sha.slice(0, 8)), make('span', c.authorName), make('time', c.committedAt)); row.append(top, meta);
-      row.addEventListener('click', () => { void openCommit(c.sha); }); li.append(row); rows.append(li);
-      svg.append(element('circle', { cx: String(inset + n.lane * step), cy: String(n.row * rowHeight + 36), r: c.parents.length > 1 ? '6' : '4.5', class: `history-node history-lane-${n.lane % 6}${c.sha === data.head ? ' is-head' : ''}` }));
+      const c = n.commit, li = make('li'), node = button('', ''), color = laneColor(n.lane), membership = main.has(c.sha) ? axis.label : Array.from(memberships.get(c.sha) || []).join(' · ') || words().side;
+      const refs = data.refs.filter(r => r.sha === c.sha), identities = c.sha === data.head ? [{ name: 'HEAD', kind: 'head' }, ...refs] : refs;
+      li.style.gridTemplateColumns = `${center + n.lane * step - 22}px 44px minmax(0, 1fr)`;
+      node.className = `history-commit history-lane-${color}`; node.dataset.commit = c.sha; node.dataset.lane = String(n.lane); node.setAttribute('aria-label', `${w().detail}: ${c.sha} · ${c.subject}`); node.setAttribute('aria-haspopup', 'dialog'); node.setAttribute('aria-pressed', String(selected === c.sha));
+      const dot = make('span', '', `history-dot${c.parents.length > 1 ? ' is-merge' : ''}${c.sha === data.head ? ' is-head' : ''}`); dot.setAttribute('aria-hidden', 'true'); node.append(dot);
+      node.addEventListener('pointerenter', e => { if (e.pointerType !== 'touch') showTooltip(node, c, membership, identities); }); node.addEventListener('pointerleave', leaveTooltip);
+      node.addEventListener('focus', () => showTooltip(node, c, membership, identities)); node.addEventListener('blur', hideTooltip); node.addEventListener('click', () => { void openCommit(c.sha); });
+      node.addEventListener('keydown', e => { const next = e.key === 'ArrowDown' ? n.row + 1 : e.key === 'ArrowUp' ? n.row - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? nodes.length - 1 : -1; if (next >= 0 && next < nodes.length) { e.preventDefault(); rows.querySelectorAll<HTMLButtonElement>('[data-commit]')[next].focus(); } });
+      const labels = make('div', '', 'history-endpoint'); for (const ref of identities) labels.append(make('span', ref.name === 'HEAD' ? 'HEAD' : shortRef(ref.name), `history-ref history-lane-${color}${ref.kind === 'head' ? ' history-head' : ''}`));
+      li.append(node, labels); rows.append(li); entries.push({ ...n, li });
+      const keyId = `${color}:${membership}`; if (n.lane !== 0 && !keys.has(keyId)) { keys.add(keyId); key(membership, color); }
     }
-    canvas.style.minWidth = `${Math.max(560, graphWidth + 380)}px`; canvas.append(svg, rows);
-    ending.textContent = data.limited || commits.length >= 5000 ? w().limited : data.nextOffset !== null ? w().earlier : data.shallow ? w().shallow : w().end;
-    scroll.scrollTop = remembered[0]; scroll.scrollLeft = remembered[1]; controls();
+    canvas.append(rows);
+    const positions = new Map(entries.map(n => [n.commit.sha, { ...n, y: n.li.offsetTop + n.li.offsetHeight / 2 }]));
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.classList.add('history-lines'); svg.setAttribute('width', String(graphWidth)); svg.setAttribute('height', String(rows.offsetHeight)); svg.setAttribute('aria-hidden', 'true');
+    for (const n of positions.values()) for (const parent of n.commit.parents) {
+      const target = positions.get(parent), column = target?.lane ?? (main.has(parent) ? 0 : pending.get(parent)); if (column === undefined || target && target.row <= n.row) continue;
+      const x = center + n.lane * step, y = n.y, px = center + column * step, py = target ? target.y : rows.offsetHeight;
+      const path = document.createElementNS(svg.namespaceURI, 'path'); path.setAttribute('d', x === px ? `M${x},${y} V${py}` : `M${x},${y} C${x},${y + 24} ${px},${y + 24} ${px},${Math.min(y + 48, py)} V${py}`); path.setAttribute('class', `history-edge history-lane-${laneColor(n.lane === 0 && column !== 0 ? column : n.lane)}`); path.setAttribute('data-child', n.commit.sha); path.setAttribute('data-parent', parent); if (!target) path.setAttribute('stroke-dasharray', '4 4'); svg.append(path);
+    }
+    canvas.prepend(svg); ending.textContent = data.limited || commits.length >= 5000 ? w().limited : data.nextOffset !== null ? w().earlier : data.shallow ? w().shallow : w().end;
+    scroll.scrollTop = remembered[0]; scroll.scrollLeft = centered ? remembered[1] + (graphWidth - oldWidth) / 2 : (graphWidth - scroll.clientWidth) / 2; centered = true; controls();
   }
   async function load(append = false) {
     if (!root || !snapshot || busy || !navigator.onLine || listLoading || append && commits.length >= 5000) return;
@@ -121,10 +162,14 @@
       const result: any = await invoke('governance.gitHistory', { action: 'list', offset, limit: 100, ...(append ? { revision: data.revision } : {}) });
       if (!current(owner, project, gen) || request !== listRequest) return;
       if (result.workspace !== project || !['ready', 'empty', 'not-repository'].includes(result.status) || typeof result.revision !== 'string' || !Array.isArray(result.commits) || result.commits.length > 200 || !result.commits.every(commitOK) || !Array.isArray(result.refs) || result.refs.length > 512 || result.refs.some(r => !hash(r.sha) || typeof r.name !== 'string' || r.name.length > 2048 || !['branch', 'remote', 'tag'].includes(r.kind)) || result.offset !== offset || result.nextOffset !== null && (!Number.isInteger(result.nextOffset) || result.nextOffset !== offset + result.commits.length || result.nextOffset <= offset || result.nextOffset > 5000)) throw Error('Invalid history response');
+      if (result.head !== null && !hash(result.head)) throw Error('Invalid HEAD');
       if (append && result.revision !== data.revision) throw Error('History changed');
       const combined = append ? commits.concat(result.commits) : result.commits;
       if (combined.length > 5000 || new Set(combined.map(c => c.sha)).size !== combined.length) throw Error('History budget');
-      if (!append) { detailRequest++; diffRequest++; details.clear(); patches.clear(); selected = origin = ''; graphPane.hidden = false; detail.hidden = true; detailContent.replaceChildren(); }
+      const order = new Map(combined.map((c, index) => [c.sha, index]));
+      if (combined.some((c, index) => c.parents.some(parent => order.has(parent) && order.get(parent) <= index))) throw Error('Invalid topological order');
+      mainline(result, combined);
+      if (!append) { detailRequest++; diffRequest++; details.clear(); patches.clear(); selected = origin = ''; if (detail.open) detail.close(); detailContent.replaceChildren(); }
       data = result; commits = combined; renderGraph();
     } catch { if (current(owner, project, gen) && request === listRequest) message = `${w().error} ${w().refreshHint}`; }
     finally { if (owns(owner, project, gen) && request === listRequest) { listLoading = false; controls(); } }
@@ -152,26 +197,26 @@
     if (!data || !hash(sha)) return;
     const cached = details.get(sha); if (!cached && (!navigator.onLine || busy)) return;
     canvas.querySelectorAll<HTMLButtonElement>('[data-commit]').forEach(n => n.setAttribute('aria-pressed', String(n.dataset.commit === sha)));
-    if (detail.hidden) { origin = sha; scrollY = window.scrollY; }
+    if (!detail.open) { origin = sha; scrollY = window.scrollY; graphPosition = [scroll.scrollTop, scroll.scrollLeft]; }
     selected = sha; diffRequest++; diffLoading = false; const request = ++detailRequest;
     const owner = epoch, project = root, gen = generation, revision = data.revision;
-    graphPane.hidden = true; detail.hidden = false; detailLoading = true; detailContent.replaceChildren(make('p', w().loading)); message = ''; controls();
+    hideTooltip(); detailLoading = true; detailContent.replaceChildren(make('p', w().loading)); message = ''; if (!detail.open) { detail.showModal(); back.focus({ preventScroll: true }); } detailContent.scrollTop = 0; controls();
     try {
       const result: any = cached || await invoke('governance.gitHistory', { action: 'detail', sha, revision });
-      if (!current(owner, project, gen) || request !== detailRequest || detail.hidden || data.revision !== revision) return;
+      if (!current(owner, project, gen) || request !== detailRequest || !detail.open || data.revision !== revision) return;
       const c = result.commit;
       if (result.workspace !== project || result.revision !== revision || !commitOK(c) || c.sha !== sha || typeof c.body !== 'string' || c.body.length > 32768 || !Array.isArray(c.files) || c.files.length > 500 || c.files.some(f => typeof f.path !== 'string' || f.path.length > 4096 || typeof f.status !== 'string')) throw Error('Invalid commit response');
       remember(details, sha, result, 16); renderDetail(c);
-    } catch { if (current(owner, project, gen) && request === detailRequest && !detail.hidden) { detailContent.replaceChildren(make('p', w().error, 'hint')); message = w().refreshHint; } }
+    } catch { if (current(owner, project, gen) && request === detailRequest && detail.open) { detailContent.replaceChildren(make('p', w().error, 'hint')); message = w().refreshHint; } }
     finally { if (owns(owner, project, gen) && request === detailRequest) { detailLoading = false; controls(); } }
   }
   async function showPatch(sha: string, file: string, titleNode: HTMLElement, notice: HTMLElement, pre: HTMLElement) {
-    const key = `${sha}:${file}`, cached = patches.get(key); if (!cached && (!navigator.onLine || busy)) return;
+    const key = `${sha}:${file}`, cached = patches.get(key); if (!cached && (!navigator.onLine || busy)) { notice.textContent = !navigator.onLine ? w().offline : w().loading; return; }
     const request = ++diffRequest, owner = epoch, project = root, gen = generation, revision = data.revision;
     titleNode.textContent = file; notice.textContent = w().loading; pre.replaceChildren(); diffLoading = true; controls();
     try {
       const r: any = cached || await invoke('governance.gitHistory', { action: 'diff', sha, path: file, revision });
-      if (!current(owner, project, gen) || request !== diffRequest || detail.hidden || selected !== sha || data.revision !== revision) return;
+      if (!current(owner, project, gen) || request !== diffRequest || !detail.open || selected !== sha || data.revision !== revision) return;
       if (r.workspace !== project || r.revision !== revision || r.sha !== sha || r.path !== file || !['text', 'binary', 'restricted', 'too-large'].includes(r.kind) || typeof r.patch !== 'string' || r.patch.length > 131072) throw Error('Invalid patch');
       remember(patches, key, r, 8); notice.textContent = r.kind === 'text' ? r.truncated ? w().truncated : '' : w()[r.kind === 'too-large' ? 'tooLarge' : r.kind];
       const lines = r.patch ? r.patch.split('\n') : [];
@@ -181,19 +226,28 @@
     finally { if (owns(owner, project, gen) && request === diffRequest) { diffLoading = false; controls(); } }
   }
   function goBack() {
-    detailRequest++; diffRequest++; detailLoading = diffLoading = false; detail.hidden = true; graphPane.hidden = false; detailContent.replaceChildren(); controls();
-    const target = Array.from(canvas.querySelectorAll<HTMLButtonElement>('[data-commit]')).find(n => n.dataset.commit === origin); target?.focus({ preventScroll: true }); window.scrollTo({ top: scrollY, behavior: 'instant' });
+    detailRequest++; diffRequest++; detailLoading = diffLoading = false; if (detail.open) detail.close(); detailContent.replaceChildren(); controls();
+    const target = Array.from(canvas.querySelectorAll<HTMLButtonElement>('[data-commit]')).find(n => n.dataset.commit === origin); target?.focus({ preventScroll: true }); scroll.scrollTop = graphPosition[0]; scroll.scrollLeft = graphPosition[1]; window.scrollTo({ top: scrollY, behavior: 'instant' });
   }
-  back.addEventListener('click', goBack); host.addEventListener('keydown', e => { if (e.key === 'Escape' && !detail.hidden) { e.preventDefault(); goBack(); } });
+  back.addEventListener('click', goBack); detail.addEventListener('cancel', e => { e.preventDefault(); goBack(); });
+  let backdrop = false;
+  const outside = (e: PointerEvent) => { const r = detail.getBoundingClientRect(); return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom; };
+  detail.addEventListener('pointerdown', e => { backdrop = e.target === detail && outside(e); });
+  detail.addEventListener('pointerup', e => { if (backdrop && e.target === detail && outside(e)) goBack(); backdrop = false; });
+  pane.addEventListener('keydown', e => { if (e.key === 'Escape') hideTooltip(); });
+  const scrollTooltip = () => { if (tooltipOwner === document.activeElement) placeTooltip(); else hideTooltip(); };
+  scroll.addEventListener('scroll', scrollTooltip, { passive: true }); window.addEventListener('scroll', scrollTooltip, { passive: true }); window.addEventListener('resize', hideTooltip);
+  new ResizeObserver(() => { if (data && commits.length && canvas.clientWidth !== lastWidth && active()) renderGraph(); }).observe(scroll);
   refresh.addEventListener('click', () => { void load(); }); more.addEventListener('click', () => { void load(true); });
   function context() {
     if (epoch !== workspaceEpoch || snapshot?.workspace && snapshot.workspace !== root) { reset(); epoch = workspaceEpoch; root = snapshot?.workspace || null; }
     if (!root && snapshot?.workspace) { root = snapshot.workspace; epoch = workspaceEpoch; }
+    if (!active()) { hideTooltip(); if (detail.open) goBack(); }
     controls(); if (active() && root && !attempted && !busy && navigator.onLine) void load();
   }
-  function localize() { historyTab.textContent = w().history; managedTab.textContent = w().managed; title.textContent = w().title; subtitle.textContent = w().intro; refresh.textContent = w().refresh; more.textContent = w().more; back.textContent = w().back; safety.textContent = w().noWrite; scroll.setAttribute('aria-label', w().history); tabs.setAttribute('aria-label', w().history); controls(); }
+  function localize() { title.textContent = w().history; subtitle.textContent = w().intro; refresh.textContent = w().refresh; more.textContent = w().more; dialogTitle.textContent = w().detail; back.textContent = words().close; safety.textContent = w().noWrite; scroll.setAttribute('aria-label', w().history); controls(); }
   window.addEventListener('hashchange', context); window.addEventListener('git-history-context', context); window.addEventListener('git-history-reset', () => { reset(); });
-  window.addEventListener('offline', () => { listRequest++; detailRequest++; diffRequest++; listLoading = detailLoading = diffLoading = false; controls(); });
+  window.addEventListener('offline', () => { listRequest++; detailRequest++; diffRequest++; listLoading = detailLoading = diffLoading = false; if (detail.open && !detailContent.querySelector('#git-commit-title')) detailContent.replaceChildren(make('p', w().offline, 'hint')); controls(); });
   window.addEventListener('online', controls); window.addEventListener('pagehide', () => { reset(); root = null; }); window.addEventListener('pageshow', context);
-  localize(); switchTab('history'); void localeReady.then(() => { localize(); context(); });
+  localize(); void localeReady.then(() => { localize(); context(); });
 })();
