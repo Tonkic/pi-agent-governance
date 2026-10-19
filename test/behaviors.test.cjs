@@ -271,3 +271,31 @@ test('persisted behavior bindings reject non-record roots with a schema error', 
     });
   }
 });
+
+test('real repository behavior contract fits unchanged raw budget in LF and CRLF checkouts', async () => {
+  const root = path.resolve(__dirname, '..');
+  const bindings = JSON.parse(await fs.readFile(path.join(root, 'docs/behavior-bindings.json'), 'utf8'));
+  const files = [...new Set(bindings.behaviors.flatMap(item => [item.document, ...item.files]))];
+  const snapshots = [];
+  for (const newline of ['\n', '\r\n']) {
+    let total = 0;
+    const contents = new Map();
+    for (const file of ['docs/behavior-bindings.json', ...files]) {
+      const content = (await fs.readFile(path.join(root, file), 'utf8')).replace(/\r\n/g, '\n').replace(/\n/g, newline);
+      contents.set(file, content); if (files.includes(file)) total += content.length;
+    }
+    assert.ok(total <= 500000, `${newline === '\n' ? 'LF' : 'CRLF'} checkout exceeds raw budget: ${total}`);
+    const g = { root, read: async file => { if (contents.has(file)) return contents.get(file); const error = Error('Missing fixture evidence'); error.code = 'ENOENT'; throw error; } };
+    snapshots.push(await behaviorContract(g));
+    assert.equal((await behaviorSnapshot(g)).behaviors.length, bindings.behaviors.length);
+  }
+  assert.equal(snapshots[0].fingerprint, snapshots[1].fingerprint);
+});
+
+test('raw 500000 character read budget remains enforced, including CRLF bytes', async t => {
+  const f = await fixture(t);
+  await f.g.write('src/app.ts', 'x'.repeat(500001));
+  await assert.rejects(behaviorSnapshot(f.g), /exceeds read budget/);
+  await f.g.write('src/app.ts', 'x\r\n'.repeat(166667));
+  await assert.rejects(behaviorSnapshot(f.g), /exceeds read budget/);
+});

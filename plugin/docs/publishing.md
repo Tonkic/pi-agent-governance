@@ -3,6 +3,8 @@
 
 支持**通用MCP＋Skills＋本地Web控制台包**及**PI-Desktop官方piplug**，附Codex、Claude Code、Pi配置示例，不是各CLI原生插件。当前 **0.8.3** 获准悬浮导航与行为文档一级页、源码与安装包交付，并单次同步插件市场；不创建标签/Release，不发布npm或自动安装。1.x稳定主/次版本vX.Y.0规则不变，见[交付规则](releasing.md)。
 
+本次行为读取/内部文档链接修复不自行升版本；仓库0.8.3包经官方工具重新生成，不能与此前市场approved包混同。市场版本不覆盖/重提，不自动安装；修复源码、包哈希及验证见[修复记录](https://github.com/Tonkic/pi-agent-governance/blob/main/changes/active/project-board-release/behavior-reader-fixes.md)。
+
 ## 构建目标
 
 在干净、已构建且已审查的来源提交上执行：

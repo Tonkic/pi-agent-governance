@@ -112,5 +112,6 @@ module.exports = async ({ browser, screenshots }) => {
     assert.equal(await page.locator('#documents-body').textContent(), ''); assert.equal(await page.locator('[data-document]').count(), 0); assert.equal(await page.locator('#documents-refresh').isDisabled(), true);
     assert.deepEqual(await fs.readFile(path.join(root, 'STATE.json')), before, 'Reading never rewrites project state'); assert.deepEqual(errors, []);
     console.log(`PASS document reader: real HTTP/search/body/TOC, literal HTML and resource rejection, keyboard/offline/errors/late selection/project reset/limits, ${shots} bilingual responsive/theme screenshots`);
+    await require('./document-links-browser.cjs')({ browser, screenshots });
   } finally { for (const context of contexts) await context.close(); await app?.close(); await fs.rm(root, { recursive: true, force: true, maxRetries: 5 }); }
 };

@@ -1,10 +1,10 @@
 'use strict';
-// Read-only project reader. Source strings never become markup, attributes or resource URLs.
+// Read-only project reader. Internal links use the listed Markdown paths, never source URLs.
 (() => {
   const host = document.getElementById('documents-section');
   const words = {
-    en: { title: 'Project documents', library: 'Document library', hint: 'Read-only · root guides, docs/ and notes/ Markdown. Links, images and HTML stay text; nothing is executed or loaded.', refresh: 'Refresh documents', search: 'Search filenames', choose: 'Select a document to read', empty: 'No matching Markdown documents', waiting: 'Connect to a project first', loading: 'Reading…', contents: 'On this page', noHeadings: 'No headings', offline: 'Offline · loaded text remains available. Reconnect and refresh to read files.', error: 'Could not read documents. Refresh to try again.', count: 'documents', limited: 'List is limited: at most 500 files, 4000 entries, depth 8, 256 KiB per file. Some files may be omitted.', plain: 'Document complexity limit: shown as plain text to keep the reader responsive.', cached: 'Loaded snapshot · refresh to read external changes', read: 'Read-only' },
-    zh: { title: '项目文档', library: '文档库', hint: '只读 · 根目录说明及 docs/、notes/ 中的 Markdown。链接、图片和 HTML 仅显示文本，不执行或加载资源。', refresh: '刷新文档', search: '搜索文件名', choose: '选择一篇文档开始阅读', empty: '没有匹配的 Markdown 文档', waiting: '请先连接项目', loading: '正在读取…', contents: '本页目录', noHeadings: '暂无标题', offline: '离线 · 已加载正文仍可阅读。恢复连接后刷新以读取文件。', error: '文档读取失败，请刷新重试。', count: '篇文档', limited: '列表有限额：最多 500 个文件、扫描 4000 个条目、8 层目录、每文件 256 KiB；部分文件可能未列出。', plain: '文档复杂度达到限额，已采用纯文本显示以保持流畅。', cached: '已加载快照 · 外部修改后请刷新', read: '只读' }
+    en: { title: 'Project documents', library: 'Document library', hint: 'Read-only · root guides, docs/ and notes/ Markdown. Listed internal documents and headings can be opened here; external links, images and HTML stay text.', refresh: 'Refresh documents', search: 'Search filenames', choose: 'Select a document to read', empty: 'No matching Markdown documents', waiting: 'Connect to a project first', loading: 'Reading…', contents: 'On this page', noHeadings: 'No headings', missingHeading: 'Heading not found in the loaded document.', offline: 'Offline · loaded text remains available. Reconnect and refresh to read files.', error: 'Could not read documents. Refresh to try again.', count: 'documents', limited: 'List is limited: at most 500 files, 4000 entries, depth 8, 256 KiB per file. Some files may be omitted.', plain: 'Document complexity limit: shown as plain text to keep the reader responsive.', cached: 'Loaded snapshot · refresh to read external changes', read: 'Read-only' },
+    zh: { title: '项目文档', library: '文档库', hint: '只读 · 根目录说明及 docs/、notes/ 中的 Markdown。已列出的内部文档和标题可在此跳转；外部链接、图片和 HTML 仅显示文本。', refresh: '刷新文档', search: '搜索文件名', choose: '选择一篇文档开始阅读', empty: '没有匹配的 Markdown 文档', waiting: '请先连接项目', loading: '正在读取…', contents: '本页目录', noHeadings: '暂无标题', missingHeading: '未找到所链接的文档标题。', offline: '离线 · 已加载正文仍可阅读。恢复连接后刷新以读取文件。', error: '文档读取失败，请刷新重试。', count: '篇文档', limited: '列表有限额：最多 500 个文件、扫描 4000 个条目、8 层目录、每文件 256 KiB；部分文件可能未列出。', plain: '文档复杂度达到限额，已采用纯文本显示以保持流畅。', cached: '已加载快照 · 外部修改后请刷新', read: '只读' }
   };
   const w = () => words[locale === 'zh-CN' ? 'zh' : 'en'];
   const el = (tag: string, text = '', className = '') => {
@@ -50,6 +50,7 @@
   let root: string = null, epoch = -1, sequence = 0, listing = false, readingFile = false;
   let entries: Array<{ path: string; bytes: number }> = [], selected = '', loaded = false, truncated = false;
   let listMessage = '', readMessage = '', hasBody = false, attempted = false;
+  const headingTargets = new Map<string, HTMLElement>();
   const active = () => location.hash === '#documents-section';
   const owns = (owner: number, project: string, request: number) => owner === workspaceEpoch && owner === epoch && project === root && request === sequence;
   const current = (owner: number, project: string, request: number) => owns(owner, project, request) && snapshot?.workspace === root;
@@ -81,13 +82,36 @@
   }
   function reset() {
     sequence++; epoch = workspaceEpoch; root = null; entries = []; selected = ''; loaded = truncated = hasBody = listing = readingFile = false;
+    headingTargets.clear();
     listMessage = readMessage = ''; attempted = false; search.value = ''; body.replaceChildren(); toc.replaceChildren(); path.textContent = ''; host.setAttribute('aria-busy', 'false'); body.setAttribute('aria-busy', 'false'); renderList();
   }
-  // Markdown subset, bounded DOM. No parser-generated HTML, URLs, images, styles or IDs from source.
+  function resolveLink(value: string) {
+    if (!value || value.length > 2048) return null;
+    const hash = value.indexOf('#');
+    let file: string, fragment: string;
+    try { file = decodeURIComponent(hash < 0 ? value : value.slice(0, hash)); fragment = hash < 0 ? '' : decodeURIComponent(value.slice(hash + 1)); } catch { return null; }
+    if (/^[\/]/.test(file) || /[\x00-\x1f\x7f\\:?<>|%]/.test(file) || /[\x00-\x1f\x7f]/.test(fragment)) return null;
+    const parts = selected.split('/').slice(0, -1);
+    if (file) for (const part of file.split('/')) {
+      if (part === '.') continue;
+      if (part === '..') { if (!parts.length) return null; parts.pop(); }
+      else { if (!part) return null; parts.push(part); }
+    }
+    const target = file ? parts.join('/') : selected;
+    return entries.some(item => item.path === target) ? { file: target, fragment } : null;
+  }
+  function jump(fragment: string) {
+    const heading = headingTargets.get(fragment);
+    if (!heading) { readMessage = w().missingHeading; messages(); return; }
+    readMessage = ''; messages(); if (narrow()) contents.open = false;
+    heading.scrollIntoView({ block: 'start', behavior: 'instant' }); heading.focus({ preventScroll: true });
+  }
+  // Markdown subset, bounded DOM. No parser-generated HTML or source-owned resource URLs/IDs.
   function renderMarkdown(source: string) {
-    body.replaceChildren(); toc.replaceChildren();
+    body.replaceChildren(); toc.replaceChildren(); headingTargets.clear();
+    const sourceFile = selected, project = root, owner = epoch;
     const lines = source.replace(/\r\n?/g, '\n').split('\n');
-    const plain = () => { const pre = el('pre', source); pre.tabIndex = 0; body.replaceChildren(el('p', w().plain, 'muted'), pre); toc.replaceChildren(el('p', w().noHeadings, 'muted')); };
+    const plain = () => { headingTargets.clear(); const pre = el('pre', source); pre.tabIndex = 0; body.replaceChildren(el('p', w().plain, 'muted'), pre); toc.replaceChildren(el('p', w().noHeadings, 'muted')); };
     if (lines.length > 4000) { plain(); return; }
     // One shared node budget covers blocks, table cells, inline spans, text and TOC.
     let tokens = 4000, headings = 0;
@@ -97,13 +121,24 @@
       let at = 0, start = 0;
       while (at < value.length) {
         const c = value[at];
-        // Keep the complete link/image/HTML/URL spelling literal, even its emphasis.
+        // Only listed relative Markdown links get an inert, constant href and an internal handler.
         if (c === '<' || c === '[' || (c === '!' && value[at + 1] === '[') || value.startsWith('https://', at) || value.startsWith('http://', at)) {
-          let end: number;
+          let end: number, close = -1;
           if (c === '<') end = value.indexOf('>', at + 1);
-          else if (c === '[' || c === '!') { const close = value.indexOf(']', at + 1); end = close < 0 ? -1 : value[close + 1] === '(' ? value.indexOf(')', close + 2) : close; }
+          else if (c === '[' || c === '!') { close = value.indexOf(']', at + 1); end = close < 0 ? -1 : value[close + 1] === '(' ? value.indexOf(')', close + 2) : close; }
           else { const space = value.slice(at).search(/\s/); end = space < 0 ? value.length - 1 : at + space - 1; }
-          if (end < 0) { at = value.length; break; } at = end + 1; continue;
+          if (end < 0) { at = value.length; break; }
+          const target = c === '[' && value[close + 1] === '(' && value[at - 1] !== '!' && value[at - 1] !== '\\' ? resolveLink(value.slice(close + 2, end)) : null;
+          if (target) {
+            text(node, value.slice(start, at)); const link = make('a', value.slice(at + 1, close), 'reader-link'); link.setAttribute('href', '#documents-section');
+            link.addEventListener('click', event => {
+              event.preventDefault();
+              if (owner !== epoch || owner !== workspaceEpoch || project !== root || snapshot?.workspace !== project || sourceFile !== selected || !active()) return;
+              if (target.file === selected && hasBody) { if (target.fragment) jump(target.fragment); }
+              else void read(target.file, true, target.fragment);
+            }); node.append(link); start = end + 1;
+          }
+          at = end + 1; continue;
         }
         if (c === '\n') { text(node, value.slice(start, at)); node.append(make('br')); start = ++at; continue; }
         const mark = c === '`' ? '`' : value.startsWith('**', at) ? '**' : value.startsWith('__', at) ? '__' : value.startsWith('~~', at) ? '~~' : c === '*' || (c === '_' && !/[\w]/.test(value[at - 1] || '')) ? c : '';
@@ -127,6 +162,9 @@
     const flush = () => { if (paragraph.length) { const p = make('p'); inline(p, join(paragraph)); body.append(p); paragraph = []; } lists = []; };
     const addHeading = (level: number, value: string) => {
       flush(); const h = make(`h${level}`); inline(h, value); h.tabIndex = -1; body.append(h);
+      const slug = (h.textContent || '').toLocaleLowerCase().replace(/[^\p{L}\p{N}\p{M}_\-\s]/gu, '').replace(/\s/g, '-');
+      let key = slug, duplicate = 0; while (headingTargets.has(key)) key = `${slug}-${++duplicate}`;
+      headingTargets.set(key, h);
       if (++headings <= 200) {
         const button = make('button', value) as HTMLButtonElement; button.type = 'button'; button.dataset.level = String(level);
         button.addEventListener('click', () => { if (narrow()) contents.open = false; h.scrollIntoView({ block: 'start', behavior: 'instant' }); h.focus({ preventScroll: true }); }); toc.append(button);
@@ -182,10 +220,11 @@
       if (!headings) toc.append(make('p', w().noHeadings, 'muted'));
     } catch { plain(); }
   }
-  async function read(file: string, moveFocus = false) {
+  async function read(file: string, moveFocus = false, fragment = '') {
     if (!root || busy || listing || !navigator.onLine) return;
     const owner = epoch, project = root, request = ++sequence;
     selected = file; readingFile = true; hasBody = false; body.replaceChildren(); toc.replaceChildren(); path.textContent = file; readMessage = w().loading;
+    headingTargets.clear();
     renderList(); body.setAttribute('aria-busy', 'true');
     try {
       const result = await invoke('governance.documents', { action: 'read', path: file });
@@ -193,6 +232,7 @@
       if (result.workspace !== project || result.path !== file || typeof result.content !== 'string' || result.content.length > 262144) throw Error('Invalid document response');
       renderMarkdown(result.content); hasBody = true; readMessage = '';
       if (moveFocus && active()) { if (narrow()) library.open = contents.open = false; body.focus({ preventScroll: true }); body.scrollIntoView({ block: 'start', behavior: 'instant' }); }
+      if (fragment && active()) jump(fragment);
     } catch { if (current(owner, project, request)) readMessage = w().error; }
     finally { if (owns(owner, project, request)) { readingFile = false; if (readMessage === w().loading) readMessage = w().error; body.setAttribute('aria-busy', 'false'); messages(); controls(); } }
   }
@@ -200,6 +240,7 @@
     if (!root || busy || listing || !navigator.onLine) return;
     const owner = epoch, project = root, request = ++sequence, previous = selected;
     attempted = true; listing = true; readingFile = false; loaded = false; entries = []; selected = ''; hasBody = false; path.textContent = ''; body.replaceChildren(); toc.replaceChildren();
+    headingTargets.clear();
     listMessage = readMessage = w().loading; renderList(); host.setAttribute('aria-busy', 'true');
     try {
       const result = await invoke('governance.documents', { action: 'list' });

@@ -301,6 +301,18 @@
       "gitTaskId": null
     },
     {
+      "id": "behavior-reader-fixes",
+      "title": "行为读取与内部文档跳转修复",
+      "description": "修复真实CRLF签出预算超限和Markdown项目内链接；保留原预算/白名单，不升版本或覆盖市场包。",
+      "blocker": "",
+      "stage": "doing",
+      "taskId": "project-board-release",
+      "criteria": [],
+      "architectureImpact": "none",
+      "gitTaskId": null,
+      "completedAt": null
+    },
+    {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
       "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
@@ -382,5 +394,5 @@
       "completedAt": "2026-10-19T07:11:44.978Z"
     }
   ],
-  "updatedAt": "2026-10-19T07:11:44.978Z"
+  "updatedAt": "2026-10-19T08:00:27.674Z"
 }
