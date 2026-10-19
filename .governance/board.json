@@ -20,6 +20,18 @@
       "gitTaskId": null
     },
     {
+      "id": "git-history-view",
+      "title": "只读Git提交图与二级详情",
+      "description": "用户确认：最新在上/早期在下，真实分支与合并连线，节点打开提交/文件差异二级页并返回保留位置，保留受管工作区标签页；分页、有界、双语响应式，不执行合并/reset/push。",
+      "blocker": "",
+      "stage": "done",
+      "taskId": "project-board-release",
+      "criteria": [],
+      "architectureImpact": "affects",
+      "gitTaskId": null,
+      "completedAt": "2026-10-19T10:15:48.348Z"
+    },
+    {
       "id": "fast-workflow-082",
       "title": "简化开发检查流程并交付0.8.2",
       "description": "用户批准：局部定向、公共高风险及大版本全量；等同已测内容不重跑，记录快路、一次构建、一次浏览器/行为证据。仅源码包，无标签Release市场npm安装。",
@@ -301,18 +313,6 @@
       "gitTaskId": null
     },
     {
-      "id": "git-history-view",
-      "title": "只读Git提交图与二级详情",
-      "description": "用户确认：最新在上/早期在下，真实分支与合并连线，节点打开提交/文件差异二级页并返回保留位置，保留受管工作区标签页；分页、有界、双语响应式，不执行合并/reset/push。",
-      "blocker": "",
-      "stage": "doing",
-      "taskId": "project-board-release",
-      "criteria": [],
-      "architectureImpact": "affects",
-      "gitTaskId": null,
-      "completedAt": null
-    },
-    {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
       "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
@@ -406,5 +406,5 @@
       "completedAt": "2026-10-19T08:25:19.973Z"
     }
   ],
-  "updatedAt": "2026-10-19T09:09:22.648Z"
+  "updatedAt": "2026-10-19T10:15:48.349Z"
 }
