@@ -2,7 +2,7 @@
 module.exports = async ({ browser, screenshots }) => {
   const assert = require('node:assert/strict'), fs = require('node:fs/promises'), path = require('node:path'), os = require('node:os'), { execFileSync } = require('node:child_process');
   const { Governance } = require('../build/plugin/core'), { startConsole } = require('../build/web/server');
-  const root = await fs.realpath(await fs.mkdtemp(path.join(process.env.PI_SCRATCH_DIR || os.tmpdir(), 'git-graph-browser-')));
+  const root = require('node:fs').realpathSync.native(await fs.mkdtemp(path.join(process.env.PI_SCRATCH_DIR || os.tmpdir(), 'git-graph-browser-')));
   const g = new Governance(root), contexts = [], errors = [], requests = []; let app, shots = 0;
   const git = (...args) => execFileSync('git', ['-c', 'core.hooksPath=' + path.join(root, 'disabled-hooks'), '-c', 'commit.gpgSign=false', ...args], { cwd: root, encoding: 'utf8', windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] }).trim();
   const output = path.join(screenshots, 'git-history'); await fs.mkdir(output, { recursive: true });
