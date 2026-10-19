@@ -20,6 +20,18 @@
       "gitTaskId": null
     },
     {
+      "id": "fast-workflow-082",
+      "title": "简化开发检查流程并交付0.8.2",
+      "description": "用户批准：局部定向、公共高风险及大版本全量；等同已测内容不重跑，记录快路、一次构建、一次浏览器/行为证据。仅源码包，无标签Release市场npm安装。",
+      "blocker": "",
+      "stage": "done",
+      "taskId": "project-board-release",
+      "criteria": [],
+      "architectureImpact": "none",
+      "gitTaskId": null,
+      "completedAt": "2026-10-19T06:10:47.097Z"
+    },
+    {
       "id": "reference-ui",
       "title": "参考图美化统一浏览器工作台",
       "description": "参考图美化完成：导航/欢迎区/真实统计/三栏和右摘要，双语明暗/窄屏，原交互保留。188测试/135图/10行为、官方包与分发、main重测推送及CI39074954295双系统通过，宽屏及390明暗已实际看图。第二项未开始，继续只读文档阅读。",
@@ -289,18 +301,6 @@
       "gitTaskId": null
     },
     {
-      "id": "fast-workflow-082",
-      "title": "简化开发检查流程并交付0.8.2",
-      "description": "用户批准：局部定向、公共高风险及大版本全量；等同已测内容不重跑，记录快路、一次构建、一次浏览器/行为证据。仅源码包，无标签Release市场npm安装。",
-      "blocker": "",
-      "stage": "doing",
-      "taskId": "project-board-release",
-      "criteria": [],
-      "architectureImpact": "none",
-      "gitTaskId": null,
-      "completedAt": null
-    },
-    {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
       "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
@@ -370,5 +370,5 @@
       "completedAt": "2026-10-18T18:54:06.186Z"
     }
   ],
-  "updatedAt": "2026-10-18T19:58:52.286Z"
+  "updatedAt": "2026-10-19T06:10:47.104Z"
 }
