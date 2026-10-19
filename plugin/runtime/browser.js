@@ -213,6 +213,7 @@ async function startBrowserConsole(options) {
         if (active >= 8)
             return reject(429);
         active++;
+        let behaviorRead = false;
         try {
             let size = 0;
             const chunks = [];
@@ -246,10 +247,15 @@ async function startBrowserConsole(options) {
             await noLinks(root);
             if (closed)
                 return reject();
+            behaviorRead = input.channel === 'governance.behaviors';
             const result = await panelInvoke(root, input.channel, payload);
             send(200, JSON.stringify({ ok: true, result }));
         }
-        catch {
+        catch (error) {
+            if (behaviorRead && error.message === 'Behavior contract exceeds read budget') {
+                send(409, JSON.stringify({ ok: false, error: 'Behavior documents exceed the 500000-character source read budget. Reduce the bound source/test content; refreshing or confirming will not resolve this limit. / 行为文档关联源码超过500000字符读取预算。请精简关联源码/测试内容；刷新或确认不能解除此限额。' }));
+                return;
+            }
             // No caller arguments, raw Git output, credentials or stack traces in responses/logs.
             send(409, JSON.stringify({ ok: false, error: 'Operation rejected. Refresh and check confirmation, task scope, paths, locks and current revision. / 操作被拒绝：请刷新并检查确认、范围、路径、锁和最新修订。' }));
         }

@@ -98,3 +98,13 @@ test('lease requests share the eight-request body budget and old incomplete requ
   assert.equal(await response, 403); await closed;
   assert.deepEqual(await fs.readdir(f.root), []);
 });
+
+test('behavior read budget has a safe actionable message, not a write-confirmation diagnostic', async t => {
+  const f = await fixture(t); await f.g.run({ action: 'init' });
+  await f.g.write('docs/behavior.md', '### WS-001 — Read budget\n\nReadonly behavior.\n');
+  await f.g.write('docs/behavior-bindings.json', JSON.stringify({ version: 1, behaviors: [{ id: 'WS-001', document: 'docs/behavior.md', cases: ['budget-case'], files: ['src/example.ts'] }] }));
+  await f.g.write('src/example.ts', 'x'.repeat(500001));
+  const response = await f.post('governance.behaviors'); const result = await response.json();
+  assert.equal(response.status, 409); assert.equal(result.ok, false); assert.match(result.error, /500000/); assert.doesNotMatch(result.error, /Operation rejected|current revision/);
+  assert.ok(!result.error.includes(f.root) && !result.error.includes(f.token) && !result.error.includes('src/example.ts'));
+});

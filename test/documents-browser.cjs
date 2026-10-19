@@ -28,7 +28,9 @@ module.exports = async ({ browser, screenshots }) => {
     await read(page, 'docs/guide.md');
     assert.equal(await page.locator('#documents-body h1').textContent(), 'Project guide / 项目指南'); assert.equal(await page.locator('#documents-body ul li').count(), 2);
     assert.equal(await page.locator('#documents-body strong').textContent(), 'read-only');
-    assert.equal(await page.locator('#documents-body img, #documents-body script, #documents-body iframe, #documents-body a, #documents-body style').count(), 0);
+    assert.equal(await page.locator('#documents-body img, #documents-body script, #documents-body iframe, #documents-body a:not(.reader-link), #documents-body style').count(), 0);
+    assert.equal(await page.locator('#documents-body a.reader-link').count(), 1, 'Only the listed local README target is navigable');
+    assert.equal(await page.getByRole('link', { name: 'local', exact: true }).getAttribute('href'), '#documents-section');
     assert.match(await page.locator('#documents-body pre').textContent(), /<img src=/);
     assert.equal(await page.evaluate(() => window.readerXss), undefined);
     assert.equal(requests.some(r => /remote\.invalid|javascript:/.test(r.url)), false, 'No document-owned requests');
@@ -112,5 +114,6 @@ module.exports = async ({ browser, screenshots }) => {
     assert.equal(await page.locator('#documents-body').textContent(), ''); assert.equal(await page.locator('[data-document]').count(), 0); assert.equal(await page.locator('#documents-refresh').isDisabled(), true);
     assert.deepEqual(await fs.readFile(path.join(root, 'STATE.json')), before, 'Reading never rewrites project state'); assert.deepEqual(errors, []);
     console.log(`PASS document reader: real HTTP/search/body/TOC, literal HTML and resource rejection, keyboard/offline/errors/late selection/project reset/limits, ${shots} bilingual responsive/theme screenshots`);
+    await require('./document-links-browser.cjs')({ browser, screenshots });
   } finally { for (const context of contexts) await context.close(); await app?.close(); await fs.rm(root, { recursive: true, force: true, maxRetries: 5 }); }
 };
