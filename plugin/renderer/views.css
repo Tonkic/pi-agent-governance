@@ -997,6 +997,9 @@ select {
 .history-summary { color: var(--muted); }
 .history-key { display: inline-flex; align-items: center; gap: 8px; overflow-wrap: anywhere; min-width: 0; }
 .history-key::before { content: ''; flex: 0 0 16px; height: 3px; background: currentColor; border-radius: 4px; }
+.history-branch-key::before { display: none; }
+.history-branch-swatch { display: inline-flex; flex: 0 0 20px; gap: 1px; }
+.history-branch-swatch i { flex: 1; height: 3px; background: currentColor; border-radius: 1px; }
 .history-warning { color: var(--warning, var(--muted)); }
 .history-scroll { max-height: 64vh; min-height: 200px; overflow: auto; overscroll-behavior: contain; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); scrollbar-gutter: stable; }
 .history-canvas { position: relative; min-width: 0; }

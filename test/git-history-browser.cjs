@@ -37,8 +37,10 @@ module.exports = async ({ browser, screenshots }) => {
       await p.locator('a[href="#git-section"]').click(); await loaded(p);
       assert.equal(await p.locator('#git-managed-tab, #git-managed-view, #git-summary, #git-tasks, .history-tabs').count(), 0);
       assert.equal(await p.locator('[data-commit]').count(), 100); assert.equal(await p.locator('[data-commit]').first().getAttribute('data-commit'), merge);
-      assert.match(await p.locator('.history-endpoint').first().textContent(), /HEAD.*main.*demo-tag/);
-      assert.match(await p.locator('#git-history-legend').textContent(), /main/); assert.match(await p.locator('#git-history-legend').textContent(), /feature\/demo/);
+      assert.equal(await p.locator('.history-endpoint').first().textContent(), 'HEADmain');
+      assert.equal(await p.locator('.history-ref').count(), 2, 'Only HEAD and the actual axis tip have permanent labels');
+      assert.equal(await p.locator('#git-history-legend .history-key').count(), 2);
+      assert.match(await p.locator('#git-history-legend').textContent(), /main.*(?:Branches|分支)/); assert.doesNotMatch(await p.locator('#git-history-legend').textContent(), /feature\/demo|demo-tag/);
       assert.equal(await p.locator(`path[data-child="${merge}"][data-parent="${feature}"]`).count(), 1); assert.equal(await p.locator(`path[data-child="${merge}"][data-parent="${mainParent}"]`).count(), 1);
       const firstGeometry = await geometry(p);
       assert.equal(firstGeometry.axis, firstGeometry.width / 2);
@@ -54,6 +56,7 @@ module.exports = async ({ browser, screenshots }) => {
       await hovered.focus(); await p.keyboard.press('Escape'); assert.equal(await p.locator('#git-history-tooltip').isVisible(), false);
       await p.locator('#git-history-more').click(); await loaded(p); assert.equal(await p.locator('[data-commit]').count(), total); assert.equal(await p.locator('[data-commit]').last().getAttribute('data-commit'), initial); assert.equal(await p.locator('#git-history-more').isVisible(), false);
       const paged = await geometry(p); assert.equal(paged.axis, firstGeometry.axis); for (const n of paged.nodes.filter(n => mainline.includes(n.sha))) assert.equal(n.x, paged.axis);
+      assert.equal(await p.locator('#git-history-legend .history-key').count(), 2, 'Pagination cannot grow the legend');
       const scroll = p.locator('#git-history-scroll'); await scroll.evaluate(n => { n.scrollTop = 320; });
       const selected = p.locator('[data-commit]').nth(6), selectedSha = await selected.getAttribute('data-commit'); await p.keyboard.press('Tab'); await selected.focus();
       assert.equal(await p.evaluate(() => getComputedStyle(document.activeElement).outlineStyle !== 'none'), true);
@@ -77,8 +80,10 @@ module.exports = async ({ browser, screenshots }) => {
         await p.locator('#git-history-back').click(); await closed(p); await scroll.evaluate(n => { n.scrollTop = 0; }); await p.locator('#git-history-refresh').focus();
         assert.equal(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
         const currentGeometry = await geometry(p); assert.equal(currentGeometry.axis, currentGeometry.width / 2); for (const n of currentGeometry.nodes.filter(n => mainline.includes(n.sha))) assert.equal(n.x, currentGeometry.axis);
+        assert.equal(await p.locator('#git-history-legend .history-key').count(), 2); assert.equal(await p.locator('#git-history-legend').evaluate(n => n.getBoundingClientRect().height <= 44), true, 'Quiet legend fits one row on mobile');
         assert.equal(await p.locator('[data-commit]').first().evaluate(n => getComputedStyle(n).animationName === 'none' && getComputedStyle(n).transitionDuration === '0s'), true); await shot(p, `${language}-${width}-${theme}-graph`);
         const summaryReads = historyReads(); await p.locator('[data-commit]').first().focus();
+        assert.match(await p.locator('#git-history-tooltip').textContent(), /demo-tag/, 'Hidden tags remain available on focus');
         assert.equal(await p.evaluate(() => { const tip = document.querySelector('#git-history-tooltip'), node = document.activeElement, t = tip.getBoundingClientRect(), n = node.getBoundingClientRect(); return !tip.hidden && t.left >= 0 && t.right <= innerWidth && t.top >= 0 && t.bottom <= innerHeight && (t.right <= n.left || t.left >= n.right || t.bottom <= n.top || t.top >= n.bottom); }), true, 'Tooltip stays on-screen without covering its trigger'); assert.equal(historyReads(), summaryReads);
         await p.locator('[data-commit]').first().click(); await detailed(p);
       }
@@ -113,15 +118,19 @@ module.exports = async ({ browser, screenshots }) => {
         if (mode === 'unlabeled') result.refs = result.refs.filter(ref => ref.name !== 'refs/heads/feature/demo');
         // Controlled alternative-ref demo snapshot. Every commit and parent remains from actual Git.
         if (mode === 'both-sides') { result.refs = result.refs.map(ref => ref.name === 'refs/heads/main' ? { ...ref, sha: initial } : ref); result.mainline = { ref: 'refs/heads/main', tip: initial, commits: [initial], truncated: false }; }
+        if (mode === 'crowded') result.refs.push(...Array.from({ length: 40 }, (_, i) => ({ name: `refs/heads/agent/demo-${i}`, kind: 'branch', sha: i % 2 ? feature : mainParent })));
         if (mode === 'invalid') result.mainline.commits = [merge, feature]; // Real second parent is not main's first parent.
         await route.fulfill({ response, json: body });
       });
-      for (const next of ['metadata', 'fallback', 'master', 'remote', 'head', 'unlabeled', 'both-sides']) {
+      for (const next of ['metadata', 'fallback', 'master', 'remote', 'head', 'unlabeled', 'crowded', 'both-sides']) {
         mode = next; await p.locator('#git-history-refresh').click(); await loaded(p); assert.equal(await p.locator('[data-commit]').count(), 100);
         const shape = await geometry(p);
         if (next !== 'both-sides') for (const n of shape.nodes.filter(n => mainline.includes(n.sha))) assert.equal(n.x, shape.axis);
         if (['master', 'remote', 'head'].includes(next)) { assert.match(await p.locator('#git-history-legend').textContent(), /Fallback|后备/); assert.equal(await p.locator('#git-history-canvas').getAttribute('data-axis-ref'), next === 'master' ? 'refs/heads/master' : next === 'remote' ? 'refs/remotes/origin/main' : 'HEAD'); }
-        if (next === 'unlabeled') { assert.match(await p.locator('#git-history-legend').textContent(), /Side history|侧线历史/); assert.doesNotMatch(await p.locator('#git-history-legend').textContent(), /feature\/demo/); }
+        assert.equal(await p.locator('#git-history-legend .history-key').count(), 2, 'Ref count and ancestry combinations never add legend rows');
+        assert.doesNotMatch(await p.locator('#git-history-legend').textContent(), /agent\/|feature\/demo|demo-tag/);
+        if (next === 'unlabeled') { await p.locator(`[data-commit="${feature}"]`).focus(); assert.match(await p.locator('#git-history-tooltip').textContent(), /Side history|侧线历史/); assert.doesNotMatch(await p.locator('#git-history-tooltip').textContent(), /feature\/demo/); }
+        if (next === 'crowded') { assert.equal(await p.locator('.history-ref').count(), 2); const reads = historyReads(); await p.locator(`[data-commit="${feature}"]`).focus(); const text = await p.locator('#git-history-tooltip').textContent(); assert.match(text, /agent\/demo-1\b/); assert.match(text, /agent\/demo-39\b/); assert.equal(historyReads(), reads); }
         if (next === 'both-sides') { assert.equal(shape.nodes.some(n => n.x < shape.axis), true); assert.equal(shape.nodes.some(n => n.x > shape.axis), true); assert.notEqual(shape.nodes[0].lane, 0, 'HEAD is not falsely promoted to main'); await p.locator('#git-history-more').click(); await loaded(p); const all = await geometry(p); assert.equal(all.axis, shape.axis); assert.equal(all.nodes.find(n => n.sha === initial).x, all.axis); }
       }
       mode = 'invalid'; await p.locator('#git-history-refresh').click(); await loaded(p); assert.match(await p.locator('#git-history-status').textContent(), /Refresh|刷新/); assert.equal(await p.locator('[data-commit]').count(), total); await p.unroute('**/api/invoke');

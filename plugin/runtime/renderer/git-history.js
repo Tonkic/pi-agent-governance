@@ -58,7 +58,7 @@
     let data = null, commits = [], selected = '', origin = '', scrollY = 0, message = '', laneLimited = false;
     let graphPosition = [0, 0], tooltipOwner = null, lastWidth = 0, centered = false;
     let tooltipTimer;
-    const words = () => locale === 'zh-CN' ? { close: '关闭详情', axis: '第一父链 · 中轴', fallback: '后备中轴', side: '侧线历史（无当前分支名）', branch: '分支归属', hover: '悬停或聚焦查看摘要 · 点击或 Enter 打开详情', refs: '当前引用', bounded: '主轴链达到读取上限' } : { close: 'Close details', axis: 'First-parent · center axis', fallback: 'Fallback axis', side: 'Side history (no current branch name)', branch: 'Branch ancestry', hover: 'Hover or focus for summary · click or Enter for details', refs: 'Current refs', bounded: 'Axis chain reached its read limit' };
+    const words = () => locale === 'zh-CN' ? { close: '关闭详情', branches: '分支', fallback: '后备中轴', side: '侧线历史（无当前分支名）', branch: '分支归属', hover: '悬停或聚焦查看摘要 · 点击或 Enter 打开详情', refs: '当前引用', bounded: '主轴链达到读取上限' } : { close: 'Close details', branches: 'Branches', fallback: 'Fallback axis', side: 'Side history (no current branch name)', branch: 'Branch ancestry', hover: 'Hover or focus for summary · click or Enter for details', refs: 'Current refs', bounded: 'Axis chain reached its read limit' };
     const details = new Map(), patches = new Map();
     const hash = (s) => typeof s === 'string' && /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(s);
     const remember = (cache, key, value, max) => { cache.delete(key); cache.set(key, value); while (cache.size > max)
@@ -244,10 +244,17 @@
         canvas.dataset.axis = String(center);
         canvas.dataset.axisRef = axis.ref || 'HEAD';
         const key = (text, color) => { const n = make('span', text, `history-key history-lane-${color}`); legend.append(n); };
-        key(`${axis.ref !== 'refs/heads/main' ? words().fallback + ' · ' : ''}${axis.label} · ${words().axis}`, 0);
+        key(`${axis.label}${axis.ref !== 'refs/heads/main' ? ' · ' + words().fallback : ''}`, 0);
+        const branches = make('span', words().branches, 'history-key history-branch-key');
+        const swatch = make('span', '', 'history-branch-swatch');
+        swatch.setAttribute('aria-hidden', 'true');
+        for (let color = 1; color <= 5; color++)
+            swatch.append(make('i', '', `history-lane-${color}`));
+        branches.prepend(swatch);
+        legend.append(branches);
         if (axis.truncated)
             summary.append(make('span', words().bounded, 'history-warning'));
-        const rows = make('ol', '', 'history-rows'), entries = [], keys = new Set();
+        const rows = make('ol', '', 'history-rows'), entries = [];
         for (const n of nodes) {
             const c = n.commit, li = make('li'), node = button('', ''), color = laneColor(n.lane), membership = main.has(c.sha) ? axis.label : Array.from(memberships.get(c.sha) || []).join(' · ') || words().side;
             const refs = data.refs.filter(r => r.sha === c.sha), identities = c.sha === data.head ? [{ name: 'HEAD', kind: 'head' }, ...refs] : refs;
@@ -272,16 +279,11 @@
                 rows.querySelectorAll('[data-commit]')[next].focus();
             } });
             const labels = make('div', '', 'history-endpoint');
-            for (const ref of identities)
+            for (const ref of identities.filter(r => r.kind === 'head' || r.name === axis.ref))
                 labels.append(make('span', ref.name === 'HEAD' ? 'HEAD' : shortRef(ref.name), `history-ref history-lane-${color}${ref.kind === 'head' ? ' history-head' : ''}`));
             li.append(node, labels);
             rows.append(li);
             entries.push({ ...n, li });
-            const keyId = `${color}:${membership}`;
-            if (n.lane !== 0 && !keys.has(keyId)) {
-                keys.add(keyId);
-                key(membership, color);
-            }
         }
         canvas.append(rows);
         const positions = new Map(entries.map(n => [n.commit.sha, { ...n, y: n.li.offsetTop + n.li.offsetHeight / 2 }]));

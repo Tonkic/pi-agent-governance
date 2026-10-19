@@ -1,7 +1,7 @@
 <!-- Generated from docs/ by scripts/build-docs.cjs. Do not edit. -->
 # GitHub 交付 / Checked delivery
 
-GitHub Release仍仅由稳定主/次版本标签 `vX.Y.0`（X≥1，Y≥0）各创建一次；标签由人另行创建。当前 **0.8.4** 是Git交互/性能补丁，仅同步源码和官方包，不提交市场、不建标签/Release。0.x/非0补丁/预发布等不触发GitHub Release，策略 `stable-major-minor-tag-only` 不变。
+GitHub Release仍仅由稳定主/次版本标签 `vX.Y.0`（X≥1，Y≥0）各创建一次；标签由人另行创建。当前 **0.8.5** 是Git图显示降噪补丁，仅同步源码和官方包，不提交市场、不建标签/Release。0.x/非0补丁/预发布等不触发GitHub Release，策略 `stable-major-minor-tag-only` 不变。
 
 2026-10-19用户授权后续已批准产品更新自动识别语义影响并升版本：修复、交互及性能优化为patch，不提交市场；新增完整能力为minor，不兼容改动1.x起major、0.x为minor。大更新完整检查、官方包、main双OS CI通过后，由当前Agent自动核对市场版本与待审状态并提交一次，不再逐次询问；未知写入不重试，不覆盖待审/已用版本，不自动安装/npm/建标签。日常build/CI不调用市场，市场与GitHub Release分开。
 
