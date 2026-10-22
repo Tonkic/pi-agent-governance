@@ -24,6 +24,11 @@
 
 ## 交付状态
 
-- 本地实现/检查/官方包已完成；受管提交、main集成、分发核对与双OS CI待登记实际结果。
+- 产品提交 `2cc36dcbf2af0404c8a2b4ce92d38b23212ea20e`；正常合并main `3a028cfe49560e0cb025cba3d9fda3a4d6f4dbae`，内容树完全相同，已推送并核对远端SHA。
+- main实际构建与HTTP页面探测通过：五页切换、390px无整页溢出、概览额外请求0、页面错误0；STATE/看板/Git引用不变。主目录缺依赖及manifest临时占用已恢复，未改源码。
+- [CI 39783999993](https://github.com/Tonkic/pi-agent-governance/actions/runs/39783999993)在上述main SHA上Linux/Windows全部步骤成功，各280测试、0失败/跳过、279截图和10行为；不是等价SHA冒称实际执行。
+- 干净产品提交上两类分发核对通过：通用包315571字节，SHA256 `b0066be89e91f1df89a467a46b927c145b3cfc88669d67c616ce34e9a8357266`；官方PI包与上文哈希一致，来源绑定2cc36dc。
+- 只读语义计划确认0.9.0→0.9.1、patch、versionMatches=true、marketplaceRequired=false，未执行任何发布写入。
+- 本轮工作项移到已完成；后续仅STATE/看板/本记录收尾，产品内容与官方包不变，按records检查而非重复全量。
 - 内置Browser再次返回未进入当前会话前台，未声称人工目视或真实安装宿主/物理触屏验收通过。
 - 总体STATE仍working，原宿主/目视/0.9.0市场拒绝阻塞保留；暂停的原生桌面未动。
