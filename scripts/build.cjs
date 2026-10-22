@@ -17,6 +17,7 @@ for (const config of ['tsconfig.json', 'plugin/renderer/tsconfig.json']) {
   execFileSync(process.execPath, [tsc, '--project', config], { cwd: root, stdio: 'inherit' });
 }
 execFileSync(process.execPath, [path.join(build, 'scripts/build-manifest.js')], { cwd: root, stdio: 'inherit' });
+require('./build-ssh.cjs').build(root);
 fs.rmSync(runtime, { recursive: true, force: true });
 fs.cpSync(path.join(build, 'plugin'), runtime, { recursive: true });
 fs.mkdirSync(path.join(runtime, 'web'));

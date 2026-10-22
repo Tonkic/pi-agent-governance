@@ -2,13 +2,14 @@
 
 **所有宿主共用一个浏览器工作台。** PI-Desktop、Codex、Claude Code只负责连接已有项目；看板、源码架构、设计草案与行为文档使用同一界面、核心和仓库文件。不再提供另一套PI内嵌面板，也不新增聊天数据库或独立桌面。
 
-社区 ID：`io.github.tonkic.agent-governance`。仓库版本 **0.8.5**：Git图默认仅两项图例与主轴/HEAD标记，完整分支名和标签仅悬停/聚焦显示，保留居中主线及详情弹窗。本轮补丁只同步源码和官方包，不提交市场；后续大更新自动判级升版并在检查后提交市场，见[交付规则](docs/releasing.md)。不自动安装/npm/建标签。
+社区 ID：`io.github.tonkic.agent-governance`。仓库版本 **0.9.0**：新增[工作目录内可迁移SSH](docs/remote.md)，支持Linux/Windows密码认证、默认加密/显式明文、主机指纹、远端优先修改和本地只读历史快照；Agent通过CLI使用，不新增网页终端。完整检查/官方包/main CI后按[交付规则](docs/releasing.md)核对并提交市场一次，不自动安装/npm/建标签。
 
 ## 开始使用
 
 1. PI-Desktop：手动安装 `plugin/dist/` 包并确认权限。打开项目后，按 **Alt+空格**搜索“Agent 项目治理”，或从**右侧工作面板的插件列表**选“项目治理工作台”，在轻量入口点击“打开浏览器工作台”。也可按 **Ctrl+Shift+P** 运行同名命令直接打开。
 2. Codex、Claude Code或Pi：按 [MCP与Skill](docs/mcp.md) 配置本地stdio连接，在原会话请求“打开当前项目工作台”。宿主调用 `governance_ui`，参数 `{"action":"open","confirmed":true}`。
 3. 所有入口打开同一浏览器页面。已有项目直接读取；未初始化项目须明确确认。先读 `status` 和项目README，只接续获批范围。
+4. 远端项目：把工具包放进工作目录的 `.remote-local/tool/`，先配置Git忽略，再用remote-cli配置连接并核对指纹。AGENTS只记录入口和实际远端目录，不放密码；使用方法与迁移/离线边界见[SSH指南](docs/remote.md)。
 
 浏览器只管理项目数据；开发、分析和文档任务仍在原宿主会话执行，保留历史、模型和思考设置。页面不创建聊天、调用模型或停止会话，也不列举/扫描私有聊天数据。
 

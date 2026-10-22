@@ -7,17 +7,19 @@ const zlib = require('node:zlib');
 const { execFileSync } = require('node:child_process');
 const { fullSha, gitAt, safeFile, containsCredential, clean } = require('./release-safety.cjs');
 const pluginId = 'io.github.tonkic.agent-governance';
-const sharedModules = ['core', 'git', 'project', 'design', 'behaviors', 'tool', 'panel', 'documents', 'browser', 'browser-open', 'workbench', 'workbench-tool', 'git-history'];
+const sharedModules = ['core', 'git', 'project', 'design', 'behaviors', 'tool', 'panel', 'documents', 'browser', 'browser-open', 'workbench', 'workbench-tool', 'git-history', 'remote-program', 'remote-store', 'remote-ssh', 'remote-cli', 'ssh-runtime'];
 const consoleFiles = ['build/web/server.js', 'web/bridge.js', 'web/console.css', 'plugin/renderer/index.html', 'plugin/renderer/panel.css', 'plugin/renderer/views.css', 'plugin/renderer/documents.css', ...['i18n', 'graph-model', 'graph', 'design', 'panel', 'documents', 'git-history'].map(f => `plugin/runtime/renderer/${f}.js`)];
 const skillFiles = ['SKILL.md', 'SOURCE.md', 'LICENSE', ...['README', 'web-and-product', 'transactional', 'realtime-and-storage', 'ai-native', 'agent-and-org', 'embedded-industrial', 'signals', 'glossary'].map(f => `references/${f}.md`)];
 const hostFiles = ['build/mcp/context-hook.js', 'mcp/clients/codex-hooks.json'];
 const piFiles = [
   'manifest.json', 'main.js', 'main.ts', 'runtime/main.js',
   'entry-bridge.ts', 'runtime/entry-bridge.js', 'entry/index.html', 'entry/entry.js', 'entry/entry.css',
+  ...['remote-program', 'remote-store', 'remote-ssh', 'remote-cli', 'ssh-runtime'].flatMap(f => [`${f}.ts`, `runtime/${f}.js`]),
+  'runtime/ssh-runtime.js.LEGAL.txt', 'SSH-LICENSES.md',
   ...['core', 'git', 'panel', 'project', 'tool', 'operations', 'behaviors', 'design', 'documents', 'browser', 'browser-open', 'workbench', 'workbench-tool', 'git-history'].flatMap(f => [`${f}.ts`, `runtime/${f}.js`]),
   'runtime/web/bridge.js', 'runtime/web/console.css',
   ...skillFiles.map(f => `skills/architecture-copilot/${f}`),
-  'README.md', ...['architecture-design', 'README', 'governance', 'git', 'project', 'mcp', 'web-console', 'documentation', 'architecture', 'development', 'doc-driven', 'behavior-workspace', 'publishing', 'releasing', 'ui-sources'].map(f => `docs/${f}.md`),
+  'README.md', ...['architecture-design', 'README', 'governance', 'git', 'project', 'mcp', 'web-console', 'documentation', 'architecture', 'development', 'doc-driven', 'behavior-workspace', 'publishing', 'releasing', 'ui-sources', 'remote'].map(f => `docs/${f}.md`),
   'renderer/index.html', 'renderer/panel.css', 'renderer/views.css', 'renderer/documents.css', 'renderer/tsconfig.json',
   ...['design', 'panel', 'graph', 'graph-model', 'i18n', 'documents', 'git-history'].flatMap(f => [`renderer/${f}.ts`, `runtime/renderer/${f}.js`])
 ].sort();
@@ -100,7 +102,7 @@ function runtimeMetadata(pkg, lock) {
   for (const [name, version] of Object.entries(pkg.dependencies || {})) {
     if (!/^\d+\.\d+\.\d+$/.test(version) || !lock.packages[`node_modules/${name}`]) fail('Runtime dependency must be pinned and locked');
   }
-  const metadata = { name: pkg.name, version: pkg.version, private: true, description: 'Shared local MCP, Skills and browser project console', license: pkg.license || 'UNLICENSED', engines: { node: '>=22' }, bin: { 'agent-governance-mcp': 'build/mcp/server.js', 'agent-governance-web': 'build/web/server.js' }, dependencies: pkg.dependencies || {}, files: ['build', 'plugin/skills', 'plugin/renderer', 'plugin/runtime/renderer', 'web', 'mcp/clients', 'README.md', 'npm-shrinkwrap.json'] };
+  const metadata = { name: pkg.name, version: pkg.version, private: true, description: 'Shared local MCP, Skills, browser console and portable SSH', license: pkg.license || 'UNLICENSED', engines: { node: '>=22' }, bin: { 'agent-governance-mcp': 'build/mcp/server.js', 'agent-governance-web': 'build/web/server.js', 'agent-governance-remote': 'build/plugin/remote-cli.js' }, dependencies: pkg.dependencies || {}, files: ['build', 'plugin/skills', 'plugin/renderer', 'plugin/runtime/renderer', 'plugin/docs/remote.md', 'plugin/SSH-LICENSES.md', 'web', 'mcp/clients', 'README.md', 'npm-shrinkwrap.json'] };
   // npm pack excludes package-lock.json. npm-shrinkwrap.json is the equivalent install lock,
   // included by npm pack and honored by npm ci --omit=dev after unpacking.
   const shrinkwrap = { ...lock, packages: { ...lock.packages, '': { name: metadata.name, version: metadata.version, license: metadata.license, engines: metadata.engines, bin: metadata.bin, dependencies: metadata.dependencies } } };
@@ -119,7 +121,8 @@ function buildMcp(ctx) {
     const guide = files.get('README.md').toString('utf8');
     files.set('README.md', Buffer.from(guide + '\nHost reuse: Claude Code may use `--host claude-code` instead of --workspace, reading official child CLAUDE_PROJECT_DIR with no cwd fallback. Merge mcp/clients/codex-hooks.json into supported trusted Codex Hook settings after editing only the helper installation path. The helper reads official session_id/cwd and injects read-only project metadata into the original conversation, not transcript content. It does not initialize data, start chats/models, persist a session registry or dynamically rebind MCP. Existing loaded tools/Skills retain host history. Client/version smoke remains required; see docs/mcp.md online.\n'));
     files.set('README.md', Buffer.from(files.get('README.md').toString('utf8') + '\nUnified browser entry: ask the host to call governance_ui with action open and confirmed true. The project is bound by the connector, not tool arguments. Only the generated local URL goes to the system opener; tool results contain safe origin/status, never the private fragment. action close also requires confirmed true. MCP disconnect closes its owned service; managed pages expire after inactivity. Known SSH/WSL sessions cannot promise a local browser. There is no separate PI embedded panel and no browser Agent control.\n'));
-    for (const file of ['build/mcp/server.js', ...hostFiles, ...consoleFiles, ...sharedModules.map(f => `build/plugin/${f}.js`), ...skillFiles.map(f => `plugin/skills/architecture-copilot/${f}`), ...['codex.toml', 'claude-code.json', 'pi.json'].map(f => `mcp/clients/${f}`)]) files.set(file, read(ctx.root, file));
+    files.set('README.md', Buffer.from(files.get('README.md').toString('utf8') + '\nPortable SSH (Node 22+): node build/plugin/remote-cli.js --help. Copy this package inside the project .remote-local/tool directory; ignore .remote-local in Git before configuring credentials. Pure-JS SSH is bundled, so this CLI works without installing MCP dependencies. All credentials/trust/backups remain project-local; password auth, encryption by default, explicit plaintext and fingerprint trust. Remote changes first, offline backups read-only; unknown writes never replay. Full guide: plugin/docs/remote.md. No website shell/remote Agent launch or system SSH configuration.\n'));
+    for (const file of ['build/mcp/server.js', 'build/plugin/ssh-runtime.js.LEGAL.txt', 'plugin/SSH-LICENSES.md', 'plugin/docs/remote.md', ...hostFiles, ...consoleFiles, ...sharedModules.map(f => `build/plugin/${f}.js`), ...skillFiles.map(f => `plugin/skills/architecture-copilot/${f}`), ...['codex.toml', 'claude-code.json', 'pi.json'].map(f => `mcp/clients/${f}`)]) files.set(file, read(ctx.root, file));
     for (const [name, bytes] of files) {
       if (containsCredential('', bytes, process.env.GITHUB_TOKEN)) fail('Credential-like bundle content');
       const dest = safeFile(stage, name); fs.mkdirSync(path.dirname(dest), { recursive: true }); fs.writeFileSync(dest, bytes, { flag: 'wx' });

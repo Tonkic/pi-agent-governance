@@ -337,6 +337,18 @@
       "gitTaskId": null
     },
     {
+      "id": "ssh-portable-090",
+      "title": "目录内可迁移SSH与远端优先备份 · 0.9.0",
+      "description": "用户明确授权Linux/Windows、密码登录/加密或明文、全部配置凭据指纹备份在工作目录、Agent读取上下文按需连接；远端唯一写入、本地离线只读，无系统配置、无SSH管理页面。",
+      "blocker": "",
+      "stage": "doing",
+      "taskId": "project-board-release",
+      "criteria": [],
+      "architectureImpact": "affects",
+      "gitTaskId": null,
+      "completedAt": null
+    },
+    {
       "id": "host-theme-adaptation",
       "title": "独立配色与宿主模式界面复验",
       "description": "0.7.0运行UI源码与已目视双语三尺寸/明暗六组一致，新版代表图已查看；85测试/74图交互与几何回归通过。独立配色和宿主模式仍须本机真实主题复验，不能由发布或模拟API替代。",
@@ -430,5 +442,5 @@
       "completedAt": "2026-10-19T08:25:19.973Z"
     }
   ],
-  "updatedAt": "2026-10-19T11:53:28.385Z"
+  "updatedAt": "2026-10-22T07:13:23.393Z"
 }

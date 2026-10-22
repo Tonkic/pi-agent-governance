@@ -15,3 +15,6 @@ node_modules/
 # User-approved local host goals and pre-existing redesign evidence; preserve on disk.
 /.pi/
 /changes/archive/redesign-governance-panel/
+
+# User-approved portable SSH credentials, trust records, journals and offline backups.
+/.remote-local/

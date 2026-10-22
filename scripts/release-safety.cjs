@@ -34,7 +34,7 @@ function secretScan(root, sourceRef, tokens = []) {
   fullSha(sourceRef);
   const git = gitAt(root);
   for (const row of git('rev-list', '--objects', sourceRef).trim().split('\n')) {
-    if (/\s(?:.*\/)?\.secrets(?:\/|$)/.test(row)) fail('Secret path found in reachable history');
+    if (/\s(?:.*\/)?(?:\.secrets|\.remote-local)(?:\/|$)/.test(row)) fail('Secret path found in reachable history');
     const object = row.split(' ')[0];
     const bytes = execFileSync('git', ['cat-file', '-p', object], { cwd: root, maxBuffer: 32 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] });
     if (containsCredential(object, bytes) || tokens.some(token => containsCredential(object, bytes, token))) fail('Credential-like content found in reachable history');

@@ -23,6 +23,8 @@
 | `operations.ts` | 保留历史兼容实现；当前PI入口仅使用localSession身份过滤 | `localSession` |
 | `behaviors.ts` | 安全读取行为正文/关联/本机证据 | `behaviorSnapshot` |
 | `documents.ts`、`renderer/documents.ts` | 受限Markdown元数据/正文只读与安全DOM阅读、标题导航；无锁或初始化写入 | `documents`、`governance.documents` |
+| `remote-cli.ts`、`remote-store.ts` | 独立Agent CLI与项目内凭据/信任/只读历史快照，不接入网页命令API | `main`、`RemoteStore` |
+| `remote-ssh.ts`、`remote-program.ts`、`ssh-runtime.ts` | 固定SSH启动协议、指纹/密码认证、远端先写/备份及unknown日志；纯JS依赖构建入包 | `operation`、`remoteProgram` |
 | `renderer/` | 同一工作台、双语、图布局及设计画板 | `panel.ts`、`graph.ts`、`design.ts` |
 
 ## 调用关系
@@ -37,6 +39,8 @@ BrowserWorkbench → browser.ts → 127.0.0.1 + 私有片段URL → 系统浏览
 浏览器文档阅读 → panel.ts → documents.ts → 固定根Markdown / docs / notes（只读）
 MCP资源/提示、PI Skill → skills/architecture-copilot/
 core.ts → git.ts → Git common directory
+Agent显式CLI → remote-store（.remote-local）→ remote-ssh → 远端Node协议
+远端修改确认 → 有界文档/治理快照 → .remote-local/backups（offline只读）
 ```
 
 PI工具只用可信ToolExecContext.sessionId的有界session/get核实项目，缺失/外来/不支持会话拒绝；显式命令用宿主可见项目。工作区事件撤销旧服务，不重定向旧能力。PI只通过公开shell.openExternal打开自身生成地址，不调用Agent/create/prompt/abort或models.list。
@@ -59,6 +63,7 @@ HTTP只监听127.0.0.1，精确Host/Origin/token/JSON及固定资源/动作白�
 | `docs/behavior-bindings.json`、Markdown | 可读行为与固定场景关联 |
 | `.governance/behavior-evidence.json` | 忽略的本机实际检查证据，不代表整体通过 |
 | Git common directory的 `pi-governance/` | 本机任务/worktree/提交验证登记 |
+| `.remote-local/` | 忽略的SSH配置、加密/显式明文密码、主机指纹、操作日志和只读历史快照；不在系统目录持久化，不公开发布 |
 
 没有新增服务/聊天注册表，私有URL只在拥有服务和浏览器内存。PI的ui.panel/contributes.views指向同一entry/index.html，只有状态/刷新/打开按钮；onPanelInvoke仅governance.entry状态和确认打开，拒绝核心/会话操作。版本绑定可见项目与代次，迟到/切换请求拒绝；不接受路径/URL，不返回origin/私有片段。不是第二套业务工作台。
 

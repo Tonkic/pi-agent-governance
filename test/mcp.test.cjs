@@ -155,7 +155,7 @@ test('real downloadable MCP target installs production-only lock and serves tool
   const { safeFile } = require('../scripts/release-safety.cjs');
   const buildRoot = await fs.mkdtemp(path.join(process.env.PI_SCRATCH_DIR || os.tmpdir(), 'mcp-source-'));
   t.after(() => fs.rm(buildRoot, { recursive: true, force: true }));
-  for (const file of ['package.json', 'package-lock.json', 'build/mcp/server.js', ...hostFiles, ...consoleFiles, ...sharedModules.map(n => `build/plugin/${n}.js`), ...skillFiles.map(n => `plugin/skills/architecture-copilot/${n}`), ...['codex.toml', 'claude-code.json', 'pi.json'].map(n => `mcp/clients/${n}`)]) {
+  for (const file of ['package.json', 'package-lock.json', 'build/mcp/server.js', 'build/plugin/ssh-runtime.js.LEGAL.txt', 'plugin/SSH-LICENSES.md', 'plugin/docs/remote.md', ...hostFiles, ...consoleFiles, ...sharedModules.map(n => `build/plugin/${n}.js`), ...skillFiles.map(n => `plugin/skills/architecture-copilot/${n}`), ...['codex.toml', 'claude-code.json', 'pi.json'].map(n => `mcp/clients/${n}`)]) {
     const dest = safeFile(buildRoot, file);
     await fs.mkdir(path.dirname(dest), { recursive: true });
     await fs.copyFile(path.join(repo, file), dest);
@@ -184,7 +184,7 @@ test('real downloadable MCP target installs production-only lock and serves tool
   }
   assert.ok(names.includes('npm-shrinkwrap.json'));
   assert.ok(names.includes('plugin/skills/architecture-copilot/LICENSE'));
-  for (const name of names) assert.doesNotMatch(name, /(?:^|\/)(?:node_modules|\.pi|\.governance|\.secrets|STATE.json|test)(?:\/|$)/);
+  for (const name of names) assert.doesNotMatch(name, /(?:^|\/)(?:node_modules|\.pi|\.governance|\.secrets|\.remote-local|STATE.json|test)(?:\/|$)/);
   // Hosted Windows runs hit the 90s install limit; allow 180s once, retaining a finite bound and every assertion.
   execFileSync(process.execPath, [process.env.npm_execpath, 'ci', '--omit=dev', '--ignore-scripts', '--offline', '--no-audit', '--no-fund'], { cwd: unpack, encoding: 'utf8', timeout: 180000, env: { ...process.env, NODE_PATH: '' } });
   await assert.rejects(fs.stat(path.join(unpack, 'node_modules/playwright')));
