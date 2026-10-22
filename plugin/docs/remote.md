@@ -1,7 +1,7 @@
 <!-- Generated from docs/ by scripts/build-docs.cjs. Do not edit. -->
 # 可迁移 SSH / Portable SSH
 
-**0.9.0 提供 Agent 优先的 SSH CLI，不新增网页终端或远程管理页。** Linux/Windows远端均需已有SSH密码认证服务及PATH中的Node.js 22+；本地需Node.js 22+，Git项目还需Git执行凭据保护检查。不安装/修改系统SSH、凭据库、Agent或远端服务。
+**0.9.0 提供 Agent 优先的 SSH CLI，不新增网页终端或远程管理页。** Linux/Windows远端均需已有SSH密码认证服务及PATH中的Node.js 22+；本地需Node.js 22+和Git执行凭据保护检查。不安装/修改系统SSH、凭据库、Agent或远端服务。
 
 ## 工作目录自包含
 
