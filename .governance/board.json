@@ -339,8 +339,8 @@
     {
       "id": "ssh-portable-090",
       "title": "目录内可迁移SSH与远端优先备份 · 0.9.0",
-      "description": "用户明确授权Linux/Windows、密码登录/加密或明文、全部配置凭据指纹备份在工作目录、Agent读取上下文按需连接；远端唯一写入、本地离线只读，无系统配置、无SSH管理页面。",
-      "blocker": "",
+      "description": "源码/官方0.9.0包/GitHub完成，main3219978双OS CI39746714903各280测试/279截图/10行为通过；加密迁移与真实SSH故障回归通过。市场单次提交明确拒绝eval动态执行，0.9.0未创建，不重试/绕过；待平台处理或另行批准兼容方案。",
+      "blocker": "插件市场拒绝remote-ssh.ts:6 dynamic or remote code execution: eval()；源码与手动包可用，市场交付未完成。",
       "stage": "doing",
       "taskId": "project-board-release",
       "criteria": [],
@@ -442,5 +442,5 @@
       "completedAt": "2026-10-19T08:25:19.973Z"
     }
   ],
-  "updatedAt": "2026-10-22T07:13:23.393Z"
+  "updatedAt": "2026-10-22T08:37:21.862Z"
 }
