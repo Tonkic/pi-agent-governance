@@ -183,7 +183,7 @@ test('20 real HTTP open/switch/close cycles leave no owned TCP server or listeni
 async function bridge(app, extra = {}) {
   const listeners = new Map(), timers = new Map(), calls = []; let serial = 0, pending = 0;
   const token = app.url.split('#')[1];
-  const node = () => ({ setAttribute() {}, append() {}, after() {} });
+  const node = () => ({ setAttribute() {}, append() {}, before() {}, after() {} });
   const context = { navigator: { language: 'en' }, location: { hash: extra.stored ? '' : '#' + token, pathname: '/panel/' }, history: { replaceState() {} }, sessionStorage: { setItem() {}, getItem: () => token }, document: { createElement: node, querySelector: node }, matchMedia: () => ({ matches: false, addEventListener() {} }), crypto: webcrypto, AbortController, AbortSignal,
     setTimeout(fn, delay) { const key = ++serial; timers.set(key, { fn, delay }); assert.ok(timers.size <= 1); return key; }, clearTimeout(key) { timers.delete(key); },
     window: { addEventListener(event, handler) { listeners.set(event, handler); } },

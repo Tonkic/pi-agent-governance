@@ -1,8 +1,8 @@
 # 产物与安装 / Distributions
 
-支持**通用MCP＋Skills＋本地Web控制台包**及**PI-Desktop官方piplug**，附Codex、Claude Code、Pi配置示例。当前 **0.9.0** 新增工作目录自包含SSH CLI；纯JS SSH运行时及许可随两类包提供，不依赖系统SSH配置。完整检查/官方包/main双OS CI后核对并提交市场一次，见[交付规则](releasing.md)。不自动安装/npm/建标签。
+支持**通用MCP＋Skills＋本地Web控制台包**及**PI-Desktop官方piplug**，附Codex、Claude Code、Pi配置示例。当前 **0.9.1** 为展示层重构patch；完整检查、官方包与main双OS CI交付，不提交市场、不自动安装/npm/建标签。SSH运行时与许可保持随包提供，见[交付规则](releasing.md)。
 
-此前0.8.3市场包已approved待运营发布，保留[历史记录](../changes/active/project-board-release/hover-behaviors-083.md)。不覆盖或重提已使用/待审版本，0.9.0提交前核对当前状态；每次产品交付使用新版本。SSH配置、凭据与快照位于忽略的.remote-local，不进入任何公开产物，使用方法见[SSH](remote.md)。
+0.8.3市场包现已published；0.9.0单次提交被平台eval动态执行规则拒绝，版本未创建，不重试或绕过，详见[记录](../changes/active/project-board-release/ssh-portable-090.md)。每次产品交付使用新版本，不覆盖已用/待审版本。SSH配置、凭据与快照仅位于忽略的.remote-local，不进入公开产物；见[SSH](remote.md)。
 
 插件已包含本地浏览器服务/界面，安装后无需下载本源码仓库；需PI-Desktop启用插件、授权并打开自己的项目。源码CLI命令仅是独立运行方式，不是插件启动前提。
 

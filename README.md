@@ -2,7 +2,7 @@
 
 **所有宿主共用一个浏览器工作台。** PI-Desktop、Codex、Claude Code只负责连接已有项目；看板、源码架构、设计草案与行为文档使用同一界面、核心和仓库文件。不再提供另一套PI内嵌面板，也不新增聊天数据库或独立桌面。
 
-社区 ID：`io.github.tonkic.agent-governance`。仓库版本 **0.9.0**：新增[工作目录内可迁移SSH](docs/remote.md)，支持Linux/Windows密码认证、默认加密/显式明文、主机指纹、远端优先修改和本地只读历史快照；Agent通过CLI使用，不新增网页终端。完整检查/官方包/main CI后按[交付规则](docs/releasing.md)核对并提交市场一次，不自动安装/npm/建标签。
+社区 ID：`io.github.tonkic.agent-governance`。仓库版本 **0.9.1**：按Refactoring UI的信息层级原则整理展示层，任务优先、紧凑统计、按需项目概览与工具；保留五页功能、64px悬浮导航、安全阅读器、只读Git和[可迁移SSH](docs/remote.md)。补丁仅更新源码与官方包，不提交市场、不自动安装/npm/建标签；见[交付规则](docs/releasing.md)。
 
 ## 开始使用
 

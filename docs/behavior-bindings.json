@@ -5,7 +5,7 @@
       "id": "WS-001",
       "document": "docs/behavior-workspace.md",
       "cases": ["workspace-switch", "delayed-snapshot", "explicit-initialization"],
-      "files": ["plugin/main.ts", "plugin/core.ts", "plugin/panel.ts", "plugin/project.ts", "plugin/renderer/panel.ts", "plugin/runtime/main.js", "plugin/runtime/core.js", "plugin/runtime/panel.js", "plugin/runtime/project.js", "plugin/runtime/renderer/panel.js", "plugin/renderer/index.html", "test/browser.cjs", "test/behavior-reporter.cjs", "scripts/check-behaviors.cjs", "plugin/behaviors.ts", "plugin/runtime/behaviors.js"]
+      "files": ["plugin/main.ts", "plugin/core.ts", "plugin/panel.ts", "plugin/project.ts", "plugin/renderer/panel.ts", "plugin/renderer/shell.ts", "plugin/runtime/renderer/shell.js", "plugin/runtime/main.js", "plugin/runtime/core.js", "plugin/runtime/panel.js", "plugin/runtime/project.js", "plugin/runtime/renderer/panel.js", "plugin/renderer/index.html", "test/browser.cjs", "test/behavior-reporter.cjs", "scripts/check-behaviors.cjs", "plugin/behaviors.ts", "plugin/runtime/behaviors.js"]
     },
     {
       "id": "WS-002",

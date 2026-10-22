@@ -125,30 +125,9 @@ function list(id, values) {
         return li;
     }));
 }
-// Read-only projections of already loaded snapshots. Never infer missing counts or dates.
-function renderWorkbenchSummary(loading = false) {
-    const workspace = snapshot?.workspace;
-    text('summary-workspace-name', workspace ? workspace.replace(/[\\/]+$/, '').split(/[\\/]/).pop() || workspace : '—');
-    text('summary-workspace-path', workspace || '—');
-    text('summary-state', snapshot ? (snapshot.state ? labels[snapshot.state.status] || snapshot.state.status : t('uninitialized')) : '—');
-    text('summary-task', snapshot?.state?.task || (snapshot ? t('noTask') : '—'));
-    const items = projectSnapshot?.board && !projectSnapshot.boardError ? projectSnapshot.board.items : null;
-    const counts = items ? boardStages.map(stage => items.filter(item => effectiveStage(item) === stage).length) : null;
-    const total = items?.length;
-    const percent = counts && total ? Math.round(counts[2] / total * 100) : counts ? 0 : null;
-    for (const [id, value] of [
-        ['summary-total', total], ['summary-doing', counts?.[1]], ['summary-done', counts?.[2]],
-        ['summary-impact', items?.filter(item => item.architectureImpact === 'affects').length],
-        ['summary-todo', counts?.[0]], ['summary-doing-count', counts?.[1]], ['summary-done-count', counts?.[2]]
-    ])
-        text(id, value == null ? '—' : String(value));
-    text('summary-percent', percent == null ? '—' : `${percent}%`);
-    $('summary-ring').style.setProperty('--completion', `${percent ?? 0}%`);
-    $('summary-ring').setAttribute('aria-label', percent == null ? t('summaryUnavailable') : t('summaryRatio', percent, counts[2], total));
-    text('summary-availability', loading ? t('reading') : !items ? t('summaryUnavailable') : !navigator.onLine ? t('summaryOffline') : !total ? t('summaryEmpty') : t('summaryLoaded'));
-    $('workbench-metrics').setAttribute('aria-busy', String(loading));
-}
 function render(data) {
+    if (snapshot?.workspace !== data.workspace)
+        closeWorkbenchDisclosures();
     snapshot = data;
     observedWorkspace = data.workspace;
     window.dispatchEvent(new Event('documents-context'));
@@ -442,59 +421,7 @@ $('show-workflow').addEventListener('click', () => {
     graphView = 'workflow';
     renderProjectGraph();
 });
-const pageIds = ['board-section', 'architecture', 'git-section', 'documents-section', 'behaviors-section'];
-localizeNavigation();
-void localeReady.then(() => { localizeNavigation(); highlightNavigation(); });
-const workspaceNavigation = $('workspace-navigation');
-workspaceNavigation.addEventListener('pointermove', () => { if (!workspaceNavigation.dataset.dismissed)
-    workspaceNavigation.dataset.hovered = 'true'; });
-workspaceNavigation.addEventListener('pointerleave', () => { delete workspaceNavigation.dataset.hovered; delete workspaceNavigation.dataset.dismissed; });
-workspaceNavigation.addEventListener('click', (event) => { if (event.detail) {
-    delete workspaceNavigation.dataset.hovered;
-    workspaceNavigation.dataset.dismissed = 'true';
-} });
-document.querySelectorAll('.workspace-nav a').forEach(link => link.addEventListener('click', (event) => {
-    if (event.detail) {
-        link.blur();
-        return;
-    }
-    if (location.hash !== link.hash)
-        window.addEventListener('hashchange', () => { if (location.hash === link.hash)
-            link.focus({ preventScroll: true }); }, { once: true });
-}));
-function highlightNavigation() {
-    const requested = location.hash.slice(1);
-    const active = pageIds.includes(requested) ? requested : 'board-section';
-    document.documentElement.dataset.view = active;
-    const pageTitles = {
-        architecture: 'navArchitecture',
-        'board-section': 'navBoard',
-        'git-section': 'navGit', 'documents-section': 'navDocuments', 'behaviors-section': 'behaviorDocs'
-    };
-    text('page-title', t(pageTitles[active]));
-    for (const id of pageIds)
-        $(id).hidden = id !== active;
-    document.querySelectorAll('[data-page-control]').forEach((control) => {
-        control.hidden = control.dataset.pageControl !== active;
-    });
-    if (requested === 'task-section')
-        openProjectControls();
-    document.querySelectorAll('.workspace-nav a').forEach((link) => {
-        if (link.hash === `#${active}`)
-            link.setAttribute('aria-current', 'page');
-        else
-            link.removeAttribute('aria-current');
-    });
-    if (active === 'architecture')
-        window.dispatchEvent(new Event('resize'));
-    updateBehaviorControls();
-}
-window.addEventListener('hashchange', () => {
-    closeItemMenu(false);
-    stopLongPress();
-    highlightNavigation();
-});
-highlightNavigation();
+initializeWorkbenchShell();
 // Read theme colors, never inject a contributed stylesheet into the panel.
 const themeColors = {
     '--ds-bg-primary': '--bg',

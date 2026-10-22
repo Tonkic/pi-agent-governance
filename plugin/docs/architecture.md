@@ -25,7 +25,9 @@
 | `documents.ts`、`renderer/documents.ts` | 受限Markdown元数据/正文只读与安全DOM阅读、标题导航；无锁或初始化写入 | `documents`、`governance.documents` |
 | `remote-cli.ts`、`remote-store.ts` | 独立Agent CLI与项目内凭据/信任/只读历史快照，不接入网页命令API | `main`、`RemoteStore` |
 | `remote-ssh.ts`、`remote-program.ts`、`ssh-runtime.ts` | 固定SSH启动协议、指纹/密码认证、远端先写/备份及unknown日志；纯JS依赖构建入包 | `operation`、`remoteProgram` |
-| `renderer/` | 同一工作台、双语、图布局及设计画板 | `panel.ts`、`graph.ts`、`design.ts` |
+| `renderer/` | 同一工作台；panel控制数据/确认/隔离，shell只投影已载入快照与导航 | `panel.ts`、`shell.ts`、`graph.ts`、`design.ts` |
+
+样式按加载顺序归属：`tokens.css`为语义颜色/字号/间距；`panel.css`为基础控件；`shell.css`为导航/工具栏/概览；`views.css`为业务视图；`documents.css`为阅读器。不要通过末尾重复覆盖堆叠新壳层；shell不调用API或写项目数据。
 
 ## 调用关系
 
