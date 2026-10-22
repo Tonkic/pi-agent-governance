@@ -32,7 +32,8 @@ module.exports = async ({ browser, screenshots }) => {
     assert.equal(await page.locator('#summary-workspace-path').textContent(), root);
     assert.equal(await page.locator('#summary-workspace-name').textContent(), path.basename(root));
     assert.equal(await page.locator('#summary-task').textContent(), 'reference-demo');
-    assert.match(await page.locator('#welcome-title').textContent(), /基于Agent的工程化项目治理工作台/);
+    assert.equal(await page.locator('.welcome-banner, #welcome-title, .metric-symbol, .completion-ring').count(), 0);
+    assert.equal(await page.locator('#project-overview').evaluate(n => n.open), false);
     for (let i = 0; i < 9; i++) {
       await mutate({ action: 'board_create', id: `demo-${i}`, title: `Demo data · 演示工作项 ${i} ${i === 0 ? 'Long title reflows safely without covering adjacent cards '.repeat(2) : ''}`, description: 'Demo data / 演示数据 — no fictional production activity.', architectureImpact: i < 4 ? 'affects' : 'none' });
       if (i < 7) await mutate({ action: 'board_move', id: `demo-${i}`, stage: 'doing', position: 0 });
@@ -53,12 +54,12 @@ module.exports = async ({ browser, screenshots }) => {
     await page.locator('#behaviors-section').waitFor({ state: 'visible' });
     await page.locator('a[href="#board-section"]').click(); await page.locator('#board-section').waitFor({ state: 'visible' });
     // Existing safe project-view controls perform real navigation, never a Git command.
-    await page.locator('[data-project-view="architecture"]').click();
+    await page.locator('#project-overview > summary').click(); await page.locator('[data-project-view="architecture"]').click();
     await page.locator('#architecture').waitFor({ state: 'visible' });
     assert.equal(await page.locator('#architecture').isVisible(), true);
-    assert.equal(await page.locator('.welcome-banner').isVisible(), false);
+    assert.equal(await page.locator('.welcome-banner').count(), 0);
     await page.locator('.workspace-nav a[href="#board-section"]').click();
-    await page.locator('[data-project-view="git-section"]').click();
+    await page.locator('#project-overview > summary').click(); await page.locator('[data-project-view="git-section"]').click();
     await page.locator('#git-section').waitFor({ state: 'visible' });
     assert.equal(await page.locator('#git-section').isVisible(), true);
     await page.locator('.workspace-nav a[href="#board-section"]').click();
@@ -67,19 +68,23 @@ module.exports = async ({ browser, screenshots }) => {
       if (locale === 'en-US') {
         const en = await browser.newContext({ locale, viewport: { width: 1672, height: 1100 } }); contexts.push(en);
         p = await en.newPage(); await p.goto(app.url); await ready(p);
-        assert.match(await p.locator('#welcome-title').textContent(), /engineering workspace/);
+        assert.equal(await p.locator('#project-overview > summary').textContent(), 'Project overview');
       }
       for (const width of [320, 390, 768, 1280, 1672]) for (const theme of ['light', 'dark']) {
         await p.setViewportSize({ width, height: 1100 }); await p.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
         await p.waitForFunction(expected => document.documentElement.dataset.base === expected, theme);
         assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${locale}/${width}/${theme}: no whole-page overflow`);
         assert.deepEqual(await summary(p), ['9', '1', '6', '4', '2', '67%']);
-        const columns = await p.locator('#board-columns').boundingBox(), overview = await p.locator('.project-overview').boundingBox();
-        if (width === 1672) {
-          assert.ok(overview.x >= columns.x + columns.width, 'Overview stays to the right of the board');
-          assert.equal(Math.round(overview.width), 260);
-        } else assert.ok(overview.y >= columns.y + columns.height - 1, 'Overview stacks, never squeezes the board');
-        assert.equal(await p.locator('.completion-ring').evaluate(el => getComputedStyle(el).animationName), 'none');
+        await p.evaluate(() => scrollTo(0, 0));
+        const columns = await p.locator('#board-columns').boundingBox(), board = await p.locator('#board-section').boundingBox();
+        assert.ok(Math.abs(columns.width - board.width) < 2, 'No permanent overview steals board width');
+        assert.ok(columns.y < 520, `Tasks appear on the first screen: ${columns.y}`);
+        assert.equal(await p.locator('#project-overview').evaluate(n => n.open), false);
+        const requestsBefore = snapshotRequests; await p.locator('#project-overview > summary').focus(); await p.keyboard.press('Enter');
+        assert.equal(await p.locator('#summary-workspace-path').isVisible(), true); await p.keyboard.press('Enter');
+        assert.equal(await p.locator('#project-overview').evaluate(n => n.open), false); assert.equal(snapshotRequests, requestsBefore, 'Disclosure is local only');
+        assert.equal(await p.locator('.completion-progress').evaluate(el => getComputedStyle(el).animationName), 'none');
+        assert.equal(await p.locator('.workitem h4').first().evaluate(n => parseFloat(getComputedStyle(n).fontSize) >= 14), true);
         await p.locator('#board-search').focus(); await p.keyboard.press('Tab');
         assert.ok(await p.evaluate(() => getComputedStyle(document.activeElement).outlineStyle !== 'none'), 'Keyboard focus is visible');
         await p.evaluate(() => scrollTo(0, 0));

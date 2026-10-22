@@ -13,6 +13,10 @@ const { itemFingerprint } = require('../plugin/runtime/project');
 const { randomUUID } = require('node:crypto');
 const behaviorReport = require('./behavior-reporter.cjs').reporter();
 const hostCalls = [];
+async function projectTool(page, id) {
+  if (!await page.locator('#project-tools').evaluate(n => n.open)) await page.locator('#project-tools > summary').click();
+  await page.locator('#' + id).click();
+}
 const operationWrites = [];
 let hostStreaming = true,
   sessionCounter = 0,
@@ -364,7 +368,11 @@ const models = {
       assert.equal(await page.locator('#board-new').isVisible(), id === 'board-section');
       assert.equal(await page.locator('#architecture-analyze').isVisible(), id === 'architecture');
       assert.equal(await page.locator('#show-workflow').isVisible(), id === 'architecture');
+      assert.equal(await page.locator('#documentation-start').isVisible(), false);
+      await page.locator('#project-tools > summary').click();
       assert.equal(await page.locator('#documentation-start').isVisible(), true);
+      await page.keyboard.press('Escape');
+      assert.equal(await page.locator('#project-tools').evaluate(n => n.open), false);
       assert.equal(await page.locator('#action-panel #architecture-analyze').count(), 1);
       assert.equal(await page.locator('#architecture #architecture-analyze').count(), 0);
       for (const other of ['architecture', 'git-section', 'board-section'])
@@ -377,7 +385,7 @@ const models = {
     // Model settings are explicit, isolated and cancelable before any host mutation.
     const beforeSettings = hostCalls.length;
     holdModels = true;
-    await page.locator('#analysis-start').click();
+    await projectTool(page, 'analysis-start');
     await page.waitForFunction(() => document.querySelector('#launch-dialog').open);
     await page.locator('#launch-session').selectOption('new');
     await page.waitForFunction(() => document.querySelector('#launch-new-settings').hidden === false);
@@ -387,7 +395,7 @@ const models = {
     releaseModels();
     await page.waitForTimeout(30);
     assert.equal(await page.locator('#launch-dialog').evaluate((el) => el.open), false);
-    await page.locator('#analysis-start').click();
+    await projectTool(page, 'analysis-start');
     await chooseNew(page);
     await page.waitForFunction(() => !document.querySelector('#launch-model').disabled);
     await page.locator('#launch-model').selectOption('fixture/reasoning');
@@ -415,7 +423,7 @@ const models = {
     await page.locator('#launch-cancel').click();
     assert.equal(hostCalls.length, beforeSettings);
     modelListFailure = true;
-    await page.locator('#analysis-start').click();
+    await projectTool(page, 'analysis-start');
     await page.locator('#launch-session').selectOption('new');
     await page.waitForFunction(() => document.querySelector('#launch-status').textContent.includes('Model list fixture unavailable'));
     assert.equal(await page.locator('#launch-start').isDisabled(), true);
@@ -426,7 +434,7 @@ const models = {
     assert.equal(await page.locator('#launch-model option').count(), 1);
     await page.locator('#launch-cancel').click();
     modelListFailure = false;
-    await page.locator('#analysis-start').click();
+    await projectTool(page, 'analysis-start');
     await chooseNew(page);
     await page.waitForFunction(() => !document.querySelector('#launch-model').disabled);
     await page.locator('#launch-model').selectOption('fixture/reasoning');
@@ -675,7 +683,7 @@ const models = {
     await g.write('.governance/operations.json', JSON.stringify(historicalRuns, null, 2) + '\n');
     const historyRaw = await fs.readFile(path.join(root, '.governance/operations.json'), 'utf8');
     const promptsBeforeHistory = hostCalls.filter(c => ['session/create', 'agent/prompt'].includes(c.operation)).length;
-    await page.locator('#operations-open').click();
+    await projectTool(page, 'operations-open');
     await settled(page);
     const historyRow = page.locator('.operation-run').filter({ hasText: '历史工作项验收（旧版）' });
     await historyRow.waitFor({ state: 'visible', timeout: 5000 });
@@ -694,10 +702,10 @@ const models = {
     assert.equal(hostCalls.filter(c => ['session/create', 'agent/prompt'].includes(c.operation)).length, promptsBeforeHistory);
     assert.equal(await fs.readFile(legacyBoardPath, 'utf8'), legacyRaw, 'Legacy session management cannot change the board');
     await page.locator('#operations-close').click();
-    await page.locator('#analysis-start').click();
+    await projectTool(page, 'analysis-start');
     await confirm(page, false);
     hostStreaming = true;
-    await page.locator('#analysis-start').click();
+    await projectTool(page, 'analysis-start');
     await confirm(page);
     await page.waitForSelector('.operation-run');
     assert.match(
@@ -730,16 +738,16 @@ const models = {
     assert.equal(hostCalls.at(-1).operation, 'agent/abort');
     await page.locator('#operations-close').click();
     const beforeDocs = hostCalls.length;
-    await page.locator('#documentation-start').click();
+    await projectTool(page, 'documentation-start');
     await chooseNew(page);
     await page.waitForFunction(() => !document.querySelector('#launch-model').disabled);
     assert.match(await page.locator('#launch-title').textContent(), /文档维护/);
     await page.locator('#launch-cancel').click();
     assert.equal(hostCalls.length, beforeDocs);
-    await page.locator('#documentation-start').click();
+    await projectTool(page, 'documentation-start');
     await confirm(page, false);
     assert.equal(hostCalls.length, beforeDocs);
-    await page.locator('#documentation-start').click();
+    await projectTool(page, 'documentation-start');
     await chooseNew(page);
     await page.waitForFunction(() => !document.querySelector('#launch-model').disabled);
     await page.locator('#launch-model').selectOption('fixture/reasoning');
@@ -759,16 +767,16 @@ const models = {
     await page.locator('#operations-close').click();
     // Completed runtime, stale local running record: starting the next operation must reconcile it.
     hostStreaming = true;
-    await page.locator('#analysis-start').click(); await confirm(page);
+    await projectTool(page, 'analysis-start'); await confirm(page);
     const staleRun = JSON.parse(await fs.readFile(path.join(root, '.governance/operations.json'), 'utf8')).runs.at(-1);
     await page.locator('#operations-close').click(); hostStreaming = false;
     const promptsBeforeAutoSync = hostCalls.filter(c => c.operation === 'agent/prompt').length;
-    await page.locator('#documentation-start').click(); await confirm(page);
+    await projectTool(page, 'documentation-start'); await confirm(page);
     let autoSynced = JSON.parse(await fs.readFile(path.join(root, '.governance/operations.json'), 'utf8'));
     assert.equal(autoSynced.runs.find(r => r.id === staleRun.id).phase, 'completed');
     assert.equal(hostCalls.filter(c => c.operation === 'agent/prompt').length, promptsBeforeAutoSync + 1, 'Only the new prompt is sent');
     // Opening the progress list also reconciles the next finished run without an Inspect click.
-    await page.locator('#operations-close').click(); await page.locator('#operations-open').click();
+    await page.locator('#operations-close').click(); await projectTool(page, 'operations-open');
     await page.waitForFunction(() => !document.querySelector('#operation-runs')?.textContent.includes('运行中'));
     autoSynced = JSON.parse(await fs.readFile(path.join(root, '.governance/operations.json'), 'utf8'));
     assert.equal(autoSynced.runs.at(-1).phase, 'completed');
@@ -801,11 +809,11 @@ const models = {
     await page.locator('#project-close').click();
     const promptsBeforeRecovery = hostCalls.filter((c) => c.operation === 'agent/prompt').length;
     failCreation = true;
-    await page.locator('#analysis-start').click();
+    await projectTool(page, 'analysis-start');
     await confirm(page);
     assert.match(await page.locator('#notice').textContent(), /durable session ID/);
     await page.locator('#launch-cancel').click();
-    await page.locator('#operations-open').click();
+    await projectTool(page, 'operations-open');
     await page.waitForSelector('.operation-run');
     const writesBeforeResolve = operationWrites.length;
     await page.context().setOffline(true);

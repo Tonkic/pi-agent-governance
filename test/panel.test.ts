@@ -62,7 +62,7 @@ test('panel progress invalidates existing verification', async t => {
 });
 test('renderer leads with architecture, removes promotional guide and keeps valid controls', async () => {
   const html = await fs.readFile(path.join(__dirname, '../plugin/renderer/index.html'), 'utf8');
-  const script = await fs.readFile(path.join(__dirname, '../plugin/renderer/panel.js'), 'utf8');
+  const script = await fs.readFile(path.join(__dirname, '../plugin/renderer/panel.js'), 'utf8') + '\n' + await fs.readFile(path.join(__dirname, '../plugin/renderer/shell.js'), 'utf8');
   assert.doesNotMatch(html, /FIELD GUIDE|怎么使用这个项目|THE REPOSITORY IS THE MEMORY|每一次交接|hero-block|progress-fill/);
   assert.ok(html.indexOf('id="architecture"') < html.indexOf('id="task-section"'));
   const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]);
@@ -73,18 +73,19 @@ test('renderer leads with architecture, removes promotional guide and keeps vali
   for (const match of html.matchAll(/href="#([^"]+)"/g)) assert.ok(ids.includes(match[1]), `Missing navigation target ${match[1]}`);
   assert.equal([...html.matchAll(/data-module="/g)].length, 0, 'No fixed plugin graph may masquerade as project data');
   for (const id of ['show-architecture', 'show-workflow', 'board-columns', 'workitem-form']) assert.ok(ids.includes(id));
-  for (const file of ['graph-model.js', 'graph.js', 'panel.js']) assert.ok(html.includes(`src="../runtime/renderer/${file}"`));
+  for (const file of ['graph-model.js', 'graph.js', 'shell.js', 'panel.js']) assert.ok(html.includes(`src="../runtime/renderer/${file}"`));
   const graphScript = await fs.readFile(path.join(__dirname, '../plugin/renderer/graph.js'), 'utf8');
   for (const match of graphScript.matchAll(/get\('([^']+)'/g)) assert.ok(ids.includes(match[1]), `Missing graph control ${match[1]}`);
 });
 test('browser bundle starts without Node globals and reports static preview', async () => {
   const vm = require('node:vm');
-  const script = await fs.readFile(path.join(__dirname, '../plugin/renderer/i18n.js'), 'utf8') + '\n' + await fs.readFile(path.join(__dirname, '../plugin/renderer/design.js'), 'utf8') + '\n' + await fs.readFile(path.join(__dirname, '../plugin/renderer/panel.js'), 'utf8');
+  const script = (await Promise.all(['i18n', 'design', 'shell', 'panel'].map(name => fs.readFile(path.join(__dirname, `../plugin/renderer/${name}.js`), 'utf8')))).join('\n');
   const elements = new Map();
   const document = {
     addEventListener() {}, documentElement: { dataset: {} }, querySelectorAll: () => [], querySelector: () => ({ hidden: false }),
     createElement: () => ({ value: '', textContent: '' }),
     getElementById: id => {
+      if (id === 'local-console-info') return null; // The static PI fixture has no HTTP adapter explanation.
       if (!elements.has(id)) elements.set(id, { attributes: {}, textContent: '', style: { setProperty() {} }, classList: { toggle() {} }, reset() {}, setAttribute(name, value) { this.attributes[name] = String(value); }, getAttribute(name) { return this.attributes[name] ?? null; }, addEventListener() {}, replaceChildren() {} });
       return elements.get(id);
     }
@@ -193,7 +194,7 @@ test('item details use a modal and cannot shrink the board through open-state CS
   const css = await fs.readFile(path.join(__dirname, '../../plugin/renderer/views.css'), 'utf8');
   assert.match(script, /\$\('item-sheet'\)\.showModal\(\)/);
   assert.doesNotMatch(css, /body:has\(#item-sheet/);
-  assert.match(css, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(css, /grid-template-columns: repeat\(3,\s*minmax\(0,\s*1fr\)\)/);
 });
 
 test('real browser entry revokes the old workspace and refuses an explicitly bound foreign project', async t => {

@@ -39,10 +39,6 @@
   let folded: boolean;
   const fold = () => { if (!host.clientWidth) return; const next = narrow(); if (folded !== next) { library.open = contents.open = !next; folded = next; } };
   new ResizeObserver(fold).observe(host);
-  // The same connection explanation stays available, compact by default only in the reader.
-  const info = document.getElementById('local-console-info'), explanation = el('details') as HTMLDetailsElement;
-  if (info) { const summary = el('summary'); summary.append(info.querySelector('strong')); explanation.append(summary, ...Array.from(info.childNodes)); info.append(explanation); explanation.open = true; }
-  let readerView = false;
   let fontSize = 18;
   const resizeText = (delta: number) => { fontSize = Math.max(16, Math.min(20, fontSize + delta)); body.style.fontSize = `${fontSize}px`; size.textContent = String(fontSize); smaller.disabled = busy || fontSize <= 16; larger.disabled = busy || fontSize >= 20; };
   smaller.addEventListener('click', () => resizeText(-1)); larger.addEventListener('click', () => resizeText(1));
@@ -257,7 +253,6 @@
   }
   function context() {
     head.hidden = !active(); fold();
-    if (readerView !== active()) { readerView = active(); explanation.open = !readerView; }
     if (epoch !== workspaceEpoch) reset();
     if (!snapshot?.workspace) return;
     if (root !== snapshot.workspace) { reset(); root = snapshot.workspace; epoch = workspaceEpoch; }

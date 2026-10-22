@@ -42,7 +42,7 @@ const http = __importStar(require("node:http"));
 const node_crypto_1 = require("node:crypto");
 const { panelInvoke } = require('./panel');
 const MAX_BODY = 1024 * 1024;
-const rendererFiles = ['i18n', 'graph-model', 'graph', 'design', 'panel', 'documents', 'git-history'];
+const rendererFiles = ['i18n', 'graph-model', 'graph', 'design', 'shell', 'panel', 'documents', 'git-history'];
 async function noLinks(file) {
     let current = path.resolve(file);
     for (;;) {
@@ -67,6 +67,8 @@ async function assets(assetRoot, webAssetsRoot) {
     const files = [
         ['/panel/', path.join(assetRoot, 'renderer/index.html'), 'text/html; charset=utf-8'],
         ['/panel/panel.css', path.join(assetRoot, 'renderer/panel.css'), 'text/css; charset=utf-8'],
+        ['/panel/tokens.css', path.join(assetRoot, 'renderer/tokens.css'), 'text/css; charset=utf-8'],
+        ['/panel/shell.css', path.join(assetRoot, 'renderer/shell.css'), 'text/css; charset=utf-8'],
         ['/panel/views.css', path.join(assetRoot, 'renderer/views.css'), 'text/css; charset=utf-8'],
         ['/panel/documents.css', path.join(assetRoot, 'renderer/documents.css'), 'text/css; charset=utf-8'],
         ['/console/bridge.js', path.join(webAssetsRoot, 'bridge.js'), 'text/javascript; charset=utf-8'],

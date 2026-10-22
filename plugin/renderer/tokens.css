@@ -1,0 +1,23 @@
+/* Design contract: restrained hierarchy, a bounded scale, semantic light/dark colors. */
+:root {
+  color-scheme: light;
+  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --size-caption: 12px; --size-small: 13px; --size-body: 14px; --size-label: 16px; --size-title: 24px;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px; --space-12: 48px;
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+  --bg: #f7f8fa; --surface: #ffffff; --subtle: #eff1f5; --sidebar: #f7f8fa;
+  --text: #252b37; --muted: #626c7c; --line: #dce1e8;
+  --accent: #4359b8; --accent-contrast: #ffffff; --error: #ac3248; --success: #26705a; --progress: #4359b8; --waiting: #798494;
+  --selected: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  --glass: var(--surface); --card-shadow: 0 1px 3px #172c4c0b; --overlay-shadow: 0 16px 48px #111c3030;
+}
+:root[data-base='dark'] {
+  color-scheme: dark;
+  --bg: #171b22; --surface: #222832; --subtle: #1c212a; --sidebar: #171b22;
+  --text: #e9edf4; --muted: #a5aebd; --line: #39424f;
+  --accent: #a8b8ff; --accent-contrast: #172038; --error: #ff9caa; --success: #88ceae; --progress: #a8b8ff; --waiting: #919baa;
+  --card-shadow: 0 1px 3px #0002; --overlay-shadow: 0 16px 48px #0006;
+}
+:root[data-palette='host'] { --bg: #fff; --surface: #f9f9f9; --subtle: #f3f3f3; --sidebar: #f3f3f3; --text: #1a1c1f; --muted: #5d5d5d; --line: #ddd; --accent: #1a1c1f; --accent-contrast: #fff; }
+:root[data-palette='host'][data-base='dark'] { --bg: #181818; --surface: #212121; --subtle: #282828; --sidebar: #131313; --text: #fff; --muted: #afafaf; --line: #383838; --accent: #fff; --accent-contrast: #181818; }

@@ -337,6 +337,18 @@
       "gitTaskId": null
     },
     {
+      "id": "refactoring-ui-091",
+      "title": "Refactoring UI 呈现层重构 · 0.9.1",
+      "description": "任务/正文优先、简洁工具栏、摘要按需、统一设计系统和CSS职责；不换框架不改后端/SSH，保留双语明暗键盘离线隔离保护。",
+      "blocker": "",
+      "stage": "doing",
+      "taskId": "project-board-release",
+      "criteria": [],
+      "architectureImpact": "affects",
+      "gitTaskId": null,
+      "completedAt": null
+    },
+    {
       "id": "ssh-portable-090",
       "title": "目录内可迁移SSH与远端优先备份 · 0.9.0",
       "description": "源码/官方0.9.0包/GitHub完成，main3219978双OS CI39746714903各280测试/279截图/10行为通过；加密迁移与真实SSH故障回归通过。市场单次提交明确拒绝eval动态执行，0.9.0未创建，不重试/绕过；待平台处理或另行批准兼容方案。",
@@ -442,5 +454,5 @@
       "completedAt": "2026-10-19T08:25:19.973Z"
     }
   ],
-  "updatedAt": "2026-10-22T08:37:21.862Z"
+  "updatedAt": "2026-10-22T12:11:41.472Z"
 }

@@ -102,5 +102,5 @@
   design.className = 'muted';
   design.textContent = zh ? '设计协作：在此创建草案 → 回原宿主会话保存方案 → 刷新并人工审阅确认。确认设计不会授权代码实施。' : 'Design: create a draft here → save a proposal in your original host conversation → refresh and review it here. Confirming a design does not authorize code changes.';
   info.append(title, description, design);
-  document.querySelector('.topbar').after(info);
+  document.querySelector('footer').before(info);
 })();

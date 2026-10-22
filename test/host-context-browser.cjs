@@ -30,8 +30,12 @@ module.exports = async ({ assert, makePage, modelRows, capture, chooseNew, settl
     if (payload.action === 'resolve') { contractRun.phase = 'failed'; return { ok: true, result: contractRun }; }
     return { ok: true, result: { workspace, runs: contractRun ? [contractRun] : [] } };
   });
-  const open = async () => {
+  const clickAnalysis = async () => {
+    if (!await p.locator('#project-tools').evaluate(n => n.open)) await p.locator('#project-tools > summary').click();
     await p.locator('#analysis-start').click();
+  };
+  const open = async () => {
+    await clickAnalysis();
     await p.waitForFunction(() => !document.querySelector('#launch-status').textContent.includes('Loading'));
   };
   const submit = async () => {
@@ -129,7 +133,7 @@ module.exports = async ({ assert, makePage, modelRows, capture, chooseNew, settl
   catalogError = false; catalogWorkspace = null;
   sessions = [{ id: 'late-session', title: 'Late session', modelKey: null, thinkingLevel: null }];
   holdCatalog = true;
-  await p.locator('#analysis-start').click();
+  await clickAnalysis();
   await p.waitForFunction(() => document.querySelector('#launch-dialog').open);
   await awaitRequest(() => releaseCatalog);
   await p.keyboard.press('Escape');
@@ -151,7 +155,7 @@ module.exports = async ({ assert, makePage, modelRows, capture, chooseNew, settl
   await p.context().setOffline(false);
   await p.locator('#launch-cancel').click();
   holdCatalog = true;
-  await p.locator('#analysis-start').click(); await awaitRequest(() => releaseCatalog);
+  await clickAnalysis(); await awaitRequest(() => releaseCatalog);
   const originalRoot = getRoot(); setRoot(roots[1]);
   await p.evaluate(next => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path: next } })), getRoot());
   await settled(p); holdCatalog = false; releaseCatalog();

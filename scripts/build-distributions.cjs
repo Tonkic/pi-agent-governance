@@ -8,7 +8,7 @@ const { execFileSync } = require('node:child_process');
 const { fullSha, gitAt, safeFile, containsCredential, clean } = require('./release-safety.cjs');
 const pluginId = 'io.github.tonkic.agent-governance';
 const sharedModules = ['core', 'git', 'project', 'design', 'behaviors', 'tool', 'panel', 'documents', 'browser', 'browser-open', 'workbench', 'workbench-tool', 'git-history', 'remote-program', 'remote-store', 'remote-ssh', 'remote-cli', 'ssh-runtime'];
-const consoleFiles = ['build/web/server.js', 'web/bridge.js', 'web/console.css', 'plugin/renderer/index.html', 'plugin/renderer/panel.css', 'plugin/renderer/views.css', 'plugin/renderer/documents.css', ...['i18n', 'graph-model', 'graph', 'design', 'panel', 'documents', 'git-history'].map(f => `plugin/runtime/renderer/${f}.js`)];
+const consoleFiles = ['build/web/server.js', 'web/bridge.js', 'web/console.css', 'plugin/renderer/index.html', 'plugin/renderer/tokens.css', 'plugin/renderer/panel.css', 'plugin/renderer/shell.css', 'plugin/renderer/views.css', 'plugin/renderer/documents.css', ...['i18n', 'graph-model', 'graph', 'design', 'shell', 'panel', 'documents', 'git-history'].map(f => `plugin/runtime/renderer/${f}.js`)];
 const skillFiles = ['SKILL.md', 'SOURCE.md', 'LICENSE', ...['README', 'web-and-product', 'transactional', 'realtime-and-storage', 'ai-native', 'agent-and-org', 'embedded-industrial', 'signals', 'glossary'].map(f => `references/${f}.md`)];
 const hostFiles = ['build/mcp/context-hook.js', 'mcp/clients/codex-hooks.json'];
 const piFiles = [
@@ -21,6 +21,7 @@ const piFiles = [
   ...skillFiles.map(f => `skills/architecture-copilot/${f}`),
   'README.md', ...['architecture-design', 'README', 'governance', 'git', 'project', 'mcp', 'web-console', 'documentation', 'architecture', 'development', 'doc-driven', 'behavior-workspace', 'publishing', 'releasing', 'ui-sources', 'remote'].map(f => `docs/${f}.md`),
   'renderer/index.html', 'renderer/panel.css', 'renderer/views.css', 'renderer/documents.css', 'renderer/tsconfig.json',
+  'renderer/tokens.css', 'renderer/shell.css', 'renderer/shell.ts', 'runtime/renderer/shell.js',
   ...['design', 'panel', 'graph', 'graph-model', 'i18n', 'documents', 'git-history'].flatMap(f => [`renderer/${f}.ts`, `runtime/renderer/${f}.js`])
 ].sort();
 const sha256 = data => crypto.createHash('sha256').update(data).digest('hex');

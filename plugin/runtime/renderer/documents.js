@@ -66,16 +66,6 @@
         folded = next;
     } };
     new ResizeObserver(fold).observe(host);
-    // The same connection explanation stays available, compact by default only in the reader.
-    const info = document.getElementById('local-console-info'), explanation = el('details');
-    if (info) {
-        const summary = el('summary');
-        summary.append(info.querySelector('strong'));
-        explanation.append(summary, ...Array.from(info.childNodes));
-        info.append(explanation);
-        explanation.open = true;
-    }
-    let readerView = false;
     let fontSize = 18;
     const resizeText = (delta) => { fontSize = Math.max(16, Math.min(20, fontSize + delta)); body.style.fontSize = `${fontSize}px`; size.textContent = String(fontSize); smaller.disabled = busy || fontSize <= 16; larger.disabled = busy || fontSize >= 20; };
     smaller.addEventListener('click', () => resizeText(-1));
@@ -534,10 +524,6 @@
     function context() {
         head.hidden = !active();
         fold();
-        if (readerView !== active()) {
-            readerView = active();
-            explanation.open = !readerView;
-        }
         if (epoch !== workspaceEpoch)
             reset();
         if (!snapshot?.workspace)
