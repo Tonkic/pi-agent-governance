@@ -86,7 +86,7 @@ test('browser bundle starts without Node globals and reports static preview', as
     createElement: () => ({ value: '', textContent: '' }),
     getElementById: id => {
       if (id === 'local-console-info') return null; // The static PI fixture has no HTTP adapter explanation.
-      if (!elements.has(id)) elements.set(id, { attributes: {}, textContent: '', style: { setProperty() {} }, classList: { toggle() {} }, reset() {}, setAttribute(name, value) { this.attributes[name] = String(value); }, getAttribute(name) { return this.attributes[name] ?? null; }, addEventListener() {}, replaceChildren() {} });
+      if (!elements.has(id)) elements.set(id, { attributes: {}, dataset: {}, textContent: '', style: { setProperty() {} }, classList: { toggle() {} }, reset() {}, setAttribute(name, value) { this.attributes[name] = String(value); }, getAttribute(name) { return this.attributes[name] ?? null; }, addEventListener() {}, replaceChildren() {} });
       return elements.get(id);
     }
   };

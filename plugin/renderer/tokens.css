@@ -3,20 +3,20 @@
   color-scheme: light;
   --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
   --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
-  --size-caption: 12px; --size-small: 13px; --size-body: 14px; --size-label: 16px; --size-title: 24px;
+  --size-caption: 12px; --size-small: 13px; --size-body: 14px; --size-label: 16px; --size-title: 28px;
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px; --space-12: 48px;
-  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
-  --bg: #f7f8fa; --surface: #ffffff; --subtle: #eff1f5; --sidebar: #f7f8fa;
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 18px;
+  --bg: #f5f6fa; --surface: #ffffff; --subtle: #eceff5; --sidebar: #ffffff;
   --text: #252b37; --muted: #626c7c; --line: #dce1e8;
-  --accent: #4359b8; --accent-contrast: #ffffff; --error: #ac3248; --success: #26705a; --progress: #4359b8; --waiting: #798494;
+  --accent: #5049bf; --accent-contrast: #ffffff; --error: #b6314e; --success: #23765b; --progress: #5264ce; --waiting: #9b712c;
   --selected: color-mix(in srgb, var(--accent) 9%, var(--surface));
-  --glass: var(--surface); --card-shadow: 0 1px 3px #172c4c0b; --overlay-shadow: 0 16px 48px #111c3030;
+  --glass: var(--surface); --card-shadow: 0 2px 4px #172c4c04, 0 6px 16px #172c4c05; --overlay-shadow: 0 16px 48px #111c3030;
 }
 :root[data-base='dark'] {
   color-scheme: dark;
-  --bg: #171b22; --surface: #222832; --subtle: #1c212a; --sidebar: #171b22;
+  --bg: #141721; --surface: #202532; --subtle: #191e2a; --sidebar: #191d28;
   --text: #e9edf4; --muted: #a5aebd; --line: #39424f;
-  --accent: #a8b8ff; --accent-contrast: #172038; --error: #ff9caa; --success: #88ceae; --progress: #a8b8ff; --waiting: #919baa;
+  --accent: #b6b1ff; --accent-contrast: #201a48; --error: #ff9caa; --success: #79d5b0; --progress: #9caeff; --waiting: #d5b077;
   --card-shadow: 0 1px 3px #0002; --overlay-shadow: 0 16px 48px #0006;
 }
 :root[data-palette='host'] { --bg: #fff; --surface: #f9f9f9; --subtle: #f3f3f3; --sidebar: #f3f3f3; --text: #1a1c1f; --muted: #5d5d5d; --line: #ddd; --accent: #1a1c1f; --accent-contrast: #fff; }

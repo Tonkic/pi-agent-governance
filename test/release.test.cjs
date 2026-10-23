@@ -19,10 +19,10 @@ test('only exact stable vX.Y.0 tags X>=1 qualify; 0.x/patch/prerelease/build/lea
   assert.throws(() => decision('v1.1.0', '1.2.0'), /mismatch/);
   for (const [key, value] of [['enabled', false], ['rule', 'stable-major-tag-only'], ['allowSupersede', true], ['npmPublish', true], ['marketplacePublish', true], ['autoInstall', true], ['createTags', true], ['repository', 'other/repo']]) assert.throws(() => validatePolicy({ ...policy, [key]: value }), /approval/);
 });
-test('approved 0.9.1 presentation patch does not change GitHub tag policy or authorize installation', () => {
-  assert.equal(require('../package.json').version, '0.9.1');
-  assert.equal(decision('v0.9.1', '0.9.1').publish, false);
-  assert.equal(decision(undefined, '0.9.1').publish, false);
+test('approved 0.9.2 presentation patch does not change GitHub tag policy or authorize installation', () => {
+  assert.equal(require('../package.json').version, '0.9.2');
+  assert.equal(decision('v0.9.2', '0.9.2').publish, false);
+  assert.equal(decision(undefined, '0.9.2').publish, false);
   for (const key of ['npmPublish', 'marketplacePublish', 'autoInstall', 'createTags']) assert.equal(policy[key], false);
 });
 test('immutable full SHA tag must be on main ancestry; no implicit tag creation', () => {
@@ -158,6 +158,10 @@ test('generated index refresh accepts only unstaged known outputs with normalize
   }
   const valid = fixture(' M plugin/runtime/main.js\n M plugin/docs/README.md\n'); refreshGeneratedIndex(valid.run);
   assert.deepEqual(valid.calls.at(-1), ['add', '--', 'plugin/runtime/main.js', 'plugin/docs/README.md']);
+  const licenses = fixture(' M plugin/SSH-LICENSES.md\n'); refreshGeneratedIndex(licenses.run);
+  assert.ok(licenses.calls[0].includes('plugin/SSH-LICENSES.md'), 'Query the build-generated SSH license explicitly');
+  assert.deepEqual(licenses.calls.at(-1), ['add', '--', 'plugin/SSH-LICENSES.md']);
+  for (const f of [fixture(' M plugin/SSH-LICENSES.md\n', 'changed'), fixture(' M plugin/SSH-LICENSES.md\n', 'same', 'staged')]) { assert.throws(() => refreshGeneratedIndex(f.run), /inspect before release/); assert.equal(f.calls.some(a => a[0] === 'add'), false); }
   for (const f of [fixture('M  plugin/runtime/main.js\n'), fixture(' M plugin/main.ts\n'), fixture(' M plugin/runtime/main.js\n', 'changed'), fixture(' M plugin/runtime/main.js\n', 'same', 'staged')]) { assert.throws(() => refreshGeneratedIndex(f.run), /inspect before release/); assert.equal(f.calls.some(a => a[0] === 'add'), false); }
   const empty = fixture(''); refreshGeneratedIndex(empty.run); assert.equal(empty.calls.some(a => a[0] === 'add'), false);
 });
