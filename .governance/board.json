@@ -351,8 +351,8 @@
     {
       "id": "visual-hierarchy-092",
       "title": "0.9.2 图形概览与视觉层级优化",
-      "description": "用户明确要求恢复有用可视化并按Refactoring UI优化前端。真实统计卡/进度环/三阶段比例、任务卡层级、精简常驻说明；保留五页、安全和SSH。源码/官方包/main双OS CI交付；补丁不市场、不自动安装。",
-      "blocker": "",
+      "description": "代码/官方103文件包/本地main6266a69完成；源码0cce44a实际完整280测试/279图/10行为通过，真实main手机首屏459px/五页/隔离通过。GitHub Git HTTPS连接失败，远端仍4f98ee8，推送及main双OS CI未完成；原宿主/目视限制保留。",
+      "blocker": "0.9.2代码/官方包/本地main6266a69完成，GitHub HTTPS 443连接失败；只读API确认远端仍4f98ee8，未推送/未触发双OS CI。网络恢复后先核对远端再正常推送，不重复未知写入。",
       "stage": "doing",
       "taskId": "project-board-release",
       "criteria": [
@@ -470,5 +470,5 @@
       "completedAt": "2026-10-19T08:25:19.973Z"
     }
   ],
-  "updatedAt": "2026-10-23T08:54:27.796Z"
+  "updatedAt": "2026-10-23T09:09:59.343Z"
 }
