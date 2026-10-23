@@ -24,5 +24,14 @@
 ## 日志与待交付
 
 - 会话scratch：github0100-{install,typecheck,build,tests-first,tests-second,ssh-tests,ssh-repro,ssh-green,full,review-red,final-build,final-typecheck,final-supplement,live-read}.log；完整截图github0100-full-shots。
-- 发布版本0.10.0，原0.9.0动态SSH执行市场拒绝原因仍存在，不重试同类市场包。源码GitHub连接已恢复；下一步受管提交、正常main集成/推送及实际双OS CI核对。
+- 发布版本0.10.0，原0.9.0动态SSH执行市场拒绝原因仍存在，不重试同类市场包。源码GitHub连接已恢复，最终交付如下。
 - 当前总体仍working；原安装宿主/Browser目视阻塞不以截图或夹具验收替代。
+
+## 最终源码与CI交付
+
+- 源码提交 `a9bce18f8283186f7e76b8a72b03a8f9714aa11b`；正常合并main `8d1c703d529547040be26eece942de4e6de6d0f7`，树完全一致，普通push后ls-remote完整SHA确认，根工作区干净。
+- 实际main CI `40016034271`：plan、ubuntu-latest、windows-latest全部步骤success；每OS完整293测试/0失败/0跳过、279截图、10行为。Windows耗时10m54s；观察进程一次本地超时后仅只读续查，未重新触发CI或push。
+- main实际build及distributions通过、严格生成内容一致缓存刷新；CLI help及未绑定authority=local检查通过。通用包325056字节，SHA256 `2878a79a0d709de0635fcc8e923e1117445a94880ba5bc2ef0ab03caaf3f50fc`；官方包字节/哈希与上文一致。
+- i18n：0 fail /12原有review；update:plan实际minor/0.10.0/versionMatches=true/marketplaceRequired=true/mutation=false；release:auto plan publish=false/mutation=false。市场因原未解决规则拒绝阻塞，不调用/重试/绕过。
+- 原0.9.2待同步已随main普通push解决。比较d9551a6至8d1c703的plugin/renderer及web桥接/样式无差异；其界面由上述实际main双OS完整CI覆盖，不冒充独立0.9.2标签CI。
+- 最终完成记录仅STATE/看板/既有证据修改；按records路径检查并复用已测产品，不声称记录SHA重跑全量。总体working，原市场/Browser目视/安装宿主阻塞保留，无新获批followUp。

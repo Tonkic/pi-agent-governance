@@ -33,3 +33,8 @@
 - GitHub正常push在连接阶段失败（github.com:443）。后续只读API明确返回远端4f98ee8a2203310c2fe11819ea0abbcb72006976；只读ls-remote再次连接失败，未再次push、未改远端或凭据、未绕过为API写入，未触发或声称main双OS CI。
 - 本项保留doing并登记网络阻塞；总体working不close，受管criteria3未完成，不伪造git_verify成功。网络恢复后先核对远端，再接续正常推送/实际CI/记录。
 - 图库已刷新至最终完整检查生成的代表图；Browser前台限制仍在，未声称人工目视/真实安装宿主或物理触屏验收。
+
+## 网络恢复后的交付补记
+- GitHub连接恢复，先核对远端仍4f98ee8，再随0.10.0正常push main `8d1c703d529547040be26eece942de4e6de6d0f7`，ls-remote完整SHA确认。
+- 比较记录d9551a6至8d1c703的plugin/renderer及web桥接/样式无差异。实际CI `40016034271` 双OS所有步骤成功，各293测试/0失败跳过、279截图/10行为，包含原0.9.2界面与保留官方包；不是独立0.9.2标签CI，也未重新执行旧SHA。
+- 因此旧网络阻塞解除、看板本项done；总体working及原目视/安装宿主/0.9.0市场拒绝阻塞保留。详情共用 [0.10.0交付证据](github-authority-0100.md)。
