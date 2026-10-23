@@ -3,6 +3,8 @@
 
 **0.9.0 提供 Agent 优先的 SSH CLI，不新增网页终端或远程管理页。** Linux/Windows远端均需已有SSH密码认证服务及PATH中的Node.js 22+；本地需Node.js 22+和Git执行凭据保护检查。不安装/修改系统SSH、凭据库、Agent或远端服务。
 
+如需本地与SSH共同提交GitHub，先读[权威协作](collaboration.md)：已绑定GitHub分支优先；下文“远端先写、本地只读备份”仅描述SSH通道，不把SSH工作副本凌驾于GitHub权威分支。绑定故障不自动降级。
+
 ## 工作目录自包含
 
 ```text

@@ -468,7 +468,18 @@
       "architectureImpact": "none",
       "gitTaskId": null,
       "completedAt": "2026-10-19T08:25:19.973Z"
+    },
+    {
+      "id": "github-authority-0100",
+      "title": "GitHub权威协作0.10.0",
+      "description": "GitHub权威分支优先；无绑定才SSH/本地，已绑定故障不降级。两端同源CLI权威读取/独立分支推送/unknown核对。完整291项/279截图/10行为通过；审查两项修复补测及官方包交付中。",
+      "blocker": "",
+      "stage": "todo",
+      "taskId": "project-board-release",
+      "criteria": [],
+      "architectureImpact": "affects",
+      "gitTaskId": "github-authority-0100"
     }
   ],
-  "updatedAt": "2026-10-23T09:09:59.343Z"
+  "updatedAt": "2026-10-23T19:56:04.286Z"
 }

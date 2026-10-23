@@ -84,7 +84,7 @@ async function connect(p, password, trusted) {
         }
     });
 }
-async function rpc(c, q) {
+async function rpc(c, q, collaboration = false) {
     if (Buffer.byteLength(JSON.stringify(q)) > 2097152)
         throw Error('INPUT_LIMIT');
     return new Promise((resolve, reject) => {
@@ -124,7 +124,8 @@ async function rpc(c, q) {
                     gone();
                 }
             });
-            stream.end(JSON.stringify({ program: '(' + remoteProgram.toString() + ')()', request: q }));
+            const program = collaboration ? require('./collaboration-program').collaborationProgram : remoteProgram;
+            stream.end(JSON.stringify({ program: '(' + program.toString() + ')()', request: q }));
         });
     });
 }

@@ -42,7 +42,7 @@ async function connect(p: any, password: string, trusted: string) {
     try { c.connect({ host: p.host, port: p.port, username: p.username, password, authHandler: ['password'], tryKeyboard: false, readyTimeout: 15000, keepaliveInterval: 10000, keepaliveCountMax: 2, hostVerifier: (key: any) => { mismatch = fingerprint(key) !== trusted; return !mismatch; } }); } catch { clearTimeout(timer); c.destroy(); reject(Error('SSH_CONNECTION_FAILED')); }
   });
 }
-async function rpc(c: any, q: any) {
+async function rpc(c: any, q: any, collaboration = false) {
   if (Buffer.byteLength(JSON.stringify(q)) > 2097152) throw Error('INPUT_LIMIT');
   return new Promise<any>((resolve, reject) => {
     let stream, settled = false, chunks = [], size = 0, stderrSize = 0;
@@ -59,7 +59,8 @@ async function rpc(c: any, q: any) {
           if (!response.ok) { const e: any = Error(/^[A-Z_]{3,40}$/.test(response.error) ? response.error : 'REMOTE_REJECTED'); e.rejected = true; return finish(e); } finish(null, response.result);
         } catch { gone(); }
       });
-      stream.end(JSON.stringify({ program: '(' + remoteProgram.toString() + ')()', request: q }));
+      const program = collaboration ? require('./collaboration-program').collaborationProgram : remoteProgram;
+      stream.end(JSON.stringify({ program: '(' + program.toString() + ')()', request: q }));
     });
   });
 }
