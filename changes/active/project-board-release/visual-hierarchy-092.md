@@ -22,3 +22,5 @@
 - 最终浏览器链路全部通过：核心98、HTTP及各页171、受管2、轻量入口8，共279截图；原10行为场景全部通过。500000原始字符/60文件预算及绑定未改，LF/CRLF回归通过。
 - 官方i18n为0 fail/12既有review；PluginCheck/PluginPack通过103文件、1894502字节，最终SHA256 `2e4737c6fa852ae8ef33f3cdf998c5f47f96cb3a6695fb507a163ae20d044739`。原0.9.1包哈希先核对，新包完成后替换，旧版保留Git历史。
 - 两类分发测试6/6通过；官方包源码/清单/权限/版本核对通过。main CI待完成；原总体宿主/目视/0.9.0市场拒绝阻塞保留。
+
+- 分发曾被生成SSH许可证的换行stat阻塞：HEAD/index/规范化内容哈希三者相同。精确补齐refreshGeneratedIndex的plugin/SSH-LICENSES.md条目，回归先失败后通过；真实/暂存变化仍拒绝，release+distributions24/24通过。未改SSH或官方包内容。

@@ -41,7 +41,7 @@ function secretScan(root, sourceRef, tokens = []) {
   }
 }
 function refreshGeneratedIndex(runGit) {
-  const outputs = ['plugin/runtime/', 'plugin/docs/', 'plugin/main.js', 'plugin/manifest.json', 'plugin/README.md'];
+  const outputs = ['plugin/runtime/', 'plugin/docs/', 'plugin/main.js', 'plugin/manifest.json', 'plugin/README.md', 'plugin/SSH-LICENSES.md'];
   const rows = runGit('status', '--porcelain=v1', '--untracked-files=no', '--', ...outputs).split(/\r?\n/).filter(Boolean);
   const files = [];
   for (const row of rows) {

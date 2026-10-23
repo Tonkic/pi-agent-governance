@@ -158,6 +158,10 @@ test('generated index refresh accepts only unstaged known outputs with normalize
   }
   const valid = fixture(' M plugin/runtime/main.js\n M plugin/docs/README.md\n'); refreshGeneratedIndex(valid.run);
   assert.deepEqual(valid.calls.at(-1), ['add', '--', 'plugin/runtime/main.js', 'plugin/docs/README.md']);
+  const licenses = fixture(' M plugin/SSH-LICENSES.md\n'); refreshGeneratedIndex(licenses.run);
+  assert.ok(licenses.calls[0].includes('plugin/SSH-LICENSES.md'), 'Query the build-generated SSH license explicitly');
+  assert.deepEqual(licenses.calls.at(-1), ['add', '--', 'plugin/SSH-LICENSES.md']);
+  for (const f of [fixture(' M plugin/SSH-LICENSES.md\n', 'changed'), fixture(' M plugin/SSH-LICENSES.md\n', 'same', 'staged')]) { assert.throws(() => refreshGeneratedIndex(f.run), /inspect before release/); assert.equal(f.calls.some(a => a[0] === 'add'), false); }
   for (const f of [fixture('M  plugin/runtime/main.js\n'), fixture(' M plugin/main.ts\n'), fixture(' M plugin/runtime/main.js\n', 'changed'), fixture(' M plugin/runtime/main.js\n', 'same', 'staged')]) { assert.throws(() => refreshGeneratedIndex(f.run), /inspect before release/); assert.equal(f.calls.some(a => a[0] === 'add'), false); }
   const empty = fixture(''); refreshGeneratedIndex(empty.run); assert.equal(empty.calls.some(a => a[0] === 'add'), false);
 });
