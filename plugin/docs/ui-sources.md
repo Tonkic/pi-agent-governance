@@ -8,11 +8,11 @@ The context menu and some detail-surface spacing in `renderer/views.css` adapt r
 
 This plugin uses native HTML, TypeScript and a modal `<dialog>` for item details. It does not bundle the React/Radix components. Board layout does not change when details open. Object actions, confirmation, keyboard handling and write safeguards are implemented locally. Keyboard menus open instantly; reduced-motion and high-contrast modes are supported.
 
-## Refactoring UI principles (0.9.1)
+## Refactoring UI principles (0.9.2)
 
 The user-supplied book informed feature-first hierarchy, restrained type/spacing scales, secondary labels, progressive disclosure and fewer decorative borders. This is an original native HTML/CSS refactor, not a copied template. No PDF, book excerpts, fonts, images or third-party UI runtime are distributed.
 
-Task content stays primary; compact real metrics replace the hero/stat cards. Optional overview and low-frequency tools use keyboard-accessible native details. Semantic tokens, foundations, shell and business views have separate style owners; data and write protections remain in the existing controller.
+Useful visualization stays visible: real metric cards, a completion ring and a three-stage proportion bar precede the task board. Weight, type size, whitespace, tonal surfaces and restrained shadows establish hierarchy; no fictional activity or trend charts are added. Secondary explanations use contextual details, not permanent paragraphs. Metadata follows the board. Semantic tokens, foundations, shell and business views retain separate owners; data and write protections remain in the existing controller.
 
 ## shadcn/ui license
 

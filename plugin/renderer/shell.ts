@@ -18,11 +18,18 @@ function renderWorkbenchSummary(loading = false) {
   const total = items?.length;
   const percent = counts && total ? Math.round(counts[2] / total * 100) : counts ? 0 : null;
   for (const [id, value] of [
-    ['summary-total', total], ['summary-doing', counts?.[1]], ['summary-done', counts?.[2]],
+    ['summary-total', total], ['summary-doing', counts?.[1]], ['summary-done', counts?.[2]], ['summary-active-count', counts?.[1]], ['summary-complete-count', counts?.[2]],
     ['summary-impact', items?.filter(item => item.architectureImpact === 'affects').length], ['summary-todo', counts?.[0]]
   ]) text(id, value == null ? '—' : String(value));
   text('summary-percent', percent == null ? '—' : `${percent}%`);
-  $('summary-ring').style.setProperty('--completion', `${percent ?? 0}%`);
+  $('summary-ring').style.setProperty('--completion', String(percent ?? 0));
+  $('summary-ring').dataset.available = String(percent !== null);
+  document.querySelectorAll<HTMLElement>('[data-summary-stage]').forEach((segment, index) => {
+    const value = counts?.[index] ?? 0;
+    segment.style.setProperty('--stage-share', String(total ? value / total * 100 : 0));
+  });
+  $('summary-stages').dataset.empty = String(!total);
+  $('summary-stages').setAttribute('aria-label', counts ? boardStages.map((stage, index) => `${boardLabels[stage]} ${counts[index]}`).join(' · ') : t('summaryUnavailable'));
   $('summary-ring').setAttribute('aria-label', percent == null ? t('summaryUnavailable') : t('summaryRatio', percent, counts[2], total));
   text('summary-availability', loading ? t('reading') : !items ? t('summaryUnavailable') : !navigator.onLine ? t('summaryOffline') : !total ? t('summaryEmpty') : t('summaryLoaded'));
   $('workbench-metrics').setAttribute('aria-busy', String(loading));

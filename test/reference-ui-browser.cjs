@@ -32,8 +32,11 @@ module.exports = async ({ browser, screenshots }) => {
     assert.equal(await page.locator('#summary-workspace-path').textContent(), root);
     assert.equal(await page.locator('#summary-workspace-name').textContent(), path.basename(root));
     assert.equal(await page.locator('#summary-task').textContent(), 'reference-demo');
-    assert.equal(await page.locator('.welcome-banner, #welcome-title, .metric-symbol, .completion-ring').count(), 0);
+    assert.equal(await page.locator('.welcome-banner, #welcome-title').count(), 0);
     assert.equal(await page.locator('#project-overview').evaluate(n => n.open), false);
+    assert.equal(await page.locator('#summary-ring').isVisible(), true, 'Completion is visible without expanding metadata');
+    assert.equal(await page.locator('.summary-metric').count(), 4);
+    assert.equal(await page.locator('#summary-stages').getAttribute('data-empty'), 'true');
     for (let i = 0; i < 9; i++) {
       await mutate({ action: 'board_create', id: `demo-${i}`, title: `Demo data · 演示工作项 ${i} ${i === 0 ? 'Long title reflows safely without covering adjacent cards '.repeat(2) : ''}`, description: 'Demo data / 演示数据 — no fictional production activity.', architectureImpact: i < 4 ? 'affects' : 'none' });
       if (i < 7) await mutate({ action: 'board_move', id: `demo-${i}`, stage: 'doing', position: 0 });
@@ -44,6 +47,9 @@ module.exports = async ({ browser, screenshots }) => {
     assert.equal(await page.locator('.board-column[data-stage="done"] [data-workitem]').count(), 5);
     assert.match(await page.locator('#summary-ring').getAttribute('aria-label'), /67%.*6 \/ 9/);
     assert.match(await page.locator('#summary-state').textContent(), /进行中|工作中/);
+    const shares = await page.locator('[data-summary-stage]').evaluateAll(nodes => nodes.map(n => +n.style.getPropertyValue('--stage-share')));
+    assert.ok(shares.every((share, i) => Math.abs(share - [2, 1, 6][i] / 9 * 100) < .001), 'Stage widths reflect all saved tasks');
+    assert.equal(await page.locator('#summary-ring').evaluate(n => n.style.getPropertyValue('--completion')), '67');
     const requests = snapshotRequests;
     await page.locator('#board-search').fill('no-matching-demo');
     assert.equal(await page.locator('#board-empty').isVisible(), true);
@@ -83,7 +89,12 @@ module.exports = async ({ browser, screenshots }) => {
         const requestsBefore = snapshotRequests; await p.locator('#project-overview > summary').focus(); await p.keyboard.press('Enter');
         assert.equal(await p.locator('#summary-workspace-path').isVisible(), true); await p.keyboard.press('Enter');
         assert.equal(await p.locator('#project-overview').evaluate(n => n.open), false); assert.equal(snapshotRequests, requestsBefore, 'Disclosure is local only');
-        assert.equal(await p.locator('.completion-progress').evaluate(el => getComputedStyle(el).animationName), 'none');
+        assert.equal(await p.locator('.completion-ring').evaluate(el => getComputedStyle(el).animationName), 'none');
+        assert.equal(await p.locator('#summary-ring').isVisible(), true);
+        assert.equal(await p.locator('#summary-stages').isVisible(), true);
+        const ring = await p.locator('#summary-ring').boundingBox(); assert.ok(ring.width >= 60 && ring.height >= 60);
+        assert.equal(await p.locator('.metric-icon').first().isVisible(), width > 650);
+        assert.ok(await p.locator('.summary-metric strong').first().evaluate(n => parseFloat(getComputedStyle(n).fontSize) >= 24));
         assert.equal(await p.locator('.workitem h4').first().evaluate(n => parseFloat(getComputedStyle(n).fontSize) >= 14), true);
         await p.locator('#board-search').focus(); await p.keyboard.press('Tab');
         assert.ok(await p.evaluate(() => getComputedStyle(document.activeElement).outlineStyle !== 'none'), 'Keyboard focus is visible');
@@ -105,6 +116,8 @@ module.exports = async ({ browser, screenshots }) => {
     await refresh(page);
     assert.deepEqual(await summary(page), ['—', '—', '—', '—', '—', '—']);
     assert.match(await page.locator('#summary-availability').textContent(), /不可用/);
+    assert.equal(await page.locator('#summary-ring').getAttribute('data-available'), 'false');
+    assert.equal(await page.locator('#summary-stages').getAttribute('data-empty'), 'true');
     assert.deepEqual(errors, []);
     console.log(`PASS reference UI real HTTP: empty/9-item/full-history counts, search independence, external transitions, offline/error, safe actions, keyboard/reduced motion, 320/390/768/1280/1672 bilingual light/dark; ${shots} screenshots: ${output}`);
   } catch (error) {
