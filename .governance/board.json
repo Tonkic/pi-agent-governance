@@ -20,6 +20,34 @@
       "gitTaskId": null
     },
     {
+      "id": "github-authority-0100",
+      "title": "GitHub权威协作0.10.0",
+      "description": "已交付源码a9bce18与官方110文件包至main8d1c703；实际双OS CI40016034271各293测试/279截图/10行为全通过。已绑定GitHub故障不降级、两端独立草稿分支、双端unknown与SHA核对；CLI非浏览器实时GitHub视图。原SSH市场eval拒绝保留，不重试。",
+      "blocker": "",
+      "stage": "done",
+      "taskId": "project-board-release",
+      "criteria": [],
+      "architectureImpact": "affects",
+      "gitTaskId": "github-authority-0100",
+      "completedAt": "2026-10-23T20:14:56.147Z"
+    },
+    {
+      "id": "visual-hierarchy-092",
+      "title": "0.9.2 图形概览与视觉层级优化",
+      "description": "0.9.2源码/官方包/本地UI检查保留；网络恢复后随0.10.0 main8d1c703正常同步，原UI未改，由实际CI40016034271双OS完整检查覆盖293测试/279截图/10行为。不是另跑0.9.2标签CI或人工安装验收。",
+      "blocker": "",
+      "stage": "done",
+      "taskId": "project-board-release",
+      "criteria": [
+        "可见真实图形概览、任务层级、少说明，中英明暗手机桌面可用",
+        "相关及完整回归保留原确认、离线、隔离、阅读器和Git安全",
+        "0.9.2版本官方包与main双OS CI真实通过，原总体阻塞保留"
+      ],
+      "architectureImpact": "none",
+      "gitTaskId": null,
+      "completedAt": "2026-10-23T20:14:56.157Z"
+    },
+    {
       "id": "refactoring-ui-091",
       "title": "Refactoring UI 呈现层重构 · 0.9.1",
       "description": "0.9.1展示层重构已交付：任务优先、紧凑统计/按需概览工具、tokens/shell/业务样式归属；保留五页与安全契约。官方103文件包、main3a028cf及CI39783999993双OS各280测试/279截图/10行为全部通过。原宿主/目视/SSH市场拒绝阻塞不变。",
@@ -349,22 +377,6 @@
       "gitTaskId": null
     },
     {
-      "id": "visual-hierarchy-092",
-      "title": "0.9.2 图形概览与视觉层级优化",
-      "description": "代码/官方103文件包/本地main6266a69完成；源码0cce44a实际完整280测试/279图/10行为通过，真实main手机首屏459px/五页/隔离通过。GitHub Git HTTPS连接失败，远端仍4f98ee8，推送及main双OS CI未完成；原宿主/目视限制保留。",
-      "blocker": "0.9.2代码/官方包/本地main6266a69完成，GitHub HTTPS 443连接失败；只读API确认远端仍4f98ee8，未推送/未触发双OS CI。网络恢复后先核对远端再正常推送，不重复未知写入。",
-      "stage": "doing",
-      "taskId": "project-board-release",
-      "criteria": [
-        "可见真实图形概览、任务层级、少说明，中英明暗手机桌面可用",
-        "相关及完整回归保留原确认、离线、隔离、阅读器和Git安全",
-        "0.9.2版本官方包与main双OS CI真实通过，原总体阻塞保留"
-      ],
-      "architectureImpact": "none",
-      "gitTaskId": null,
-      "completedAt": null
-    },
-    {
       "id": "ssh-portable-090",
       "title": "目录内可迁移SSH与远端优先备份 · 0.9.0",
       "description": "源码/官方0.9.0包/GitHub完成，main3219978双OS CI39746714903各280测试/279截图/10行为通过；加密迁移与真实SSH故障回归通过。市场单次提交明确拒绝eval动态执行，0.9.0未创建，不重试/绕过；待平台处理或另行批准兼容方案。",
@@ -468,18 +480,7 @@
       "architectureImpact": "none",
       "gitTaskId": null,
       "completedAt": "2026-10-19T08:25:19.973Z"
-    },
-    {
-      "id": "github-authority-0100",
-      "title": "GitHub权威协作0.10.0",
-      "description": "GitHub权威分支优先；无绑定才SSH/本地，已绑定故障不降级。两端同源CLI权威读取/独立分支推送/unknown核对。完整291项/279截图/10行为通过；审查两项修复补测及官方包交付中。",
-      "blocker": "",
-      "stage": "todo",
-      "taskId": "project-board-release",
-      "criteria": [],
-      "architectureImpact": "affects",
-      "gitTaskId": "github-authority-0100"
     }
   ],
-  "updatedAt": "2026-10-23T19:56:04.286Z"
+  "updatedAt": "2026-10-23T20:14:56.157Z"
 }
