@@ -24,3 +24,12 @@
 - 两类分发测试6/6通过；官方包源码/清单/权限/版本核对通过。main CI待完成；原总体宿主/目视/0.9.0市场拒绝阻塞保留。
 
 - 分发曾被生成SSH许可证的换行stat阻塞：HEAD/index/规范化内容哈希三者相同。精确补齐refreshGeneratedIndex的plugin/SSH-LICENSES.md条目，回归先失败后通过；真实/暂存变化仍拒绝，release+distributions24/24通过。未改SSH或官方包内容。
+
+## 最终本地结果与远端阻塞
+- 源码提交5e1b99c，交付门禁修复0cce44a0e7914796669463dd31ac5522c9fb9b2a；该干净提交实际运行 npm run check -- --full --ci 全通过：280测试、0失败/跳过、279截图、10行为。先前失败及补测记录保留。
+- 测试单独tsc曾覆盖忽略的build内SSH中间入口，较小的189295字节通用包未交付；标准完整构建后重新生成并确认Client导出。最终通用包317001字节，SHA256 17f0f4ab64f43043998e2face5fb9fa0e54ebea4c015eb8af914d235763f9018；来源0cce44a。官方PI包哈希仍与上文一致。
+- 只读语义计划：0.9.1→0.9.2、patch、versionMatches=true、marketplaceRequired=false；release计划publish=false/mutation=false，无市场/标签/npm/安装操作。
+- 正常本地main合并6266a69194370e33c065be529a75588371ec4984，与0cce44a内容树完全相同。实际main重新构建并HTTP探测五页、390px任务顶部458.8px、可见进度环、概览额外请求0、页面错误0；STATE/board/Git引用前后不变。
+- GitHub正常push在连接阶段失败（github.com:443）。后续只读API明确返回远端4f98ee8a2203310c2fe11819ea0abbcb72006976；只读ls-remote再次连接失败，未再次push、未改远端或凭据、未绕过为API写入，未触发或声称main双OS CI。
+- 本项保留doing并登记网络阻塞；总体working不close，受管criteria3未完成，不伪造git_verify成功。网络恢复后先核对远端，再接续正常推送/实际CI/记录。
+- 图库已刷新至最终完整检查生成的代表图；Browser前台限制仍在，未声称人工目视/真实安装宿主或物理触屏验收。
