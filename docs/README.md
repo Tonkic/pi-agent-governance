@@ -10,6 +10,7 @@ One browser workbench for all hosts: shared project data, original host conversa
 | Codex、Claude Code、Pi 接入 | [MCP 与 Skill](mcp.md) | 同页“客户端配置”“安全与排错” |
 | 所有宿主统一打开/关闭浏览器工作台 | [浏览器工作台](web-console.md) | 同页“从宿主打开”“生命周期与切换” |
 | Linux/Windows远端、密码与目录内离线备份 | [可迁移SSH](remote.md) | 同页“首次配置与信任”“Agent调用”“修改、备份与恢复” |
+| GitHub权威文档、本地/SSH两端分支提交 | [权威协作](collaboration.md) | 同页“选择与故障”“两端工作与提交”“未知结果与边界” |
 | 三栏工作项、完成与历史记录 | [项目接口](project.md#工作项) | 同页“三栏工作台” |
 | 可选架构方向与可视化 | [架构设计](architecture-design.md) | 同页“数据与接口” |
 | 整理当前项目文档 | [文档维护](documentation.md) | [可选Agent操作](project.md#可选项目agent操作) |

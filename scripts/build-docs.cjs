@@ -17,7 +17,8 @@ const docFiles = [
   'publishing.md',
   'releasing.md',
   'ui-sources.md',
-  'remote.md'
+  'remote.md',
+  'collaboration.md'
 ];
 const marker = '<!-- Generated from docs/ by scripts/build-docs.cjs. Do not edit. -->\n';
 const repository = 'https://github.com/Tonkic/pi-agent-governance/blob/main/';

@@ -2,7 +2,7 @@
 
 **所有宿主共用一个浏览器工作台。** PI-Desktop、Codex、Claude Code只负责连接已有项目；看板、源码架构、设计草案与行为文档使用同一界面、核心和仓库文件。不再提供另一套PI内嵌面板，也不新增聊天数据库或独立桌面。
 
-社区 ID：`io.github.tonkic.agent-governance`。仓库版本 **0.9.2**：恢复可见统计卡、完成进度环和三阶段比例图；强化任务卡片层级，精简常驻说明，手机保留紧凑图形概览；保留五页功能、64px悬浮导航、安全阅读器、只读Git和[可迁移SSH](docs/remote.md)。补丁仅更新源码与官方包，不提交市场、不自动安装/npm/建标签；见[交付规则](docs/releasing.md)。
+社区 ID：`io.github.tonkic.agent-governance`。仓库版本 **0.10.0**：新增[GitHub权威协作](docs/collaboration.md)，已绑定GitHub分支优先，无绑定才使用明确SSH项目或本地；本地/SSH可读取权威文档并推送独立草稿分支，不自动合并或失败降级。保留0.9.2图形概览、五页功能、64px悬浮导航、安全阅读器、只读Git和[可迁移SSH](docs/remote.md)。不自动安装/npm/建标签；市场仍受原SSH规则拒绝影响，见[交付规则](docs/releasing.md)。
 
 ## 开始使用
 
@@ -10,6 +10,7 @@
 2. Codex、Claude Code或Pi：按 [MCP与Skill](docs/mcp.md) 配置本地stdio连接，在原会话请求“打开当前项目工作台”。宿主调用 `governance_ui`，参数 `{"action":"open","confirmed":true}`。
 3. 所有入口打开同一浏览器页面。已有项目直接读取；未初始化项目须明确确认。先读 `status` 和项目README，只接续获批范围。
 4. 远端项目：把工具包放进工作目录的 `.remote-local/tool/`，先配置Git忽略，再用remote-cli配置连接并核对指纹。AGENTS只记录入口和实际远端目录，不放密码；使用方法与迁移/离线边界见[SSH指南](docs/remote.md)。
+5. GitHub协作：用collaboration-cli显式绑定仓库及权威分支；无绑定才按SSH/本地使用，已绑定的网络故障不切权威。两端先按正常Git编辑、检查并提交，再明确推到独立协作分支，详见[指南](docs/collaboration.md)。
 
 浏览器只管理项目数据；开发、分析和文档任务仍在原宿主会话执行，保留历史、模型和思考设置。页面不创建聊天、调用模型或停止会话，也不列举/扫描私有聊天数据。
 

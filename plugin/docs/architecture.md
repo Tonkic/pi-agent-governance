@@ -25,6 +25,7 @@
 | `documents.ts`、`renderer/documents.ts` | 受限Markdown元数据/正文只读与安全DOM阅读、标题导航；无锁或初始化写入 | `documents`、`governance.documents` |
 | `remote-cli.ts`、`remote-store.ts` | 独立Agent CLI与项目内凭据/信任/只读历史快照，不接入网页命令API | `main`、`RemoteStore` |
 | `remote-ssh.ts`、`remote-program.ts`、`ssh-runtime.ts` | 固定SSH启动协议、指纹/密码认证、远端先写/备份及unknown日志；纯JS依赖构建入包 | `operation`、`remoteProgram` |
+| `collaboration-cli.ts`、`collaboration.ts`、`collaboration-program.ts` | 显式GitHub绑定优先解析；本地/SSH同源权威对象读取与独立分支推送、unknown核对，无网页接线 | `collaborate`、`authority`、`collaborationProgram` |
 | `renderer/` | 同一工作台；panel控制数据/确认/隔离，shell只投影已载入快照与导航 | `panel.ts`、`shell.ts`、`graph.ts`、`design.ts` |
 
 样式按加载顺序归属：`tokens.css`为语义颜色/字号/间距；`panel.css`为基础控件；`shell.css`为导航/工具栏/概览；`views.css`为业务视图；`documents.css`为阅读器。不要通过末尾重复覆盖堆叠新壳层；shell不调用API或写项目数据。
@@ -43,6 +44,7 @@ MCP资源/提示、PI Skill → skills/architecture-copilot/
 core.ts → git.ts → Git common directory
 Agent显式CLI → remote-store（.remote-local）→ remote-ssh → 远端Node协议
 远端修改确认 → 有界文档/治理快照 → .remote-local/backups（offline只读）
+协作CLI → GitHub绑定优先解析 → 本地/SSH同源程序 → GitHub权威分支只读 / 新独立提交分支
 ```
 
 PI工具只用可信ToolExecContext.sessionId的有界session/get核实项目，缺失/外来/不支持会话拒绝；显式命令用宿主可见项目。工作区事件撤销旧服务，不重定向旧能力。PI只通过公开shell.openExternal打开自身生成地址，不调用Agent/create/prompt/abort或models.list。
@@ -65,7 +67,7 @@ HTTP只监听127.0.0.1，精确Host/Origin/token/JSON及固定资源/动作白�
 | `docs/behavior-bindings.json`、Markdown | 可读行为与固定场景关联 |
 | `.governance/behavior-evidence.json` | 忽略的本机实际检查证据，不代表整体通过 |
 | Git common directory的 `pi-governance/` | 本机任务/worktree/提交验证登记 |
-| `.remote-local/` | 忽略的SSH配置、加密/显式明文密码、主机指纹、操作日志和只读历史快照；不在系统目录持久化，不公开发布 |
+| `.remote-local/` | 忽略的SSH配置、密码、信任、日志和只读快照；GitHub无秘密绑定/推送日志/临时bare仓库，GitHub令牌仅本次stdin与子进程环境，不持久化或公开发布 |
 
 没有新增服务/聊天注册表，私有URL只在拥有服务和浏览器内存。PI的ui.panel/contributes.views指向同一entry/index.html，只有状态/刷新/打开按钮；onPanelInvoke仅governance.entry状态和确认打开，拒绝核心/会话操作。版本绑定可见项目与代次，迟到/切换请求拒绝；不接受路径/URL，不返回origin/私有片段。不是第二套业务工作台。
 
