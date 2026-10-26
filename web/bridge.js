@@ -17,7 +17,11 @@
       if (channel === 'app.getLocale') return navigator.language;
       if (channel === 'app.getAppearance') return { theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light' };
       if (!/^[a-f0-9]{64}$/.test(token)) throw Error(missing);
-      if (channel === 'governance.operation') throw Error(zh ? '本地控制台不提供宿主模型或Agent会话控制。' : 'Host model and Agent session control is not available in the local console.');
+      const read = ['governance.snapshot', 'governance.project', 'governance.git', 'governance.behaviors'].includes(channel) ||
+        (channel === 'governance.design' && payload.action === 'snapshot') ||
+        (channel === 'governance.documents' && ['list', 'read'].includes(payload.action)) ||
+        (channel === 'governance.gitHistory' && ['list', 'detail', 'diff'].includes(payload.action));
+      if (!read) throw Error(zh ? '工作台只读，请在原AI客户端进行操作。' : 'Read-only workbench. Make changes in your original AI client.');
       const response = await fetch('/api/invoke', {
         method: 'POST', credentials: 'omit', cache: 'no-store',
         headers: { 'Content-Type': 'application/json', 'X-Governance-Token': token },
@@ -97,10 +101,10 @@
   const title = document.createElement('strong');
   title.textContent = zh ? '本地项目控制台' : 'Local project console';
   const description = document.createElement('p');
-  description.textContent = zh ? '所有宿主共用此浏览器工作台 · 固定绑定当前项目。开发、模型和历史保留在原宿主会话；保存后刷新。这里不启动模型或 Agent。' : 'One browser workbench for all hosts · Bound to this project. Development, model and history stay in the original host conversation; refresh after changes. No model or Agent launches here.';
+  description.textContent = zh ? '所有宿主共用此浏览器工作台 · 仅查看当前项目。开发、操作和文档维护在原AI客户端完成；外部修改后手动刷新。' : 'One browser workbench for all hosts · Read-only project view. Develop, make changes and maintain docs in your original AI client; refresh after external changes.';
   const design = document.createElement('p');
   design.className = 'muted';
-  design.textContent = zh ? '设计协作：在此创建草案 → 回原宿主会话保存方案 → 刷新并人工审阅确认。确认设计不会授权代码实施。' : 'Design: create a draft here → save a proposal in your original host conversation → refresh and review it here. Confirming a design does not authorize code changes.';
+  design.textContent = zh ? 'Docs是当前功能与架构依据；Notes仅供按需追溯。设计草案和历史在此查看，不从网页保存或确认。' : 'Docs describe current features and architecture; Notes are for optional history. View designs here; saving and confirmation are not available in the browser.';
   info.append(title, description, design);
   document.querySelector('footer').before(info);
 })();

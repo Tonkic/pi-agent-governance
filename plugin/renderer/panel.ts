@@ -1,33 +1,9 @@
 'use strict';
 const $ = (id: string): any => document.getElementById(id);
-let snapshot = null,
-  busy = false,
-  edited = false;
-let projectSnapshot: any = null,
-  editingItem: string = null,
-  draggedItem: string = null;
-const dirtyForms = new Set<string>();
-let launchContext: any = null,
-  launchModels: any[] = [],
-  launchSessions: any[] = [],
-  launchModelsReady = false,
-  launchLoading = false,
-  launchRequest = 0;
+let snapshot: any = null, busy = false;
+let projectSnapshot: any = null;
 let workspaceEpoch = 0, loadRevision = 0, observedWorkspace: string = null;
-let behaviorRequest = 0, behaviorLoading = false, behaviorLoaded = false;
-const retainedDrafts = new Map<string, any>();
 const impactLabel = (value): CopyKey => value === 'affects' ? 'impactAffects' : value === 'none' ? 'impactNone' : 'impactUnassessed';
-function discardWarning(submitted?: string) {
-  const names = {
-    'progress-form': t('draftProgress'),
-    'start-form': t('draftTask'),
-    'workitem-form': t('draftItem'),
-    'design-begin-form': t('designTitle'),
-    'design-confirm-form': t('designReview')
-  };
-  const drafts = [...dirtyForms].filter((id) => id !== submitted).map((id) => names[id] || id);
-  return drafts.length ? t('discard', drafts.join(' / ')) : '';
-}
 const boardStages = ['todo', 'doing', 'done'];
 // Old snapshots remain readable without migrating their persisted record.
 const effectiveStage = (item) => item.stage === 'accepted' ? 'done' : item.stage;
@@ -52,67 +28,25 @@ const labels = new Proxy(
 const text = (id, value) => {
   $(id).textContent = value ?? '';
 };
-const lines = (id) =>
-  $(id)
-    .value.split('\n')
-    .map((s) => s.trim())
-    .filter(Boolean);
 function notify(message, error = false) {
   text('notice-message', message);
   $('notice').classList.toggle('error', error);
 }
 function lock(value) {
   busy = value;
-  document
-    .querySelectorAll(
-      'main button, main input, main textarea, #item-sheet button, #item-sheet input, #item-sheet textarea, #item-sheet select, .action-dialog button, .action-dialog input, .action-dialog textarea, .action-dialog select'
-    )
-    .forEach((el) => {
-      if (!el.hasAttribute('data-context-help')) (el as HTMLButtonElement | HTMLInputElement | HTMLTextAreaElement).disabled = value;
-    });
-  $('workitem-blocker').disabled = value || !editingItem;
-  for (const id of ['workitem-save', 'item-edit', 'initialize'])
-    $(id).disabled = value || !snapshot || !navigator.onLine;
-  $('initialize-workspace').disabled = value || !snapshot || !navigator.onLine;
+  $('refresh').disabled = value || !navigator.onLine;
   $('architecture-check').disabled = value || !projectSnapshot?.architecture || !navigator.onLine;
-  document
-    .querySelectorAll<HTMLButtonElement>(
-      '#project-dialog button[type="submit"]'
-    )
-    .forEach((button) => {
-      button.disabled = value || !navigator.onLine;
-    });
-  $('board-new').disabled =
-    value ||
-    !snapshot?.state ||
-    !projectSnapshot ||
-    !!projectSnapshot.boardError ||
-    !navigator.onLine;
-  document.querySelectorAll<HTMLElement>('[data-workitem]').forEach((card) => {
-    card.draggable = !value && !searchQuery && navigator.onLine;
-  });
-  document.querySelectorAll<HTMLButtonElement>('.column-add').forEach((button) => {
-    button.disabled = value || !snapshot?.state || !navigator.onLine;
-  });
-  for (const id of ['analysis-start', 'architecture-analyze', 'documentation-start'])
-    $(id).disabled = value || !snapshot?.state?.task || !projectSnapshot || !navigator.onLine;
-  document.querySelectorAll<HTMLButtonElement>('[data-operation-write]').forEach((button) => {
-    button.disabled = value || !navigator.onLine;
-  });
-  // History is a local, read-only view and remains usable while writes are locked/offline.
-  const historyButton = $('completed-history-open');
-  if (historyButton) historyButton.disabled = !projectSnapshot?.board || !!projectSnapshot.boardError;
-  if ($('workitem-form').hidden && !dirtyForms.has('workitem-form')) {
-    $('item-back').disabled = $('item-close').disabled = false;
-  }
-  updateLaunchControls();
   updateItemNavigation();
   updateDesignControls();
   window.dispatchEvent(new Event('documents-controls'));
-  updateBehaviorControls();
   window.dispatchEvent(new Event('git-history-context'));
 }
 async function invoke(channel, payload: any = {}) {
+  const allowed = channel === 'governance.snapshot' || channel === 'governance.project' ||
+    (channel === 'governance.design' && payload.action === 'snapshot') ||
+    (channel === 'governance.documents' && ['list', 'read'].includes(payload.action)) ||
+    (channel === 'governance.gitHistory' && ['list', 'detail', 'diff'].includes(payload.action));
+  if (!allowed) throw Error(t('readonly'));
   if (!window.pluginBridge?.invoke) throw Error(t('staticPreview'));
   const owner = workspaceEpoch;
   const bound = channel !== 'governance.snapshot' && snapshot?.workspace;
@@ -137,63 +71,23 @@ function render(data) {
   snapshot = data;
   observedWorkspace = data.workspace;
   window.dispatchEvent(new Event('documents-context'));
-  $('initialize-workspace').hidden = !!data.state;
   const s = data.state;
   const status = s ? labels[s.status] || s.status : t('uninitialized');
-  const criteriaCount = s?.criteria?.length || 0;
-  const blockerCount = s?.blocked?.length || 0;
   text('workspace', data.workspace);
   text('status', status);
-  text('status-metric', status);
   $('status').dataset.state = s?.status || 'uninitialized';
-  text('criteria-count', criteriaCount);
-  text('criteria-state', t('count', criteriaCount));
-  text('blocked-count', blockerCount);
-  text('task-id', s?.task || 'STATE');
-  text('goal', s?.goal || (s ? t('noTask') : t('establish')));
-  text('current', s?.current || t('initFirst'));
-  list('criteria', s?.criteria);
-  list('scope', s?.scope);
-  list('constraints', s?.constraints);
-  $('followup').hidden = !s?.followUp;
-  text('followup', s?.followUp ? t('followup', s.followUp.id) : '');
-  $('uninitialized').hidden = !!s;
-  $('start-form').hidden = !s || !!s.task;
-  $('progress-form').hidden = !s?.task;
-  text('editor-title', s?.task ? t('updateProgress') : s ? t('createTask') : t('init'));
-  $('edit-current').value = s?.current || '';
-  $('edit-next').value = (s?.next || []).join('\n');
-  $('edit-blocked').value = (s?.blocked || []).join('\n');
-  for (const key of ['id', 'goal', 'criteria', 'scope', 'constraints']) {
-    const v = s?.followUp?.[key];
-    $(`new-${key}`).value = Array.isArray(v) ? v.join('\n') : v || '';
-  }
-  edited = false;
   renderWorkbenchSummary(true);
 }
 async function load(checkSources = false) {
   const owner = workspaceEpoch, request = ++loadRevision;
   const current = () => owner === workspaceEpoch && request === loadRevision;
-  resetBehaviorDocuments();
   window.dispatchEvent(new Event('git-history-reset'));
   snapshot = null;
   resetDesign();
-  $('initialize-workspace').hidden = true;
-  dirtyForms.clear();
-  launchRequest++;
-  launchContext = null;
-  clearLaunchChoices();
-  if ($('launch-dialog').open) $('launch-dialog').close();
   resetCompletedHistory(false);
   projectSnapshot = null;
   renderWorkbenchSummary(true);
-  resetWorkitem();
-  $('workitem-form').hidden = true;
   if ($('item-sheet').open) $('item-sheet').close();
-  closeItemMenu(false);
-  stopLongPress();
-  draggedItem = null;
-  longPressConsumed = null;
   $('architecture-reminder').hidden = true;
   renderProjectGraph();
   $('board-empty').hidden = true;
@@ -210,7 +104,6 @@ async function load(checkSources = false) {
   } catch (error) {
     if (!current()) return;
     notify(error.message, true);
-    for (const id of ['uninitialized', 'start-form', 'progress-form']) $(id).hidden = true;
     text('workspace', t('disconnected'));
   }
   if (snapshot) {
@@ -236,104 +129,15 @@ async function load(checkSources = false) {
     renderWorkbenchSummary();
   }
 }
-function confirmWrite(description) {
-  const owner = workspaceEpoch;
-  const dialog = $('confirm-dialog');
-  text('confirm-description', description);
-  text('confirm-workspace', snapshot?.workspace || '');
-  dialog.returnValue = '';
-  dialog.showModal();
-  return new Promise((resolve) =>
-    dialog.addEventListener('close', () => resolve(owner === workspaceEpoch && dialog.returnValue === 'confirm'), {
-      once: true
-    })
-  );
-}
-async function mutate(args, description) {
-  if (busy || !snapshot) return;
-  const owner = workspaceEpoch, revision = snapshot.revision;
-  if (!navigator.onLine) {
-    notify(t('offlineNotice'), true);
-    return;
-  }
-  lock(true);
-  try {
-    if (
-      !(await confirmWrite(
-        description +
-          discardWarning(
-            args.action === 'progress'
-              ? 'progress-form'
-              : args.action === 'start'
-                ? 'start-form'
-                : undefined
-          )
-      ))
-    )
-      return;
-    if (!navigator.onLine) {
-      notify(t('offlineNotice'), true);
-      return;
-    }
-    if (owner !== workspaceEpoch) return;
-    await invoke('governance.mutate', { args, revision, confirmed: true });
-    await load();
-  } catch (error) {
-    if (owner !== workspaceEpoch) return;
-    notify(t('noRetry', error.message), true);
-  } finally {
-    if (owner === workspaceEpoch) lock(false);
-  }
-}
 $('refresh').addEventListener('click', async () => {
   if (busy) return;
   const owner = workspaceEpoch;
-  if (edited) {
-    notify(t('unsaved'));
-    edited = false;
-    return;
-  }
   lock(true);
   try {
     await load();
   } finally {
     if (owner === workspaceEpoch) lock(false);
   }
-});
-for (const form of document.querySelectorAll(
-  'main form, #project-dialog form, #workitem-form, #design-begin-form, #design-confirm-form'
-))
-  form.addEventListener('input', () => {
-    edited = true;
-    dirtyForms.add(form.id);
-  });
-$('initialize').addEventListener('click', () => mutate({ action: 'init' }, t('initConfirm')));
-$('initialize-workspace').addEventListener('click', () => mutate({ action: 'init' }, t('initConfirm')));
-$('start-form').addEventListener('submit', (event) => {
-  event.preventDefault();
-  mutate(
-    {
-      action: 'start',
-      id: $('new-id').value.trim(),
-      goal: $('new-goal').value.trim(),
-      criteria: lines('new-criteria'),
-      scope: lines('new-scope'),
-      constraints: lines('new-constraints')
-    },
-    t('startConfirm')
-  );
-});
-$('progress-form').addEventListener('submit', (event) => {
-  event.preventDefault();
-  mutate(
-    {
-      action: 'progress',
-      current: $('edit-current').value.trim(),
-      next: lines('edit-next'),
-      blocked: lines('edit-blocked')
-    },
-    t('progressConfirm')
-  );
 });
 let graphView = 'architecture';
 function renderProjectGraph() {
@@ -617,7 +421,6 @@ function renderCompletedHistory() {
 }
 function openCompletedHistory(origin: HTMLElement) {
   if (!projectSnapshot?.board || projectSnapshot.boardError || document.querySelector('dialog[open]')) return;
-  closeItemMenu(false);
   historyOwner = workspaceEpoch;
   historyOrigin = origin;
   historyItemIds = null;
@@ -634,60 +437,17 @@ $('completed-history-dialog').addEventListener('cancel', event => {
   event.preventDefault();
   closeCompletedHistory();
 });
-let menuOrigin: HTMLElement = null,
-  longPress: ReturnType<typeof setTimeout> = null;
-let longPressConsumed: { id: string; until: number } = null;
 function itemById(id) {
   return projectSnapshot?.board?.items.find((item) => item.id === id);
 }
-function resetWorkitem() {
-  dirtyForms.delete('workitem-form');
-  editingItem = null;
-  edited = dirtyForms.size > 0;
-  $('workitem-form').reset();
-  $('workitem-id').readOnly = false;
-  $('workitem-blocker').disabled = true;
-  $('workitem-form').hidden = true;
-  text('workitem-save', t('saveChanges'));
-}
-function closeItemMenu(restore = true) {
-  $('item-menu').hidden = true;
-  if (restore && menuOrigin?.isConnected) menuOrigin.focus();
-}
-async function allowItemSwitch(readOnly = false) {
-  const owner = workspaceEpoch;
-  if (busy) return readOnly && !dirtyForms.has('workitem-form');
-  if (!dirtyForms.has('workitem-form')) return true;
-  lock(true);
-  try {
-    return !!(await confirmWrite(t('switchDraft')));
-  } finally {
-    if (owner !== workspaceEpoch) return false;
-    lock(false);
-    if ($('item-sheet').open)
-      ($('workitem-form').hidden ? $('item-edit') : $('workitem-title')).focus();
-  }
-}
-async function openItem(id: string = null, edit = false, origin?: HTMLElement) {
-  const owner = workspaceEpoch;
-  if (
-    !id &&
-    (!snapshot?.state || !projectSnapshot || projectSnapshot.boardError || !navigator.onLine)
-  )
-    return;
-  if (!(await allowItemSwitch(!!id && !edit)) || owner !== workspaceEpoch) return;
-  const item = id ? itemById(id) : null;
-  if (id && !item) return;
-  if (origin?.closest('[data-workitem]') || !id) historyItemIds = null;
-  resetWorkitem();
-  closeItemMenu(false);
+async function openItem(id: string, _edit = false, origin?: HTMLElement) {
+  const item = itemById(id);
+  if (!item) return;
+  if (origin?.closest('[data-workitem]')) historyItemIds = null;
   selectedItem = id;
   itemOrigin = origin || (document.activeElement as HTMLElement);
-  $('item-guidance').hidden = true;
-  $('item-read').hidden = !item || edit;
-  $('item-checks').hidden = !item || edit;
-  text('item-sheet-title', item ? item.title : t('newItem'));
-  text('item-sheet-meta', item ? boardLabels[effectiveStage(item)] : t('newItem'));
+  text('item-sheet-title', item.title);
+  text('item-sheet-meta', boardLabels[effectiveStage(item)]);
   text('item-impact', `${t('architectureImpact')}: ${t(impactLabel(item?.architectureImpact))}`);
   if (item) {
     text('item-description', item.description || t('noDescription'));
@@ -715,29 +475,13 @@ async function openItem(id: string = null, edit = false, origin?: HTMLElement) {
         : ''
     );
   }
-  if (edit || !item) {
-    editingItem = item?.id || null;
-    $('workitem-id').value = item?.id || `item-${crypto.randomUUID().slice(0, 8)}`;
-    $('workitem-title').value = item?.title || '';
-    $('workitem-description').value = item?.description || '';
-    $('workitem-criteria').value = (item?.criteria || []).join('\n');
-    $('workitem-impact').value = item?.architectureImpact || 'unassessed';
-    $('workitem-blocker').value = item?.blocker || '';
-    $('workitem-blocker').disabled = !item;
-    $('blocker-field').hidden = !item;
-    $('workitem-form').hidden = false;
-    text('workitem-save', t(item ? 'saveChanges' : 'createItem'));
-  }
   if (!$('item-sheet').open) $('item-sheet').showModal();
-  (edit || !item ? $('workitem-title') : $('item-edit')).focus();
-  lock(busy);
-  if (!edit && item && !navigator.onLine) $('item-back').focus();
+  $('item-back').focus();
   updateItemNavigation();
   return true;
 }
 async function closeItemSheet() {
-  if (!(await allowItemSwitch(true))) return;
-  resetWorkitem();
+  // Closing a read-only detail never needs a save/discard confirmation.
   $('item-sheet').close();
   const target =
     itemOrigin?.isConnected && !itemOrigin.closest('[hidden]')
@@ -745,130 +489,14 @@ async function closeItemSheet() {
       : document.querySelector<HTMLElement>(`[data-workitem="${selectedItem}"]`);
   (target && !target.closest('[hidden]')
     ? target
-    : document.querySelector<HTMLElement>('.workspace-nav a[aria-current="page"]') || $('board-new')
+    : document.querySelector<HTMLElement>('.workspace-nav a[aria-current="page"]') || $('board-search')
   ).focus();
-}
-async function writeWorkitem(args) {
-  if (busy || !snapshot || !projectSnapshot || projectSnapshot.boardError) return;
-  if (!navigator.onLine) {
-    notify(t('offlineNotice'), true);
-    return;
-  }
-  const revision = projectSnapshot.revision;
-  const owner = workspaceEpoch;
-  lock(true);
-  try {
-    if (
-      !(await confirmWrite(
-        t('itemConfirm', args.id, args.stage ? ` → ${boardLabels[args.stage]}` : '') +
-          discardWarning(args.action === 'board_move' ? undefined : 'workitem-form')
-      ))
-    )
-      return;
-    if (owner !== workspaceEpoch) return;
-    if (!navigator.onLine) {
-      notify(t('offlineNotice'), true);
-      return;
-    }
-    await invoke('governance.workitem', { args, revision, confirmed: true });
-    await load();
-    if (owner !== workspaceEpoch) return;
-    if (projectSnapshot && !projectSnapshot.boardError) notify(t('itemSaved'));
-    document.querySelector<HTMLElement>(`[data-workitem="${args.id}"]`)?.focus();
-  } catch (error) {
-    if (owner !== workspaceEpoch) return;
-    notify(t('itemError', error.message), true);
-  } finally {
-    if (owner === workspaceEpoch) lock(false);
-  }
-}
-function moveWorkitem(id, stage, position) {
-  return writeWorkitem({ action: 'board_move', id, stage, position });
-}
-function menuActions(item) {
-  const all = projectSnapshot.board.items;
-  const stageNow = effectiveStage(item);
-  const siblings = all.filter((i) => effectiveStage(i) === stageNow);
-  const index = siblings.findIndex((i) => i.id === item.id);
-  const actions = [
-    { label: t('itemDetails'), run: () => openItem(item.id, false, menuOrigin) },
-    { label: t('edit'), run: () => openItem(item.id, true, menuOrigin) },
-    {
-      label: t('guideAgent'),
-      run: async () => {
-        await openItem(item.id, false, menuOrigin);
-        if (selectedItem === item.id) showGuidance();
-      }
-    }
-  ];
-  if (stageNow !== 'done' && index > 0)
-    actions.push({ label: t('moveUp'), run: () => moveWorkitem(item.id, stageNow, index - 1) });
-  if (stageNow !== 'done' && index < siblings.length - 1)
-    actions.push({ label: t('moveDown'), run: () => moveWorkitem(item.id, stageNow, index + 1) });
-  for (const stage of boardStages.filter(
-    (s) =>
-      Math.abs(boardStages.indexOf(s) - boardStages.indexOf(stageNow)) === 1
-  ))
-    actions.push({
-      label: t('moveTo', boardLabels[stage]),
-      run: () => moveWorkitem(item.id, stage, all.filter((i) => effectiveStage(i) === stage).length)
-    });
-  return actions;
-}
-function openItemMenu(item, origin: HTMLElement, x?: number, y?: number) {
-  if (busy || !navigator.onLine) return;
-  menuOrigin = origin;
-  const menu = $('item-menu');
-  menu.replaceChildren();
-  for (const action of menuActions(item)) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.role = 'menuitem';
-    button.textContent = action.label;
-    button.addEventListener('click', () => {
-      closeItemMenu();
-      void action.run();
-    });
-    menu.append(button);
-  }
-  const rect = origin.getBoundingClientRect();
-  menu.hidden = false;
-  const bounds = menu.getBoundingClientRect();
-  menu.style.left = `${Math.max(8, Math.min(x ?? rect.left, innerWidth - bounds.width - 8))}px`;
-  menu.style.top = `${Math.max(8, Math.min(y ?? rect.bottom, innerHeight - bounds.height - 8))}px`;
-  menu.querySelector('button').focus();
-}
-function showGuidance() {
-  const item = itemById(selectedItem);
-  if (!item) return;
-  $('item-guidance').hidden = false;
-  $('agent-brief').value = t(
-    'guidanceBrief',
-    snapshot.workspace,
-    item.id,
-    item.title,
-    item.description,
-    item.blocker || t('none')
-  );
-  $('agent-brief').value += '\n' + t('checks') + ':\n' + (item.criteria || []).join('\n');
-  $('agent-brief').value += '\n' + t('impactGuidance', t(impactLabel(item.architectureImpact)));
-  text('brief-status', '');
-  $('agent-brief').focus();
-  $('agent-brief').select();
-}
-function stopLongPress() {
-  if (longPress) clearTimeout(longPress);
-  longPress = null;
 }
 function renderBoard() {
   renderWorkbenchSummary();
   const data = projectSnapshot;
-  closeItemMenu(false);
-  stopLongPress();
-  draggedItem = null;
   $('board-columns').replaceChildren();
   $('board-empty').hidden = true;
-  $('board-new').disabled = busy || !snapshot?.state || !!data?.boardError || !navigator.onLine;
   if (!data || data.boardError) {
     text(
       'board-status',
@@ -900,17 +528,7 @@ function renderBoard() {
     const count = document.createElement('span');
     count.className = 'column-count';
     count.textContent = String(stage === 'done' ? all.length : items.length);
-    const add = document.createElement('button');
-    add.type = 'button';
-    add.className = 'column-add';
-    add.textContent = '+';
-    add.setAttribute('aria-label', t('newItem'));
-    add.disabled = busy || !snapshot?.state || !navigator.onLine;
-    add.addEventListener('click', () => {
-      void openItem(null, true, add);
-    });
     header.append(heading, count);
-    if (stage === 'todo') header.append(add);
     column.append(header);
     if (stage === 'done') {
       const summary = document.createElement('p'), history = document.createElement('button');
@@ -921,45 +539,17 @@ function renderBoard() {
       history.textContent = t('viewAllCompleted', all.length);
       history.setAttribute('aria-haspopup', 'dialog');
       history.addEventListener('click', () => openCompletedHistory(history));
-      const hint = document.createElement('p');
-      hint.textContent = t('completedDragHint');
-      header.append(createContextHelp(hint, () => t('done'))); column.append(summary, history);
+      column.append(summary, history);
     }
-    column.addEventListener('dragover', (event) => {
-      if (draggedItem && !busy && !searchQuery && navigator.onLine && !(stage === 'done' && effectiveStage(itemById(draggedItem)) === 'done')) {
-        event.preventDefault();
-        column.classList.add('drop-target');
-      }
-    });
-    column.addEventListener('dragleave', (event) => {
-      if (!column.contains(event.relatedTarget as Node)) column.classList.remove('drop-target');
-    });
-    column.addEventListener('drop', (event) => {
-      event.preventDefault();
-      column.classList.remove('drop-target');
-      const id = draggedItem;
-      draggedItem = null;
-      if (!id || busy || searchQuery || !navigator.onLine) return;
-      // Recent completion order is not persisted order. Never reorder done against hidden cards.
-      if (stage === 'done') {
-        if (effectiveStage(itemById(id)) !== 'done') void moveWorkitem(id, stage, all.length);
-        return;
-      }
-      const target = (event.target as Element).closest<HTMLElement>('[data-workitem]');
-      if (target?.dataset.workitem === id) return;
-      const others = all.filter((item) => item.id !== id);
-      const index = target ? others.findIndex((item) => item.id === target.dataset.workitem) : -1;
-      void moveWorkitem(id, stage, index < 0 ? others.length : index);
-    });
     for (const item of items) {
       const card = document.createElement('article');
       card.className = 'workitem';
       card.dataset.workitem = item.id;
       card.dataset.blocked = String(!!item.blocker);
       card.tabIndex = 0;
-      card.draggable = !searchQuery && !busy && navigator.onLine;
+      card.draggable = false;
       card.setAttribute('aria-label', item.title);
-      card.setAttribute('aria-haspopup', 'menu');
+      card.setAttribute('aria-haspopup', 'dialog');
       const title = document.createElement('h4');
       title.textContent = item.title;
       const content = document.createElement('p');
@@ -969,18 +559,7 @@ function renderBoard() {
       meta.className = 'item-meta';
       const status = document.createElement('span');
       status.textContent = item.blocker ? t('blocked') : boardLabels[effectiveStage(item)];
-      const more = document.createElement('button');
-      more.type = 'button';
-      more.className = 'item-more';
-      more.textContent = '···';
-      more.disabled = busy || !navigator.onLine;
-      more.setAttribute('aria-label', t('itemActionsFor', item.title));
-      more.setAttribute('aria-haspopup', 'menu');
-      more.addEventListener('click', (event) => {
-        event.stopPropagation();
-        openItemMenu(item, more);
-      });
-      meta.append(status, more);
+      meta.append(status);
       card.append(title);
       if (item.description) card.append(content);
       card.append(meta);
@@ -991,75 +570,14 @@ function renderBoard() {
       card.append(tag);
       card.addEventListener('click', (event) => {
         if ((event.target as Element).closest('button')) return;
-        if (longPressConsumed?.id === item.id && Date.now() < longPressConsumed.until) {
-          longPressConsumed = null;
-          return;
-        }
         void openItem(item.id, false, card);
-      });
-      card.addEventListener('contextmenu', (event) => {
-        event.preventDefault();
-        stopLongPress();
-        openItemMenu(item, card, event.clientX, event.clientY);
       });
       card.addEventListener('keydown', (event) => {
         if ((event.target as Element).closest('button')) return;
-        if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
-          event.preventDefault();
-          openItemMenu(item, card);
-        }
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
           void openItem(item.id, false, card);
         }
-      });
-      let pressX = 0,
-        pressY = 0;
-      card.addEventListener('pointerdown', (event) => {
-        stopLongPress();
-        longPressConsumed = null;
-        if (
-          event.pointerType === 'mouse' ||
-          event.button !== 0 ||
-          (event.target as Element).closest('button')
-        )
-          return;
-        pressX = event.clientX;
-        pressY = event.clientY;
-        longPress = setTimeout(() => {
-          if (!card.isConnected || busy) return;
-          longPressConsumed = { id: item.id, until: Infinity };
-          openItemMenu(item, card, pressX, pressY);
-        }, 500);
-      });
-      card.addEventListener('pointermove', (event) => {
-        if (Math.hypot(event.clientX - pressX, event.clientY - pressY) > 8) stopLongPress();
-      });
-      for (const event of ['pointerup', 'pointercancel', 'pointerleave'])
-        card.addEventListener(event, stopLongPress);
-      card.addEventListener('dragstart', (event) => {
-        stopLongPress();
-        closeItemMenu(false);
-        if (
-          busy ||
-          searchQuery ||
-          !navigator.onLine ||
-          (longPressConsumed?.id === item.id && Date.now() < longPressConsumed.until)
-        ) {
-          event.preventDefault();
-          return;
-        }
-        draggedItem = item.id;
-        event.dataTransfer.setData('text/plain', item.id);
-        event.dataTransfer.effectAllowed = 'move';
-        card.classList.add('dragging');
-      });
-      card.addEventListener('dragend', () => {
-        draggedItem = null;
-        card.classList.remove('dragging');
-        document
-          .querySelectorAll('.drop-target')
-          .forEach((el) => el.classList.remove('drop-target'));
       });
       column.append(card);
     }
@@ -1072,9 +590,6 @@ function renderBoard() {
     $('board-columns').append(column);
   }
 }
-$('board-new').addEventListener('click', () => {
-  void openItem(null, true, $('board-new'));
-});
 $('board-search').addEventListener('input', () => {
   searchQuery = $('board-search').value.trim().toLocaleLowerCase();
   if (projectSnapshot) renderBoard();
@@ -1085,7 +600,7 @@ $('search-clear').addEventListener('click', () => {
   renderBoard();
   $('board-search').focus();
 });
-for (const id of ['item-back', 'item-close', 'workitem-cancel'])
+for (const id of ['item-back', 'item-close'])
   $(id).addEventListener('click', () => {
     void closeItemSheet();
   });
@@ -1119,59 +634,10 @@ $('item-sheet').addEventListener('cancel', (event) => {
   event.preventDefault();
   void closeItemSheet();
 });
-$('item-edit').addEventListener('click', () => {
-  void openItem(selectedItem, true, itemOrigin);
-});
-$('item-guide').addEventListener('click', showGuidance);
-$('brief-copy').addEventListener('click', async () => {
-  try {
-    await navigator.clipboard.writeText($('agent-brief').value);
-    text('brief-status', t('guidanceCopied'));
-  } catch {
-    text('brief-status', t('selectToCopy'));
-    $('agent-brief').focus();
-    $('agent-brief').select();
-  }
-});
-$('item-menu').addEventListener('keydown', (event) => {
-  const buttons = Array.from($('item-menu').querySelectorAll('button')) as HTMLButtonElement[];
-  const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
-  if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
-    event.preventDefault();
-    buttons[
-      event.key === 'Home'
-        ? 0
-        : event.key === 'End'
-          ? buttons.length - 1
-          : (index + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length
-    ].focus();
-  }
-  if (event.key === 'Escape' || event.key === 'Tab') {
-    event.preventDefault();
-    event.stopPropagation();
-    closeItemMenu();
-  }
-});
-document.addEventListener('pointerdown', (event) => {
-  if (!$('item-menu').hidden && !$('item-menu').contains(event.target)) closeItemMenu(false);
-});
-window.addEventListener('resize', () => closeItemMenu(false));
-document.addEventListener('pointerup', () => {
-  if (longPressConsumed) longPressConsumed.until = Date.now() + 1200;
-});
-document.addEventListener('pointercancel', () => {
-  longPressConsumed = null;
-  stopLongPress();
-});
 document.addEventListener('keydown', (event) => {
   if (
     event.key === 'Escape' &&
-    $('item-sheet').open &&
-    !$('confirm-dialog').open &&
-    !['project-dialog', 'operations-dialog', 'launch-dialog'].some(
-      (id) => $(id).open
-    ) &&
-    $('item-menu').hidden
+    $('item-sheet').open
   ) {
     event.preventDefault();
     void closeItemSheet();
@@ -1181,8 +647,7 @@ document.addEventListener('keydown', (event) => {
     event.key === '/' &&
     !(event.target as Element).closest('input, textarea, [contenteditable]') &&
     !$('item-sheet').open &&
-    !$('completed-history-dialog').open &&
-    !$('confirm-dialog').open
+    !$('completed-history-dialog').open
   ) {
     event.preventDefault();
     location.hash = '#board-section';
@@ -1191,7 +656,6 @@ document.addEventListener('keydown', (event) => {
   }
 });
 window.addEventListener('offline', () => {
-  closeItemMenu(false);
   notify(t('offlineNotice'), true);
   if (projectSnapshot) renderBoard();
   lock(busy);
@@ -1200,18 +664,6 @@ window.addEventListener('online', () => {
   notify(t('onlineNotice'));
   if (projectSnapshot) renderBoard();
   lock(busy);
-});
-$('workitem-form').addEventListener('submit', (event) => {
-  event.preventDefault();
-  void writeWorkitem({
-    action: editingItem ? 'board_update' : 'board_create',
-    id: editingItem || $('workitem-id').value,
-    title: $('workitem-title').value.trim(),
-    description: $('workitem-description').value,
-    criteria: lines('workitem-criteria'),
-    architectureImpact: $('workitem-impact').value,
-    ...(editingItem ? { blocker: $('workitem-blocker').value } : {})
-  });
 });
 lock(true);
 localeReady
@@ -1223,380 +675,30 @@ localeReady
     if (owner === workspaceEpoch) lock(false);
   });
 
-function openProjectControls() {
-  closeItemMenu(false);
-  if (!$('project-dialog').open) $('project-dialog').showModal();
-}
-$('project-open').addEventListener('click', openProjectControls);
-$('project-close').addEventListener('click', () => {
-  if (!busy) $('project-dialog').close();
-});
-const operationLabel = (kind): CopyKey =>
-  kind === 'design' ? 'designTask' :
-  kind === 'architecture'
-    ? 'architectureTask'
-    : kind === 'acceptance'
-      ? 'legacyAcceptanceTask'
-      : kind === 'documentation'
-        ? 'documentationTask'
-        : 'analysis';
-function launchOption(value, label) {
+function designOption(value, label) {
   const option = document.createElement('option');
   option.value = value;
   option.textContent = label;
   return option;
 }
-function selectedLaunchSession() {
-  return launchSessions.find(row => 'existing:' + row.id === $('launch-session').value);
-}
-function updateLaunchControls() {
-  const isNew = $('launch-session').value === 'new';
-  $('launch-new-settings').hidden = !isNew;
-  $('launch-session').disabled = busy || !launchContext;
-  $('launch-start').disabled = busy || launchLoading || !launchContext || !navigator.onLine ||
-    (isNew ? !launchModelsReady : !selectedLaunchSession());
-  $('launch-model').disabled = busy || launchLoading || !isNew || !launchModelsReady;
-  const model = launchModels.find((row) => row.key === $('launch-model').value);
-  $('launch-thinking').disabled = $('launch-model').disabled || !model?.thinkingLevels.length;
-}
-function clearLaunchChoices() {
-  launchSessions = [];
-  launchModels = [];
-  launchModelsReady = false;
-  launchLoading = false;
-  $('launch-session').replaceChildren(launchOption('', t('sessionPlaceholder')), launchOption('new', t('newSession')));
-  $('launch-model').replaceChildren(launchOption('', t('hostDefault')));
-  $('launch-thinking').replaceChildren(launchOption('', t('hostDefault')));
-  $('launch-new-settings').hidden = true;
-}
-async function loadLaunchChoices(isNew = false) {
-  const request = ++launchRequest;
-  launchLoading = true;
-  launchModelsReady = false;
-  text('launch-status', t(isNew ? 'modelsLoading' : 'sessionsLoading'));
-  updateLaunchControls();
-  try {
-    const data: any = await invoke('governance.operation', { action: isNew ? 'models' : 'sessions' });
-    if (request !== launchRequest || !launchContext || !$('launch-dialog').open) return;
-    if (data.workspace !== launchContext.workspace) throw Error(t('switched'));
-    if (isNew) {
-      if (!Array.isArray(data.models)) throw Error(t('noModels'));
-      launchModels = data.models;
-      launchModelsReady = true;
-      $('launch-model').replaceChildren(launchOption('', t('hostDefault')),
-        ...launchModels.map(row => launchOption(row.key, `${row.providerName} · ${row.label}`)));
-      updateThinkingChoices();
-    } else {
-      if (!Array.isArray(data.sessions) || data.sessions.some(row => !row || typeof row.id !== 'string' || !row.id || typeof row.title !== 'string') ||
-        new Set(data.sessions.map(row => row.id)).size !== data.sessions.length) throw Error(t('noSessions'));
-      launchSessions = data.sessions;
-      $('launch-session').replaceChildren(launchOption('', t('sessionPlaceholder')),
-        ...launchSessions.map(row => launchOption('existing:' + row.id, row.title)), launchOption('new', t('newSession')));
-      if (launchSessions.length === 1) $('launch-session').value = 'existing:' + launchSessions[0].id;
-      text('launch-status', t(launchSessions.length ? 'sessionsReady' : 'noSessions'));
-    }
-  } catch (error) {
-    if (request !== launchRequest || !launchContext) return;
-    if (isNew) launchModelsReady = false;
-    text('launch-status', t(isNew ? 'modelOptionsError' : 'sessionsError', error.message));
-  } finally {
-    if (request === launchRequest) {
-      launchLoading = false;
-      updateLaunchControls();
-    }
-  }
-}
-function updateThinkingChoices() {
-  const model = launchModels.find((row) => row.key === $('launch-model').value);
-  $('launch-thinking').replaceChildren(
-    launchOption('', t('hostDefault')),
-    ...(model?.thinkingLevels || []).map((level) =>
-      launchOption(level, t(('thinking_' + level) as CopyKey))
-    )
-  );
-  text(
-    'launch-status',
-    model && !model.thinkingLevels.length
-      ? t('noThinking')
-      : launchModels.length
-        ? t('modelOptionsReady')
-        : t('noModels')
-  );
-  updateLaunchControls();
-}
-function closeLaunch() {
-  if (busy) return;
-  launchRequest++;
-  launchContext = null;
-  clearLaunchChoices();
-  $('launch-dialog').close();
-  updateLaunchControls();
-}
-async function startOperation(kind) {
-  if (!['analysis', 'architecture', 'documentation', 'design'].includes(kind)) return;
-  if (busy || !projectSnapshot || !snapshot?.state?.task || !navigator.onLine) return;
-  if ($('launch-dialog').open) return;
-  if (kind === 'design' && (!designSnapshot?.draft || designSnapshot.error || designSnapshot.draft.taskId !== snapshot.state.task)) return;
-  launchRequest++;
-  launchContext = {
-    kind,
-    ...(kind === 'design' ? { designRevision: designSnapshot.revision } : {}),
-    revision: projectSnapshot.revision,
-    workspace: snapshot.workspace
-  };
-  clearLaunchChoices();
-  text('launch-title', `${t('launchSettings')} · ${t(operationLabel(kind))}`);
-  text(
-    'launch-scope',
-    snapshot.workspace
-  );
-  text('launch-status', t('sessionsLoading'));
-  $('launch-dialog').showModal();
-  updateLaunchControls();
-  $('launch-cancel').focus();
-  await loadLaunchChoices();
-}
-$('launch-session').addEventListener('change', () => {
-  launchRequest++;
-  launchLoading = false;
-  launchModels = [];
-  launchModelsReady = false;
-  $('launch-model').replaceChildren(launchOption('', t('hostDefault')));
-  $('launch-thinking').replaceChildren(launchOption('', t('hostDefault')));
-  if ($('launch-session').value === 'new') void loadLaunchChoices(true);
-  else if (!launchSessions.length) void loadLaunchChoices();
-  else {
-    text('launch-status', t('sessionsReady'));
-    updateLaunchControls();
-  }
-});
-$('launch-model').addEventListener('change', updateThinkingChoices);
-for (const id of ['launch-close', 'launch-cancel']) $(id).addEventListener('click', closeLaunch);
-$('launch-dialog').addEventListener('cancel', (event) => {
-  event.preventDefault();
-  closeLaunch();
-});
-$('launch-form').addEventListener('submit', async (event) => {
-  event.preventDefault();
-  if (busy || launchLoading || !launchContext || !navigator.onLine) return;
-  const session = selectedLaunchSession();
-  const isNew = $('launch-session').value === 'new';
-  if (isNew ? !launchModelsReady : !session) return;
-  const owner = workspaceEpoch;
-  const context = { ...launchContext };
-  const modelKey = $('launch-model').value,
-    thinkingLevel = $('launch-thinking').disabled ? '' : $('launch-thinking').value;
-  const model = launchModels.find((row) => row.key === modelKey);
-  if (isNew && modelKey && !model) return;
-  lock(true);
-  try {
-    const selectionLabel = !isNew ? t('existingSelection', session.title) : t(
-      'launchSelection',
-      model ? `${model.providerName} · ${model.label}` : t('hostDefault'),
-      thinkingLevel ? t(('thinking_' + thinkingLevel) as CopyKey) : t('hostDefault')
-    );
-    if (
-      !(await confirmWrite(
-        t('operationConfirm', t(operationLabel(context.kind))) + '\n' + selectionLabel
-      ))
-    )
-      return;
-    if (owner !== workspaceEpoch) return;
-    if (!navigator.onLine) {
-      notify(t('offlineNotice'), true);
-      return;
-    }
-    await invoke('governance.operation', {
-      action: 'start',
-      ...context,
-      ...(isNew ? { sessionMode: 'new', ...(modelKey ? { modelKey } : {}), ...(thinkingLevel ? { thinkingLevel } : {}) }
-        : { sessionMode: 'existing', sessionId: session.id }),
-      confirmed: true
-    });
-    if (owner !== workspaceEpoch) return;
-    launchRequest++;
-    launchContext = null;
-    clearLaunchChoices();
-    $('launch-dialog').close();
-    notify(t('operationStarted'));
-    if (!$('operations-dialog').open) $('operations-dialog').showModal();
-    await loadOperations();
-  } catch (error) {
-    if (owner !== workspaceEpoch) return;
-    text('launch-status', t('operationError', error.message));
-    notify(t('operationError', error.message), true);
-  } finally {
-    if (owner !== workspaceEpoch) return;
-    lock(false);
-    if ($('launch-dialog').open)
-      ($('launch-start').disabled ? $('launch-cancel') : $('launch-start')).focus();
-  }
-});
-async function operationAction(action, id) {
-  const write = ['cancel', 'resolve'].includes(action);
-  const offlineWrite = () => {
-    if (!write || navigator.onLine) return false;
-    notify(t('offlineNotice'), true);
-    return true;
-  };
-  if (busy || offlineWrite()) return;
-  const owner = workspaceEpoch;
-  lock(true);
-  try {
-    if (
-      write &&
-      !(await confirmWrite(
-        t(action === 'resolve' ? 'resolveOperationConfirm' : 'operationCancelConfirm')
-      ))
-    )
-      return;
-    if (owner !== workspaceEpoch || offlineWrite()) return;
-    const data: any = await invoke('governance.operation', {
-      action,
-      id,
-      confirmed: write
-    });
-    if (action === 'status')
-      text(
-        'operation-result',
-        JSON.stringify(
-          { phase: data.run.phase, runtime: data.runtime, session: data.session },
-          null,
-          2
-        ).slice(0, 20000)
-      );
-    await loadOperations();
-  } catch (error) {
-    if (owner !== workspaceEpoch) return;
-    text('operations-notice', t('operationError', error.message));
-  } finally {
-    if (owner === workspaceEpoch) lock(false);
-  }
-}
-async function loadOperations() {
-  const owner = workspaceEpoch;
-  try {
-    const data: any = await invoke('governance.operation', { action: 'list' });
-    if (owner !== workspaceEpoch) return;
-    if (snapshot && data.workspace !== snapshot.workspace) throw Error(t('switched'));
-    $('operation-runs').replaceChildren();
-    text('operations-notice', data.runs.length ? t('progressHintReal') : t('noOperations'));
-    for (const run of [...data.runs].reverse()) {
-      const row = document.createElement('article');
-      row.className = 'operation-run';
-      const heading = document.createElement('h3');
-      heading.textContent = `${t(operationLabel(run.kind))} · ${labels[run.phase]}`;
-      const note = document.createElement('p');
-      note.textContent = `${run.updatedAt} · ${run.modelKey || t('hostDefault')} · ${run.thinkingLevel ? t(('thinking_' + run.thinkingLevel) as CopyKey) : t('hostDefault')}${run.error ? ' · ' + run.error : ''}`;
-      if (run.sessionMode === 'existing') note.textContent += ' · ' + t('existingStop');
-      row.append(heading, note);
-      if (run.sessionId)
-        for (const [key, action] of [
-          ['inspectResult', 'status'],
-          ['openSession', 'open'],
-          ...(run.sessionMode !== 'existing' && ['creating', 'created', 'running', 'unknown'].includes(run.phase)
-            ? [['cancelOperation', 'cancel']]
-            : [])
-        ]) {
-          const button = document.createElement('button');
-          button.type = 'button';
-          button.textContent = t(key as CopyKey);
-          if (action === 'cancel') button.dataset.operationWrite = 'true';
-          button.disabled = busy || (action === 'cancel' && !navigator.onLine);
-          button.addEventListener('click', () => {
-            void operationAction(action, run.id);
-          });
-          row.append(button);
-        }
-      if ((!run.sessionId && ['creating', 'created', 'unknown'].includes(run.phase)) ||
-          (run.sessionMode === 'existing' && ['created', 'unknown'].includes(run.phase))) {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.textContent = t('resolveOperation');
-        button.dataset.operationWrite = 'true';
-        button.disabled = busy || !navigator.onLine;
-        button.addEventListener('click', () => {
-          void operationAction('resolve', run.id);
-        });
-        row.append(button);
-      }
-      $('operation-runs').append(row);
-    }
-  } catch (error) {
-    if (owner !== workspaceEpoch) return;
-    text('operations-notice', t('operationError', error.message));
-  }
-}
-$('documentation-start').addEventListener('click', () => {
-  void startOperation('documentation');
-});
-$('analysis-start').addEventListener('click', () => {
-  void startOperation('analysis');
-});
-$('architecture-analyze').addEventListener('click', () => {
-  void startOperation('architecture');
-});
-$('operations-open').addEventListener('click', () => {
-  if (busy) return;
-  if (!$('operations-dialog').open) $('operations-dialog').showModal();
-  text('operation-result', '');
-  void loadOperations();
-});
-$('operations-refresh').addEventListener('click', () => {
-  if (!busy) void loadOperations();
-});
-$('operations-close').addEventListener('click', () => {
-  if (!busy) $('operations-dialog').close();
-});
-
-function retainWorkspaceDrafts() {
-  if (!snapshot?.workspace || !dirtyForms.size) return false;
-  const previous = retainedDrafts.get(snapshot.workspace);
-  const forms = { ...(previous?.forms || {}) };
-  for (const id of dirtyForms) {
-    forms[id] = Array.from($(id).querySelectorAll('input, textarea, select')).map((el: any, index) => ({
-      id: el.id || String(index), value: el.value, ...(el.type === 'checkbox' ? { checked: el.checked } : {})
-    }));
-  }
-  retainedDrafts.set(snapshot.workspace, { workspace: snapshot.workspace, task: snapshot.state?.task || null,
-    itemId: editingItem || selectedItem, at: new Date().toISOString(), forms });
-  return true;
-}
 window.pluginBridge?.on?.('workspace:changed', (workspace) => {
   const next = workspace && typeof workspace === 'object' && 'path' in workspace && typeof workspace.path === 'string' ? workspace.path : null;
   if (next && next === observedWorkspace && snapshot?.workspace === next) return;
-  const retained = retainWorkspaceDrafts();
   const owner = ++workspaceEpoch;
   loadRevision++;
   window.dispatchEvent(new Event('documents-reset'));
   observedWorkspace = next;
-  // Closing a confirmation resolves false under the new epoch. Never send its old intent.
+  // Revoke the old view immediately; late reads cannot enter the new workspace.
   document.querySelectorAll<HTMLDialogElement>('dialog[open]').forEach(dialog => dialog.close('cancel'));
-  launchRequest++;
-  launchContext = null;
-  clearLaunchChoices();
-  selectedItem = editingItem = null;
+  selectedItem = null;
   searchQuery = '';
   $('board-search').value = '';
   resetCompletedHistory();
-  itemOrigin = menuOrigin = null;
-  text('operation-result', '');
-  $('operation-runs').replaceChildren();
-  $('agent-brief').value = '';
-  $('workspace-drafts').hidden = !retainedDrafts.size;
-  $('workspace-switch-notice').hidden = !retained;
-  text('workspace-switch-notice', retained ? t('draftsRetained') : '');
+  itemOrigin = null;
   text('workspace', next || t('disconnected'));
   lock(true);
   void load().finally(() => { if (owner === workspaceEpoch) lock(false); });
 });
-$('workspace-drafts').addEventListener('click', () => {
-  if (busy) return;
-  $('workspace-drafts-text').value = JSON.stringify([...retainedDrafts.values()], null, 2);
-  $('workspace-drafts-dialog').showModal();
-  $('workspace-drafts-text').focus();
-});
-$('workspace-drafts-close').addEventListener('click', () => $('workspace-drafts-dialog').close());
 $('architecture-check').addEventListener('click', async () => {
   if (busy || !snapshot || !projectSnapshot?.architecture || !navigator.onLine) return;
   const owner = workspaceEpoch;
@@ -1612,63 +714,6 @@ $('architecture-check').addEventListener('click', async () => {
   finally { if (owner === workspaceEpoch) lock(false); }
 });
 
-function resetBehaviorDocuments() {
-  behaviorRequest++; behaviorLoading = behaviorLoaded = false;
-  $('behavior-docs-content').replaceChildren(); text('behavior-docs-status', '');
-  $('behaviors-section').setAttribute('aria-busy', 'false');
-}
-function updateBehaviorControls() {
-  $('behavior-refresh').disabled = busy || behaviorLoading || !snapshot || !navigator.onLine;
-  if (!navigator.onLine) text('behavior-docs-status', t('offlineNotice'));
-  else if (!snapshot) text('behavior-docs-status', t(busy ? 'waiting' : 'disconnected'));
-  if (location.hash === '#behaviors-section' && !busy && snapshot && !behaviorLoaded && !behaviorLoading && navigator.onLine) void loadBehaviorDocuments();
-}
-async function loadBehaviorDocuments() {
-  if (busy || behaviorLoading || !snapshot || !navigator.onLine) return;
-  const owner = workspaceEpoch, root = snapshot.workspace, request = ++behaviorRequest;
-  const owns = () => owner === workspaceEpoch && request === behaviorRequest;
-  const current = () => owns() && snapshot?.workspace === root;
-  behaviorLoading = behaviorLoaded = true;
-  $('behavior-refresh').disabled = true;
-  $('behaviors-section').setAttribute('aria-busy', 'true');
-  text('behavior-docs-status', t('waiting'));
-  try {
-    const data: any = await invoke('governance.behaviors');
-    if (!current()) return;
-    if (data.workspace !== root) throw Error(t('switched'));
-    $('behavior-docs-content').replaceChildren();
-    text('behavior-docs-status', data.behaviors.length ? '' : t('behaviorEmpty'));
-    const statusKeys = { passed: 'behaviorPassed', unverified: 'behaviorUnverified', stale: 'behaviorStale', incomplete: 'behaviorIncomplete', failed: 'behaviorFailed', checking: 'behaviorChecking' };
-    for (const item of data.behaviors) {
-      const article = document.createElement('article');
-      article.className = 'behavior-document';
-      const title = document.createElement('h3');
-      title.textContent = `${item.id} · ${item.title}`;
-      const prose = document.createElement('p');
-      prose.className = 'behavior-prose';
-      prose.textContent = item.prose;
-      const status = document.createElement('p');
-      status.className = 'behavior-status';
-      status.dataset.result = item.status;
-      status.textContent = t((statusKeys[item.status] || 'behaviorUnverified') as CopyKey);
-      const details = document.createElement('details');
-      const summary = document.createElement('summary');
-      summary.textContent = t('behaviorDetails');
-      const evidence = document.createElement('pre');
-      evidence.textContent = JSON.stringify({ document: item.document, cases: item.cases, sources: item.files }, null, 2);
-      details.append(summary, evidence);
-      if (item.sourceCommit) {
-        const meta = document.createElement('p');
-        meta.textContent = t('behaviorCommit', item.sourceCommit, t(item.workingTree ? 'behaviorDirty' : 'behaviorClean'), item.at);
-        details.append(meta);
-      }
-      article.append(title, prose, status, details);
-      $('behavior-docs-content').append(article);
-    }
-  } catch (error) { if (current()) text('behavior-docs-status', error.message); }
-  finally { if (owns()) { behaviorLoading = false; $('behaviors-section').setAttribute('aria-busy', 'false'); updateBehaviorControls(); } }
-}
-$('behavior-refresh').addEventListener('click', () => { void loadBehaviorDocuments(); });
 document.querySelectorAll<HTMLButtonElement>('[data-project-view]').forEach(button => {
   button.addEventListener('click', () => {
     const link = document.querySelector<HTMLAnchorElement>(`.workspace-nav a[href="#${button.dataset.projectView}"]`);

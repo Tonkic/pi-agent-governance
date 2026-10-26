@@ -43,37 +43,37 @@ test('HTTP rejects absent/wrong credentials, Host rebinding, foreign/null Origin
   assert.equal((await f.post('governance.snapshot', { workspace: 'foreign' })).status, 409);
   assert.deepEqual(await fs.readdir(f.root), []);
 });
-test('web and real MCP share project data, preserve confirmation/revisions and design baseline isolation', async t => {
+test('browser rejects all project writes while real MCP updates remain readable', async t => {
   const f = await fixture(t);
-  let state = await f.value('governance.snapshot'); assert.equal(state.state, null); assert.deepEqual(await fs.readdir(f.root), []);
-  assert.equal((await f.post('governance.mutate', { args: { action: 'init' }, revision: state.revision, confirmed: false })).status, 409);
-  await f.value('governance.mutate', { args: { action: 'init' }, revision: state.revision, confirmed: true });
-  state = await f.value('governance.snapshot');
-  await f.value('governance.mutate', { args: { action: 'start', id: 'approved', goal: 'Approved test task', criteria: ['Actual test'] }, revision: state.revision, confirmed: true });
-  const before = await fs.readFile(path.join(f.root, 'STATE.json'), 'utf8');
-  const project = await f.value('governance.project');
-  const create = { args: { action: 'board_create', id: 'from-web', title: 'From web' }, revision: project.revision, confirmed: true };
-  assert.equal((await f.post('governance.workitem', { ...create, confirmed: false })).status, 409);
-  await f.value('governance.workitem', create);
-  assert.equal((await f.post('governance.workitem', { ...create, args: { ...create.args, id: 'stale' } })).status, 409);
-  const { Client } = require('@modelcontextprotocol/sdk/client/index.js'); const { StdioClientTransport } = require('@modelcontextprotocol/sdk/client/stdio.js');
-  const client = new Client({ name: 'web-shared-fixture', version: '1.0.0' });
+  const state = await f.value('governance.snapshot'); assert.equal(state.state, null);
+  for (const action of ['init', 'start', 'progress', 'verify', 'close'])
+    assert.equal((await f.post('governance.mutate', { args: { action }, revision: state.revision, confirmed: true })).status, 400, action);
+  assert.deepEqual(await fs.readdir(f.root), [], 'Even confirmed initialization is denied before core dispatch');
+  const { Client } = require('@modelcontextprotocol/sdk/client/index.js');
+  const { StdioClientTransport } = require('@modelcontextprotocol/sdk/client/stdio.js');
+  const client = new Client({ name: 'readonly-shared-fixture', version: '1.0.0' });
   t.after(() => client.close());
   await client.connect(new StdioClientTransport({ command: process.execPath, args: [path.resolve('build/mcp/server.js'), '--workspace', f.root], stderr: 'pipe' }));
   const mcp = async args => { const result = await client.callTool({ name: 'governance', arguments: args }); assert.ok(!result.isError); return JSON.parse(result.content[0].text); };
-  const shared = await mcp({ action: 'project_snapshot' }); assert.equal(shared.board.items[0].id, 'from-web');
-  await mcp({ action: 'board_create', id: 'from-mcp', title: 'From MCP', expectedRevision: shared.revision });
-  assert.equal((await f.value('governance.project')).board.items.length, 2);
-  assert.equal(await fs.readFile(path.join(f.root, 'STATE.json'), 'utf8'), before);
-  let design = await f.value('governance.design', { action: 'snapshot' });
-  await f.value('governance.design', { action: 'begin', reason: 'User starts draft', revision: design.revision, confirmed: true });
-  design = await f.value('governance.design', { action: 'snapshot' });
+  await mcp({ action: 'init' });
+  await mcp({ action: 'start', id: 'approved', goal: 'Original AI client owns changes', criteria: ['Actual test'] });
+  let project = await mcp({ action: 'project_snapshot' });
+  await mcp({ action: 'board_create', id: 'from-mcp', title: 'From MCP', expectedRevision: project.revision });
+  project = await f.value('governance.project'); assert.equal(project.board.items[0].id, 'from-mcp');
+  let design = await mcp({ action: 'architecture_design_snapshot' });
+  await mcp({ action: 'architecture_design_begin', reason: 'Explicit host request', expectedRevision: design.revision });
+  design = await mcp({ action: 'architecture_design_snapshot' });
   await mcp({ action: 'architecture_design_save', expectedRevision: design.revision, expectedDraft: design.draft.draftId, proposal: { title: 'MCP proposal', document: 'Intent only', nodes: [{ id: 'app', title: 'App', description: 'Planned module', files: [] }], edges: [] } });
-  design = await f.value('governance.design', { action: 'snapshot' });
-  assert.equal((await f.post('governance.design', { action: 'confirm', revision: design.revision, confirmed: false })).status, 409);
-  await f.value('governance.design', { action: 'confirm', revision: design.revision, confirmed: true, expectedProposal: design.draft.proposalFingerprint, reviewer: 'Human', conclusion: 'Reviewed intent only' });
-  assert.equal((await f.value('governance.design', { action: 'snapshot' })).baseline.number, 1);
-  assert.equal(await fs.readFile(path.join(f.root, 'STATE.json'), 'utf8'), before);
+  design = await f.value('governance.design', { action: 'snapshot' }); assert.equal(design.draft.proposal.title, 'MCP proposal');
+  const files = ['STATE.json', '.governance/board.json', '.governance/architecture-design.json'];
+  const before = await Promise.all(files.map(file => fs.readFile(path.join(f.root, file), 'utf8')));
+  for (const action of ['board_create', 'board_update', 'board_move'])
+    for (const confirmed of [false, true]) assert.equal((await f.post('governance.workitem', { args: { action, id: 'from-mcp', title: 'Forbidden', stage: 'done', position: 0 }, revision: project.revision, confirmed })).status, 400);
+  for (const action of ['begin', 'save', 'confirm', 'discard'])
+    for (const confirmed of [false, true]) assert.equal((await f.post('governance.design', { action, revision: design.revision, confirmed, expectedProposal: design.draft.proposalFingerprint, reviewer: 'Human', conclusion: 'Not a browser action' })).status, 400);
+  assert.deepEqual(await Promise.all(files.map(file => fs.readFile(path.join(f.root, file), 'utf8'))), before);
+  await mcp({ action: 'board_update', id: 'from-mcp', title: 'Updated in original client', expectedRevision: project.revision });
+  assert.equal((await f.value('governance.project')).board.items[0].title, 'Updated in original client');
 });
 test('lease requests share the eight-request body budget and old incomplete requests cannot invoke after close', async t => {
   const f = await fixture(t), requests = [];

@@ -1,11 +1,11 @@
 'use strict';
-// Real HTTP five-page shell. Demo content is not repository evidence.
+// Real HTTP four-page readonly shell. Demo content is not repository evidence.
 module.exports = async ({ browser, screenshots }) => {
   const assert = require('node:assert/strict'), fs = require('node:fs/promises'), os = require('node:os'), path = require('node:path');
   const { Governance } = require('../build/plugin/core'), { startConsole } = require('../build/web/server');
   const root = await fs.realpath(await fs.mkdtemp(path.join(process.env.PI_SCRATCH_DIR || os.tmpdir(), 'shell083-fixture-')));
   const output = path.join(screenshots, 'unified-shell'); await fs.mkdir(output, { recursive: true });
-  const pages = ['board-section', 'architecture', 'git-section', 'documents-section', 'behaviors-section'];
+  const pages = ['board-section', 'architecture', 'git-section', 'documents-section'];
   const article = '# A shared workspace / 统一工作台\n\nDemo document · 示例材料\n\n' + 'The shared shell leaves room to read. 默认图标栏，移入展开时不挤压正文。'.repeat(8) + '\n\n## Safe text\n\n![image](https://remote.invalid/image.png)\n[link](javascript:window.shellXss=1)\n<img src="https://remote.invalid/pixel" onerror="window.shellXss=2">\n\n```txt\n' + 'long-code-'.repeat(100) + '\n```\n';
   const contexts = [], errors = [], external = []; let app, shots = 0;
   const ready = p => p.waitForFunction(() => document.querySelector('#board-section').getAttribute('aria-busy') === 'false' && !document.querySelector('#refresh').disabled);
@@ -69,9 +69,8 @@ module.exports = async ({ browser, screenshots }) => {
       assert.equal(await p.evaluate(() => document.activeElement.hash), '#board-section');
       await p.waitForFunction(() => document.querySelector('.workspace-nav').getBoundingClientRect().width === 212);
       assert.equal(await p.evaluate(() => getComputedStyle(document.activeElement).outlineStyle !== 'none'), true);
-      await p.keyboard.press('Tab'); await p.keyboard.press('Tab'); assert.equal(await p.evaluate(() => document.activeElement.id), 'nav-behaviors'); await p.keyboard.press('Enter');
-      await p.waitForFunction(() => document.documentElement.dataset.view === 'behaviors-section' && !document.querySelector('#behavior-refresh').disabled);
-      assert.equal(await p.locator('dialog#behavior-docs-dialog').count(), 0); await p.keyboard.press('Escape'); assert.equal(await p.locator('#behaviors-section').isVisible(), true, 'Primary page is not a dismissible modal');
+      await p.keyboard.press('Tab'); await p.keyboard.press('Tab'); assert.equal(await p.evaluate(() => document.activeElement.hash), '#documents-section'); await p.keyboard.press('Enter');
+      await listed(p); assert.equal(await p.locator('#project-open, #behaviors-section, form').count(), 0);
       await p.locator('a[href="#documents-section"]').click(); await listed(p);
       await p.locator('#documents-focus').click(); assert.equal(await p.locator('.reader-library summary').isVisible(), false); assert.equal(await p.locator('.workspace-nav').isVisible(), true); assert.equal(await p.locator('.topbar').isVisible(), true); await p.locator('#documents-focus').click();
       await p.locator('[data-context-help="local-console-copy"]').focus(); await p.keyboard.press('Enter'); assert.equal(await p.locator('#local-console-copy').isVisible(), true); await p.keyboard.press('Escape'); assert.equal(await p.locator('#local-console-copy').isVisible(), false);
@@ -83,7 +82,7 @@ module.exports = async ({ browser, screenshots }) => {
       await context.setOffline(true); await p.waitForFunction(() => document.querySelector('#documents-refresh').disabled); assert.match(await p.locator('#documents-status').textContent(), /Offline|离线/); assert.match(await p.locator('#documents-body').textContent(), /A shared workspace/);
       await reveal(p, true); await reveal(p, false); await context.setOffline(false); await listed(p);
       await p.locator('#palette-toggle').click(); await reveal(p, false); assert.equal((await geometry(p)).nav[2], 64); await p.locator('#palette-toggle').click();
-      await p.setViewportSize({ width: 320, height: 1000 }); assert.equal(await p.locator('#nav-behaviors').isVisible(), true); await p.setViewportSize({ width: 1672, height: 1000 }); await reveal(p, false); assert.equal((await geometry(p)).nav[2], 64);
+      await p.setViewportSize({ width: 320, height: 1000 }); assert.equal(await p.locator('a[href="#documents-section"]').isVisible(), true); await p.setViewportSize({ width: 1672, height: 1000 }); await reveal(p, false); assert.equal((await geometry(p)).nav[2], 64);
       await p.locator('a[href="#board-section"]').click(); await p.waitForFunction(() => document.documentElement.dataset.view === 'board-section'); await reveal(p, false);
       assert.deepEqual(await p.evaluate(() => [JSON.stringify(localStorage), JSON.stringify(sessionStorage)]), storage, 'No shell storage writes');
       await p.reload(); await ready(p); await reveal(p, false); assert.equal((await geometry(p)).nav[2], 64);
@@ -93,6 +92,6 @@ module.exports = async ({ browser, screenshots }) => {
     for (const id of pages) { await p.locator(`a[href="#${id}"]`).tap(); await p.waitForFunction(id => !document.getElementById(id).hidden, id); assert.equal(await p.locator(`a[href="#${id}"] [data-i18n]`).isVisible(), true); }
     assert.equal(await p.locator('#sidebar-toggle').count(), 0); assert.equal(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     assert.deepEqual(errors, []); assert.deepEqual(external, []); assert.deepEqual(await fs.readFile(path.join(root, 'STATE.json')), before);
-    console.log(`PASS unified shell: five primary pages, default64px rail/hover overlay/no content shift, keyboard and touch navigation, locks/offline/refresh/theme/resize/no persistence, safe18px reader; ${shots} screenshots: ${output}`);
+    console.log(`PASS unified shell: four readonly pages, default64px rail/hover overlay/no content shift, keyboard and touch navigation, locks/offline/refresh/theme/resize/no persistence, safe18px reader; ${shots} screenshots: ${output}`);
   } finally { for (const context of contexts) await context.close(); await app?.close(); await fs.rm(root, { recursive: true, force: true, maxRetries: 5 }); }
 };

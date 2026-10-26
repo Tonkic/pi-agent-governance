@@ -3,9 +3,9 @@
 1. 先读 STATE.json 和 README.md；用 governance status 获取有效状态。
 2. 有活动任务就继续 current/next；无活动任务但有已批准 followUp 则 start；都没有就等待人工，不发明需求。
 3. STATE 是当前任务唯一来源。人决定目标、范围、验收；Agent 在范围内实现、检查和修复。
-4. 按问题读取 docs/README.md 中的专题，不要求逐层打卡。docs/ 是当前说明唯一手写来源；notes/ 简记增删改、结果和踩坑，历史证据在 notes/archive/ 或已有 changes/。TS 是修改入口，runtime/build/安装包说明是产物。
+4. 按问题读取 docs/README.md 中的专题。docs/ 是当前功能与架构依据；notes/ 仅按需追溯，不是日常必读。TS 是修改入口，runtime/build/安装包说明是产物。
 5. 进度变化写回 current/next/blocked。写入前重读状态，不能覆盖人工的新意图。
-6. Docs 采用 Microsoft 标准和渐进式披露：结论在前、短句、动作明确；索引→专题→必要细节，原则上每篇不超过100行。Notes 每次通常4–8行，不贴日志或重复计划。规则见 docs/documentation.md。
+6. 每轮对话按实际影响判断文档归属：重要功能/架构/用法变化最小更新对应Docs，小改只补必要一句；有追溯价值才在Notes简记1–4行，无实质变化不写。结论在前，不重复聊天/日志，不大改无关专题；细则见 docs/documentation.md。
 7. 小改定向测，公共/高风险/未知改动和大版本全量；按 docs/development.md 选择检查范围。小任务默认直接做，一轮只构建一次；浏览器与行为证据共用执行。实际运行选定检查、审查diff并更新必要用法，verify后close；有总体阻塞不能close。
 8. 插件变更用 PluginCheck/PluginPack 更新安装包。参数与流程见 docs/development.md、docs/publishing.md。
 9. 所有修改通过 Git 留痕。先检查工作区；写入型子任务用 git_create 分配独立分支/worktree，明确 cwd 和 allowedPaths 后再委派。只读审查不必分支。
@@ -17,3 +17,4 @@
 15. 本项目已批准一次启动后连续接续待办：每个回合先核实STATE和看板，完成一项后重读并处理下一可执行项，不等待重复“继续”。只能执行当前授权范围；没有活动任务/获批followUp、工作完成、真实外部阻塞或新授权需求时停止。宿主手动自动化入口见docs/development.md，不自行增加定时任务或递归创建对话。
 16. 如项目上下文要求远端工作，按docs/remote.md从.remote-local连接配置发现入口与实际目录；不打印/提交凭据，不改系统SSH或凭据库。先核对指纹/远端目录及最新状态，远端先写、本地仅备份；unknown必须先核实再显式resolve，禁止自动重试或把离线快照当本地真实验证。
 17. 权威文档先按docs/collaboration.md解析：显式绑定GitHub分支优先；只有未绑定才使用明确SSH项目或本地。已绑定后网络/权限/分支失败不降级。GitHub模式下本地和SSH都是草稿工作副本，先读权威SHA/文档，按正常受管Git检查提交，再推独立分支/PR；不自动同步覆盖、合并main或重复未知push。普通浏览器仍是当前副本视图；共享STATE只由单一协调者调度。
+18. 插件/浏览器仅查看项目、看板、架构、Git与Docs；项目操作、设计保存及检查在原AI CLI/应用执行。不要恢复网页写入或独立行为文档入口；不新增Agent自行确认基线权限，测试与原接口保留。

@@ -2,7 +2,7 @@
 
 先按问题定位专题，不必顺序读完。每篇先给用途与常用操作，参数和限制在后面的具名章节；可直接搜索动作名。
 
-One browser workbench for all hosts: shared project data, original host conversation/model, document-based development and optional architecture. Implement and run relevant tests, then complete; no separate acceptance stage.
+One read-only workbench for all hosts. Operate in the original AI CLI/application; use Docs for current functionality and architecture, Notes only for optional history. Implement and run relevant tests, then complete; no separate acceptance stage.
 
 | 要解决的问题 | 先读 | 需要深入时 |
 | --- | --- | --- |
@@ -25,7 +25,7 @@ One browser workbench for all hosts: shared project data, original host conversa
 
 采用 [Microsoft Writing Style Guide](https://learn.microsoft.com/en-us/style-guide/welcome/) 和 [Top 10 tips](https://learn.microsoft.com/en-us/style-guide/top-10-tips-style-voice)：结论在前、短句、动作明确、方便扫读。中文不机械套用英文格式。
 
-- `docs/` 是当前说明的唯一手写来源，不写每次测试的长日志。专题原则上不超过 100 行；变长时按独立问题拆分并回链索引，不建空模板。
-- [Notes 索引](../notes/README.md) 提供简短变更、决策和踩坑摘要；只在需要追溯时读取归档。
+- `docs/` 是当前功能、架构与用法的依据。每轮自主判断影响；大改最小更新对应专题，小改只补必要一句，无实质变化不写。专题原则上不超过100行，不建空模板。
+- [Notes](../notes/README.md) 仅保存有追溯价值的1–4行历史，日常不必读；不重复聊天、计划或测试日志。
 - 根 README/AGENTS 仅保留必要入口与执行约束。安装包的 `plugin/README.md` 和 `plugin/docs/` 从这里构建生成，不手改。
 - `changes/` 保留机器关闭记录和截图等证据；`.pi/` 是宿主数据，不迁移。当前授权只看 STATE，不从旧记录猜目标。

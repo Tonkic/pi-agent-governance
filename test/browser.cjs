@@ -1,1171 +1,215 @@
 'use strict';
-// Real Chromium + real governance backend, simulated plugin bridge. Not installed-host acceptance.
+// Real Chromium + temporary governance projects and simulated host events, not installed-host acceptance.
 const { chromium } = require('playwright');
-const fs = require('node:fs/promises');
-const path = require('node:path');
-const os = require('node:os');
+const fs = require('node:fs/promises'), path = require('node:path'), os = require('node:os');
 const { pathToFileURL } = require('node:url');
 const assert = require('node:assert/strict');
+const { randomUUID } = require('node:crypto');
 const { Governance } = require('../plugin/runtime/core');
 const { panelInvoke } = require('../plugin/runtime/panel');
-const { operationInvoke } = require('../plugin/runtime/operations');
 const { itemFingerprint } = require('../plugin/runtime/project');
-const { randomUUID } = require('node:crypto');
+const { architectureAscii } = require('../plugin/runtime/design');
 const behaviorReport = require('./behavior-reporter.cjs').reporter();
-const hostCalls = [];
-async function projectTool(page, id) {
-  if (!await page.locator('#project-tools').evaluate(n => n.open)) await page.locator('#project-tools > summary').click();
-  await page.locator('#' + id).click();
-}
-const operationWrites = [];
-let hostStreaming = true,
-  sessionCounter = 0,
-  failCreation = false;
-const desktop = {
-  listOperations: async () =>
-    [
-      'session/create',
-      'agent/prompt',
-      'agent/getStatus',
-      'session/get',
-      'session/open',
-      'agent/abort'
-    ].map((id) => ({ id })),
-  invoke: async (request) => {
-    hostCalls.push(request);
-    if (request.operation === 'session/create')
-      return failCreation ? {} : { id: `fixture-session-${++sessionCounter}` };
-    if (request.operation === 'agent/getStatus') return { isStreaming: hostStreaming };
-    if (request.operation === 'session/get')
-      return {
-        session: { id: request.args[0].id },
-        messages: [
-          { role: 'assistant', content: 'Fixture analysis output; not installed-host acceptance.' }
-        ]
-      };
-    return { accepted: true };
-  }
-};
-let modelListFailure = false,
-  modelMissing = false,
-  holdModels = false,
-  releaseModels;
-const modelRows = [
-  {
-    key: 'fixture/reasoning',
-    providerId: 'fixture',
-    providerName: 'Fixture Provider',
-    modelId: 'reasoning',
-    label: 'Reasoning fixture',
-    supportsReasoning: true,
-    thinkingLevels: ['low', 'high']
-  },
-  {
-    key: 'fixture/plain',
-    providerId: 'fixture',
-    providerName: 'Fixture Provider',
-    modelId: 'plain',
-    label: 'Plain fixture',
-    supportsReasoning: false,
-    thinkingLevels: []
-  }
-];
-const models = {
-  list: async () => {
-    if (holdModels)
-      await new Promise((resolve) => {
-        releaseModels = resolve;
-      });
-    if (modelListFailure) throw Error('Model list fixture unavailable');
-    return modelMissing ? [] : modelRows;
-  }
-};
 (async () => {
   const base = process.env.PI_SCRATCH_DIR || os.tmpdir();
-  const roots = await Promise.all(
-    [1, 2, 3, 4].map(() => fs.mkdtemp(path.join(base, 'workbench-browser-')))
-  );
-  let root = roots[0],
-    holdGit = false,
-    releaseGit,
-    failProject = false,
-    failSnapshot = false;
-  let delayedSnapshotRoot = null, releaseSnapshot;
-  let delayedGitRoot = null, releaseDelayedGit;
-  let delayedBehaviorRoot = null, releaseBehavior;
-  let delayedDesignRoot = null, releaseDesign;
-  const boardWrites = [];
-  const g = new Governance(root);
+  const roots = await Promise.all([1, 2, 3, 4].map(async () => require('node:fs').realpathSync.native(await fs.mkdtemp(path.join(base, 'readonly-browser-')))));
+  let root = roots[0], hold = null, release = null, failProject = false, failSnapshot = false;
+  const calls = [], boardWrites = [];
   for (const dir of roots.slice(0, 2)) await new Governance(dir).run({ action: 'init' });
-  await g.run({
-    action: 'start',
-    id: 'overall',
-    goal: 'Publish the next workspace release',
-    criteria: ['UI checks pass', 'Sources stay traceable']
-  });
-  const stateBefore = await fs.readFile(path.join(root, 'STATE.json'), 'utf8');
+  const g = new Governance(root);
+  await g.run({ action: 'start', id: 'overall', goal: 'Readonly workbench fixture', criteria: ['Read isolation', 'No browser writes'] });
   const snapshot = () => g.run({ action: 'project_snapshot' });
-  const mutate = async (args) => g.run({ ...args, expectedRevision: (await snapshot()).revision });
-  const browser = await chromium.launch({
-    headless: true,
-    ...(process.env.PI_BROWSER ? { executablePath: process.env.PI_BROWSER } : {})
-  });
-  const output = process.env.PI_SCREENSHOT_DIR || path.join(base, 'modal-board-screenshots');
+  const mutate = async args => g.run({ ...args, expectedRevision: (await snapshot()).revision });
+  const stateBefore = await fs.readFile(path.join(root, 'STATE.json'), 'utf8');
+  const browser = await chromium.launch({ headless: true, ...(process.env.PI_BROWSER ? { executablePath: process.env.PI_BROWSER } : {}) });
+  const output = process.env.PI_SCREENSHOT_DIR || path.join(base, 'readonly-workbench-shots');
   await fs.mkdir(output, { recursive: true });
-  const errors = [];
-  let shots = 0;
+  const errors = []; let shots = 0;
   const url = pathToFileURL(path.resolve('plugin/renderer/index.html')).href;
-  async function makePage(locale = 'zh-CN', operationStub = null) {
+  const settled = p => p.waitForFunction(() => !document.querySelector('#refresh').disabled);
+  const refresh = async p => { await p.locator('#refresh').click(); await settled(p); };
+  const navigate = async (p, id) => { await p.locator(`.workspace-nav a[href="#${id}"]`).click(); await p.waitForFunction(id => !document.getElementById(id).hidden, id); };
+  const card = (p, id) => p.locator(`[data-workitem="${id}"]`);
+  const close = async p => { await p.locator('#item-close').click(); await p.waitForFunction(() => !document.querySelector('#item-sheet').open); };
+  const capture = async (p, name) => { await p.screenshot({ path: path.join(output, `state-${name}.png`), fullPage: true }); shots++; };
+  const sendAppearance = (p, value) => p.evaluate(value => window.dispatchEvent(new CustomEvent('test-appearance', { detail: value })), value);
+  const rootColor = (p, name) => p.locator('html').evaluate((el, key) => el.style.getPropertyValue(key), name);
+  async function makePage(locale = 'zh-CN') {
     const p = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
-    p.on('pageerror', (e) => errors.push(e.message));
+    p.on('pageerror', e => errors.push(e.message));
     await p.exposeFunction('hostInvoke', async (channel, payload) => {
       const requestRoot = root;
-      if (channel === 'governance.workitem') boardWrites.push(payload);
-      if (channel === 'governance.operation' && ['cancel', 'resolve'].includes(payload.action))
-        operationWrites.push(payload);
+      calls.push({ channel, payload, root: requestRoot });
       if (channel === 'app.getLocale') return locale;
       if (channel === 'app.getAppearance') return { base: 'light' };
-      if (channel === 'governance.behaviors' && requestRoot === delayedBehaviorRoot) {
-        const result = await panelInvoke(requestRoot, channel, payload);
-        await new Promise(resolve => { releaseBehavior = resolve; });
-        return { ok: true, result };
-      }
-      if (channel === 'governance.design' && payload.action === 'snapshot' && requestRoot === delayedDesignRoot) {
-        const result = await panelInvoke(requestRoot, channel, payload);
-        await new Promise(resolve => { releaseDesign = resolve; });
-        return { ok: true, result };
-      }
-      if (channel === 'governance.snapshot' && requestRoot === delayedSnapshotRoot) {
-        const result = await panelInvoke(requestRoot, channel, payload);
-        await new Promise(resolve => { releaseSnapshot = resolve; });
-        return { ok: true, result };
-      }
-      if (channel === 'governance.project' && requestRoot === delayedGitRoot) {
-        let response;
-        try { response = { ok: true, result: await panelInvoke(requestRoot, channel, payload) }; }
-        catch (error) { response = { ok: false, error: error.message }; }
-        await new Promise(resolve => { releaseDelayedGit = resolve; });
-        return response;
-      }
-      if (channel === 'governance.project' && holdGit)
-        await new Promise((resolve) => {
-          releaseGit = resolve;
-        });
-      if (
-        (failProject && channel === 'governance.project') ||
-        (failSnapshot && channel === 'governance.snapshot')
-      )
-        return { ok: false, error: 'Fixture read failure' };
-      // Existing real-backend fixtures explicitly opt into new; the catalog is a bridge contract stub.
-      if (channel === 'governance.operation' && operationStub) return operationStub(payload, requestRoot);
-      if (channel === 'governance.operation' && payload.action === 'sessions')
-        return { ok: true, result: { workspace: requestRoot, sessions: [] } };
+      if (channel === 'governance.workitem') boardWrites.push(payload);
       try {
-        return {
-          ok: true,
-          result:
-            channel === 'governance.operation'
-              ? await operationInvoke(requestRoot, payload, desktop, async () => root === requestRoot, models)
-              : await panelInvoke(requestRoot, channel, payload)
-        };
-      } catch (e) {
-        return { ok: false, error: e.message };
-      }
+        if ((failProject && channel === 'governance.project') || (failSnapshot && channel === 'governance.snapshot')) throw Error('Fixture read failure');
+        const result = await panelInvoke(requestRoot, channel, payload);
+        if (hold?.root === requestRoot && hold.channel === channel) await new Promise(resolve => { release = resolve; });
+        return { ok: true, result };
+      } catch (e) { return { ok: false, error: e.message }; }
     });
     await p.addInitScript(() => {
-      window.pluginBridge = {
-        invoke: (...args) => window.hostInvoke(...args),
-        on: (event, fn) => {
-          if (event === 'appearance:changed')
-            window.addEventListener('test-appearance', (e) => fn(e.detail));
-          if (event === 'workspace:changed')
-            window.addEventListener('test-workspace', (e) => fn(e.detail));
-        }
-      };
+      window.pluginBridge = { invoke: (...args) => window.hostInvoke(...args), on: (event, fn) => {
+        if (event === 'appearance:changed') window.addEventListener('test-appearance', e => fn(e.detail));
+        if (event === 'workspace:changed') window.addEventListener('test-workspace', e => fn(e.detail));
+      } };
     });
-    await p.goto(url);
-    await settled(p);
-    return p;
+    await p.goto(url); await settled(p); return p;
   }
-  const settled = (p) => p.waitForFunction(() => !document.querySelector('#refresh').disabled);
-  const chooseNew = async p => {
-    await p.waitForFunction(() => document.querySelector('#launch-dialog').open);
-    if (await p.locator('#launch-session').inputValue() !== 'new')
-      await p.locator('#launch-session').selectOption('new');
-    await p.waitForFunction(() => !document.querySelector('#launch-start').disabled);
-  };
-  const confirm = async (p, yes = true) => {
-    if (
-      (await p.locator('#launch-dialog').evaluate((el) => el.open)) &&
-      !(await p.locator('#confirm-dialog').evaluate((el) => el.open))
-    ) {
-      await chooseNew(p);
-      await p.locator('#launch-start').click();
-    }
-    await p.locator(`#confirm-dialog button[value="${yes ? 'confirm' : 'cancel'}"]`).click();
-    await settled(p);
-    if (!yes && (await p.locator('#launch-dialog').evaluate((el) => el.open)))
-      await p.locator('#launch-cancel').click();
-  };
-  const refresh = async (p) => {
-    await p.locator('#refresh').click();
-    await settled(p);
-  };
-  const navigate = async (p, id) => {
-    await p.locator(`.workspace-nav a[href="#${id}"]`).click();
-    await p.waitForFunction((id) => !document.getElementById(id).hidden, id);
-  };
-  const card = (p, id) => p.locator(`[data-workitem="${id}"]`);
-  const menu = async (p, id, label) => {
-    await card(p, id).click({ button: 'right' });
-    await p.locator('#item-menu').getByRole('menuitem', { name: label, exact: true }).click();
-  };
-  const close = async (p) => {
-    await p.locator('#item-close').click();
-    if (await p.locator('#confirm-dialog').evaluate((el) => el.open)) await confirm(p);
-    await p.waitForFunction(() => !document.querySelector('#item-sheet').open);
-  };
-  const capture = async (p, name) => {
-    // Fixed menus are viewport surfaces; full-page capture resizes tall workbenches and dismisses them.
-    await p.screenshot({ path: path.join(output, `state-${name}.png`), fullPage: name !== 'menu' });
-    shots++;
-  };
-  const sendAppearance = (p, value) =>
-    p.evaluate(
-      (v) => window.dispatchEvent(new CustomEvent('test-appearance', { detail: v })),
-      value
-    );
-  const rootColor = (p, name) =>
-    p.locator('html').evaluate((el, key) => el.style.getPropertyValue(key), name);
+  async function waitHeld(p) {
+    for (let i = 0; !release && i < 500; i++) await p.waitForTimeout(10);
+    assert.equal(typeof release, 'function', 'Delayed read reached bridge');
+  }
   try {
-    await require('./host-context-browser.cjs')({ assert, makePage, modelRows, capture, chooseNew, settled, roots,
-      getRoot: () => root, setRoot: value => { root = value; } });
     const page = await makePage();
-    root = roots[1];
-    await page.evaluate((path) => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root);
-    await settled(page);
-    assert.equal(await page.locator('#workspace').textContent(), root, 'Workspace event must switch the panel without Refresh');
-    root = roots[0];
-    await page.evaluate((path) => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root);
-    await settled(page);
+    const switchWorkspace = async target => { root = target; await page.evaluate(path => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root); await settled(page); };
+    await switchWorkspace(roots[1]); assert.equal(await page.locator('#workspace').textContent(), roots[1]);
+    await switchWorkspace(roots[0]); assert.equal(await page.locator('#summary-task').textContent(), 'overall');
     behaviorReport.passed('workspace-switch');
-    // Switching while a draft confirmation is open must not save or leak it.
-    const switchWorkspace = async (target) => {
-      root = target;
-      await page.evaluate((path) => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root);
-      await settled(page);
-    };
-    await page.locator('#board-new').click();
-    await page.locator('#workitem-title').fill('A retained architecture draft');
-    await page.locator('#workitem-impact').selectOption('affects');
-    await page.locator('#workitem-save').click();
-    await page.waitForFunction(() => document.querySelector('#confirm-dialog').open);
-    await switchWorkspace(roots[1]);
-    assert.equal(await page.locator('#item-sheet').evaluate(el => el.open), false);
-    assert.equal(await page.locator('#confirm-dialog').evaluate(el => el.open), false);
-    assert.equal((await snapshot()).board.items.length, 0);
-    assert.equal((await new Governance(roots[1]).run({ action: 'project_snapshot' })).board.items.length, 0);
-    await page.locator('#workspace-drafts').click();
-    const retained = await page.locator('#workspace-drafts-text').inputValue();
-    assert.ok(retained.includes(roots[0].replace(/\\/g, '\\\\')));
-    assert.match(retained, /A retained architecture draft/);
-    assert.match(retained, /affects/);
-    await capture(page, 'workspace-drafts');
-    await page.locator('#workspace-drafts-close').click();
-    behaviorReport.passed('draft-isolation');
     await switchWorkspace(roots[2]);
-    assert.equal(await page.locator('#initialize-workspace').isVisible(), true);
-    assert.equal(await page.locator('#board-new').isDisabled(), true);
+    assert.equal(await page.locator('#status').textContent(), '未初始化');
+    assert.equal(await page.locator('#initialize-workspace, #project-open, form').count(), 0);
     assert.deepEqual(await fs.readdir(roots[2]), []);
-    await page.locator('#initialize-workspace').click();
-    await confirm(page, false);
-    assert.deepEqual(await fs.readdir(roots[2]), []);
-    await capture(page, 'new-workspace');
-    await switchWorkspace(roots[0]);
-    assert.equal(await page.locator('#initialize-workspace').isVisible(), false);
-    behaviorReport.passed('explicit-initialization');
-    // A delayed A snapshot cannot replace B or unlock B's unfinished load.
-    delayedSnapshotRoot = roots[0];
-    await page.locator('#refresh').click();
-    const snapshotDeadline = Date.now() + 5000;
-    while (!releaseSnapshot && Date.now() < snapshotDeadline) await page.waitForTimeout(10);
-    assert.equal(typeof releaseSnapshot, 'function', 'Timed out after 5s waiting for delayed governance.snapshot to reach the host bridge');
-    await switchWorkspace(roots[1]);
-    delayedSnapshotRoot = null;
-    releaseSnapshot();
-    await page.waitForTimeout(40);
+    await capture(page, 'uninitialized-readonly'); await switchWorkspace(roots[0]);
+    behaviorReport.passed('readonly-uninitialized');
+    hold = { root: roots[0], channel: 'governance.snapshot' }; release = null;
+    await page.locator('#refresh').click(); await waitHeld(page); await switchWorkspace(roots[1]);
+    hold = null; release(); await page.waitForTimeout(60);
     assert.equal(await page.locator('#workspace').textContent(), roots[1]);
-    assert.equal(await page.locator('#status').textContent(), '待命');
-    await switchWorkspace(roots[0]);
-    behaviorReport.passed('delayed-snapshot');
-    // Readable docs and real backend status projection; this evidence is only a UI fixture.
-    await navigate(page, 'behaviors-section');
-    await page.waitForFunction(() => !document.querySelector('#behavior-refresh').disabled);
-    assert.match(await page.locator('#behavior-docs-status').textContent(), /未配置行为关联/);
-    await navigate(page, 'board-section');
-    await g.write('docs/ui-behavior.md', '# 说明\n\n### UI-001 — 易读说明\n\n切换项目后，旧请求不更新新项目。\n<img src=x onerror=alert(1)>\n');
-    await g.write('src/fixture.ts', 'export const value = 1;\n');
-    await g.write('docs/behavior-bindings.json', JSON.stringify({ version: 1, behaviors: [{ id: 'UI-001', document: 'docs/ui-behavior.md', cases: ['ui-case'], files: ['src/fixture.ts'] }] }));
-    await navigate(page, 'behaviors-section'); await page.locator('#behavior-refresh').click();
-    await page.waitForFunction(() => !document.querySelector('#behavior-refresh').disabled);
-    assert.match(await page.locator('.behavior-prose').textContent(), /旧请求不更新新项目/);
-    assert.equal(await page.locator('.behavior-prose img').count(), 0);
-    assert.equal(await page.locator('.behavior-status').getAttribute('data-result'), 'unverified');
-    await capture(page, 'behavior-docs-unverified');
-    await navigate(page, 'board-section');
-    const { behaviorContract } = require('../plugin/runtime/behaviors');
-    const { makeEvidence } = require('../scripts/check-behaviors.cjs');
-    const contractFixture = await behaviorContract(g);
-    await g.write('.governance/behavior-evidence.json', JSON.stringify(makeEvidence(contractFixture,
-      { version: 1, runId: 'fixture', completed: true, cases: [{ id: 'ui-case', status: 'passed' }] }, 'fixture', true, root, 'a'.repeat(40), true)));
-    await navigate(page, 'behaviors-section'); await page.locator('#behavior-refresh').click();
-    await page.waitForFunction(() => !document.querySelector('#behavior-refresh').disabled);
-    assert.equal(await page.locator('.behavior-status').getAttribute('data-result'), 'passed');
-    assert.equal(await page.locator('.behavior-document details').evaluate(el => el.open), false);
-    await page.locator('.behavior-document summary').click();
-    assert.match(await page.locator('.behavior-document details').textContent(), /工作树快照/);
-    await capture(page, 'behavior-docs-fixture-evidence');
-    await navigate(page, 'board-section');
-    await g.write('src/fixture.ts', 'export const value = 2;\n');
-    await navigate(page, 'behaviors-section'); await page.locator('#behavior-refresh').click();
-    await page.waitForFunction(() => !document.querySelector('#behavior-refresh').disabled);
-    assert.equal(await page.locator('.behavior-status').getAttribute('data-result'), 'stale');
-    await navigate(page, 'board-section');
-    delayedBehaviorRoot = roots[0];
-    await navigate(page, 'behaviors-section'); await page.locator('#behavior-refresh').click();
-    for (let i = 0; !releaseBehavior && i < 100; i++) await page.waitForTimeout(10);
-    assert.equal(typeof releaseBehavior, 'function');
-    await switchWorkspace(roots[1]);
-    delayedBehaviorRoot = null; releaseBehavior();
-    await page.waitForTimeout(30);
-    assert.equal(await page.locator('#behavior-docs-dialog').count(), 0);
-    await navigate(page, 'behaviors-section');
-    await page.waitForFunction(() => !document.querySelector('#behavior-refresh').disabled);
-    assert.match(await page.locator('#behavior-docs-status').textContent(), /未配置行为关联/);
-    assert.equal(await page.locator('.behavior-document').count(), 0);
-    await navigate(page, 'board-section');
-    await switchWorkspace(roots[0]);
-    // Default is object workbench, with no permanently visible item editor or KPI wall.
-    assert.equal(await page.locator('#board-section').isVisible(), true);
-    assert.equal(await page.locator('#workitem-form').isVisible(), false);
-    assert.equal(await page.locator('.metrics').count(), 0);
-    assert.equal(await page.locator('.workspace-nav a').count(), 5);
-    assert.equal(await page.locator('.workspace-nav a[href="#documents-section"]').count(), 1);
-    assert.equal(await page.locator('#project-dialog').evaluate((el) => el.open), false);
-    assert.equal(await page.locator('.board-column').count(), 3);
+    assert.equal(await page.locator('#summary-task').textContent(), await page.evaluate(() => t('noTask')));
+    await switchWorkspace(roots[0]); behaviorReport.passed('delayed-snapshot');
+    assert.equal(await page.locator('.workspace-nav a').count(), 4);
     assert.deepEqual(await page.locator('.board-column').evaluateAll(rows => rows.map(el => el.dataset.stage)), ['todo', 'doing', 'done']);
-    // CSS cascade must keep three/two/one columns, including the old 700px breakpoint.
+    assert.equal(await page.locator('#project-tools, #project-dialog, #board-new, #item-menu, #workitem-form, #workspace-drafts, #launch-dialog, #operations-dialog, #behaviors-section').count(), 0);
+    const first = 'first', second = 'second';
+    await mutate({ action: 'board_create', id: first, title: 'Review workspace navigation', description: 'Check search, object details and keyboard return.', criteria: ['Keyboard return verified'], architectureImpact: 'affects' });
+    await mutate({ action: 'board_create', id: second, title: 'Polish architecture canvas', architectureImpact: 'none' });
+    await refresh(page);
+    const boardRaw = await fs.readFile(path.join(root, '.governance/board.json'), 'utf8');
+    const countBefore = calls.length;
+    await card(page, first).click({ button: 'right' }); await card(page, first).focus(); await page.keyboard.press('Shift+F10');
+    await card(page, first).dispatchEvent('pointerdown', { pointerType: 'touch', button: 0, clientX: 200, clientY: 200 });
+    await page.waitForTimeout(550); await card(page, first).dispatchEvent('pointerup', { pointerType: 'touch' });
+    await card(page, first).dragTo(page.locator('[data-stage="doing"]'));
+    assert.equal(await card(page, first).getAttribute('draggable'), 'false');
+    assert.equal(await page.locator('#item-menu, #confirm-dialog').count(), 0);
+    assert.equal(calls.length, countBefore, 'Context/keyboard/touch/drag cannot invoke project actions');
+    assert.equal(await fs.readFile(path.join(root, '.governance/board.json'), 'utf8'), boardRaw);
+    const denied = await page.evaluate(async () => {
+      const results = [];
+      for (const [channel, payload] of [['governance.mutate', { args: { action: 'init' }, confirmed: true }], ['governance.workitem', { args: { action: 'create' }, confirmed: true }], ['governance.design', { action: 'confirm', confirmed: true }], ['governance.operation', { action: 'launch' }], ['models.list', {}]]) {
+        try { await invoke(channel, payload); results.push(false); } catch { results.push(true); }
+      }
+      return results;
+    });
+    assert.deepEqual(denied, [true, true, true, true, true]); assert.equal(calls.length, countBefore);
+    behaviorReport.passed('readonly-write-denial');
     for (const [width, columns] of [[1280, 3], [1000, 2], [680, 2], [600, 1]]) {
       await page.setViewportSize({ width, height: 1000 });
-      assert.equal(await page.locator('#board-columns').evaluate(el =>
-        getComputedStyle(el).gridTemplateColumns.split(' ').length), columns);
+      assert.equal(await page.locator('#board-columns').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length), columns);
     }
     await page.setViewportSize({ width: 1280, height: 1000 });
-    assert.equal(await page.locator('#board-section #task-section').count(), 0);
-    for (const id of ['architecture', 'git-section', 'board-section']) {
-      await navigate(page, id);
-      assert.equal(await page.locator('#action-panel').isVisible(), true);
-      assert.equal(await page.locator('#board-new').isVisible(), id === 'board-section');
-      assert.equal(await page.locator('#architecture-analyze').isVisible(), id === 'architecture');
-      assert.equal(await page.locator('#show-workflow').isVisible(), id === 'architecture');
-      assert.equal(await page.locator('#documentation-start').isVisible(), false);
-      await page.locator('#project-tools > summary').click();
-      assert.equal(await page.locator('#documentation-start').isVisible(), true);
-      await page.keyboard.press('Escape');
-      assert.equal(await page.locator('#project-tools').evaluate(n => n.open), false);
-      assert.equal(await page.locator('#action-panel #architecture-analyze').count(), 1);
-      assert.equal(await page.locator('#architecture #architecture-analyze').count(), 0);
-      for (const other of ['architecture', 'git-section', 'board-section'])
-        assert.equal(await page.locator('#' + other).isVisible(), other === id);
-    }
-    await page.goBack();
-    await page.waitForFunction(() => !document.querySelector('#git-section').hidden);
-    await page.goForward();
-    await page.waitForFunction(() => !document.querySelector('#board-section').hidden);
-    // Model settings are explicit, isolated and cancelable before any host mutation.
-    const beforeSettings = hostCalls.length;
-    holdModels = true;
-    await projectTool(page, 'analysis-start');
-    await page.waitForFunction(() => document.querySelector('#launch-dialog').open);
-    await page.locator('#launch-session').selectOption('new');
-    await page.waitForFunction(() => document.querySelector('#launch-new-settings').hidden === false);
-    assert.equal(await page.locator('#launch-start').isDisabled(), true);
-    await page.locator('#launch-cancel').click();
-    holdModels = false;
-    releaseModels();
-    await page.waitForTimeout(30);
-    assert.equal(await page.locator('#launch-dialog').evaluate((el) => el.open), false);
-    await projectTool(page, 'analysis-start');
-    await chooseNew(page);
-    await page.waitForFunction(() => !document.querySelector('#launch-model').disabled);
-    await page.locator('#launch-model').selectOption('fixture/reasoning');
-    await page.locator('#launch-thinking').selectOption('high');
-    assert.deepEqual(
-      await page.locator('#launch-thinking option').evaluateAll((rows) => rows.map((o) => o.value)),
-      ['', 'low', 'high']
-    );
-    await capture(page, 'model-settings');
-    await page.locator('#launch-start').focus();
-    await page.keyboard.press('Enter');
-    assert.match(await page.locator('#confirm-description').textContent(), /Reasoning fixture/);
-    await page.locator('#confirm-dialog button[value="cancel"]').click();
-    await settled(page);
-    assert.equal(
-      await page.locator('#launch-dialog').evaluate((el) => el.contains(document.activeElement)),
-      true,
-      'Cancel must return keyboard focus to launch settings'
-    );
-    assert.equal(await page.locator('#launch-model').inputValue(), 'fixture/reasoning');
-    assert.equal(await page.locator('#launch-thinking').inputValue(), 'high');
-    await page.locator('#launch-model').selectOption('fixture/plain');
-    assert.equal(await page.locator('#launch-thinking').isDisabled(), true);
-    assert.equal(await page.locator('#launch-thinking').inputValue(), '');
-    await page.locator('#launch-cancel').click();
-    assert.equal(hostCalls.length, beforeSettings);
-    modelListFailure = true;
-    await projectTool(page, 'analysis-start');
-    await page.locator('#launch-session').selectOption('new');
-    await page.waitForFunction(() => document.querySelector('#launch-status').textContent.includes('Model list fixture unavailable'));
-    assert.equal(await page.locator('#launch-start').isDisabled(), true);
-    assert.match(
-      await page.locator('#launch-status').textContent(),
-      /Model list fixture unavailable/
-    );
-    assert.equal(await page.locator('#launch-model option').count(), 1);
-    await page.locator('#launch-cancel').click();
-    modelListFailure = false;
-    await projectTool(page, 'analysis-start');
-    await chooseNew(page);
-    await page.waitForFunction(() => !document.querySelector('#launch-model').disabled);
-    await page.locator('#launch-model').selectOption('fixture/reasoning');
-    modelMissing = true;
-    await page.locator('#launch-start').click();
-    await confirm(page);
-    assert.match(await page.locator('#launch-status').textContent(), /no longer available/);
-    assert.equal(hostCalls.length, beforeSettings);
-    await page.locator('#launch-cancel').click();
-    modelMissing = false;
-    await require('./history-themes-browser.cjs').palette({ assert, page, sendAppearance, rootColor });
-    // Creation opens a sheet; generated ID is not part of the user's form.
-    async function create(title) {
-      await page.locator('#board-new').click();
-      await page.waitForFunction(() => document.querySelector('#item-sheet').open);
-      const id = await page.locator('#workitem-id').inputValue();
-      assert.match(id, /^item-[a-f0-9]{8}$/);
-      assert.equal(await page.locator('#workitem-id').isVisible(), false);
-      await page.locator('#workitem-title').fill(title);
-      return id;
-    }
-    const first = await create('Review workspace navigation');
-    await page.locator('#workitem-criteria').fill('Keyboard return verified');
-    await page.locator('#workitem-impact').selectOption('affects');
-    await capture(page, 'new-item');
-    await page
-      .locator('#workitem-description')
-      .fill('Check search, object details and keyboard return.');
-    await page.locator('#workitem-save').click();
-    await confirm(page, false);
-    assert.equal((await snapshot()).board.items.length, 0);
-    assert.equal(await page.locator('#workitem-title').inputValue(), 'Review workspace navigation');
-    await page.locator('#workitem-save').click();
-    await confirm(page);
-    assert.equal(await card(page, first).count(), 1);
-    assert.equal((await snapshot()).board.items.find(i => i.id === first).architectureImpact, 'affects');
-    assert.match(await card(page, first).locator('.architecture-tag').textContent(), /影响架构/);
-    const second = await create('Polish architecture canvas');
-    await page.locator('#workitem-impact').selectOption('none');
-    await page.locator('#workitem-save').click();
-    await confirm(page);
-    await card(page, first).dragTo(card(page, first));
-    assert.equal(await page.locator('#confirm-dialog').evaluate((el) => el.open), false);
-    // Details return, generated Agent guidance, literal user data.
-    if (await page.locator('#item-sheet').evaluate((el) => el.open)) await close(page);
-    const boardGeometry = async () =>
-      page.locator('.board-column').evaluateAll((rows) =>
-        rows.map((el) => {
-          const r = el.getBoundingClientRect();
-          return {
-            x: Math.round(r.x + scrollX),
-            y: Math.round(r.y + scrollY),
-            width: Math.round(r.width)
-          };
-        })
-      );
-    const beforeDetails = await boardGeometry();
-    assert.equal(
-      new Set(beforeDetails.map((r) => r.y)).size,
-      1,
-      'Desktop board starts as one row of three columns'
-    );
-    assert.equal(beforeDetails.length, 3);
-    assert.ok(Math.max(...beforeDetails.map(r => r.width)) - Math.min(...beforeDetails.map(r => r.width)) <= 1, 'Wide columns are equal width');
-    await card(page, first).click();
-    const openedGeometry = await boardGeometry();
-    assert.deepEqual(
-      openedGeometry,
-      beforeDetails,
-      'Opening item details must not resize or reflow the three-column board'
-    );
-    assert.equal(
-      await page.locator('#item-sheet').evaluate((el) => el.matches(':modal')),
-      true,
-      'Item details are a real modal dialog'
-    );
-    await page.locator('#item-close').focus();
-    await page.keyboard.press('Tab');
-    assert.equal(
-      await page.locator('#item-sheet').evaluate((el) => el.contains(document.activeElement)),
-      true,
-      'Tab focus remains inside details'
-    );
-    assert.equal(await page.locator('#workitem-form').isVisible(), false);
-    assert.match(await page.locator('#item-description').textContent(), /keyboard return/);
-    await page.locator('#item-guide').click();
-    assert.match(await page.locator('#agent-brief').inputValue(), new RegExp(first));
-    assert.match(await page.locator('#agent-brief').inputValue(), /governance/);
-    assert.match(await page.locator('#agent-brief').inputValue(), /分层文档/);
-    assert.match(await page.locator('#agent-brief').inputValue(), /运行相关检查/);
-    assert.match(await page.locator('#agent-brief').inputValue(), /架构设计可选/);
-    await close(page);
-    assert.equal(await card(page, first).evaluate((el) => el === document.activeElement), true);
-    // Menu keys and focus recovery.
-    await card(page, first).focus();
-    await page.keyboard.press('Shift+F10');
-    assert.equal(await page.locator('#item-menu').isVisible(), true);
-    await capture(page, 'menu');
-    await page.keyboard.press('End');
-    await page.keyboard.press('Escape');
-    assert.equal(await card(page, first).evaluate((el) => el === document.activeElement), true);
-    await card(page, first).focus();
-    await page.keyboard.press('Shift+F10');
-    await page
-      .locator('#item-menu')
-      .getByRole('menuitem', { name: '移至正在进行', exact: true })
-      .focus();
-    await page.keyboard.press('Enter');
-    await confirm(page, false);
-    assert.equal(
-      await card(page, first).evaluate((el) => el === document.activeElement),
-      true,
-      'Canceled keyboard move restores card focus'
-    );
-    await menu(page, first, '编辑');
-    await page.locator('#workitem-title').fill('draft first');
-    assert.equal(await page.locator('#item-previous').isDisabled(), true);
-    await page.locator('#item-next').click();
-    await confirm(page, false);
-    assert.equal(await page.locator('#workitem-title').inputValue(), 'draft first');
-    assert.equal(
-      await page.locator('#item-sheet').evaluate((el) => el.contains(document.activeElement)),
-      true,
-      'Canceled switching returns focus to details'
-    );
-    await page.keyboard.press('Escape');
-    await confirm(page, false);
-    assert.equal(await page.locator('#item-sheet').evaluate((el) => el.open), true);
-    await sendAppearance(page, { base: 'dark' });
-    await sendAppearance(page, { base: 'light' });
-    assert.equal(await page.locator('#workitem-title').inputValue(), 'draft first');
-    await page.locator('#item-next').click();
-    await confirm(page);
-    assert.equal(await page.locator('#item-record-id').textContent(), second);
-    assert.equal(await page.locator('#item-next').isDisabled(), true);
-    await page.locator('#item-previous').click();
-    assert.equal(await page.locator('#item-record-id').textContent(), first);
-    await page.keyboard.press('Escape');
-    await page.waitForFunction(() => !document.querySelector('#item-sheet').open);
-    assert.equal(await card(page, first).evaluate((el) => el === document.activeElement), true);
-    assert.deepEqual(
-      await boardGeometry(),
-      beforeDetails,
-      'Closing details preserves board geometry'
-    );
-    // Project drafts remain independent; the background is inert while item details are open.
-    await page.locator('#project-open').click();
-    await page.locator('#edit-current').fill('progress draft');
-    await page.locator('#project-close').click();
-    await menu(page, first, '移至正在进行');
-    assert.match(await page.locator('#confirm-description').textContent(), /总体进度草稿/);
-    await confirm(page, false);
-    assert.equal(await page.locator('#edit-current').inputValue(), 'progress draft');
-    await refresh(page);
-    await refresh(page);
-    await menu(page, second, '上移');
-    await confirm(page);
-    assert.equal((await snapshot()).board.items[0].id, second);
-    await card(page, first).dragTo(page.locator('.board-column[data-stage="doing"]'));
-    await confirm(page);
-    assert.equal((await snapshot()).board.items.find((i) => i.id === first).stage, 'doing');
-    await page.reload();
-    await settled(page);
-    assert.equal(await page.locator(`[data-stage="doing"] [data-workitem="${first}"]`).count(), 1);
-    await require('./legacy-history-browser.cjs')({ page, first, snapshot, hostCalls, card, close, menu, confirm, capture, mutate, root, g, itemFingerprint, randomUUID, projectTool, settled, refresh, stateBefore });
-    await projectTool(page, 'analysis-start');
-    await confirm(page, false);
-    hostStreaming = true;
-    await projectTool(page, 'analysis-start');
-    await confirm(page);
-    await page.waitForSelector('.operation-run');
-    assert.match(
-      hostCalls.findLast((c) => c.operation === 'agent/prompt').args[0].content,
-      /do not edit project files/
-    );
-    const writesBeforeCancel = operationWrites.length;
-    await page.context().setOffline(true);
-    await page.waitForFunction(() => document.querySelector('[data-operation-write]')?.disabled === true);
-    assert.equal(await page.getByRole('button', { name: '取消任务', exact: true }).isDisabled(), true);
-    assert.equal(await page.getByRole('button', { name: '查看进度 / 结果', exact: true }).first().isEnabled(), true);
-    assert.equal(await page.getByRole('button', { name: '打开 Agent 会话', exact: true }).first().isEnabled(), true);
-    await page.getByRole('button', { name: '查看进度 / 结果', exact: true }).first().click();
-    await settled(page);
-    assert.equal(await page.getByRole('button', { name: '取消任务', exact: true }).isDisabled(), true);
-    await page.context().setOffline(false);
-    await page.waitForFunction(() => document.querySelector('[data-operation-write]')?.disabled === false);
-    await page.getByRole('button', { name: '取消任务', exact: true }).click();
-    await page.context().setOffline(true);
-    await confirm(page);
-    assert.equal(operationWrites.length, writesBeforeCancel, 'Disconnect during cancel confirmation must not invoke the bridge');
-    await page.context().setOffline(false);
-    await page.waitForFunction(() => document.querySelector('[data-operation-write]')?.disabled === false);
-    const callsBeforeCancelDismiss = hostCalls.length;
-    await page.getByRole('button', { name: '取消任务', exact: true }).click();
-    await confirm(page, false);
-    assert.equal(hostCalls.length, callsBeforeCancelDismiss);
-    await page.getByRole('button', { name: '取消任务', exact: true }).click();
-    await confirm(page);
-    assert.equal(hostCalls.at(-1).operation, 'agent/abort');
-    await page.locator('#operations-close').click();
-    const beforeDocs = hostCalls.length;
-    await projectTool(page, 'documentation-start');
-    await chooseNew(page);
-    await page.waitForFunction(() => !document.querySelector('#launch-model').disabled);
-    assert.match(await page.locator('#launch-title').textContent(), /文档维护/);
-    await page.locator('#launch-cancel').click();
-    assert.equal(hostCalls.length, beforeDocs);
-    await projectTool(page, 'documentation-start');
-    await confirm(page, false);
-    assert.equal(hostCalls.length, beforeDocs);
-    await projectTool(page, 'documentation-start');
-    await chooseNew(page);
-    await page.waitForFunction(() => !document.querySelector('#launch-model').disabled);
-    await page.locator('#launch-model').selectOption('fixture/reasoning');
-    await page.locator('#launch-thinking').selectOption('high');
-    await capture(page, 'documentation-settings');
-    await confirm(page);
-    const docsPrompt = hostCalls.findLast(c => c.operation === 'agent/prompt').args[0].content;
-    assert.match(docsPrompt, /currently open project/);
-    assert.match(docsPrompt, /Write only docs\/, notes\//);
-    assert.match(docsPrompt, /Do not upgrade or install plugins/);
-    assert.equal(hostCalls.findLast(c => c.operation === 'session/create').args[0].modelId, 'reasoning');
-    assert.match(await page.locator('.operation-run').first().textContent(), /文档维护/);
-    await capture(page, 'documentation-progress');
-    await page.getByRole('button', { name: '取消任务', exact: true }).click();
-    await confirm(page);
-    assert.equal(hostCalls.at(-1).operation, 'agent/abort');
-    await page.locator('#operations-close').click();
-    // Completed runtime, stale local running record: starting the next operation must reconcile it.
-    hostStreaming = true;
-    await projectTool(page, 'analysis-start'); await confirm(page);
-    const staleRun = JSON.parse(await fs.readFile(path.join(root, '.governance/operations.json'), 'utf8')).runs.at(-1);
-    await page.locator('#operations-close').click(); hostStreaming = false;
-    const promptsBeforeAutoSync = hostCalls.filter(c => c.operation === 'agent/prompt').length;
-    await projectTool(page, 'documentation-start'); await confirm(page);
-    let autoSynced = JSON.parse(await fs.readFile(path.join(root, '.governance/operations.json'), 'utf8'));
-    assert.equal(autoSynced.runs.find(r => r.id === staleRun.id).phase, 'completed');
-    assert.equal(hostCalls.filter(c => c.operation === 'agent/prompt').length, promptsBeforeAutoSync + 1, 'Only the new prompt is sent');
-    // Opening the progress list also reconciles the next finished run without an Inspect click.
-    await page.locator('#operations-close').click(); await projectTool(page, 'operations-open');
-    await page.waitForFunction(() => !document.querySelector('#operation-runs')?.textContent.includes('运行中'));
-    autoSynced = JSON.parse(await fs.readFile(path.join(root, '.governance/operations.json'), 'utf8'));
-    assert.equal(autoSynced.runs.at(-1).phase, 'completed');
-    await capture(page, 'operations-auto-sync');
-    await page.locator('#operations-close').click(); hostStreaming = true;
-    await navigate(page, 'architecture');
-    await page.locator('#architecture-analyze').click();
-    await chooseNew(page);
-    await page.waitForFunction(() => !document.querySelector('#launch-model').disabled);
-    await page.locator('#launch-model').selectOption('fixture/reasoning');
-    await page.locator('#launch-thinking').selectOption('high');
-    await confirm(page);
-    const architecturePrompt = hostCalls.findLast((c) => c.operation === 'agent/prompt').args[0].content;
-    assert.match(architecturePrompt, /Load Skill io\.github\.tonkic\.agent-governance\/architecture-copilot/);
-    assert.match(architecturePrompt, /current-state analysis mode/);
-    assert.match(architecturePrompt, /If the Skill cannot be loaded, stop and report/);
-    assert.match(architecturePrompt, /architecture_sources/);
-    assert.doesNotMatch(architecturePrompt, /Reanalyze the core project architecture|architecture_design_save/);
-    const createdWithModel = hostCalls.findLast((c) => c.operation === 'session/create').args[0];
-    assert.equal(createdWithModel.providerId, 'fixture');
-    assert.equal(createdWithModel.modelId, 'reasoning');
-    assert.equal(createdWithModel.thinkingLevel, 'high');
-    await page.getByRole('button', { name: '取消任务', exact: true }).click();
-    await confirm(page);
-    await page.locator('#operations-close').click();
-    await navigate(page, 'board-section');
-    assert.equal(await fs.readFile(path.join(root, 'STATE.json'), 'utf8'), stateBefore);
-    await page.locator('#project-open').click();
-    await capture(page, 'project-actions');
-    await page.locator('#project-close').click();
-    const promptsBeforeRecovery = hostCalls.filter((c) => c.operation === 'agent/prompt').length;
-    failCreation = true;
-    await projectTool(page, 'analysis-start');
-    await confirm(page);
-    assert.match(await page.locator('#notice').textContent(), /durable session ID/);
-    await page.locator('#launch-cancel').click();
-    await projectTool(page, 'operations-open');
-    await page.waitForSelector('.operation-run');
-    const writesBeforeResolve = operationWrites.length;
-    await page.context().setOffline(true);
-    await page.waitForFunction(() => document.querySelector('[data-operation-write]')?.disabled === true);
-    assert.equal(await page.getByRole('button', { name: '已核对 — 解除操作阻塞', exact: true }).isDisabled(), true);
-    await page.context().setOffline(false);
-    await page.waitForFunction(() => document.querySelector('[data-operation-write]')?.disabled === false);
-    await page.getByRole('button', { name: '已核对 — 解除操作阻塞', exact: true }).click();
-    await page.context().setOffline(true);
-    await confirm(page);
-    assert.equal(operationWrites.length, writesBeforeResolve, 'Disconnect during resolve confirmation must not invoke the bridge');
-    await page.context().setOffline(false);
-    await page.waitForFunction(() => document.querySelector('[data-operation-write]')?.disabled === false);
-    await page.getByRole('button', { name: '已核对 — 解除操作阻塞', exact: true }).click();
-    await confirm(page, false);
-    assert.equal(
-      hostCalls.filter((c) => c.operation === 'agent/prompt').length,
-      promptsBeforeRecovery
-    );
-    await capture(page, 'creation-recovery');
-    await page.getByRole('button', { name: '已核对 — 解除操作阻塞', exact: true }).click();
-    await confirm(page);
-    assert.equal(
-      hostCalls.filter((c) => c.operation === 'agent/prompt').length,
-      promptsBeforeRecovery
-    );
-    await page.locator('#operations-close').click();
-    failCreation = false;
-    // Search locator, filtered drag safety, empty-state recovery.
-    await page.keyboard.press('/');
-    assert.equal(
-      await page.locator('#board-search').evaluate((el) => el === document.activeElement),
-      true
-    );
-    await page.locator('#board-search').fill('canvas');
-    assert.equal(await page.locator('[data-workitem]').count(), 1);
-    assert.equal(await card(page, second).getAttribute('draggable'), 'false');
-    await page.locator('#board-search').fill('no-such-object');
-    assert.equal(await page.locator('#board-empty').isVisible(), true);
-    await capture(page, 'no-results');
+    const geometry = () => page.locator('.board-column').evaluateAll(rows => rows.map(el => { const r = el.getBoundingClientRect(); return [Math.round(r.x + scrollX), Math.round(r.y + scrollY), Math.round(r.width)]; }));
+    const beforeDetails = await geometry();
+    await card(page, first).click(); assert.deepEqual(await geometry(), beforeDetails);
+    assert.equal(await page.locator('#item-sheet').evaluate(el => el.matches(':modal')), true);
+    await page.locator('#item-close').focus(); await page.keyboard.press('Tab');
+    assert.equal(await page.locator('#item-sheet').evaluate(el => el.contains(document.activeElement)), true);
+    assert.equal(await page.locator('#item-sheet input, #item-sheet textarea, #item-edit').count(), 0);
+    await page.locator('#item-next').click(); assert.equal(await page.locator('#item-record-id').textContent(), second);
+    await page.locator('#item-previous').click(); await page.keyboard.press('Escape');
+    assert.equal(await card(page, first).evaluate(el => el === document.activeElement), true); assert.deepEqual(await geometry(), beforeDetails);
+    await card(page, first).click(); await switchWorkspace(roots[1]);
+    assert.equal(await page.locator('#item-sheet').evaluate(el => el.open), false);
+    assert.equal(await page.locator('#workitem-form, #workspace-drafts').count(), 0);
+    await switchWorkspace(roots[0]); behaviorReport.passed('readonly-detail-isolation');
+    hold = { root: roots[0], channel: 'governance.project' }; release = null;
+    await page.locator('#refresh').click(); await waitHeld(page); await switchWorkspace(roots[1]);
+    await page.locator('#board-search').focus(); const noticeBefore = await page.locator('#notice').textContent();
+    hold = null; release(); await page.waitForTimeout(80);
+    assert.equal(await page.locator('#notice').textContent(), noticeBefore);
+    assert.equal(await page.locator('#board-search').evaluate(el => el === document.activeElement), true);
+    assert.equal(await page.locator('[data-workitem]').count(), 0);
+    await switchWorkspace(roots[0]); behaviorReport.passed('delayed-project-read');
+    await mutate({ action: 'board_update', id: second, title: 'External architecture canvas' }); await refresh(page);
+    assert.equal(await card(page, second).locator('h4').textContent(), 'External architecture canvas');
+    behaviorReport.passed('external-update-reading');
+    await page.keyboard.press('/'); assert.equal(await page.locator('#board-search').evaluate(el => el === document.activeElement), true);
+    await page.locator('#board-search').fill('canvas'); assert.equal(await page.locator('[data-workitem]').count(), 1);
+    await page.locator('#board-search').fill('no-such-object'); assert.equal(await page.locator('#board-empty').isVisible(), true); await capture(page, 'no-results');
     await page.locator('#search-clear').click();
-    assert.equal(await page.locator('[data-workitem]').count(), 3);
-    // Synthetic touch PointerEvents exercise the long-press handler; not physical-device acceptance.
-    await card(page, first).dispatchEvent('pointerdown', {
-      pointerType: 'touch',
-      button: 0,
-      clientX: 200,
-      clientY: 200
-    });
-    await page.waitForTimeout(550);
-    assert.equal(await page.locator('#item-menu').isVisible(), true);
-    await card(page, first).dispatchEvent('pointerup', { pointerType: 'touch' });
-    await page.keyboard.press('Escape');
-    await card(page, first).dispatchEvent('pointerdown', {
-      pointerType: 'touch',
-      button: 0,
-      clientX: 200,
-      clientY: 200
-    });
-    await card(page, first).dispatchEvent('pointermove', {
-      pointerType: 'touch',
-      clientX: 225,
-      clientY: 210
-    });
-    await page.waitForTimeout(550);
-    assert.equal(await page.locator('#item-menu').isVisible(), false);
-    await card(page, first).dispatchEvent('pointerdown', {
-      pointerType: 'touch',
-      button: 0,
-      clientX: 200,
-      clientY: 200
-    });
-    await page.waitForTimeout(2200);
-    await card(page, first).dispatchEvent('pointerup', { pointerType: 'touch' });
-    await card(page, first).dispatchEvent('click');
-    assert.equal(
-      await page.locator('#item-menu').isVisible(),
-      true,
-      'Long hold release must preserve menu'
-    );
-    assert.equal(await page.locator('#item-sheet').evaluate((el) => el.open), false);
-    await page.keyboard.press('Escape');
-    // Offline pauses writes, preserves read access, and never replays an action on reconnect.
-    await page.context().setOffline(true);
-    await page.waitForFunction(() => document.querySelector('#board-new').disabled);
-    assert.match(await page.locator('#notice').textContent(), /离线/);
-    await capture(page, 'offline');
-    await card(page, first).click();
-    assert.equal(await page.locator('#item-sheet').evaluate((el) => el.open), true);
-    await close(page);
-    await page.context().setOffline(false);
+    await page.context().setOffline(true); await page.waitForFunction(() => document.querySelector('#refresh').disabled);
+    await card(page, first).click(); await close(page); await capture(page, 'offline');
+    const offlineCalls = calls.length; await page.context().setOffline(false); await page.waitForTimeout(80); assert.equal(calls.length, offlineCalls, 'No automatic replay');
     await refresh(page);
-    assert.equal(await page.locator('#board-new').isEnabled(), true);
-    // Disconnecting during confirmation must not invoke either local write path.
-    const offlineBoard = JSON.stringify((await snapshot()).board);
-    await menu(page, second, '移至正在进行');
-    await page.context().setOffline(true);
-    await confirm(page);
-    assert.equal(JSON.stringify((await snapshot()).board), offlineBoard);
-    await page.context().setOffline(false);
-    await refresh(page);
-    await menu(page, second, '编辑');
-    await page.locator('#workitem-title').fill('offline draft');
-    await page.locator('#workitem-save').click();
-    await page.context().setOffline(true);
-    await confirm(page);
-    assert.equal(JSON.stringify((await snapshot()).board), offlineBoard);
-    assert.equal(await page.locator('#workitem-title').inputValue(), 'offline draft');
-    await page.context().setOffline(false);
-    await close(page);
-    await page.locator('#project-open').click();
-    await page.locator('#edit-current').fill('offline progress');
-    await page.getByRole('button', { name: '保存进度', exact: true }).click();
-    await page.context().setOffline(true);
-    await confirm(page);
-    assert.equal(await fs.readFile(path.join(root, 'STATE.json'), 'utf8'), stateBefore);
-    await page.context().setOffline(false);
-    assert.equal(await fs.readFile(path.join(root, 'STATE.json'), 'utf8'), stateBefore);
-    await page.locator('#project-close').click();
-    await refresh(page);
-    await refresh(page);
-    await navigate(page, 'architecture');
-    await page.locator('#graph-viewport').focus();
-    await page.keyboard.press('/');
-    await page.waitForFunction(() => !document.querySelector('#board-section').hidden);
-    assert.equal(
-      await page.locator('#board-search').evaluate((el) => el === document.activeElement),
-      true
-    );
-    // Stale and workspace-switched writes rejected by real backend.
-    await mutate({ action: 'board_update', id: second, title: 'External change' });
-    await menu(page, second, '移至正在进行');
-    await confirm(page);
-    assert.match(await page.locator('#notice').textContent(), /stale/);
-    await refresh(page);
-    root = roots[1];
-    await menu(page, second, '移至正在进行');
-    await confirm(page);
-    assert.match(await page.locator('#notice').textContent(), /stale|switched/);
-    assert.equal(
-      (await new Governance(root).run({ action: 'project_snapshot' })).board.items.length,
-      0
-    );
-    root = roots[0];
-    await refresh(page);
-    // Independent project/snapshot read failures are visible and recover without overwriting data.
-    failProject = true;
-    await refresh(page);
-    assert.match(await page.locator('#board-status').textContent(), /Fixture read failure/);
-    assert.match(await page.locator('#notice.error').textContent(), /Fixture read failure/);
-    await capture(page, 'read-error');
-    assert.equal(await page.locator('#board-new').isDisabled(), true);
-    failProject = false;
-    await refresh(page);
-    failSnapshot = true;
-    await refresh(page);
-    assert.match(await page.locator('#notice').textContent(), /Fixture read failure/);
-    assert.equal(await page.locator('#board-new').isDisabled(), true);
-    failSnapshot = false;
-    await refresh(page);
-    // Source-backed graph, direct relations, camera/keyboard and stale-source warning.
-    await fs.writeFile(path.join(root, 'app.ts'), "import { value } from './store';\n");
-    await fs.writeFile(path.join(root, 'store.ts'), 'export const value = 1;\n');
-    const sources = await g.run({ action: 'architecture_sources', files: ['app.ts', 'store.ts'] });
-    await mutate({
-      action: 'architecture_set',
-      graph: {
-        title: 'Workspace dependencies',
-        source: 'Inspected fixture imports',
-        nodes: [
-          { id: 'app', title: 'Application', description: 'Imports store', files: ['app.ts'] },
-          { id: 'store', title: 'Store', description: 'Exports value', files: ['store.ts'] }
-        ],
-        edges: [{ from: 'app', to: 'store', label: 'imports' }],
-        fingerprints: sources.fingerprints
-      }
-    });
-    await refresh(page);
-    await navigate(page, 'architecture');
-    assert.equal(await page.locator('.architecture-node').count(), 2);
-    await page.locator('[data-module="app"]').click();
-    await page.locator('#module-relations button').click();
-    assert.equal(await page.locator('#module-title').textContent(), 'Store');
-    await page.locator('#graph-viewport').focus();
-    await page.keyboard.press('ArrowRight');
-    await page.keyboard.press('0');
-    await page.locator('#show-workflow').click();
-    assert.equal(await page.locator('.architecture-node').count(), 4);
-    assert.equal(await page.locator('#graph-check-state').textContent(), '', 'Workflow must not show architecture source-check status');
-    await page.locator('#module-jump').click();
-    await page.waitForFunction(
-      () =>
-        document.querySelector('#project-dialog').open &&
-        !document.querySelector('#board-section').hidden
-    );
-    assert.equal(await page.locator('#board-section').isVisible(), true);
-    await page.locator('#project-close').click();
-    await navigate(page, 'architecture');
-    await page.locator('#show-architecture').click();
-    await fs.appendFile(path.join(root, 'app.ts'), '// change\n');
-    await refresh(page);
-    assert.equal(await page.locator('#graph-warning').isVisible(), false);
-    assert.match(await page.locator('#graph-check-state').textContent(), /手动模式/);
-    await page.locator('#architecture-check').click();
-    await settled(page);
-    assert.equal(await page.locator('#graph-warning').isVisible(), true);
-    const checkedState = await page.locator('#graph-check-state').textContent();
-    assert.ok(checkedState.length > 0);
-    await page.locator('#show-workflow').click();
-    assert.equal(await page.locator('#graph-check-state').textContent(), '');
-    assert.equal(await page.locator('#graph-warning').isVisible(), false);
-    await page.locator('#show-architecture').click();
-    assert.equal(await page.locator('#graph-check-state').textContent(), checkedState);
-    holdGit = true;
-    try {
-      await page.locator('#refresh').click();
-      // The managed Git query is gone; hold the still-required project snapshot instead.
-      for (let tries = 0; !releaseGit && tries < 200; tries++) await page.waitForTimeout(10);
-      assert.equal(typeof releaseGit, 'function', 'Refresh reached delayed project snapshot');
-      assert.equal(await page.locator('#board-new').isDisabled(), true);
-      assert.equal(await page.locator('[data-workitem] button:enabled').count(), 0);
-    } finally {
-      holdGit = false;
-      releaseGit?.();
+    for (const key of ['project', 'snapshot']) {
+      if (key === 'project') failProject = true; else failSnapshot = true;
+      await refresh(page); assert.match(await page.locator('#notice.error').textContent(), /Fixture read failure/);
+      failProject = failSnapshot = false; await refresh(page);
     }
-    await settled(page);
-    assert.equal(await page.locator('.architecture-node').count(), 2);
+    await require('./history-themes-browser.cjs').palette({ assert, page, sendAppearance, rootColor });
+    await fs.writeFile(path.join(root, 'app.ts'), "import { value } from './store';\n"); await fs.writeFile(path.join(root, 'store.ts'), 'export const value = 1;\n');
+    const sources = await g.run({ action: 'architecture_sources', files: ['app.ts', 'store.ts'] });
+    await mutate({ action: 'architecture_set', graph: { title: 'Workspace dependencies', source: 'Inspected fixture imports', nodes: [{ id: 'app', title: 'Application', description: 'Imports store', files: ['app.ts'] }, { id: 'store', title: 'Store', description: 'Exports value', files: ['store.ts'] }], edges: [{ from: 'app', to: 'store', label: 'imports' }], fingerprints: sources.fingerprints } });
+    await refresh(page); await navigate(page, 'architecture'); assert.equal(await page.locator('.architecture-node').count(), 2);
+    await page.locator('[data-module="app"]').click(); await page.locator('#module-relations button').click(); assert.equal(await page.locator('#module-title').textContent(), 'Store');
+    await page.locator('#graph-viewport').focus(); await page.keyboard.press('ArrowRight'); await page.keyboard.press('0');
+    await page.locator('#show-workflow').click(); assert.equal(await page.locator('.architecture-node').count(), 4); assert.equal(await page.locator('#graph-check-state').textContent(), '');
+    await page.locator('#module-jump').click(); await page.waitForFunction(() => !document.querySelector('#board-section').hidden);
+    await navigate(page, 'architecture'); await page.locator('#show-architecture').click(); await fs.appendFile(path.join(root, 'app.ts'), '// change\n'); await refresh(page);
+    assert.equal(await page.locator('#graph-warning').isVisible(), false); await page.locator('#architecture-check').click(); await settled(page); assert.equal(await page.locator('#graph-warning').isVisible(), true);
+    const checked = await page.locator('#graph-check-state').textContent(); await page.locator('#show-workflow').click(); assert.equal(await page.locator('#graph-check-state').textContent(), ''); await page.locator('#show-architecture').click(); assert.equal(await page.locator('#graph-check-state').textContent(), checked);
     await navigate(page, 'board-section');
-    const english = await require('./history-themes-browser.cjs').seedWorkbench({ mutate, refresh, page, makePage, confirm, assert, card });
-    shots += await require('./history-themes-browser.cjs').workbench({ assert, page, english, refresh, navigate, chooseNew, card, first, close, path, output, browser, url, sendAppearance });
-    // Saving in A must not update B's notification/focus after a delayed A reload.
-    const raceId = 'save-race';
-    await mutate({ action: 'board_create', id: raceId, title: 'A save race' });
-    const bg = new Governance(roots[1]);
-    await bg.run({ action: 'board_create', id: raceId, title: 'B save race', expectedRevision: (await bg.run({ action: 'project_snapshot' })).revision });
-    const savePanel = await makePage();
-    await card(savePanel, raceId).click();
-    await savePanel.locator('#item-edit').click();
-    await savePanel.locator('#workitem-title').fill('A updated race');
-    delayedGitRoot = roots[0];
-    await savePanel.locator('#workitem-save').click();
-    await savePanel.locator('#confirm-dialog button[value="confirm"]').click();
-    for (let tries = 0; !releaseDelayedGit && tries < 200; tries++) await savePanel.waitForTimeout(10);
-    assert.equal(typeof releaseDelayedGit, 'function', 'A save reload reached delayed project snapshot');
-    root = roots[1];
-    await savePanel.evaluate(path => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root);
-    await settled(savePanel);
-    await savePanel.locator('#board-search').focus();
-    const noticeBeforeOldSave = await savePanel.locator('#notice').textContent();
-    delayedGitRoot = null;
-    releaseDelayedGit();
-    await savePanel.waitForTimeout(80);
-    assert.equal(await savePanel.locator('#notice').textContent(), noticeBeforeOldSave, 'Old save cannot replace B notification');
-    assert.equal(await savePanel.locator('#summary-workspace-path').textContent(), roots[1]);
-    assert.equal(await savePanel.locator('#board-search').evaluate(el => el === document.activeElement), true, 'Old save cannot focus B card with same ID');
-    assert.equal((await bg.run({ action: 'project_snapshot' })).board.items.find(i => i.id === raceId).title, 'B save race');
-    root = roots[0];
-    await savePanel.close();
-    behaviorReport.passed('delayed-save');
-    // A continuation created in A must not reopen a dialog after B starts loading.
-    const racePanel = await makePage();
-    root = roots[2];
-    await racePanel.evaluate((path) => {
-      document.querySelector('#board-new').click();
-      window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } }));
-    }, root);
-    await settled(racePanel);
-    assert.equal(await racePanel.locator('#initialize-workspace').isVisible(), true);
-    assert.equal(await racePanel.locator('#item-sheet').evaluate(el => el.open), false,
-      'Old new-item continuation must not reopen its dialog in an uninitialized workspace');
-    root = roots[0];
-    await racePanel.close();
-    behaviorReport.passed('new-item-continuation');
-    // Real design backend + visual canvas; no actual model invocation or host acceptance.
-    const designPage = await makePage();
-    await navigate(designPage, 'architecture');
-    await designPage.locator('#show-design').click();
+    await require('./legacy-history-browser.cjs')({ page, first, snapshot, card, close, capture, mutate, root, g, itemFingerprint, randomUUID, refresh });
+    const english = await require('./history-themes-browser.cjs').seedWorkbench({ mutate, refresh, page, makePage, assert, card });
+    shots += await require('./history-themes-browser.cjs').workbench({ assert, page, english, refresh, navigate, card, first, close, path, output, browser, url, sendAppearance });
     const designSnapshot = () => g.run({ action: 'architecture_design_snapshot' });
-    const saveProposal = async proposal => { const s = await designSnapshot(); await g.run({ action: 'architecture_design_save', proposal, expectedDraft: s.draft.draftId, expectedRevision: s.revision }); };
-    assert.equal((await designSnapshot()).baseline, null);
-    const callsBeforeDraft = hostCalls.length;
-    await designPage.locator('#design-begin').click();
-    await designPage.locator('#design-reason').fill('Local-first project governance; no server or diagram editor dependency.');
-    await designPage.locator('#design-begin-submit').click();
-    await confirm(designPage, false);
-    assert.equal((await designSnapshot()).draft, null, 'Canceled creation writes nothing');
-    await designPage.locator('#design-begin-submit').click();
-    await confirm(designPage);
-    assert.equal(hostCalls.length, callsBeforeDraft, 'Creating draft must not start Agent');
-    await designPage.locator('#design-start').click();
-    assert.match(await designPage.locator('#launch-title').textContent(), /架构共创/);
-    await designPage.locator('#launch-cancel').click();
-    assert.equal(hostCalls.length, callsBeforeDraft, 'Canceled launch creates no session');
-    const designProposal = {
-      title: '本地项目治理设计',
-      document: '## 用途\n人确认意图，Agent执行获批范围。\n## 决定\n复用本地文件与画板，不引入服务。代价：不提供多机实时协作。\n## 边界\n设计不是源码现状。<img src=x onerror="window.designInjected=true">',
-      nodes: [{ id: 'intent', title: '项目意图', description: 'STATE保存获批范围；设计说明理由和取舍。', files: [] }, { id: 'canvas', title: '可视化画板', description: '查看职责和关系，不自动重画设计基线。', files: [] }],
-      edges: [{ from: 'canvas', to: 'intent', label: '展示计划职责' }]
-    };
-    // Keep stale JSON but author the opposite arrow in ASCII; the real DOM must follow ASCII.
-    const { architectureAscii } = require('../plugin/runtime/design');
-    const authored = { ...designProposal, edges: [{ from: 'intent', to: 'canvas', label: '展示计划职责' }] };
-    designProposal.document += '\n\n<!-- governance:architecture-ascii:start -->\n```text\n' + architectureAscii(authored) + '\n```\n<!-- governance:architecture-ascii:end -->';
-    await saveProposal(designProposal);
-    await refresh(designPage);
-    assert.equal(await designPage.locator('.architecture-node').count(), 2);
-    assert.deepEqual(await designPage.locator('.graph-edge').evaluateAll(elements => elements.map(el => [el.dataset.from, el.dataset.to, el.querySelector('text').textContent])), [['intent', 'canvas', '展示计划职责']]);
-    assert.equal(await designPage.locator('.graph-edge path').getAttribute('marker-end'), 'url(#edge-arrow)');
-    assert.match(await designPage.locator('[data-module="intent"] span').textContent(), /intent/);
+    const begin = async reason => g.run({ action: 'architecture_design_begin', reason, expectedRevision: (await designSnapshot()).revision });
+    const save = async proposal => { const s = await designSnapshot(); await g.run({ action: 'architecture_design_save', proposal, expectedDraft: s.draft.draftId, expectedRevision: s.revision }); };
+    await begin('Explicit host fixture draft');
+    const proposal = { title: '本地项目治理设计', document: 'Intent only <img src=x onerror="window.designInjected=true">', nodes: [{ id: 'intent', title: '项目意图', description: 'Approved scope', files: [] }, { id: 'canvas', title: '可视化画板', description: 'Readonly design', files: [] }], edges: [{ from: 'canvas', to: 'intent', label: 'stale JSON' }] };
+    proposal.document += '\n\n<!-- governance:architecture-ascii:start -->\n```text\n' + architectureAscii({ ...proposal, edges: [{ from: 'intent', to: 'canvas', label: '展示职责' }] }) + '\n```\n<!-- governance:architecture-ascii:end -->';
+    await save(proposal); await refresh(page); await navigate(page, 'architecture'); await page.locator('#show-design').click();
+    assert.equal((await designSnapshot()).baseline, null); assert.equal(await page.locator('#design-review, #design-begin, #design-confirm-dialog').count(), 0);
+    assert.match(await page.locator('#design-document').textContent(), /<img/); assert.equal(await page.locator('#design-document img').count(), 0); assert.equal(await page.evaluate(() => window.designInjected), undefined);
+    behaviorReport.passed('design-readonly-draft');
+    assert.deepEqual(await page.locator('.graph-edge').evaluateAll(rows => rows.map(el => [el.dataset.from, el.dataset.to, el.querySelector('text').textContent])), [['intent', 'canvas', '展示职责']]);
+    assert.equal(await page.locator('.graph-edge path').getAttribute('marker-end'), 'url(#edge-arrow)');
     const savedAscii = (await designSnapshot()).draft.ascii;
-    assert.ok((await designSnapshot()).draft.proposal.document.includes('```text\n' + savedAscii));
-    await designPage.locator('#design-ascii-section > summary').click();
-    assert.equal(await designPage.locator('#design-ascii').textContent(), savedAscii);
-    for (const n of designProposal.nodes) assert.ok(savedAscii.includes(`[${n.id}]`));
-    assert.ok(savedAscii.includes('[intent] -- 展示计划职责 --> [canvas]'));
-    assert.equal(await designPage.locator('#design-ascii img').count(), 0);
-    assert.equal(await designPage.locator('#design-ascii').evaluate(el => getComputedStyle(el).whiteSpace), 'pre');
-    await designPage.locator('#show-workflow').click();
-    assert.equal(await designPage.locator('#design-ascii-section').isVisible(), false);
-    await designPage.locator('#show-design').click();
-    assert.equal(await designPage.locator('#design-ascii').textContent(), savedAscii);
-    await capture(designPage, 'ascii-design-draft');
-    await designPage.locator('.design-document-details summary').click();
-    assert.match(await designPage.locator('#design-document').textContent(), /<img/);
-    assert.equal(await designPage.locator('#design-document img').count(), 0);
-    assert.equal(await designPage.evaluate(() => window.designInjected), undefined);
-    await designPage.locator('#design-review').click();
-    await designPage.locator('#design-reviewer').fill('Human browser fixture');
-    await designPage.locator('#design-conclusion').fill('已审阅方案、图和范围；确认不代表代码实施授权。');
-    await designPage.locator('#design-reviewed').check();
-    await designPage.screenshot({ path: path.join(output, 'state-design-confirm.png'), fullPage: false }); shots++;
-    await designPage.locator('#design-confirm-submit').click();
-    await confirm(designPage, false);
-    assert.equal((await designSnapshot()).baseline, null);
-    await designPage.locator('#design-confirm-submit').click();
-    await confirm(designPage);
-    const firstBaseline = (await designSnapshot()).baseline;
-    assert.equal(firstBaseline.number, 1);
-    assert.equal(await designPage.locator('#design-version').inputValue(), 'baseline');
-    behaviorReport.passed('design-first-baseline');
-    const storedDesign = await fs.readFile(path.join(roots[0], '.governance/architecture-design.json'), 'utf8');
-    await refresh(designPage);
-    await mutate({ action: 'board_update', id: raceId, title: 'Ordinary internal update' });
-    await refresh(designPage);
-    assert.equal(await fs.readFile(path.join(roots[0], '.governance/architecture-design.json'), 'utf8'), storedDesign);
-    await designPage.locator('#design-begin').click();
-    await designPage.locator('#design-reason').fill('职责调整：证据模块独立，不改变项目授权。');
-    await designPage.locator('#design-begin-submit').click();
-    await confirm(designPage);
-    assert.deepEqual((await designSnapshot()).baseline, firstBaseline);
-    const revised = JSON.parse(JSON.stringify(designProposal));
-    revised.document = '## 用途\n保留稳定设计，显式修订关键职责。\n## 决定\n证据职责独立，代价是增加一个模块；不增加网络服务。';
-    revised.nodes.push({ id: 'evidence', title: '验证证据', description: '只报告实际场景结果，不自动批准或认证身份。', files: [] });
-    revised.edges.push({ from: 'canvas', to: 'evidence', label: '展示实际结果' });
-    await saveProposal(revised); await refresh(designPage);
-    assert.equal(await designPage.locator('#design-version').inputValue(), 'baseline', 'Revision cannot silently replace baseline canvas');
-    assert.equal(await designPage.locator('.architecture-node').count(), 2);
-    await designPage.locator('#design-version').selectOption('draft');
-    assert.equal(await designPage.locator('.architecture-node').count(), 3);
-    assert.ok((await designPage.locator('#design-ascii').textContent()).includes('[canvas] -- 展示实际结果 --> [evidence]'));
-    assert.equal((await designPage.locator('#design-document').textContent()).includes('governance:architecture-ascii:'), false);
-    await designPage.locator('#design-diff-details > summary').click();
-    assert.match(await designPage.locator('#design-diff').textContent(), /evidence/);
-    await capture(designPage, 'design-revision');
-    await designPage.locator('#design-review').click();
-    await designPage.locator('#design-reviewer').fill('Human browser fixture');
-    await designPage.locator('#design-conclusion').fill('明确确认第二版，保留第一版。');
-    await designPage.locator('#design-reviewed').check();
-    await designPage.locator('#design-confirm-submit').click(); await confirm(designPage);
-    assert.equal((await designSnapshot()).baseline.number, 2);
-    assert.deepEqual((await designSnapshot()).history[0], firstBaseline);
-    await designPage.locator('#design-version').selectOption('1');
-    assert.equal(await designPage.locator('.architecture-node').count(), 2);
-    assert.equal(await designPage.locator('#design-ascii').textContent(), firstBaseline.ascii);
-    assert.equal(await designPage.locator('#design-review').isDisabled(), true);
-    await designPage.locator('#design-version').selectOption('baseline');
+    await page.locator('#design-ascii-section > summary').click(); assert.equal(await page.locator('#design-ascii').textContent(), savedAscii);
+    assert.equal(await page.locator('#design-ascii').evaluate(el => getComputedStyle(el).whiteSpace), 'pre');
+    await page.locator('#show-workflow').click(); assert.equal(await page.locator('#design-ascii-section').isVisible(), false); await page.locator('#show-design').click(); assert.equal(await page.locator('#design-ascii').textContent(), savedAscii);
+    // Seed historical confirmation through the original low-level seam, never through browser/Agent APIs.
+    const s = await designSnapshot(); await panelInvoke(roots[0], 'governance.design', { action: 'confirm', revision: s.revision, expectedProposal: s.draft.proposalFingerprint, reviewer: 'Historical fixture', conclusion: 'Fixture only; not user review', confirmed: true });
+    const baseline = (await designSnapshot()).baseline;
+    await begin('Explicit host revision'); await save({ title: 'Revision fixture', document: 'Revision intent only', nodes: [...proposal.nodes, { id: 'evidence', title: '证据', description: 'Actual results only', files: [] }], edges: [{ from: 'canvas', to: 'evidence', label: 'shows' }] });
+    await refresh(page); assert.equal(await page.locator('#design-version').inputValue(), 'baseline'); assert.equal(await page.locator('.architecture-node').count(), 2);
+    await page.locator('#design-version').selectOption('draft'); assert.equal(await page.locator('.architecture-node').count(), 3); assert.match(await page.locator('#design-diff').textContent(), /evidence/);
+    const designRaw = await fs.readFile(path.join(root, '.governance/architecture-design.json'), 'utf8');
+    await mutate({ action: 'board_update', id: second, title: 'Ordinary external update' }); await refresh(page);
+    assert.equal(await fs.readFile(path.join(root, '.governance/architecture-design.json'), 'utf8'), designRaw); assert.deepEqual((await designSnapshot()).baseline, baseline);
+    behaviorReport.passed('design-stable-reading');
     for (const width of [390, 768, 1280]) for (const theme of ['light', 'dark']) {
-      await designPage.setViewportSize({ width, height: 1000 }); await sendAppearance(designPage, { base: theme });
-      assert.equal(await designPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'Design must fit narrow screens');
-      await capture(designPage, `design-${width}-${theme}`);
+      await page.setViewportSize({ width, height: 1000 }); await sendAppearance(page, { base: theme }); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)); await capture(page, `design-${width}-${theme}`);
     }
     behaviorReport.passed('design-ascii-view');
-    behaviorReport.passed('design-explicit-revision');
-    await designPage.setViewportSize({ width: 1280, height: 1000 });
-    await designPage.locator('#design-begin').click();
-    await designPage.locator('#design-reason').fill('This draft must remain in project A.');
-    root = roots[1];
-    await designPage.evaluate(path => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root);
-    await settled(designPage);
-    assert.equal(await designPage.locator('#design-begin-dialog').evaluate(el => el.open), false);
-    assert.equal(await designPage.locator('.architecture-node').count(), 0);
-    assert.equal(await designPage.locator('#design-ascii-section').isVisible(), false);
-    assert.equal((await designPage.locator('#design-ascii').textContent()).includes('[canvas]'), false);
-    assert.equal((await new Governance(root).run({ action: 'architecture_design_snapshot' })).baseline, null);
-    root = roots[0];
-    await designPage.evaluate(path => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root);
-    await settled(designPage);
-    delayedDesignRoot = roots[0];
-    await designPage.locator('#refresh').click();
-    const designDeadline = Date.now() + 5000;
-    while (!releaseDesign && Date.now() < designDeadline) await designPage.waitForTimeout(10);
-    assert.equal(typeof releaseDesign, 'function');
-    root = roots[1];
-    await designPage.evaluate(path => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root);
-    await settled(designPage); delayedDesignRoot = null; releaseDesign();
-    await designPage.waitForTimeout(80);
-    assert.equal(await designPage.locator('.architecture-node').count(), 0, 'Late A design cannot populate B canvas');
-    assert.equal(await designPage.locator('#design-review').isDisabled(), true);
-    assert.deepEqual((await new Governance(roots[0]).run({ action: 'architecture_design_snapshot' })).baseline.number, 2);
-    root = roots[0]; await designPage.close();
-    behaviorReport.passed('design-workspace-isolation');
-    // Independent history fixture: the existing three-done scenarios above stay unchanged.
-    {
+    await page.setViewportSize({ width: 1280, height: 1000 }); hold = { root: roots[0], channel: 'governance.design' }; release = null;
+    await page.locator('#refresh').click(); await waitHeld(page); await switchWorkspace(roots[1]); hold = null; release(); await page.waitForTimeout(80);
+    assert.equal(await page.locator('.architecture-node').count(), 0); assert.equal(await page.locator('#design-ascii-section').isVisible(), false); assert.equal((await page.locator('#design-ascii').textContent()).includes('[canvas]'), false);
+    assert.deepEqual((await designSnapshot()).baseline, baseline); await switchWorkspace(roots[0]); behaviorReport.passed('design-workspace-isolation');
     root = roots[3];
-    const historyPage = await require('./history-workflow-browser.cjs')({ root, Governance, fs, path, itemFingerprint, boardWrites, makePage, settled, assert, card, sendAppearance, capture, confirm });
-    root = roots[1];
-    await historyPage.evaluate(path => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root);
-    await settled(historyPage);
-    assert.equal(await historyPage.locator('#completed-history-dialog').evaluate(el => el.open), false);
-    assert.equal(await historyPage.locator('#completed-history-search').inputValue(), '');
-    assert.equal(await historyPage.locator('#completed-history-body tr').count(), 0);
-    root = roots[3];
-    await historyPage.evaluate(path => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root);
-    await settled(historyPage);
-    delayedSnapshotRoot = roots[3];
-    releaseSnapshot = null;
-    await historyPage.locator('#refresh').click();
-    const historyDeadline = Date.now() + 5000;
-    while (!releaseSnapshot && Date.now() < historyDeadline) await historyPage.waitForTimeout(10);
-    assert.equal(typeof releaseSnapshot, 'function');
-    root = roots[1];
-    await historyPage.evaluate(path => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root);
-    await settled(historyPage); delayedSnapshotRoot = null; releaseSnapshot();
-    await historyPage.waitForTimeout(80);
-    await historyPage.locator('#completed-history-open').click();
-    assert.equal((await historyPage.locator('#completed-history-body').textContent()).includes('Completed fixture'), false, 'Late foreign results cannot repopulate history');
-    await historyPage.keyboard.press('Escape');
-    await historyPage.close(); root = roots[0];
-    }
-    assert.deepEqual(errors, []);
-    behaviorReport.finish(true);
-    console.log(
-      `PASS object workbench: menus, search, sheet, drafts, long press, keyboard, offline/error/stale/workspace guards, theme and chrome; ${shots} screenshots: ${output}`
-    );
-  } finally {
-    await browser.close();
-    await Promise.all(
-      roots.map((dir) =>
-        fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })
-      )
-    );
-  }
-})().catch((e) => {
-  behaviorReport.finish(false);
-  console.error(e);
-  process.exitCode = 1;
-});
+    const historyPage = await require('./history-workflow-browser.cjs')({ root, Governance, fs, path, itemFingerprint, boardWrites, makePage, settled, assert, card, sendAppearance, capture });
+    root = roots[1]; await historyPage.evaluate(path => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root); await settled(historyPage);
+    assert.equal(await historyPage.locator('#completed-history-dialog').evaluate(el => el.open), false); assert.equal(await historyPage.locator('#completed-history-search').inputValue(), ''); assert.equal(await historyPage.locator('#completed-history-body tr').count(), 0);
+    root = roots[3]; await historyPage.evaluate(path => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root); await settled(historyPage);
+    hold = { root: roots[3], channel: 'governance.snapshot' }; release = null; await historyPage.locator('#refresh').click(); await waitHeld(historyPage);
+    root = roots[1]; await historyPage.evaluate(path => window.dispatchEvent(new CustomEvent('test-workspace', { detail: { path } })), root); await settled(historyPage); hold = null; release(); await historyPage.waitForTimeout(80);
+    await historyPage.locator('#completed-history-open').click(); assert.equal((await historyPage.locator('#completed-history-body').textContent()).includes('Completed fixture'), false);
+    assert.equal(boardWrites.length, 0); assert.equal(calls.some(c => /governance\.(?:mutate|workitem|operation|behaviors)|models\.|sessions\./.test(c.channel)), false);
+    assert.equal(await fs.readFile(path.join(roots[0], 'STATE.json'), 'utf8'), stateBefore);
+    assert.deepEqual(errors, []); behaviorReport.finish(true);
+    console.log(`PASS readonly workbench: write denial, four pages, external updates, modal/search/history, offline/errors, source graph, ASCII/draft/baseline reading, workspace late-response guards, palette/CSP/themes; ${shots} screenshots: ${output}`);
+  } finally { await browser.close(); await Promise.all(roots.map(dir => fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }))); }
+})().catch(error => { behaviorReport.finish(false); console.error(error); process.exitCode = 1; });

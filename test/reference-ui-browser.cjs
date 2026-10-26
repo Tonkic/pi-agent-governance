@@ -56,8 +56,8 @@ module.exports = async ({ browser, screenshots }) => {
     assert.deepEqual(await summary(page), ['9', '1', '6', '4', '2', '67%']);
     await page.locator('#search-clear').click();
     assert.equal(snapshotRequests, requests, 'Search and summary reuse the loaded snapshots');
-    await page.locator('#nav-behaviors').focus(); await page.keyboard.press('Enter');
-    await page.locator('#behaviors-section').waitFor({ state: 'visible' });
+    await page.locator('a[href="#documents-section"]').focus(); await page.keyboard.press('Enter');
+    await page.locator('#documents-section').waitFor({ state: 'visible' });
     await page.locator('a[href="#board-section"]').click(); await page.locator('#board-section').waitFor({ state: 'visible' });
     // Existing safe project-view controls perform real navigation, never a Git command.
     await page.locator('#project-overview > summary').click(); await page.locator('[data-project-view="architecture"]').click();
@@ -108,7 +108,7 @@ module.exports = async ({ browser, screenshots }) => {
     await refresh(page);
     assert.deepEqual(await summary(page), ['9', '1', '7', '4', '1', '78%']);
     await context.setOffline(true);
-    await page.waitForFunction(() => document.querySelector('#board-new').disabled);
+    await page.waitForFunction(() => document.querySelector('#refresh').disabled);
     assert.match(await page.locator('#summary-availability').textContent(), /离线/);
     assert.deepEqual(await summary(page), ['9', '1', '7', '4', '1', '78%']);
     await context.setOffline(false); await ready(page);

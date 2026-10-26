@@ -73,9 +73,7 @@ function allowed(channel: string, payload: any) {
   if (reads.includes(channel)) return true;
   if (channel === 'governance.gitHistory') return ['list', 'detail', 'diff'].includes(payload.action);
   if (channel === 'governance.documents') return ['list', 'read'].includes(payload.action);
-  if (channel === 'governance.workitem') return ['board_create', 'board_update', 'board_move'].includes(payload.args?.action);
-  if (channel === 'governance.mutate') return ['init', 'start', 'progress'].includes(payload.args?.action);
-  if (channel === 'governance.design') return ['snapshot', 'begin', 'confirm', 'discard'].includes(payload.action);
+  if (channel === 'governance.design') return payload.action === 'snapshot';
   return false;
 }
 export async function startBrowserConsole(options: BrowserOptions): Promise<BrowserConsole> {

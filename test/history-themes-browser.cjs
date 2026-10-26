@@ -18,7 +18,6 @@ module.exports.workbench = async ({ assert, page, english, refresh, navigate, ch
   let shots = 0;
   for (const [p, lang] of [[page, 'zh'], [english, 'en']]) {
     await refresh(p);
-    if (await p.locator('#project-dialog').evaluate(el => el.open)) await p.locator('#project-close').click();
     for (const width of [390, 768, 1280]) for (const theme of ['light', 'dark']) {
       await p.setViewportSize({ width, height: 1000 });
       await p.evaluate(theme => { document.documentElement.dataset.base = theme; }, theme);
@@ -27,13 +26,8 @@ module.exports.workbench = async ({ assert, page, english, refresh, navigate, ch
         assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${lang}/${view}/${width}/${theme}`);
         await p.screenshot({ path: path.join(output, `${lang}-${view}-${width}-${theme}.png`), fullPage: true }); shots++;
       }
-      await navigate(p, 'architecture'); await p.locator('#architecture-analyze').click(); await chooseNew(p);
-      await p.waitForFunction(() => !document.querySelector('#launch-model').disabled);
-      await p.locator('#launch-model').selectOption('fixture/reasoning'); await p.locator('#launch-thinking').selectOption('high');
-      assert.ok(await p.locator('#launch-dialog').evaluate(el => el.scrollWidth <= el.clientWidth), 'Launch settings must not overflow');
-      const launchShot = await p.screenshot({ path: path.join(output, `${lang}-launch-${width}-${theme}.png`), fullPage: false });
-      assert.equal(launchShot.readUInt32BE(20), 1000, 'Launch evidence uses the viewport height'); shots++;
-      await p.locator('#launch-cancel').click(); await navigate(p, 'board-section');
+      assert.equal(await p.locator('#launch-dialog, #architecture-analyze, #project-open').count(), 0);
+      await navigate(p, 'board-section');
       const geometry = () => p.locator('.board-column').evaluateAll(rows => rows.map(el => {
         const r = el.getBoundingClientRect(); return { x: Math.round(r.x + scrollX), y: Math.round(r.y + scrollY), width: Math.round(r.width) };
       }));
@@ -54,10 +48,9 @@ module.exports.workbench = async ({ assert, page, english, refresh, navigate, ch
     await p.setViewportSize({ width: 1280, height: 1000 }); await navigate(p, 'board-section'); await card(p, first).click();
     await p.screenshot({ path: path.join(output, `${lang}-details-1280.png`), fullPage: false }); shots++; await close(p);
   }
-  await page.emulateMedia({ reducedMotion: 'reduce', contrast: 'more' }); await card(page, first).click({ button: 'right' });
-  assert.equal(await page.locator('#item-menu').evaluate(el => getComputedStyle(el).animationName), 'none');
-  assert.equal(await page.locator('#item-menu').evaluate(el => getComputedStyle(el).backdropFilter), 'none');
-  await page.keyboard.press('Escape');
+  await page.emulateMedia({ reducedMotion: 'reduce', contrast: 'more' }); await card(page, first).click();
+  assert.equal(await page.locator('#item-sheet').evaluate(el => getComputedStyle(el).animationName), 'none');
+  await close(page);
   // Delayed host appearance wins over system fallback, but not a newer host event.
   for (const newerHostEvent of [false, true]) {
     const race = await browser.newPage(); let resolveAppearance;
@@ -88,12 +81,10 @@ module.exports.seedWorkbench = async ({ mutate, refresh, page, makePage, confirm
   await mutate({ action: 'board_move', id: 'fixture-c', stage: 'doing', position: 0 });
   await mutate({ action: 'board_move', id: 'fixture-c', stage: 'done', position: 0 });
   await refresh(page);
-  const english = await makePage('en-US'); await english.locator('#board-new').click();
-  const enId = await english.locator('#workitem-id').inputValue();
-  const literal = '<b>工作项 {0}</b> & user data';
-  await english.locator('#workitem-title').fill(literal); await english.locator('#workitem-save').click(); await confirm(english, false);
-  assert.equal(await english.locator('#workitem-title').inputValue(), literal);
-  await english.locator('#workitem-save').click(); await confirm(english);
+  const literal = '<b>工作项 {0}</b> & user data', enId = 'literal-english';
+  await mutate({ action: 'board_create', id: enId, title: literal });
+  const english = await makePage('en-US');
+  assert.equal(await card(english, enId).locator('h4').textContent(), literal);
   assert.equal(await card(english, enId).locator('h4 b').count(), 0);
   return english;
 };
@@ -137,7 +128,7 @@ module.exports.palette = async ({ assert, page, sendAppearance, rootColor }) => 
     });
     assert.equal(await rootColor(page, '--accent'), '#82b89a');
     assert.equal(await rootColor(page, '--bg'), '#15251c');
-    assert.equal(await page.locator('#board-new').isVisible(), true);
+    assert.equal(await page.locator('#board-search').isVisible(), true);
     await sendAppearance(page, {
       base: 'dark',
       pluginTheme: {

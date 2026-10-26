@@ -60,11 +60,11 @@ test('panel progress invalidates existing verification', async t => {
   await mutate({ action: 'progress', current: 'Continue', next: [], blocked: [] });
   assert.equal((await snapshot()).state.status, 'working'); assert.equal((await snapshot()).state.verification, undefined);
 });
-test('renderer leads with architecture, removes promotional guide and keeps valid controls', async () => {
+test('renderer has four readonly pages and only valid reading controls', async () => {
   const html = await fs.readFile(path.join(__dirname, '../plugin/renderer/index.html'), 'utf8');
   const script = await fs.readFile(path.join(__dirname, '../plugin/renderer/panel.js'), 'utf8') + '\n' + await fs.readFile(path.join(__dirname, '../plugin/renderer/shell.js'), 'utf8');
   assert.doesNotMatch(html, /FIELD GUIDE|怎么使用这个项目|THE REPOSITORY IS THE MEMORY|每一次交接|hero-block|progress-fill/);
-  assert.ok(html.indexOf('id="architecture"') < html.indexOf('id="task-section"'));
+  assert.doesNotMatch(html, /id="(?:task-section|project-open|workitem-form|board-new|behaviors-section|design-begin|design-review)"|<form\b/);
   const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]);
   assert.equal(ids.length, new Set(ids).size, 'IDs must be unique');
   assert.match(script, /history\.id = 'completed-history-open'/, 'The history opener is created with the done column');
@@ -72,7 +72,7 @@ test('renderer leads with architecture, removes promotional guide and keeps vali
   for (const match of script.matchAll(/(?:\$|text|list)\('([^']+)'/g)) assert.ok(ids.includes(match[1]), `Missing element ${match[1]}`);
   for (const match of html.matchAll(/href="#([^"]+)"/g)) assert.ok(ids.includes(match[1]), `Missing navigation target ${match[1]}`);
   assert.equal([...html.matchAll(/data-module="/g)].length, 0, 'No fixed plugin graph may masquerade as project data');
-  for (const id of ['show-architecture', 'show-workflow', 'board-columns', 'workitem-form']) assert.ok(ids.includes(id));
+  for (const id of ['show-architecture', 'show-workflow', 'board-columns', 'project-overview']) assert.ok(ids.includes(id));
   for (const file of ['help.js', 'graph-model.js', 'graph.js', 'shell.js', 'panel.js']) assert.ok(html.includes(`src="../runtime/renderer/${file}"`));
   const graphScript = await fs.readFile(path.join(__dirname, '../plugin/renderer/graph.js'), 'utf8');
   for (const match of graphScript.matchAll(/get\('([^']+)'/g)) assert.ok(ids.includes(match[1]), `Missing graph control ${match[1]}`);
@@ -93,7 +93,7 @@ test('browser bundle starts without Node globals and reports static preview', as
   vm.runInNewContext(script, { document, navigator: { language: 'zh-CN' }, window: { addEventListener() {}, dispatchEvent() {} }, Event: class {}, CustomEvent: class { constructor(...args) {} }, location: { hash: '' }, matchMedia: () => ({ matches: false }) });
   await new Promise(resolve => setImmediate(resolve));
   assert.match(elements.get('notice-message').textContent, /静态预览/);
-  assert.equal(elements.get('progress-form').hidden, true);
+  assert.equal(elements.has('progress-form'), false);
   assert.equal(document.documentElement.dataset['base'], 'light');
   assert.equal(elements.has('sidebar-toggle'), false, 'No manual shell disclosure control');
   assert.equal(document.documentElement.dataset['view'], 'board-section');
@@ -216,7 +216,7 @@ test('real browser entry revokes the old workspace and refuses an explicitly bou
   assert.equal(fresh.result.workspace, b.root);
   assert.equal(fresh.result.state, null);
   const refused = await invoke('governance.mutate', { workspace: a.root, args: { action: 'init' }, revision: fresh.result.revision, confirmed: true });
-  assert.equal(refused.status, 409);
+  assert.equal(refused.status, 400);
   assert.deepEqual(await fs.readdir(b.root), []);
 });
 
@@ -227,61 +227,28 @@ async function rendererSeam(start: string, end: string, context: any) {
   assert.ok(from >= 0 && to > from, 'Renderer seam boundaries must exist');
   return require('node:vm').runInNewContext(script.slice(from, to) + `;(${start.match(/function (\w+)/)[1]})`, context);
 }
-test('renderer operation writes reject offline entry and offline confirmation; reads remain available', async () => {
-  for (const action of ['cancel', 'resolve', 'status', 'open']) {
-    for (const offlineAtConfirmation of [false, true]) {
-      const calls = [], prompts = [];
-      const navigator = { onLine: offlineAtConfirmation };
-      const context = { busy: false, workspaceEpoch: 1, navigator, lock() {}, t: key => key,
-        notify() {}, text() {}, loadOperations: async () => {},
-        confirmWrite: async () => { prompts.push(action); navigator.onLine = false; return true; },
-        invoke: async (_channel, payload) => { calls.push(payload); return { run: {}, runtime: {}, session: {} }; } };
-      const operation = await rendererSeam('async function operationAction(', 'async function loadOperations(', context);
-      await operation(action, 'fixture');
-      const write = ['cancel', 'resolve'].includes(action);
-      assert.equal(calls.length, write ? 0 : 1, `${action}: offline writes must never reach the bridge`);
-      assert.equal(prompts.length, write && offlineAtConfirmation ? 1 : 0, 'Offline entry must not prompt');
-    }
-  }
+test('renderer denies all writes and host controls before invoking the bridge', async () => {
+  const calls = [];
+  const context = { workspaceEpoch: 1, snapshot: { workspace: 'fixture' }, t: key => key,
+    window: { pluginBridge: { invoke: async (channel, payload) => { calls.push({ channel, payload }); return { ok: true, result: 'read' }; } } } };
+  const invoke = await rendererSeam('async function invoke(', 'function list(', context);
+  for (const channel of ['governance.mutate', 'governance.workitem', 'governance.operation', 'models.list', 'sessions.create', 'agent.launch'])
+    await assert.rejects(invoke(channel, { action: 'create', confirmed: true }), /readonly/);
+  for (const action of ['begin', 'save', 'confirm', 'discard']) await assert.rejects(invoke('governance.design', { action, confirmed: true }), /readonly/);
+  assert.equal(calls.length, 0);
+  assert.equal(await invoke('governance.project'), 'read');
+  assert.equal(await invoke('governance.design', { action: 'snapshot' }), 'read');
+  assert.equal(calls[0].payload.workspace, 'fixture');
 });
-test('renderer operation buttons honor offline state both on render and on unlock', async () => {
-  const elements = new Map();
-  const element = () => ({ disabled: false, children: [], append(...children) { this.children.push(...children); },
-    hasAttribute() { return false; }, addEventListener() {}, replaceChildren() { this.children = []; } });
-  const $ = id => { if (!elements.has(id)) elements.set(id, element()); return elements.get(id); };
-  const document = { createElement: element, querySelectorAll: selector => {
-    const buttons = $('operation-runs').children.flatMap(row => row.children.filter(child => child.type === 'button'));
-    return selector.includes('data-operation-write') ? buttons.filter(button => button.dataset?.operationWrite) :
-      selector.startsWith('main button') ? buttons : [];
-  } };
-  // Real DOM buttons have a dataset; keep that property on this minimal seam too.
-  document.createElement = () => ({ ...element(), dataset: {} });
-  const context = { $, document, busy: false, workspaceEpoch: 1, navigator: { onLine: false },
-    snapshot: { workspace: 'fixture' }, projectSnapshot: null, editingItem: null,
-    searchQuery: '', t: key => key, operationLabel: key => key, labels: {}, text() {},
-    updateLaunchControls() {}, updateItemNavigation() {}, updateDesignControls() {}, updateBehaviorControls() {},
-    window: { dispatchEvent(event) { assert.ok(['documents-controls', 'git-history-context'].includes(event.type)); } }, Event: class { type: string; constructor(type) { this.type = type; } },
-    invoke: async () => ({ workspace: 'fixture', runs: [
-      { id: 'shared', kind: 'analysis', phase: 'running', sessionId: 'host-session', sessionMode: 'existing' },
-      { id: 'new', kind: 'analysis', phase: 'running', sessionId: 'new-session', sessionMode: 'new' },
-      { id: 'unknown', kind: 'analysis', phase: 'unknown' },
-      { id: 'running', kind: 'analysis', phase: 'running', sessionId: 'session' }
-    ] }) };
-  const load = await rendererSeam('async function loadOperations(', "$('documentation-start')", context);
-  await load();
-  const buttons = $('operation-runs').children.flatMap(row => row.children.filter(child => child.type === 'button'));
-  const assertButtons = () => {
-    assert.deepEqual(buttons.slice(0, 4).map(button => !!button.disabled), [false, false, true, true]);
-    assert.deepEqual(buttons.slice(4).map(button => !!button.disabled), [false, false, true, false, false]);
-  };
-  assertButtons();
-  const shared = $('operation-runs').children.at(-1);
-  assert.match(shared.children[1].textContent, /existingStop/);
-  assert.deepEqual(shared.children.filter(child => child.type === 'button').map(button => button.textContent), ['inspectResult', 'openSession']);
-  const lock = await rendererSeam('function lock(', 'async function invoke(', context);
-  lock(true); assert.ok(buttons.every(button => button.disabled));
-  lock(false); assertButtons();
-  context.navigator.onLine = true; lock(false); assert.ok(buttons.every(button => !button.disabled));
+test('renderer rejects late read responses after workspace revocation', async () => {
+  let resolve;
+  const context = { workspaceEpoch: 1, snapshot: { workspace: 'old' }, t: key => key,
+    window: { pluginBridge: { invoke: () => new Promise(done => { resolve = done; }) } } };
+  const invoke = await rendererSeam('async function invoke(', 'function list(', context);
+  const reading = invoke('governance.project');
+  context.workspaceEpoch++;
+  resolve({ ok: true, result: { workspace: 'old' } });
+  await assert.rejects(reading, error => error.stale && error.message === 'switched');
 });
 test('workflow graph clears architecture source-check status on repeated switching', async () => {
   const values = new Map(), elements = new Map();
@@ -309,7 +276,7 @@ test('three-stage renderer folds accepted snapshots into done without mutating h
     assert.equal(item.stage, stage, 'Effective display must not rewrite the snapshot');
   }
   assert.doesNotMatch(script, /board_accept|accept-form|accept-dialog|humanAcceptance|agentAcceptance|openHumanReview|card-review-actions/);
-  assert.match(script, /legacyAcceptanceTask/);
+  assert.match(script, /reviewRecord/);
   const html = await fs.readFile(path.join(__dirname, '../plugin/renderer/index.html'), 'utf8');
   assert.match(html, /<details id="item-history" hidden>/);
   assert.match(html, /id="item-checks"><h3 id="item-checks-title" data-i18n="checks"/);
@@ -318,10 +285,10 @@ test('three-stage renderer folds accepted snapshots into done without mutating h
   const css = await fs.readFile(path.join(__dirname, '../../plugin/renderer/views.css'), 'utf8');
   assert.doesNotMatch(css, /data-stage=['"]accepted|card-review-actions|review-button|accept-dialog|criterion-check/);
 });
-test('renderer cannot launch new acceptance operations, even programmatically', async () => {
-  const start = await rendererSeam('async function startOperation(', "$('launch-session').addEventListener", {});
-  // No DOM or bridge context: a legacy kind must return before touching either.
-  await start('acceptance');
+test('renderer contains no project mutation, form drafts, launch or drag handlers', async () => {
+  const script = await fs.readFile(path.join(__dirname, '../plugin/renderer/panel.js'), 'utf8');
+  assert.doesNotMatch(script, /function (?:startOperation|operationAction|writeWorkitem|moveWorkitem|confirmWrite)|addEventListener\(['"](?:dragstart|drop|contextmenu)['"]|governance\.(?:mutate|workitem|operation)/);
+  assert.match(script, /card\.draggable = false/);
 });
 
 test('completed history sorts dated records descending and leaves untimed history in saved order without mutation', async () => {

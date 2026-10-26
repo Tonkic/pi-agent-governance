@@ -1,7 +1,7 @@
 ---
 name: architecture-copilot
 description: >-
-  项目架构分析与设计。治理面板或MCP/CLI显式发起分析时用源码现状模式；设计方案用方案模式。
+  项目架构分析与设计。在原AI CLI/应用显式发起分析时用源码现状模式；设计方案用方案模式，工作台只读查看。
   功能开发直接依据分层文档实现和测试，不把架构设计作为必经阶段；不新增独立开发验收。不自动确认基线或实施代码。
 ---
 
@@ -16,7 +16,7 @@ description: >-
 - 读取 STATE.json、README.md、当前项目已有领域/行为说明和架构决策；不要从零重复问已知问题。
 - STATE 决定允许做什么。设计文档只表达意图，不是新的授权来源，也不证明代码已实现。
 - 本Skill是架构分析与设计教练，不是实现或测试执行器。不要改功能代码、STATE、看板、AGENTS.md或宿主权限。
-- 先按请求确定模式，不在两者之间擅自切换。没有明确写入授权时，只给分析或方案；面板或CLI已授权保存的分析可保存源码现状图，已发起的设计仅可保存当前草案。
+- 先按请求确定模式，不擅自切换。没有明确写入授权时，只给分析或方案；原AI客户端已授权保存的分析可保存源码现状图，已发起的设计仅可保存当前草案。
 - 已确认基线保持稳定；普通更新不重设计。确需改变边界、职责、关键关系或约束时，说明原因，单独发起修订。
 - 不自动确认、推送、合并、安装、创建定时任务或启动其它 Agent；设计确认不批准代码实施。
 
@@ -26,7 +26,7 @@ description: >-
 
 1. 从现有文档、入口和关键调用链识别通常3–5个核心职责；按需加载下方参考。说明约束、真实关系、既有取舍与风险，不套案例结论、不臆造依赖。
 2. 用 `governance architecture_sources` 读取选定的非敏感源码及精确指纹。每个职责与关系应有来源依据；文档意图、代码事实、推断和改进建议明确分开，证据不足就写分析限制。
-3. 用户通过面板或CLI已授权保存时，读取最新 `project_snapshot`，用 `architecture_set` 携带expectedRevision、nodes/edges及原始指纹保存源码现状图；graph.source简述实际检查范围与限制。失败或来源变化时保留旧图，不猜指纹或覆盖。
+3. 用户在原AI客户端已授权保存时，读取最新 `project_snapshot`，用 `architecture_set` 携带expectedRevision、nodes/edges及原始指纹保存源码现状图；graph.source简述实际检查范围与限制。失败或来源变化保留旧图，不猜指纹或覆盖。
 4. 不创建或修改设计草案、基线；不调用architecture_design_begin/save或确认。建议只作为建议，不把未来结构写成已实现依赖。
 5. 返回职责、关系、证据、关键取舍与限制，让用户刷新“项目架构→源码现状”看图。ASCII摘要若需要，必须与已保存节点/关系一致；设计正文的自动ASCII区块属于下方设计模式。
 
@@ -67,10 +67,10 @@ description: >-
 沿用`Nodes v2`＋四行节点框（边框、`| [id] |`、`| 标题 |`、边框），`Relationships`下写`[from] -- 标签 --> [to]`，无边写`(none)`。用稳定ID；控制字符/反斜线/反引号/尖括号用`\uXXXX`转义。只解析该固定语法，不猜任意手绘布局；例见docs/architecture-design.md。一张图一个层级，通常3–5职责。
 概念职责可以尚无代码，`files: []`。若关联文件，仅使用安全项目相对路径；不把计划路径当源码验证。
 
-在面板或CLI已明确发起的治理设计任务中（MCP工具名为 `governance`，动作通过JSON的 `action` 字段传递）：
+在原AI CLI/应用明确发起的治理设计任务中（MCP工具名 `governance`，动作由JSON的 `action` 传递）：
 
 1. `governance architecture_design_snapshot` 读取草案、基线与 `revision`。
-2. 必须存在属于当前STATE任务的草案。没有草案时让用户从画板明确发起；CLI用户可另行明确授权以architecture_design_begin创建，不私自创建修订。MCP不提供基线确认接口。
+2. 必须存在属于当前STATE任务的草案；不存在时需用户明确授权以architecture_design_begin创建，不私自修订。网页只读，无发起或确认入口；MCP仍不提供基线确认接口。
 3. 用 `architecture_design_save` 提交最新 `expectedRevision`、会话绑定的 `expectedDraft`（draftId）和 `proposal`；如果草案ID变化，停止旧会话，不改绑：
 
 ```json

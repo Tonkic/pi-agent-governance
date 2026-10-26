@@ -53,8 +53,8 @@ module.exports = async ({ browser, screenshots }) => {
       }
       await trigger(p, 'graph-help').click(); await opened(p, 'graph-help'); await trigger(p, 'design-scope-note').click(); await opened(p, 'design-scope-note'); await closed(p, 'graph-help');
       await p.locator('#architecture-title').click(); await closed(p, 'design-scope-note');
-      await trigger(p, 'graph-help').click(); await navigate(p, 'behaviors-section'); assert.equal(await p.locator('.context-help-popover:popover-open').count(), 0);
-      await trigger(p, 'behavior-help').click(); await opened(p, 'behavior-help'); assert.equal(await p.locator('#behavior-help').textContent(), await p.evaluate(() => t('behaviorScope'))); await p.keyboard.press('Escape');
+      await trigger(p, 'graph-help').click(); await navigate(p, 'documents-section'); assert.equal(await p.locator('.context-help-popover:popover-open').count(), 0);
+      assert.equal(await p.locator('#behavior-help, #behaviors-section').count(), 0);
       await navigate(p, 'git-section'); await p.waitForFunction(() => document.querySelector('#git-history-view').getAttribute('aria-busy') === 'false');
       assert.equal(await p.locator('#git-history-help').isVisible(), false); await trigger(p, 'git-history-help').click(); await opened(p, 'git-history-help'); assert.match(await p.locator('#git-history-help').textContent(), /只读|Read-only/); await p.keyboard.press('Escape');
       await navigate(p, 'documents-section'); await p.waitForFunction(() => document.querySelector('[data-document="docs/demo.md"]'));
@@ -68,13 +68,13 @@ module.exports = async ({ browser, screenshots }) => {
       assert.equal(await p.locator('#completed-history-hint').isVisible(), false); await trigger(p, 'completed-history-hint').focus(); await opened(p, 'completed-history-hint'); await p.keyboard.press('Escape');
       assert.equal(await p.locator('#completed-history-dialog').evaluate(n => n.open), true, 'First Escape dismisses help, not its owning dialog'); await p.keyboard.press('Escape');
       await p.locator('[data-workitem="completed-fixture"]').click(); await trigger(p, 'item-checks-hint').click(); await opened(p, 'item-checks-hint'); assert.match(await p.locator('#item-checks-hint').textContent(), /检查|checks/i); await p.keyboard.press('Escape'); await p.locator('#item-close').click();
-      await p.locator('#project-open').click(); assert.equal(await p.locator('[data-i18n="verificationHint"]').isVisible(), true, 'Consequences of writes are not hidden as help'); await p.locator('#project-close').click();
+      assert.equal(await p.locator('#project-open, #project-dialog, #design-begin, #design-review, form').count(), 0, 'No project write controls remain');
       await p.close();
     }
     const touch = await browser.newContext({ locale: 'zh-CN', viewport: { width: 390, height: 900 }, hasTouch: true, isMobile: true }); contexts.push(touch); const p = await touch.newPage(); await p.goto(app.url); await ready(p); await navigate(p, 'architecture');
     const help = trigger(p, 'graph-help'); const size = await help.boundingBox(); assert.ok(size.width >= 44 && size.height >= 44);
     await help.tap(); await opened(p, 'graph-help'); await bounds(p, 'graph-help'); await p.locator('#architecture-title').tap(); await closed(p, 'graph-help');
     assert.deepEqual(errors, []); assert.deepEqual(external, []); assert.deepEqual(await Promise.all(['STATE.json', '.governance/board.json', '.governance/architecture-design.json'].map(file => fs.readFile(path.join(root, file)))), before);
-    console.log(`PASS contextual help: five pages/modal, no inline explanation rows or layout shift, hover/focus/Escape/outside/single-open, bilingual themes/320-1440 bounds, touch44px/offline/no API writes; ${shots} screenshots`);
+    console.log(`PASS contextual help: four pages/modal, no inline explanation rows or layout shift, hover/focus/Escape/outside/single-open, bilingual themes/320-1440 bounds, touch44px/offline/no API writes; ${shots} screenshots`);
   } finally { for (const context of contexts) await context.close(); await app?.close(); await fs.rm(root, { recursive: true, force: true, maxRetries: 5 }); }
 };
