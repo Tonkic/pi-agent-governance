@@ -44,6 +44,8 @@ module.exports = async ({ browser, screenshots }) => {
       for (const width of [320, 390, 768, 1280, 1672]) for (const theme of ['light', 'dark']) {
         await p.setViewportSize({ width, height: 1000 }); await p.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
         await p.waitForFunction(value => document.documentElement.dataset.base === value, theme);
+        // CSS reflows before ResizeObserver folds the native details; theme may already match.
+        await p.waitForFunction(() => { const open = document.querySelector('#documents-section').clientWidth > 1050; return document.querySelector('.reader-library').open === open && document.querySelector('.reader-contents').open === open; });
         await p.evaluate(() => scrollTo(0, 0));
         const metrics = await p.locator('#documents-body').evaluate(n => { const s = getComputedStyle(n), r = n.getBoundingClientRect(); return { font: s.fontFamily, size: s.fontSize, leading: s.lineHeight, align: s.textAlign, width: r.width, top: r.top, firstParagraph: n.querySelector('p').getBoundingClientRect().bottom, whiteSpace: getComputedStyle(n.querySelector('p')).whiteSpace, animation: s.animationName }; });
         assert.match(metrics.font, /Segoe UI/); assert.match(metrics.font, /Microsoft YaHei/); assert.equal(metrics.size, '18px'); assert.equal(metrics.leading, '32.4px'); assert.equal(metrics.align, 'left'); assert.equal(metrics.whiteSpace, 'normal'); assert.equal(metrics.animation, 'none');
