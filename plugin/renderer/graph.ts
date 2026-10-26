@@ -93,6 +93,8 @@
     edgeElements = graphEdges.map((edge) => {
       const group = document.createElementNS(ns, 'g');
       group.classList.add('graph-edge');
+      group.dataset.from = edge.from;
+      group.dataset.to = edge.to;
       const path = document.createElementNS(ns, 'path');
       path.setAttribute('d', edge.path);
       path.setAttribute('marker-end', 'url(#edge-arrow)');
@@ -115,7 +117,7 @@
           'span',
           data.current
             ? t('phase')
-            : t('module', String(Object.keys(graphNodes).indexOf(id) + 1).padStart(2, '0'))
+            : `${t('module', String(Object.keys(graphNodes).indexOf(id) + 1).padStart(2, '0'))} · ${id}`
         ],
         ['strong', data.title],
         ['small', data.description || t('viewRelations')]
