@@ -1,7 +1,7 @@
 <!-- Generated from docs/ by scripts/build-docs.cjs. Do not edit. -->
 # 架构
 
-一个浏览器工作台、共享治理核心，PI/MCP是薄宿主连接器。STATE和项目数据保留在仓库；会话历史、模型和思考设置保留在原宿主，不新增上下文数据库或常驻桌面。
+一个只读浏览器工作台、共享治理核心，PI/MCP是薄宿主连接器。开发、项目操作与文档维护在原AI CLI/应用完成；Docs为当前功能/架构依据，Notes仅按需追溯。STATE和项目数据保留在仓库，不新增上下文数据库。
 
 ## 模块与代码入口
 
@@ -16,7 +16,7 @@
 | `browser.ts` | loopback HTTP、固定资产/API、认证与有界页面租约 | `startBrowserConsole` |
 | `browser-open.ts` | 固定平台打开器、严格本地URL、有界超时 | `openBrowser` |
 | `tool.ts`、`core.ts` | 治理schema、STATE、验证、归档和锁 | `Governance.run` |
-| `panel.ts` | UI动作白名单、确认与修订校验，不依赖PI | `panelInvoke` |
+| `panel.ts` | 底层兼容动作/确认/修订守卫；网页由HTTP进一步限制为只读 | `panelInvoke` |
 | `project.ts`、`design.ts` | 看板/指纹与独立设计草案/追加基线 | `ProjectData.run`、`ArchitectureDesign.run` |
 | `git.ts` | worktree、范围与提交验证 | `GitGovernance.run` |
 | `git-history.ts`、`renderer/git-history.ts` | 有界本地历史/第一父提交文件差异，快照隔离及只读提交DAG/二级详情；与写入型Git登记分开 | `gitHistory`、`governance.gitHistory` |
@@ -26,7 +26,7 @@
 | `remote-cli.ts`、`remote-store.ts` | 独立Agent CLI与项目内凭据/信任/只读历史快照，不接入网页命令API | `main`、`RemoteStore` |
 | `remote-ssh.ts`、`remote-program.ts`、`ssh-runtime.ts` | 固定SSH启动协议、指纹/密码认证、远端先写/备份及unknown日志；纯JS依赖构建入包 | `operation`、`remoteProgram` |
 | `collaboration-cli.ts`、`collaboration.ts`、`collaboration-program.ts` | 显式GitHub绑定优先解析；本地/SSH同源权威对象读取与独立分支推送、unknown核对，无网页接线 | `collaborate`、`authority`、`collaborationProgram` |
-| `renderer/` | 同一工作台；panel控制数据/确认/隔离，shell只投影已载入快照与导航 | `panel.ts`、`shell.ts`、`graph.ts`、`design.ts` |
+| `renderer/` | 四页只读工作台；panel处理读取/隔离，shell投影快照与导航，无写入或独立行为页 | `panel.ts`、`shell.ts`、`graph.ts`、`design.ts` |
 
 样式按加载顺序归属：`tokens.css`为语义颜色/字号/间距；`panel.css`为基础控件；`shell.css`为导航/工具栏/概览；`views.css`为业务视图；`documents.css`为阅读器。不要通过末尾重复覆盖堆叠新壳层；shell不调用API或写项目数据。
 
@@ -37,7 +37,7 @@ PI治理工具 → main.ts → core.ts → STATE / .governance
 MCP治理工具 → mcp/server.ts → tool.schema → core.ts
 PI命令 / PI或MCP governance_ui → workbench-tool → BrowserWorkbench
 BrowserWorkbench → browser.ts → 127.0.0.1 + 私有片段URL → 系统浏览器
-浏览器 → web/bridge.js → browser.ts白名单 → panel.ts → core.ts
+浏览器只读 → renderer白名单 → web/bridge.js白名单 → browser.ts只读白名单 → panel.ts
 人工CLI → web/server.ts薄wrapper → 同一个browser.ts
 浏览器文档阅读 → panel.ts → documents.ts → 固定根Markdown / docs / notes（只读）
 MCP资源/提示、PI Skill → skills/architecture-copilot/
@@ -53,7 +53,7 @@ MCP固定绑定显式绝对项目或Claude官方启动项目环境。普通连�
 
 BrowserWorkbench同项目复用服务，切换先关闭，启动前后/打开前复核身份。close/dispose立即失效在途请求，迟到服务回收。结果与错误不含私有URL。页面租约限制16个，心跳/TTL/退出宽限与服务连接超时均有界。独立CLI直到Ctrl+C，不套用宿主页生命周期。
 
-HTTP只监听127.0.0.1，精确Host/Origin/token/JSON及固定资源/动作白名单。复用renderer和原确认/修订/范围/锁，不提供Agent/model/session或任意Git写入。凭据不落盘，片段由浏览器移入标签页sessionStorage。参数和租约配置不从工具/网页接受任意路径或URL。见 [浏览器工作台](web-console.md)。
+HTTP只监听127.0.0.1，精确Host/Origin/token/JSON及固定资源/读取白名单；项目/看板/设计写入和Agent/model/session/Git写入均拒绝，不因确认或最新修订放行。原Agent/MCP确认、修订、范围及锁保护不变。凭据片段移入标签页sessionStorage，不接受任意路径或URL。见[工作台](web-console.md)。
 
 ## 数据位置
 

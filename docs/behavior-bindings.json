@@ -4,27 +4,27 @@
     {
       "id": "WS-001",
       "document": "docs/behavior-workspace.md",
-      "cases": ["workspace-switch", "delayed-snapshot", "explicit-initialization"],
+      "cases": ["workspace-switch", "delayed-snapshot", "readonly-uninitialized"],
       "files": ["plugin/main.ts", "plugin/core.ts", "plugin/panel.ts", "plugin/project.ts", "plugin/renderer/panel.ts", "plugin/renderer/shell.ts", "plugin/runtime/renderer/shell.js", "plugin/runtime/main.js", "plugin/runtime/core.js", "plugin/runtime/panel.js", "plugin/runtime/project.js", "plugin/runtime/renderer/panel.js", "plugin/renderer/index.html", "test/browser.cjs", "test/behavior-reporter.cjs", "scripts/check-behaviors.cjs", "plugin/behaviors.ts", "plugin/runtime/behaviors.js"]
     },
     {
       "id": "WS-002",
       "document": "docs/behavior-workspace.md",
-      "cases": ["delayed-save", "new-item-continuation"],
+      "cases": ["delayed-project-read", "external-update-reading"],
       "files": ["plugin/renderer/panel.ts", "plugin/runtime/renderer/panel.js", "test/browser.cjs", "test/behavior-reporter.cjs"]
     },
     {
       "id": "WS-003",
       "document": "docs/behavior-workspace.md",
-      "cases": ["draft-isolation"],
+      "cases": ["readonly-write-denial", "readonly-detail-isolation"],
       "files": ["plugin/renderer/panel.ts", "plugin/runtime/renderer/panel.js", "plugin/renderer/index.html", "test/browser.cjs"]
     },
     {
-      "id": "AD-001", "document": "docs/architecture-design.md", "cases": ["design-first-baseline"],
+      "id": "AD-001", "document": "docs/architecture-design.md", "cases": ["design-readonly-draft"],
       "files": ["plugin/design.ts", "plugin/runtime/design.js", "plugin/core.ts", "plugin/runtime/core.js", "plugin/panel.ts", "plugin/runtime/panel.js", "plugin/renderer/design.ts", "plugin/runtime/renderer/design.js", "plugin/renderer/panel.ts", "plugin/runtime/renderer/panel.js", "plugin/renderer/index.html", "test/browser.cjs", "test/behavior-reporter.cjs", "scripts/check-behaviors.cjs", "plugin/skills/architecture-copilot/SKILL.md", "plugin/operations.ts", "plugin/runtime/operations.js", "plugin/behaviors.ts", "plugin/runtime/behaviors.js"]
     },
     {
-      "id": "AD-002", "document": "docs/architecture-design.md", "cases": ["design-explicit-revision"],
+      "id": "AD-002", "document": "docs/architecture-design.md", "cases": ["design-stable-reading"],
       "files": ["plugin/design.ts", "plugin/runtime/design.js", "plugin/renderer/design.ts", "plugin/runtime/renderer/design.js", "plugin/renderer/panel.ts", "plugin/runtime/renderer/panel.js", "test/browser.cjs"]
     },
     {

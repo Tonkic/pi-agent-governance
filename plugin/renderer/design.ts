@@ -1,17 +1,9 @@
 'use strict';
-let designSnapshot: any = null,
-  designSelection = 'baseline',
-  reviewedDesign: any = null;
+let designSnapshot: any = null, designSelection = 'baseline';
 const designElement = (id: string): any => document.getElementById(id);
 function resetDesign() {
   designSnapshot = null;
-  reviewedDesign = null;
   designSelection = 'baseline';
-  for (const name of ['begin', 'confirm']) {
-    const dialog = designElement(`design-${name}-dialog`);
-    if (dialog.open) dialog.close('cancel');
-    designElement(`design-${name}-form`).reset();
-  }
 }
 async function loadDesign(owner, current) {
   try {
@@ -62,10 +54,10 @@ function renderDesign() {
   const select = designElement('design-version');
   const options = [];
   if (designSnapshot?.baseline)
-    options.push(launchOption('baseline', t('designCurrent', designSnapshot.baseline.number)));
-  if (designSnapshot?.draft) options.push(launchOption('draft', t('designDraft')));
+    options.push(designOption('baseline', t('designCurrent', designSnapshot.baseline.number)));
+  if (designSnapshot?.draft) options.push(designOption('draft', t('designDraft')));
   for (const b of [...(designSnapshot?.history || [])].reverse().slice(1))
-    options.push(launchOption(String(b.number), t('designHistory', b.number)));
+    options.push(designOption(String(b.number), t('designHistory', b.number)));
   select.replaceChildren(...options);
   select.value = designSelection;
   const selected = selectedDesign();
@@ -111,74 +103,10 @@ function renderDesign() {
       t('none')
   );
   designElement('design-diff-details').hidden = !diff;
-  text('design-begin', t(designSnapshot?.baseline ? 'designRevise' : 'designFirst'));
   updateDesignControls();
 }
 function updateDesignControls() {
-  const blocked =
-    busy ||
-    !navigator.onLine ||
-    !snapshot?.state?.task ||
-    !designSnapshot?.revision ||
-    !!designSnapshot?.error;
-  const draft = designSnapshot?.draft;
-  designElement('design-begin').disabled = blocked || !!draft;
-  designElement('design-start').disabled =
-    blocked || !draft || draft.taskId !== snapshot?.state?.task;
-  designElement('design-discard').disabled = blocked || !draft;
-  designElement('design-review').disabled =
-    blocked ||
-    !draft?.proposal ||
-    designSelection !== 'draft' ||
-    draft.taskId !== snapshot?.state?.task;
-  designElement('design-version').disabled = busy || (!designSnapshot?.history?.length && !draft);
-  for (const name of ['begin', 'confirm'])
-    designElement(`design-${name}-submit`).disabled = blocked;
-}
-async function designWrite(action, fields, submitted?) {
-  if (busy || !navigator.onLine || !designSnapshot?.revision) return false;
-  const owner = workspaceEpoch,
-    revision = reviewedDesign?.revision || designSnapshot.revision;
-  lock(true);
-  try {
-    const message = t(
-      action === 'confirm'
-        ? 'designConfirmWrite'
-        : action === 'discard'
-          ? 'designDiscardWrite'
-          : 'designBeginWrite'
-    );
-    if (!(await confirmWrite(message + '\n' + discardWarning(submitted)))) return false;
-    if (owner !== workspaceEpoch || !navigator.onLine) return false;
-    await invoke('governance.design', { action, revision, ...fields, confirmed: true });
-    if (owner !== workspaceEpoch) return false;
-    await load();
-    if (owner !== workspaceEpoch) return false;
-    graphView = 'design';
-    renderProjectGraph();
-    notify(t('designSaved'));
-    return true;
-  } catch (e) {
-    if (owner === workspaceEpoch) notify(e.message, true);
-    return false;
-  } finally {
-    if (owner === workspaceEpoch) {
-      lock(false);
-      updateDesignControls();
-    }
-  }
-}
-async function closeDesignDialog(name) {
-  if (busy) return;
-  const owner = workspaceEpoch,
-    form = `design-${name}-form`;
-  if (dirtyForms.has(form) && !(await confirmWrite(t('switchDraft')))) return;
-  if (owner !== workspaceEpoch) return;
-  dirtyForms.delete(form);
-  edited = dirtyForms.size > 0;
-  designElement(form).reset();
-  designElement(`design-${name}-dialog`).close();
-  reviewedDesign = null;
+  designElement('design-version').disabled = busy || (!designSnapshot?.history?.length && !designSnapshot?.draft);
 }
 designElement('show-design').addEventListener('click', () => {
   graphView = 'design';
@@ -188,54 +116,3 @@ designElement('design-version').addEventListener('change', () => {
   designSelection = designElement('design-version').value;
   renderProjectGraph();
 });
-designElement('design-begin').addEventListener('click', () => {
-  if (designElement('design-begin').disabled) return;
-  reviewedDesign = null;
-  text('design-begin-title', t(designSnapshot.baseline ? 'designRevise' : 'designFirst'));
-  designElement('design-begin-dialog').showModal();
-  designElement('design-reason').focus();
-});
-designElement('design-begin-form').addEventListener('submit', (event) => {
-  event.preventDefault();
-  void designWrite('begin', { reason: designElement('design-reason').value }, 'design-begin-form');
-});
-designElement('design-discard').addEventListener('click', () => {
-  reviewedDesign = null;
-  void designWrite('discard', {});
-});
-designElement('design-start').addEventListener('click', () => {
-  void startOperation('design');
-});
-designElement('design-review').addEventListener('click', () => {
-  if (designElement('design-review').disabled) return;
-  reviewedDesign = {
-    revision: designSnapshot.revision,
-    fingerprint: designSnapshot.draft.proposalFingerprint
-  };
-  text('design-reviewed-title', designSnapshot.draft.proposal.title);
-  designElement('design-confirm-dialog').showModal();
-  designElement('design-reviewer').focus();
-});
-designElement('design-confirm-form').addEventListener('submit', (event) => {
-  event.preventDefault();
-  if (!reviewedDesign || !designElement('design-reviewed').checked) return;
-  void designWrite(
-    'confirm',
-    {
-      expectedProposal: reviewedDesign.fingerprint,
-      reviewer: designElement('design-reviewer').value,
-      conclusion: designElement('design-conclusion').value
-    },
-    'design-confirm-form'
-  );
-});
-for (const name of ['begin', 'confirm']) {
-  for (const suffix of ['close', 'cancel'])
-    designElement(`design-${name}-${suffix}`).addEventListener('click', () => {
-      void closeDesignDialog(name);
-    });
-  designElement(`design-${name}-dialog`).addEventListener('cancel', (event) => {
-    event.preventDefault();
-    void closeDesignDialog(name);
-  });
-}

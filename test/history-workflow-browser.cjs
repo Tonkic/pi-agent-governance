@@ -1,5 +1,5 @@
 'use strict';
-// Independent history UI fixture. Kept serial and unchanged; no behavior reporter cases live here.
+// Independent readonly history UI fixture, still serial in the main browser run.
 module.exports = async ({ root, Governance, fs, path, itemFingerprint, boardWrites, makePage, settled, assert, card, sendAppearance, capture, confirm }) => {
     const { historySnapshot, historyBoardPath, historyRaw, historyRevision } = await require('./history-fixture.cjs')({ root, Governance, fs, path, itemFingerprint });
     const writesBeforeHistory = boardWrites.length;
@@ -23,7 +23,7 @@ module.exports = async ({ root, Governance, fs, path, itemFingerprint, boardWrit
     await historyPage.locator('#completed-history-open').click();
     assert.equal(await historyPage.locator('#completed-history-search').isDisabled(), false);
     await historyPage.locator('[data-history-item="history-0"] button').click();
-    assert.equal(await historyPage.locator('#item-edit').isDisabled(), true);
+    assert.equal(await historyPage.locator('#item-edit, #workitem-form').count(), 0);
     await historyPage.keyboard.press('Escape');
     await historyPage.context().setOffline(false);
     await historyPage.waitForFunction(() => navigator.onLine);
@@ -32,34 +32,15 @@ module.exports = async ({ root, Governance, fs, path, itemFingerprint, boardWrit
     assert.equal(boardWrites.length, writesBeforeHistory);
     await historyPage.locator('#completed-history-open').click();
     await historyPage.locator('[data-history-item="history-0"] button').click();
-    await historyPage.locator('#item-edit').click();
-    await historyPage.locator('#workitem-title').fill('Older edited record');
-    await historyPage.locator('#workitem-save').click(); await confirm(historyPage);
-    assert.equal((await historySnapshot()).board.items.find(item => item.id === 'history-0').title, 'Older edited record');
-    await historyPage.locator('#board-search').fill('Older edited');
-    await card(historyPage, 'history-0').click({ button: 'right' });
-    await historyPage.locator('#item-menu').getByRole('menuitem', { name: '移至正在进行', exact: true }).click();
-    await confirm(historyPage);
-    assert.equal((await historySnapshot()).board.items.find(item => item.id === 'history-0').stage, 'doing');
-    await historyPage.locator('#board-search').fill('');
-    const dragWrites = boardWrites.length;
+    assert.equal(await historyPage.locator('#item-edit, #workitem-form, #item-menu').count(), 0);
+    await historyPage.keyboard.press('Escape');
     await card(historyPage, 'history-1').dragTo(card(historyPage, 'history-3'));
-    assert.equal(boardWrites.length, dragWrites, 'Sorted done view cannot send ambiguous reordering positions');
-    assert.equal(await historyPage.locator('#confirm-dialog').evaluate(el => el.open), false);
-    const countBeforeDrop = (await historySnapshot()).board.items.filter(item => item.stage === 'done').length;
-    await card(historyPage, 'history-9').dragTo(card(historyPage, 'history-3'));
-    await confirm(historyPage);
-    assert.equal(boardWrites.at(-1).args.position, countBeforeDrop, 'Incoming done drop appends against the whole saved column');
-    assert.equal((await historySnapshot()).board.items.filter(item => item.stage === 'done').at(-1).id, 'history-9');
-    await card(historyPage, 'history-1').dragTo(historyPage.locator('[data-stage="doing"]'), { targetPosition: { x: 30, y: 30 } });
-    await confirm(historyPage);
-    assert.equal((await historySnapshot()).board.items.find(item => item.id === 'history-1').stage, 'doing', JSON.stringify(boardWrites.at(-1)) + ' · ' + await historyPage.locator('#notice-message').textContent());
+    await card(historyPage, 'history-9').dragTo(historyPage.locator('[data-stage="done"]'));
     await historyPage.locator('#board-search').fill('Completed fixture');
-    await historyPage.evaluate(() => {
-      draggedItem = 'history-3';
-      document.querySelector('[data-stage="doing"]').dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true }));
-    });
-    assert.equal(await historyPage.locator('#confirm-dialog').evaluate(el => el.open), false, 'Filtered drop has no hidden-anchor writes');
+    await historyPage.evaluate(() => document.querySelector('[data-stage="doing"]').dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true })));
+    assert.equal(boardWrites.length, writesBeforeHistory, 'No history gesture can write');
+    assert.equal(await fs.readFile(historyBoardPath, 'utf8'), historyRaw, 'All gestures preserve saved history');
+    assert.equal((await historySnapshot()).revision, historyRevision);
     await historyPage.locator('#board-search').fill('');
     await historyPage.locator('#completed-history-open').click();
     await historyPage.locator('#completed-history-search').fill('criterion-5');

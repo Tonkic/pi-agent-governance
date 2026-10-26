@@ -1,9 +1,9 @@
 'use strict';
 // Presentation-only shell. It reads loaded snapshots; never invokes APIs or changes project data.
-const pageIds = ['board-section', 'architecture', 'git-section', 'documents-section', 'behaviors-section'];
+const pageIds = ['board-section', 'architecture', 'git-section', 'documents-section'];
 function closeWorkbenchDisclosures() {
   closeContextHelp();
-  for (const id of ['project-tools', 'project-overview']) {
+  for (const id of ['project-overview']) {
     const details = document.getElementById(id) as HTMLDetailsElement;
     if (details) details.open = false;
   }
@@ -14,6 +14,10 @@ function renderWorkbenchSummary(loading = false) {
   text('summary-workspace-path', workspace || '—');
   text('summary-state', snapshot ? (snapshot.state ? labels[snapshot.state.status] || snapshot.state.status : t('uninitialized')) : '—');
   text('summary-task', snapshot?.state?.task || (snapshot ? t('noTask') : '—'));
+  text('summary-goal', snapshot?.state?.goal || '');
+  text('summary-current', snapshot?.state?.current || '');
+  list('summary-next', snapshot?.state?.next);
+  list('summary-blocked', snapshot?.state?.blocked);
   const items = projectSnapshot?.board && !projectSnapshot.boardError ? projectSnapshot.board.items : null;
   const counts = items ? boardStages.map(stage => items.filter(item => effectiveStage(item) === stage).length) : null;
   const total = items?.length;
@@ -36,19 +40,19 @@ function renderWorkbenchSummary(loading = false) {
   $('workbench-metrics').setAttribute('aria-busy', String(loading));
 }
 function highlightNavigation() {
-  const requested = location.hash.slice(1);
+  let requested = location.hash.slice(1);
+  if (requested === 'behaviors-section') { requested = 'documents-section'; history.replaceState(null, '', '#documents-section'); }
   const active = pageIds.includes(requested) ? requested : 'board-section';
   document.documentElement.dataset.view = active;
-  const pageTitles: Record<string, CopyKey> = { architecture: 'navArchitecture', 'board-section': 'navBoard', 'git-section': 'navGit', 'documents-section': 'navDocuments', 'behaviors-section': 'behaviorDocs' };
+  const pageTitles: Record<string, CopyKey> = { architecture: 'navArchitecture', 'board-section': 'navBoard', 'git-section': 'navGit', 'documents-section': 'navDocuments' };
   text('page-title', t(pageTitles[active]));
   for (const id of pageIds) $(id).hidden = id !== active;
   document.querySelectorAll<HTMLElement>('[data-page-control]').forEach(control => { control.hidden = control.dataset.pageControl !== active; });
-  if (requested === 'task-section') openProjectControls();
   document.querySelectorAll<HTMLAnchorElement>('.workspace-nav a').forEach(link => {
     if (link.hash === `#${active}`) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
   });
   if (active === 'architecture') window.dispatchEvent(new Event('resize'));
-  updateBehaviorControls();
+  if (requested === 'project-overview') $('project-overview').open = true;
 }
 function initializeWorkbenchShell() {
   localizeNavigation(); void localeReady.then(() => { initializeContextHelp(); localizeNavigation(); highlightNavigation(); });
@@ -60,10 +64,6 @@ function initializeWorkbenchShell() {
     if (event.detail) { link.blur(); return; }
     if (location.hash !== link.hash) window.addEventListener('hashchange', () => { if (location.hash === link.hash) link.focus({ preventScroll: true }); }, { once: true });
   }));
-  const tools = document.getElementById('project-tools');
-  tools?.addEventListener('keydown', (event: KeyboardEvent) => {
-    if (event.key === 'Escape' && (tools as HTMLDetailsElement).open) { event.preventDefault(); (tools as HTMLDetailsElement).open = false; tools.querySelector('summary')?.focus(); }
-  });
-  window.addEventListener('hashchange', () => { closeItemMenu(false); stopLongPress(); closeWorkbenchDisclosures(); highlightNavigation(); });
+  window.addEventListener('hashchange', () => { closeWorkbenchDisclosures(); highlightNavigation(); });
   highlightNavigation();
 }
