@@ -2,6 +2,7 @@
 // Presentation-only shell. It reads loaded snapshots; never invokes APIs or changes project data.
 const pageIds = ['board-section', 'architecture', 'git-section', 'documents-section', 'behaviors-section'];
 function closeWorkbenchDisclosures() {
+    closeContextHelp();
     for (const id of ['project-tools', 'project-overview']) {
         const details = document.getElementById(id);
         if (details)
@@ -58,15 +59,8 @@ function highlightNavigation() {
     updateBehaviorControls();
 }
 function initializeWorkbenchShell() {
-    const info = document.getElementById('local-console-info');
-    if (info) {
-        const details = document.createElement('details'), summary = document.createElement('summary');
-        summary.append(info.querySelector('strong'));
-        details.append(summary, ...Array.from(info.childNodes));
-        info.append(details);
-    }
     localizeNavigation();
-    void localeReady.then(() => { localizeNavigation(); highlightNavigation(); });
+    void localeReady.then(() => { initializeContextHelp(); localizeNavigation(); highlightNavigation(); });
     const nav = $('workspace-navigation');
     nav.addEventListener('pointermove', () => { if (!nav.dataset.dismissed)
         nav.dataset.hovered = 'true'; });

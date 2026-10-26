@@ -43,3 +43,7 @@ SOFTWARE.
 - [VS Code Git Graph](https://github.com/mhutchie/vscode-git-graph/blob/d7f43f429a9e024e896bac9fc65fdc530935c812/web/graph.ts), MIT: reference for parent-derived lanes and colored branch paths.
 - Inspected GitHub source and license metadata at the pinned commits. This implementation borrows concepts, not copied code or assets; neither library is bundled. No new dependencies, remote resources, or React/VS Code runtime.
 - Local graph uses real commit parents and a snapshot-bound first-parent main axis; nodes reveal safe text on hover/focus and open a native modal on activation. The main axis stays centered; no history or branch names are invented.
+
+## Contextual help (0.10.2)
+
+Consulted the [WAI-ARIA tooltip pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tooltip/) and [Radix Tooltip documentation](https://www.radix-ui.com/primitives/docs/components/tooltip): focus/hover access, Escape dismissal, short initial delay and hoverable copy. This original native Popover/TypeScript implementation adds click-to-pin for touch. No component code, dependency or remote asset is bundled; automated checks are not a screen-reader or installed-host audit. Explanations overlay content; errors and consequential confirmations remain visible.

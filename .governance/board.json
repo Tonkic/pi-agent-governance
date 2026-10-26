@@ -389,6 +389,18 @@
       "gitTaskId": null
     },
     {
+      "id": "context-help-0102",
+      "title": "说明按需显示与内容优先",
+      "description": "低频说明移至圆圈问号，hover/focus/click可读；保留当前状态、错误、写入后果与原总体阻塞。0.10.2 patch不市场。",
+      "blocker": "",
+      "stage": "doing",
+      "taskId": "project-board-release",
+      "criteria": [],
+      "architectureImpact": "none",
+      "gitTaskId": null,
+      "completedAt": null
+    },
+    {
       "id": "ssh-portable-090",
       "title": "目录内可迁移SSH与远端优先备份 · 0.9.0",
       "description": "源码/官方0.9.0包/GitHub完成，main3219978双OS CI39746714903各280测试/279截图/10行为通过；加密迁移与真实SSH故障回归通过。市场单次提交明确拒绝eval动态执行，0.9.0未创建，不重试/绕过；待平台处理或另行批准兼容方案。",
@@ -494,5 +506,5 @@
       "completedAt": "2026-10-19T08:25:19.973Z"
     }
   ],
-  "updatedAt": "2026-10-26T06:48:20.924Z"
+  "updatedAt": "2026-10-26T07:05:27.006Z"
 }

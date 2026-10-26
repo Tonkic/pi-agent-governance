@@ -5,7 +5,7 @@
 <meta name="pi-plugin-chrome" content="v2">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'none'">
 <title data-i18n="app"></title><link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="panel.css"><link rel="stylesheet" href="shell.css"><link rel="stylesheet" href="views.css">
-<link rel="stylesheet" href="documents.css">
+<link rel="stylesheet" href="documents.css"><link rel="stylesheet" href="help.css">
 </head>
 <body>
 <main class="app-shell">
@@ -54,7 +54,7 @@
     <p id="graph-check-state" class="muted" role="status"></p>
     <details class="graph-provenance"><summary data-i18n="provenance"></summary><p id="graph-source" class="muted" data-i18n="waiting"></p></details>
     <p id="graph-empty" role="status" data-i18n="graphUnread"></p>
-    <section id="design-controls" class="design-controls" hidden aria-labelledby="design-record"><p id="design-scope-note" class="hint"></p><div class="design-toolbar"><label><span data-i18n="designVersion"></span><select id="design-version"></select></label><button id="design-begin" type="button" data-i18n="designFirst"></button><button id="design-start" class="primary" type="button" data-i18n="designCoCreate"></button><button id="design-review" type="button" data-i18n="designReview"></button><button id="design-discard" type="button" data-i18n="designDiscard"></button></div><p id="design-record" class="muted"></p><details class="design-document-details"><summary data-i18n="designDocument"></summary><div id="design-document" class="design-prose"></div></details><details id="design-diff-details"><summary data-i18n="designDiff"></summary><p id="design-diff" class="design-prose"></p><details><summary data-i18n="designPreviousDocument"></summary><div id="design-previous-document" class="design-prose"></div></details></details></section>
+    <section id="design-controls" class="design-controls" hidden aria-labelledby="design-record"><p id="design-scope-note" data-help-for="design-begin" data-help-title="designTitle"></p><div class="design-toolbar"><label><span data-i18n="designVersion"></span><select id="design-version"></select></label><button id="design-begin" type="button" data-i18n="designFirst"></button><button id="design-start" class="primary" type="button" data-i18n="designCoCreate"></button><button id="design-review" type="button" data-i18n="designReview"></button><button id="design-discard" type="button" data-i18n="designDiscard"></button></div><p id="design-record" class="muted"></p><details class="design-document-details"><summary data-i18n="designDocument"></summary><div id="design-document" class="design-prose"></div></details><details id="design-diff-details"><summary data-i18n="designDiff"></summary><p id="design-diff" class="design-prose"></p><details><summary data-i18n="designPreviousDocument"></summary><div id="design-previous-document" class="design-prose"></div></details></details></section>
     <details id="design-ascii-section" class="design-ascii-section" hidden><summary data-i18n="designAsciiTitle"></summary><p class="muted" data-i18n="designAsciiHint"></p><pre id="design-ascii" class="design-ascii" tabindex="0" data-i18n-aria-label="designAsciiTitle"></pre></details>
     <div class="architecture-layout">
       <div id="graph-viewport" class="graph-viewport" tabindex="0" role="group" data-i18n-aria-label="canvas" aria-describedby="graph-help">
@@ -64,7 +64,7 @@
       </div>
       <aside class="module-detail" aria-live="polite"><span class="nav-label" data-i18n="selected"></span><h3 id="module-title" data-i18n="unselected"></h3><p id="module-description" data-i18n="generated"></p><p id="module-connection" class="muted"></p><div class="relation-heading" data-i18n="direct"></div><ul id="module-relations" class="module-relations"></ul><details class="graph-provenance"><summary data-i18n="sources"></summary><code id="module-path"></code></details><a id="module-jump" href="#task-section" data-i18n="viewTask"></a></aside>
     </div>
-    <div class="graph-caption"><span id="graph-summary" role="status" data-i18n="noRelations"></span><details class="canvas-help"><summary data-i18n="graphTools"></summary><span id="graph-help" data-i18n="graphHelp"></span></details></div>
+    <div class="graph-caption"><span id="graph-summary" role="status" data-i18n="noRelations"></span><span id="graph-help" data-help-for="architecture-title" data-help-title="graphTools" data-i18n="graphHelp"></span></div>
     <div class="workspace-chip"><span data-i18n="currentWorkspace"></span><code id="workspace" data-i18n="connecting"></code></div>
   </section>
 
@@ -92,7 +92,7 @@
     </div>
   </section>
   <section id="documents-section" class="panel documents-panel" aria-label="Project documents" hidden></section>
-  <section id="behaviors-section" class="panel behaviors-panel" data-i18n-aria-label="behaviorDocs" aria-busy="false" hidden><details class="behavior-help"><summary data-i18n="sources"></summary><p class="hint" data-i18n="behaviorScope"></p></details><p id="behavior-docs-status" role="status" aria-live="polite"></p><div id="behavior-docs-content"></div></section>
+  <section id="behaviors-section" class="panel behaviors-panel" data-i18n-aria-label="behaviorDocs" aria-busy="false" hidden><p id="behavior-help" data-help-for="behavior-refresh" data-help-title="behaviorDocs" data-i18n="behaviorScope"></p><p id="behavior-docs-status" role="status" aria-live="polite"></p><div id="behavior-docs-content"></div></section>
 
   <footer><span data-i18n="app"></span><span id="updated"></span></footer>
 </main>
@@ -113,7 +113,7 @@
 <dialog id="operations-dialog" class="action-dialog" aria-labelledby="operations-title"><header class="dialog-header"><h2 id="operations-title" data-i18n="analysisProgress"></h2><button id="operations-close" type="button" data-i18n-aria-label="closeDetails">×</button></header><button id="operations-refresh" type="button" data-i18n="refreshProgress"></button><p id="operations-notice" role="status"></p><div id="operation-runs"></div><pre id="operation-result" tabindex="0"></pre></dialog>
 <dialog id="completed-history-dialog" class="completed-history-dialog" aria-labelledby="completed-history-title" aria-describedby="completed-history-hint">
   <header class="dialog-header"><h2 id="completed-history-title" data-i18n="completedHistory"></h2><button id="completed-history-close" type="button" data-i18n-aria-label="closeDetails">×</button></header>
-  <p id="completed-history-hint" class="muted" data-i18n="historyHint"></p>
+  <p id="completed-history-hint" data-help-for="completed-history-title" data-i18n="historyHint"></p>
   <label><span data-i18n="searchCompleted"></span><input id="completed-history-search" type="search" maxlength="200" autocomplete="off" data-i18n-placeholder="searchCompleted"></label>
   <p id="completed-history-status" role="status" aria-live="polite"></p>
   <div class="completed-table-scroll" tabindex="0" role="region" data-i18n-aria-label="completedHistory">
@@ -126,7 +126,7 @@
   <div class="sheet-body"><p id="item-sheet-meta" class="eyebrow"></p><h2 id="item-sheet-title" data-i18n="itemDetails"></h2>
     <div id="item-read"><p id="item-description"></p><p id="item-blocker" class="item-blocker" hidden></p><dl class="item-record"><dt data-i18n="itemId"></dt><dd id="item-record-id"></dd><dt data-i18n="taskId"></dt><dd id="item-record-task"></dd><dt data-i18n="git"></dt><dd id="item-record-git"></dd></dl><div class="sheet-actions"><button id="item-edit" type="button" data-i18n="edit"></button><button id="item-guide" type="button" data-i18n="guideAgent"></button></div></div>
     <p id="item-impact" class="architecture-tag"></p>
-    <section id="item-checks"><h3 data-i18n="checks"></h3><ul id="item-criteria" class="clean-list"></ul><p class="muted" data-i18n="itemChecksHint"></p><details id="item-history" hidden><summary data-i18n="legacyHistory"></summary><p id="item-review-record"></p></details></section>
+    <section id="item-checks"><h3 id="item-checks-title" data-i18n="checks"></h3><ul id="item-criteria" class="clean-list"></ul><p id="item-checks-hint" data-help-for="item-checks-title" data-i18n="itemChecksHint"></p><details id="item-history" hidden><summary data-i18n="legacyHistory"></summary><p id="item-review-record"></p></details></section>
     <form id="workitem-form" hidden>
       <input id="workitem-id" type="hidden">
       <label><span data-i18n="title"></span><input id="workitem-title" required maxlength="160" autocomplete="off" data-i18n-placeholder="itemTitlePlaceholder"></label>
@@ -142,7 +142,7 @@
 <div id="item-menu" class="context-menu" role="menu" data-i18n-aria-label="itemActions" hidden></div>
 <dialog id="workspace-drafts-dialog" class="action-dialog"><header class="dialog-header"><h2 data-i18n="workspaceDrafts"></h2><button id="workspace-drafts-close" type="button" data-i18n-aria-label="closeDetails">×</button></header><p data-i18n="draftsLifetime"></p><textarea id="workspace-drafts-text" readonly rows="16" data-i18n-aria-label="workspaceDrafts"></textarea></dialog>
 <dialog id="confirm-dialog"><form method="dialog"><div class="dialog-mark" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3 4.5 7.2v9.6L12 21l7.5-4.2V7.2L12 3Z"/><path d="M12 8v4M12 16v.1"/></svg></div><p class="eyebrow" data-i18n="writeConfirmation"></p><h2 data-i18n="confirmTitle"></h2><p id="confirm-description"></p><p id="confirm-workspace" class="path"></p><div class="actions"><button value="cancel" data-i18n="cancel"></button><button value="confirm" class="primary" data-i18n="confirm"></button></div></form></dialog>
-<script src="../runtime/renderer/i18n.js"></script><script src="../runtime/renderer/graph-model.js"></script><script src="../runtime/renderer/graph.js"></script><script src="../runtime/renderer/design.js"></script><script src="../runtime/renderer/shell.js"></script><script src="../runtime/renderer/panel.js"></script>
+<script src="../runtime/renderer/i18n.js"></script><script src="../runtime/renderer/help.js"></script><script src="../runtime/renderer/graph-model.js"></script><script src="../runtime/renderer/graph.js"></script><script src="../runtime/renderer/design.js"></script><script src="../runtime/renderer/shell.js"></script><script src="../runtime/renderer/panel.js"></script>
 <script src="../runtime/renderer/documents.js"></script>
 <script src="../runtime/renderer/git-history.js"></script>
 </body></html>

@@ -1,0 +1,15 @@
+/* Contextual help owns its trigger and top-layer copy; never a page-wide explanation panel. */
+[data-help-for]:not([popover]) { display: none; }
+.context-help-label { display: inline-flex; align-items: center; gap: 4px; min-width: 0; max-width: 100%; }
+.context-help-label > :first-child { min-width: 0; }
+.context-help { display: inline-flex; align-items: center; flex: none; vertical-align: middle; }
+button.context-help-trigger { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 28px; min-width: 28px; height: 28px; min-height: 28px; padding: 0; gap: 0; border: 0; border-radius: 50%; background: transparent; color: var(--muted); font-size: 12px; font-weight: 600; line-height: 1; }
+.context-help-trigger > span { display: grid; place-items: center; width: 17px; height: 17px; border: 1px solid currentColor; border-radius: 50%; }
+.context-help-trigger[aria-expanded='true'] { color: var(--accent); background: var(--selected); }
+.context-help-popover { position: fixed; inset: auto; margin: 0; width: max-content; min-width: 0; max-width: min(360px, calc(100vw - 24px)); max-height: min(420px, calc(100dvh - 24px)); overflow: auto; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--overlay-shadow); background: var(--surface); color: var(--text); font: 400 14px/1.65 var(--font-ui); white-space: pre-wrap; overflow-wrap: anywhere; text-align: left; cursor: auto; animation: none; }
+.context-help-popover::backdrop { background: transparent; pointer-events: none; }
+.context-help-popover :is(p,small), #local-console-info .context-help-popover p { margin: 0; color: inherit; font: inherit; white-space: pre-wrap; }
+.context-help-popover p + p { margin-top: 8px; }
+@media (hover: hover) and (pointer: fine) { button.context-help-trigger:hover { color: var(--accent); background: var(--selected); } }
+@media (pointer: coarse) { button.context-help-trigger { width: 44px; min-width: 44px; height: 44px; min-height: 44px; } }
+@media (forced-colors: active) { .context-help-popover { border-color: CanvasText; } .context-help-trigger[aria-expanded='true'] { outline: 1px solid Highlight; } }

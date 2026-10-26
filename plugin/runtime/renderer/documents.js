@@ -18,10 +18,7 @@
     head.dataset.pageControl = 'documents-section';
     head.hidden = true;
     const badge = el('span', '', 'badge');
-    const safety = el('details', '', 'reader-safety');
-    const safetyTitle = el('summary');
-    const hint = el('p');
-    safety.append(safetyTitle, hint);
+    const hint = id(el('p'), 'reader-help'), safety = createContextHelp(hint, () => w().title);
     const refresh = id(el('button'), 'documents-refresh');
     refresh.type = 'button';
     const smaller = id(el('button', 'A−'), 'documents-smaller');
@@ -542,7 +539,6 @@
         badge.textContent = w().read;
         hint.textContent = w().hint;
         refresh.textContent = w().refresh;
-        safetyTitle.textContent = zh ? '阅读限制' : 'Reading limits';
         focus.textContent = zh ? '专注阅读' : 'Focus';
         smaller.setAttribute('aria-label', zh ? '缩小正文' : 'Smaller text');
         larger.setAttribute('aria-label', zh ? '放大正文' : 'Larger text');

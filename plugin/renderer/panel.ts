@@ -68,7 +68,7 @@ function lock(value) {
       'main button, main input, main textarea, #item-sheet button, #item-sheet input, #item-sheet textarea, #item-sheet select, .action-dialog button, .action-dialog input, .action-dialog textarea, .action-dialog select'
     )
     .forEach((el) => {
-      (el as HTMLButtonElement | HTMLInputElement | HTMLTextAreaElement).disabled = value;
+      if (!el.hasAttribute('data-context-help')) (el as HTMLButtonElement | HTMLInputElement | HTMLTextAreaElement).disabled = value;
     });
   $('workitem-blocker').disabled = value || !editingItem;
   for (const id of ['workitem-save', 'item-edit', 'initialize'])
@@ -922,9 +922,8 @@ function renderBoard() {
       history.setAttribute('aria-haspopup', 'dialog');
       history.addEventListener('click', () => openCompletedHistory(history));
       const hint = document.createElement('p');
-      hint.className = 'completed-summary';
       hint.textContent = t('completedDragHint');
-      column.append(summary, history, hint);
+      header.append(createContextHelp(hint, () => t('done'))); column.append(summary, history);
     }
     column.addEventListener('dragover', (event) => {
       if (draggedItem && !busy && !searchQuery && navigator.onLine && !(stage === 'done' && effectiveStage(itemById(draggedItem)) === 'done')) {

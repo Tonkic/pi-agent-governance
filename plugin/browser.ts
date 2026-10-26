@@ -5,7 +5,7 @@ import type { Socket } from 'node:net';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 const { panelInvoke } = require('./panel');
 const MAX_BODY = 1024 * 1024;
-const rendererFiles = ['i18n', 'graph-model', 'graph', 'design', 'shell', 'panel', 'documents', 'git-history'];
+const rendererFiles = ['i18n', 'help', 'graph-model', 'graph', 'design', 'shell', 'panel', 'documents', 'git-history'];
 export async function noLinks(file: string) {
   let current = path.resolve(file);
   for (;;) {
@@ -44,6 +44,7 @@ async function assets(assetRoot: string, webAssetsRoot: string) {
     ['/panel/panel.css', path.join(assetRoot, 'renderer/panel.css'), 'text/css; charset=utf-8'],
     ['/panel/tokens.css', path.join(assetRoot, 'renderer/tokens.css'), 'text/css; charset=utf-8'],
     ['/panel/shell.css', path.join(assetRoot, 'renderer/shell.css'), 'text/css; charset=utf-8'],
+    ['/panel/help.css', path.join(assetRoot, 'renderer/help.css'), 'text/css; charset=utf-8'],
     ['/panel/views.css', path.join(assetRoot, 'renderer/views.css'), 'text/css; charset=utf-8'],
     ['/panel/documents.css', path.join(assetRoot, 'renderer/documents.css'), 'text/css; charset=utf-8'],
     ['/console/bridge.js', path.join(webAssetsRoot, 'bridge.js'), 'text/javascript; charset=utf-8'],

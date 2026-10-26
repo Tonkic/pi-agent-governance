@@ -73,13 +73,13 @@ test('renderer leads with architecture, removes promotional guide and keeps vali
   for (const match of html.matchAll(/href="#([^"]+)"/g)) assert.ok(ids.includes(match[1]), `Missing navigation target ${match[1]}`);
   assert.equal([...html.matchAll(/data-module="/g)].length, 0, 'No fixed plugin graph may masquerade as project data');
   for (const id of ['show-architecture', 'show-workflow', 'board-columns', 'workitem-form']) assert.ok(ids.includes(id));
-  for (const file of ['graph-model.js', 'graph.js', 'shell.js', 'panel.js']) assert.ok(html.includes(`src="../runtime/renderer/${file}"`));
+  for (const file of ['help.js', 'graph-model.js', 'graph.js', 'shell.js', 'panel.js']) assert.ok(html.includes(`src="../runtime/renderer/${file}"`));
   const graphScript = await fs.readFile(path.join(__dirname, '../plugin/renderer/graph.js'), 'utf8');
   for (const match of graphScript.matchAll(/get\('([^']+)'/g)) assert.ok(ids.includes(match[1]), `Missing graph control ${match[1]}`);
 });
 test('browser bundle starts without Node globals and reports static preview', async () => {
   const vm = require('node:vm');
-  const script = (await Promise.all(['i18n', 'design', 'shell', 'panel'].map(name => fs.readFile(path.join(__dirname, `../plugin/renderer/${name}.js`), 'utf8')))).join('\n');
+  const script = (await Promise.all(['i18n', 'help', 'design', 'shell', 'panel'].map(name => fs.readFile(path.join(__dirname, `../plugin/renderer/${name}.js`), 'utf8')))).join('\n');
   const elements = new Map();
   const document = {
     addEventListener() {}, documentElement: { dataset: {} }, querySelectorAll: () => [], querySelector: () => ({ hidden: false }),
@@ -247,7 +247,7 @@ test('renderer operation writes reject offline entry and offline confirmation; r
 test('renderer operation buttons honor offline state both on render and on unlock', async () => {
   const elements = new Map();
   const element = () => ({ disabled: false, children: [], append(...children) { this.children.push(...children); },
-    addEventListener() {}, replaceChildren() { this.children = []; } });
+    hasAttribute() { return false; }, addEventListener() {}, replaceChildren() { this.children = []; } });
   const $ = id => { if (!elements.has(id)) elements.set(id, element()); return elements.get(id); };
   const document = { createElement: element, querySelectorAll: selector => {
     const buttons = $('operation-runs').children.flatMap(row => row.children.filter(child => child.type === 'button'));
@@ -312,7 +312,8 @@ test('three-stage renderer folds accepted snapshots into done without mutating h
   assert.match(script, /legacyAcceptanceTask/);
   const html = await fs.readFile(path.join(__dirname, '../plugin/renderer/index.html'), 'utf8');
   assert.match(html, /<details id="item-history" hidden>/);
-  assert.match(html, /id="item-checks"><h3 data-i18n="checks"/);
+  assert.match(html, /id="item-checks"><h3 id="item-checks-title" data-i18n="checks"/);
+  assert.match(html, /id="item-checks-hint" data-help-for="item-checks-title"/);
   assert.doesNotMatch(html, /accept-dialog|accept-form|item-human-review|item-agent-review/);
   const css = await fs.readFile(path.join(__dirname, '../../plugin/renderer/views.css'), 'utf8');
   assert.doesNotMatch(css, /data-stage=['"]accepted|card-review-actions|review-button|accept-dialog|criterion-check/);

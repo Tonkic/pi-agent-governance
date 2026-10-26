@@ -53,6 +53,10 @@
     const safety = make('p', '', 'hint');
     pane.append(toolbar, status, graphPane, safety);
     host.append(pane, tooltip, detail);
+    const helpCopy = make('div');
+    helpCopy.id = 'git-history-help';
+    helpCopy.append(subtitle, safety);
+    attachContextHelp(helpCopy, title, () => w().history);
     let root = null, epoch = -1, generation = 0, listRequest = 0, detailRequest = 0, diffRequest = 0;
     let listLoading = false, detailLoading = false, diffLoading = false, attempted = false;
     let data = null, commits = [], selected = '', origin = '', scrollY = 0, message = '', laneLimited = false;

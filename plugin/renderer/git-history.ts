@@ -24,6 +24,7 @@
   const detailStatus = make('p', '', 'history-dialog-status'); detailStatus.setAttribute('role', 'status'); detailStatus.hidden = true;
   const back = button('', 'git-history-back'), detailContent = make('div', '', 'history-detail-body'); detailContent.id = 'git-history-detail-content'; heading.append(dialogTitle, back); detail.append(heading, detailStatus, detailContent);
   const safety = make('p', '', 'hint'); pane.append(toolbar, status, graphPane, safety); host.append(pane, tooltip, detail);
+  const helpCopy = make('div'); helpCopy.id = 'git-history-help'; helpCopy.append(subtitle, safety); attachContextHelp(helpCopy, title, () => w().history);
   let root: string = null, epoch = -1, generation = 0, listRequest = 0, detailRequest = 0, diffRequest = 0;
   let listLoading = false, detailLoading = false, diffLoading = false, attempted = false;
   let data: any = null, commits: any[] = [], selected = '', origin = '', scrollY = 0, message = '', laneLimited = false;

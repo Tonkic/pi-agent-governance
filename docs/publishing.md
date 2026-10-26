@@ -1,6 +1,6 @@
 # 产物与安装 / Distributions
 
-支持**通用MCP＋Skills＋本地Web控制台包**及**PI-Desktop官方piplug**，附Codex、Claude Code、Pi配置示例。当前 **0.10.1** 修复[ASCII权威转换画板](architecture-design.md)，patch不市场；保留0.10.0 [GitHub协作](collaboration.md)。共享改动需完整检查、官方包与main双OS CI，不自动安装/npm/建标签。原SSH市场规则拒绝仍保留，不重试同类包；运行时与许可继续随包，见[交付规则](releasing.md)。
+支持**通用MCP＋Skills＋本地Web控制台包**及**PI-Desktop官方piplug**，附Codex、Claude Code、Pi配置示例。当前 **0.10.2** 优化按需帮助与内容优先，patch不市场；保留[ASCII画板](architecture-design.md)与[GitHub协作](collaboration.md)。共享改动需完整检查、官方包与main双OS CI，不自动安装/npm/建标签。原SSH市场规则拒绝仍保留，不重试同类包；运行时与许可继续随包，见[交付规则](releasing.md)。
 
 0.8.3市场包现已published；0.9.0单次提交被平台eval动态执行规则拒绝，版本未创建，不重试或绕过，详见[记录](../changes/active/project-board-release/ssh-portable-090.md)。每次产品交付使用新版本，不覆盖已用/待审版本。SSH配置、凭据与快照仅位于忽略的.remote-local，不进入公开产物；见[SSH](remote.md)。
 
