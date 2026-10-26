@@ -20,6 +20,18 @@
       "gitTaskId": null
     },
     {
+      "id": "ascii-authority-0101",
+      "title": "ASCII权威与可视化结构一致",
+      "description": "0.10.1已交付：受管ASCII解析后驱动画板，旧JSON不覆盖结构，旧基线/指纹兼容。实际完整CI40280774929双OS各299测试/279截图/10行为通过，官方110文件包。保留原总体宿主/目视和市场阻塞。",
+      "blocker": "",
+      "stage": "done",
+      "taskId": "project-board-release",
+      "criteria": [],
+      "architectureImpact": "affects",
+      "gitTaskId": null,
+      "completedAt": "2026-10-26T06:48:20.924Z"
+    },
+    {
       "id": "github-authority-0100",
       "title": "GitHub权威协作0.10.0",
       "description": "已交付源码a9bce18与官方110文件包至main8d1c703；实际双OS CI40016034271各293测试/279截图/10行为全通过。已绑定GitHub故障不降级、两端独立草稿分支、双端unknown与SHA核对；CLI非浏览器实时GitHub视图。原SSH市场eval拒绝保留，不重试。",
@@ -480,18 +492,7 @@
       "architectureImpact": "none",
       "gitTaskId": null,
       "completedAt": "2026-10-19T08:25:19.973Z"
-    },
-    {
-      "id": "ascii-authority-0101",
-      "title": "ASCII权威与可视化结构一致",
-      "description": "用户批准以ASCII为准，修复旧节点覆盖ASCII；保留旧基线、安全和原总体阻塞。0.10.1补丁不市场。",
-      "blocker": "",
-      "stage": "todo",
-      "taskId": "project-board-release",
-      "criteria": [],
-      "architectureImpact": "affects",
-      "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-26T06:02:10.725Z"
+  "updatedAt": "2026-10-26T06:48:20.924Z"
 }
