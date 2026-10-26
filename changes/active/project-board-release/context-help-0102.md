@@ -19,7 +19,14 @@
 - 首次full通过类型/构建/299单元、0失败/跳过；末段历史浏览器因帮助段误用completed-summary统计类失败，各原行为场景已执行但整轮未报通过。删除该多余类，不改原5/9统计断言；随后一次构建的完整浏览器295截图/原10行为及44相关单元全部通过。复用未变299检查，明确不是最终源码本机重跑299。
 - 官方i18n 0失败/12既有review，PluginCheck/PluginPack通过：113文件1970590字节，SHA256 f5366f43745eb7e687a469bd5b97a661a40e8887373b442cc1b15601adc8f36a；4既有权限警告，未新增权限。CRLF原行为来源499042字符，原预算/绑定不变。
 - 实际通过Browser截图查看桌面/手机明暗4图，scratch/help0102-preview.html及browser-screenshot-1793000668609.jpg留存；这是自动化夹具的代理目视，不是用户项目/物理触屏/安装宿主验收。
-- 日志help0102-full.log、final-browser.log、final-targeted.log、pending-red.log、i18n.log及截图在本会话scratch。源码/包已完成本地检查，受管提交/分发/main双OS CI待核实。
+- 日志help0102-full.log、final-browser.log、final-targeted.log、pending-red.log、i18n.log及截图在本会话scratch；最终交付如下。
+
+## 最终交付
+
+- 产品提交df0e67cec0cc531cc9d3b19e59660bf88ac35878，main def00e273db1e2dda179fa267c5bca00abdcab59树等同；正常push及完整远端SHA核对通过。
+- 实际完整CI [40289012495](https://github.com/Tonkic/pi-agent-governance/actions/runs/40289012495) Linux/Windows全部步骤success；日志核对两套各299测试/299通过/0失败跳过，295截图检查及原10行为，包含待打开取消回归。CLI查询EOF/TLS超时通过公共只读API核实后恢复日志读取，没有重推或重跑。
+- 提交来源df0e67c的官方113条目逐项匹配；通用包327924字节，SHA256 18e25c84ef1770b63c65889ab912b62bcc7c52a990091d7cd31b8ed25cbd3a15；update:plan核对0.10.2 patch/marketfalse，release:auto计划publishfalse/mutationfalse。
+- 完成记录仅STATE/看板/本证据，按records检查后提交；复用实际产品CI，不冒充记录SHA重新全测。仅本工作项完成，总体working、真实宿主/物理触屏/总体目视与原市场阻塞保留；没有后续获批可执行项。
 
 ## 限制
 
