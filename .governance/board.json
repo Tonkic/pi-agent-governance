@@ -20,6 +20,18 @@
       "gitTaskId": null
     },
     {
+      "id": "context-help-0102",
+      "title": "说明按需显示与内容优先",
+      "description": "0.10.2已交付：低频说明移到圆圈问号，hover/focus/click及触屏可读，浮层不挤正文；错误阻塞/确认保留。实际CI40289012495双OS各299测试/295截图/10行为成功，官方113文件包与4图目视完成。原总体宿主/物理触屏/市场阻塞保留。",
+      "blocker": "",
+      "stage": "done",
+      "taskId": "project-board-release",
+      "criteria": [],
+      "architectureImpact": "none",
+      "gitTaskId": null,
+      "completedAt": "2026-10-26T08:12:49.165Z"
+    },
+    {
       "id": "ascii-authority-0101",
       "title": "ASCII权威与可视化结构一致",
       "description": "0.10.1已交付：受管ASCII解析后驱动画板，旧JSON不覆盖结构，旧基线/指纹兼容。实际完整CI40280774929双OS各299测试/279截图/10行为通过，官方110文件包。保留原总体宿主/目视和市场阻塞。",
@@ -389,18 +401,6 @@
       "gitTaskId": null
     },
     {
-      "id": "context-help-0102",
-      "title": "说明按需显示与内容优先",
-      "description": "低频说明移至圆圈问号，hover/focus/click可读；保留当前状态、错误、写入后果与原总体阻塞。0.10.2 patch不市场。",
-      "blocker": "",
-      "stage": "doing",
-      "taskId": "project-board-release",
-      "criteria": [],
-      "architectureImpact": "none",
-      "gitTaskId": null,
-      "completedAt": null
-    },
-    {
       "id": "ssh-portable-090",
       "title": "目录内可迁移SSH与远端优先备份 · 0.9.0",
       "description": "源码/官方0.9.0包/GitHub完成，main3219978双OS CI39746714903各280测试/279截图/10行为通过；加密迁移与真实SSH故障回归通过。市场单次提交明确拒绝eval动态执行，0.9.0未创建，不重试/绕过；待平台处理或另行批准兼容方案。",
@@ -506,5 +506,5 @@
       "completedAt": "2026-10-19T08:25:19.973Z"
     }
   ],
-  "updatedAt": "2026-10-26T07:05:27.006Z"
+  "updatedAt": "2026-10-26T08:12:49.165Z"
 }
