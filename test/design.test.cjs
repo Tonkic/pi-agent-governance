@@ -257,7 +257,7 @@ test('saved ASCII and canvas share node identities and directed relationships wi
   await f.confirm();
   await f.mutate('architecture_design_begin', { reason: 'Change relationship' });
   const next = structuredClone((await f.snapshot()).baseline.proposal);
-  next.edges[0].label = 'new link';
+  next.document = next.document.replace('-- reads intent -->', '-- new link -->');
   await f.mutate('architecture_design_save', { proposal: next });
   s = await f.snapshot();
   assert.match(s.draft.ascii, /-- new link -->/);

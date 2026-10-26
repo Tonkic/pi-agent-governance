@@ -1,6 +1,6 @@
 {
   "name": "pi-agent-governance",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "private": true,
   "description": "Shared repository governance core, MCP/Skills and PI-Desktop adapter",
   "scripts": {

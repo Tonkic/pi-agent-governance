@@ -63,8 +63,8 @@ description: >-
 
 ## 方案设计模式
 
-正文按Microsoft风格描述用途、范围、约束、决定与代价。按上游方法用ASCII方框、方向箭头表达架构，同时给出完全对应的稳定模块ID、节点与关系。
-在插件内以nodes/edges为同一份结构数据，保存会自动生成ASCII区块写入document，画板直接显示这些节点和关系。保存后读取snapshot里的ascii并展示，不再另画一份可能不一致的图。不解析任意手绘ASCII排版，不要求draw.io/CLI。一张图一个层级，通常3–5职责。
+正文说明用途、范围、约束、决定与代价。先用受管ASCII方框/方向箭头确定结构，再由它转换可视化；不另维护竞争的JSON拓扑。
+沿用`Nodes v2`＋四行节点框（边框、`| [id] |`、`| 标题 |`、边框），`Relationships`下写`[from] -- 标签 --> [to]`，无边写`(none)`。用稳定ID；控制字符/反斜线/反引号/尖括号用`\uXXXX`转义。只解析该固定语法，不猜任意手绘布局；例见docs/architecture-design.md。一张图一个层级，通常3–5职责。
 概念职责可以尚无代码，`files: []`。若关联文件，仅使用安全项目相对路径；不把计划路径当源码验证。
 
 在面板或CLI已明确发起的治理设计任务中（MCP工具名为 `governance`，动作通过JSON的 `action` 字段传递）：
@@ -76,13 +76,13 @@ description: >-
 ```json
 {
   "title": "设计标题",
-  "document": "可读Markdown说明，包含决定、代价与限制",
+  "document": "可读说明和权威ASCII区块，见下文；首次无区块时兼容nodes/edges初始化",
   "nodes": [{"id":"app","title":"应用入口","description":"计划承担的职责","files":[]}],
   "edges": []
 }
 ```
 
-4. 保存后读取设计快照，返回其ASCII图与方案说明；用户可在PI面板或独立本地控制台的“项目架构→设计方案”查看并人工审阅。生成区块使用governance:architecture-ascii:start/end标记，保存自动更新，不手工维护第二份关系。
+4. 读取快照返回的ascii/graph并逐条核对方向；新建可先用nodes/edges初始化一次，随后只编辑document中的governance:architecture-ascii:start/end完整text围栏区块。有区块时它决定节点/标题/边，nodes仅补充同ID说明和files；无效结构拒绝，不用旧JSON覆盖。用户刷新“项目架构→设计方案”审阅，不能另画一份不一致的图。
 5. 不调用确认接口，不把会话结束标成已确认；不改 `.governance/architecture.json`。
 
 最多40节点、100边，正文含生成ASCII共20000字符；超限缩小设计范围，不截掉职责/关系。旧基线只生成只读ASCII视图、不改文件；新保存方案包含图，重复保存不重复追加。

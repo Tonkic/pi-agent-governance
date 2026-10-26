@@ -18,7 +18,7 @@ function timestamp(value) {
 const asciiStart = '<!-- governance:architecture-ascii:start -->';
 const asciiEnd = '<!-- governance:architecture-ascii:end -->';
 // Single-line literal labels cannot break the Markdown fence or ASCII box layout.
-const asciiLabel = (value) => value.replace(/[\u0000-\u001f\u007f`<>]/g, (c) => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
+const asciiLabel = (value, legacy = false) => value.replace(legacy ? /[\u0000-\u001f\u007f`<>]/g : /[\\\u0000-\u001f\u007f`<>]/g, (c) => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
 function cellWidth(value) {
     return [...value].reduce((width, c) => {
         if (/\p{Mark}/u.test(c))
@@ -37,9 +37,9 @@ function cellWidth(value) {
                 : 1));
     }, 0);
 }
-function architectureAscii(proposal) {
+function architectureAscii(proposal, legacy = false) {
     const boxes = proposal.nodes.map((n) => {
-        const lines = [`[${n.id}]`, asciiLabel(n.title)];
+        const lines = [`[${n.id}]`, asciiLabel(n.title, legacy)];
         const width = Math.max(...lines.map(cellWidth));
         const border = '+' + '-'.repeat(width + 2) + '+';
         return [
@@ -48,8 +48,8 @@ function architectureAscii(proposal) {
             border
         ].join('\n');
     });
-    const arrows = proposal.edges.map((e) => `[${e.from}] -- ${asciiLabel(e.label)} --> [${e.to}]`);
-    return ('Nodes\n\n' + boxes.join('\n\n') + '\n\nRelationships\n\n' + (arrows.join('\n') || '(none)'));
+    const arrows = proposal.edges.map((e) => `[${e.from}] -- ${asciiLabel(e.label, legacy)} --> [${e.to}]`);
+    return ((legacy ? 'Nodes' : 'Nodes v2') + '\n\n' + boxes.join('\n\n') + '\n\nRelationships\n\n' + (arrows.join('\n') || '(none)'));
 }
 function asciiDocument(document) {
     const start = document.indexOf(asciiStart), end = document.indexOf(asciiEnd);
@@ -68,13 +68,72 @@ function asciiDocument(document) {
     };
 }
 const asciiBlock = (diagram) => `${asciiStart}\n\`\`\`text\n${diagram}\n\`\`\`\n${asciiEnd}`;
-const designView = (entry) => entry
-    ? {
-        ...entry,
-        ascii: entry.proposal ? architectureAscii(entry.proposal) : '',
-        documentBody: entry.proposal ? asciiDocument(entry.proposal.document).body : ''
+function managedDiagram(block) {
+    const prefix = `${asciiStart}\n\`\`\`text\n`, suffix = `\n\`\`\`\n${asciiEnd}`;
+    if (!block.startsWith(prefix) || !block.endsWith(suffix))
+        throw Error('Invalid ASCII text fence');
+    return block.slice(prefix.length, -suffix.length);
+}
+// Deliberately parse a bounded grammar, never infer edges from arbitrary prose or pixels.
+function parseArchitectureAscii(diagram, metadata = { nodes: [], edges: [] }, derivedLegacy = false) {
+    // Only validated pre-ASCII records need the larger derived-text bound; new documents stay at 20000.
+    if (typeof diagram !== 'string' || diagram.length > (derivedLegacy ? 200000 : 20000))
+        throw Error('Invalid ASCII budget');
+    const lines = diagram.replace(/\r\n/g, '\n').split('\n');
+    const legacy = lines[0] === 'Nodes';
+    if (!legacy && lines[0] !== 'Nodes v2')
+        throw Error('Invalid ASCII Nodes heading');
+    let cursor = 1;
+    const skip = () => { while (lines[cursor] === '')
+        cursor++; };
+    const decode = (value, previous) => {
+        if (legacy && typeof previous === 'string' && asciiLabel(previous, true) === value)
+            return previous;
+        if (/[\u0000-\u001f\u007f`<>]/.test(value) || /\\(?!u[0-9a-fA-F]{4})/.test(value))
+            throw Error('Invalid ASCII label escape');
+        return value.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+    };
+    const nodes = [], edges = [], ids = new Set(), pairs = new Set();
+    skip();
+    while (cursor < lines.length && lines[cursor] !== 'Relationships') {
+        const border = lines[cursor++], key = lines[cursor++]?.match(/^\| \[([a-z0-9][a-z0-9-]{0,63})\] +\|$/);
+        const title = lines[cursor++]?.match(/^\| (.*?) +\|$/), bottom = lines[cursor++];
+        if (!/^\+-+\+$/.test(border) || bottom !== border || !key || !title || ids.has(key[1]) || nodes.length >= 40)
+            throw Error('Invalid ASCII node box or duplicate ID');
+        const old = metadata.nodes.find(n => n?.id === key[1]);
+        nodes.push({ id: key[1], title: designText(decode(title[1], old?.title), 'ASCII node title', 100) });
+        ids.add(key[1]);
+        skip();
     }
-    : null;
+    if (!nodes.length || lines[cursor++] !== 'Relationships')
+        throw Error('Invalid ASCII Relationships heading');
+    skip();
+    if (cursor >= lines.length)
+        throw Error('Invalid ASCII relationships; use (none) for no edges');
+    if (lines[cursor] === '(none)')
+        cursor++;
+    else
+        while (cursor < lines.length && lines[cursor] !== '') {
+            const match = lines[cursor++]?.match(/^\[([a-z0-9-]+)\] -- (.+) --> \[([a-z0-9-]+)\]$/);
+            if (!match || !ids.has(match[1]) || !ids.has(match[3]) || match[1] === match[3] || pairs.has(`${match[1]}:${match[3]}`) || edges.length >= 100)
+                throw Error('Invalid ASCII relationship or endpoint');
+            const old = metadata.edges.find(e => e?.from === match[1] && e?.to === match[3]);
+            edges.push({ from: match[1], to: match[3], label: designText(decode(match[2], old?.label), 'ASCII edge label', 100) });
+            pairs.add(`${match[1]}:${match[3]}`);
+        }
+    skip();
+    if (cursor !== lines.length)
+        throw Error('Invalid trailing ASCII content');
+    return { nodes, edges };
+}
+function asciiGraph(proposal) {
+    const parts = asciiDocument(proposal.document);
+    const ascii = parts.block === null ? architectureAscii(proposal, true) : managedDiagram(parts.block);
+    const parsed = parseArchitectureAscii(ascii, proposal, parts.block === null);
+    const nodes = parsed.nodes.map(n => ({ ...proposal.nodes.find(old => old.id === n.id), ...n }));
+    return { ascii, graph: { title: proposal.title, nodes, edges: parsed.edges }, documentBody: parts.body };
+}
+const designView = (entry) => entry ? { ...entry, ...(entry.proposal ? asciiGraph(entry.proposal) : { ascii: '', graph: null, documentBody: '' }) } : null;
 function designDiff(before, after) {
     const oldNodes = new Map((before?.nodes || []).map((n) => [n.id, n]));
     const nextNodes = new Map((after?.nodes || []).map((n) => [n.id, n]));
@@ -124,6 +183,14 @@ class ArchitectureDesign {
             !Array.isArray(value.edges) ||
             value.edges.length > 100)
             throw Error('Design proposal requires 1–40 nodes and 0–100 edges');
+        const source = asciiDocument(designText(value.document, 'document', 20000));
+        if (forSave && source.block !== null) {
+            const parsed = parseArchitectureAscii(managedDiagram(source.block), value);
+            value = { ...value, nodes: parsed.nodes.map(n => {
+                    const old = value.nodes.find(old => old?.id === n.id);
+                    return { ...n, description: old?.description ?? n.title, files: old?.files ?? [] };
+                }), edges: parsed.edges };
+        }
         const ids = new Set(), files = new Set();
         const nodes = [];
         for (const n of value.nodes) {
@@ -162,8 +229,11 @@ class ArchitectureDesign {
         });
         const document = designText(value.document, 'document', 20000);
         const parts = asciiDocument(document), diagram = architectureAscii({ nodes, edges });
-        if (!forSave && parts.block !== null && parts.block !== asciiBlock(diagram))
-            throw Error('ASCII block differs from design nodes or relationships');
+        if (!forSave && parts.block !== null) {
+            const parsed = parseArchitectureAscii(managedDiagram(parts.block), { nodes, edges });
+            if (digest(parsed) !== digest({ nodes: nodes.map(({ id, title }) => ({ id, title })), edges }))
+                throw Error('ASCII block differs from design nodes or relationships');
+        }
         return {
             title: designText(value.title, 'title', 160),
             document: forSave
@@ -325,4 +395,4 @@ class ArchitectureDesign {
         });
     }
 }
-module.exports = { ArchitectureDesign, designFile, designDiff, architectureAscii };
+module.exports = { ArchitectureDesign, designFile, designDiff, architectureAscii, parseArchitectureAscii };

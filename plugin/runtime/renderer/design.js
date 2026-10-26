@@ -39,7 +39,7 @@ function selectedDesign() {
 }
 function designGraphView() {
     const selected = selectedDesign();
-    const graph = selected?.proposal || null;
+    const graph = selected?.graph || null;
     text('architecture-title', t('designTitle'));
     text('graph-overview', graph?.title || t('designEmpty'));
     text('graph-source', t('designScope'));

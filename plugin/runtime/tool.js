@@ -64,7 +64,7 @@ module.exports = {
                 required: ['title', 'document', 'nodes', 'edges'],
                 properties: {
                     title: { type: 'string' },
-                    document: { type: 'string', description: 'Readable design intent and tradeoffs. On save, a canonical ASCII diagram is generated in a managed Markdown block from the same nodes/edges as the canvas; do not maintain a separate diagram. Not implementation evidence.' },
+                    document: { type: 'string', description: 'Design intent and authoritative managed ASCII text block. Node boxes [id]/title and [from] -- label --> [to] determine canvas structure; nodes supply descriptions/files. Invalid ASCII is rejected, never overwritten by stale JSON. Without a block, legacy nodes/edges seed one. Not implementation evidence.' },
                     nodes: { type: 'array', items: { type: 'object', required: ['id', 'title', 'description', 'files'], properties: {
                                 id: { type: 'string' }, title: { type: 'string' }, description: { type: 'string' }, files: { type: 'array', items: { type: 'string' } }
                             } } },

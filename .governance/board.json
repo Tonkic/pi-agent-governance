@@ -480,7 +480,18 @@
       "architectureImpact": "none",
       "gitTaskId": null,
       "completedAt": "2026-10-19T08:25:19.973Z"
+    },
+    {
+      "id": "ascii-authority-0101",
+      "title": "ASCII权威与可视化结构一致",
+      "description": "用户批准以ASCII为准，修复旧节点覆盖ASCII；保留旧基线、安全和原总体阻塞。0.10.1补丁不市场。",
+      "blocker": "",
+      "stage": "todo",
+      "taskId": "project-board-release",
+      "criteria": [],
+      "architectureImpact": "affects",
+      "gitTaskId": null
     }
   ],
-  "updatedAt": "2026-10-23T20:14:56.157Z"
+  "updatedAt": "2026-10-26T06:02:10.725Z"
 }
