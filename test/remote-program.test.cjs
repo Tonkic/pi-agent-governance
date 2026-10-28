@@ -17,4 +17,44 @@ test('local directory links refused and backup remains offline/read-only after w
 test('host trust is explicit, persists in project and rejects replacement',async t=>{const root=await temp(t),store=new RemoteStore(root),p=profile(root);const fp='SHA256:'+Buffer.alloc(32,1).toString('base64').replace(/=+$/,'');await assert.rejects(store.trust(p,fp,false));await store.trust(p,fp,true);assert.equal(await store.trusted(p),fp);await assert.rejects(store.trust(p,'SHA256:'+Buffer.alloc(32,2).toString('base64').replace(/=+$/,''),true),/CHANGED/);});
 test('partial Git ignore cannot expose credentials; remote metadata cannot override local read-only backup identity',async t=>{const root=await temp(t),store=new RemoteStore(root),p=profile(root);cp.execFileSync('git',['init'],{cwd:root,stdio:'ignore'});await fs.writeFile(path.join(root,'.gitignore'),'/.remote-local/connections.json\n');await assert.rejects(store.configure(p,'fixture-password',undefined,true,true),/GITIGNORE/);await fs.writeFile(path.join(root,'.gitignore'),'/.remote-local/\n');await store.configure(p,'fixture-password',undefined,true,true);await store.saveSnapshot(p,{root,platform:process.platform,files:[],truncated:false,readOnly:false,source:{host:'foreign'}});assert.equal((await store.offline(p,root)).readOnly,true);});
 test('release scanner rejects project-local SSH credential paths even when force-added',async t=>{const root=await temp(t);cp.execFileSync('git',['init'],{cwd:root,stdio:'ignore'});await fs.mkdir(path.join(root,'.remote-local'));await fs.writeFile(path.join(root,'.remote-local','connections.json'),'synthetic-public-fixture');cp.execFileSync('git',['add','.'],{cwd:root,stdio:'ignore'});cp.execFileSync('git',['-c','user.name=Fixture','-c','user.email=fixture@example.invalid','-c','core.hooksPath=','-c','commit.gpgSign=false','commit','-m','fixture'],{cwd:root,stdio:'ignore'});const head=cp.execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();assert.throws(()=>require('../scripts/release-safety.cjs').secretScan(root,head),/Secret path/);});
-test('bundled SSH parser retains OpenSSH key support without embedding fixed private material',()=>{const runtime=require('../build/plugin/ssh-runtime'),bytes=sync.readFileSync(path.resolve('build/plugin/ssh-runtime.js'));assert.equal(require('../scripts/release-safety.cjs').containsCredential('',bytes),false);assert.equal(bytes.includes(Buffer.from('MC4CAQAwBQYDK2VwBCIEIHKj+sVa9WcD')),false);const pair=runtime.utils.generateKeyPairSync('ed25519');const parsed=runtime.utils.parseKey(pair.private);assert.equal(parsed.type,'ssh-ed25519');});
+// ssh2 1.17 keygen strips all leading zeroes from an Ed25519 BIT STRING,
+// not just its unused-bits byte. Build ephemeral OpenSSH fixtures independently.
+function ephemeralOpenSSHKey(leadingZero) {
+  const crypto=require('node:crypto');
+  const u32=n=>{const b=Buffer.alloc(4);b.writeUInt32BE(n);return b;};
+  const field=b=>{b=Buffer.from(b);return Buffer.concat([u32(b.length),b]);};
+  for(let attempt=0;attempt<65536;attempt++) {
+    const pair=crypto.generateKeyPairSync('ed25519');
+    const pubDER=pair.publicKey.export({format:'der',type:'spki'});
+    const privDER=pair.privateKey.export({format:'der',type:'pkcs8'});
+    assert.equal(pubDER.length,44);assert.equal(privDER.length,48);
+    const pub=pubDER.subarray(-32),seed=privDER.subarray(-32);
+    if((pub[0]===0)!==leadingZero)continue;
+    const publicBlob=Buffer.concat([field('ssh-ed25519'),field(pub)]);
+    const check=crypto.randomBytes(4);
+    let privateBlob=Buffer.concat([check,check,field('ssh-ed25519'),field(pub),field(Buffer.concat([seed,pub])),field('ephemeral-test')]);
+    const padding=Buffer.from(Array.from({length:(8-privateBlob.length%8)%8},(_,i)=>i+1));
+    privateBlob=Buffer.concat([privateBlob,padding]);
+    const body=Buffer.concat([Buffer.from('openssh-key-v1\0'),field('none'),field('none'),field(''),u32(1),field(publicBlob),field(privateBlob)]);
+    const header=['-----BEGIN','OPENSSH','PRIVATE KEY-----'].join(' ');
+    const footer=['-----END','OPENSSH','PRIVATE KEY-----'].join(' ');
+    return {private:`${header}\n${body.toString('base64').match(/.{1,64}/g).join('\n')}\n${footer}\n`,public:`ssh-ed25519 ${publicBlob.toString('base64')}`,publicBlob,pub};
+  }
+  throw Error('Could not generate required ephemeral Ed25519 boundary fixture');
+}
+test('bundled SSH parser retains OpenSSH key support without embedding fixed private material',()=>{
+  const runtime=require('../build/plugin/ssh-runtime'),bytes=sync.readFileSync(path.resolve('build/plugin/ssh-runtime.js'));
+  assert.equal(require('../scripts/release-safety.cjs').containsCredential('',bytes),false);
+  assert.equal(bytes.includes(Buffer.from('MC4CAQAwBQYDK2VwBCIEIHKj+sVa9WcD')),false);
+  for(const leadingZero of [false,true]) {
+    const pair=ephemeralOpenSSHKey(leadingZero),parsed=runtime.utils.parseKey(pair.private);
+    assert.equal(pair.pub.length,32);assert.equal(pair.pub[0]===0,leadingZero);
+    assert(!(parsed instanceof Error),parsed.message);
+    assert.equal(parsed.type,'ssh-ed25519');assert.deepEqual(parsed.getPublicSSH(),pair.publicBlob);
+    const publicKey=runtime.utils.parseKey(pair.public),message=Buffer.from('ephemeral OpenSSH parser regression');
+    assert(!(publicKey instanceof Error),publicKey.message);
+    const signature=parsed.sign(message);assert(Buffer.isBuffer(signature));
+    assert.equal(publicKey.verify(message,signature),true);
+    assert.equal(publicKey.verify(Buffer.from('changed message'),signature),false);
+  }
+});
