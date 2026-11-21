@@ -2,16 +2,16 @@
   "version": 1,
   "task": "project-board-release",
   "status": "working",
-  "goal": "Implement approved project board, source-backed project architecture and real workflow diagrams; validate release and install locally. Contract: .pi/goal/完成项目任务看板-项目架构图与发布验证-并安装到本机-pi-desktop-20261003-1402.md",
+  "goal": "Deliver read-only project workbench (board, source/design architecture, Git DAG, Docs reader), doc-driven workflow and dual-host compatibility across Antigravity/MCP and PI-Desktop.",
   "criteria": [
-    "Persistent safe work-item board with drag and keyboard controls",
-    "Workspace architecture data with validated source references and isolation",
-    "Dynamic architecture and effective governance workflow views",
-    "Core and Git safety regressions pass",
-    "Browser interaction and six responsive/theme screenshots pass",
-    "Clean dependency install/build/test and versioned plugin package pass",
+    "Read-only three-column work-item board with detail and completed-history views",
+    "Workspace architecture data with validated source references and ASCII-backed optional design",
+    "Dynamic architecture, Git history DAG and safe Markdown documentation reader views",
+    "Core, collaboration and Git safety regressions pass",
+    "Browser interaction and responsive/theme checks pass",
+    "Clean build/test, portable mcp-skills package and official PI-Desktop package checks pass",
     "Local supported installation and real host smoke pass",
-    "Reviewed committed code, post-commit tests and truthful evidence"
+    "Reviewed committed code, synchronized Docs and truthful evidence"
   ],
   "scope": [
     "plugin/",
@@ -31,33 +31,21 @@
     ".gitignore",
     "changes/",
     "mcp/",
-    "web/",
-    "desktop/"
+    "web/"
   ],
   "constraints": [
-    "Preserve unrelated .pi and redesign archive",
-    "User authorizes completed updates to merge into main after review/tests, retest the integrated commit, normally push main and delete only fully merged temporary branches. Preserve release provenance and unfinished branches; do not bypass branch protection, force push or discard user data.",
-    "Every approved small update must be committed, tested and synced to GitHub; stable major/minor upgrades additionally submit marketplace after all release checks. Patch source-sync does not finish main integration. New permissions/policy changes need approval. No superseding pending releases, unattended install or mutation retries.",
-    "2026-10-12用户批准Clean Code修复与经用途核查的无用代码清理，并明确批准.gitignore仅新增/.pi/与/changes/archive/redesign-governance-panel/。保留目录文件、不提交其内容；不改变dirty门禁、不忽略其他源码、不删除发布回退包。工作项clean-code-repair-cleanup；保留既有总体阻塞。",
-    "No bypassing host permissions, test evidence, confirmation or Git safeguards",
-    "2026-10-12用户明确批准仅对历史测试blob d2c45515b924a1f69d92ef00b771e77b7318bbfe的两条合成令牌作扫描例外；真实本机令牌、其他blob/令牌/私钥与敏感路径继续拦截。不重写历史、不关闭扫描。",
-    "用户批准Architecture Copilot作为架构设计Skill，采用稳定基线＋显式修订、复用可视化画板；另明确批准agent.prompt.inject用于宿主按需提供该Skill，不批准自动安装或市场提交。草案不是实现证据，Skill不能自动确认基线或授权代码变更，旧基线保留。",
-    "用户明确修正：架构设计可选，仅需要项目方向或可视化时使用；功能基于多层级文档实现及实际测试，通过即可完成。看板只有待办/进行中/已完成，删除独立人工/Agent验收和新accepted动作；保留旧历史，不新增复杂开发编排。安全写入/权限/Git和真实检查事实不变。",
-    "2026-10-15用户明确批准Clean Code清理：删除已无用的旧操作记录、旧安装包、旧提示词和核实无引用的废弃代码/产物；本授权取代此前保留旧回退包及operations记录的限制。保留当前可用包、有效源码/测试/许可和必要发布追溯；不重写Git历史，不删除宿主会话、凭据、未合并工作区或无关用户数据。",
-    "用户批准迁移为共享核心＋本地stdio MCP＋可移植Skills；首批发布通用MCP/Skills包、现有PI-Desktop包和Codex/Claude Code/Pi配置示例，不做各CLI原生插件。采用GitHub Actions，只在v1.0.0、v2.0.0等稳定主版本标签创建一次GitHub Release；0.x、次版本、补丁仅CI/源码更新。此规则取代原主/次版本自动提交PI市场规则；发布job可授予contents:write，不自动提交市场/发布npm/安装，不自行升主版本或创建发布标签。PI包由官方PluginPack生成，CI核对源码/版本后上传。",
-    "用户明确批准本地项目Web控制台：仅127.0.0.1、显式绑定项目、复用现有核心/确认/修订/锁；看板/架构/设计草案和人工确认/文档及检查状态，CLI/桌面客户端通过MCP共享数据，不从网页启动/控制其它软件Agent或模型，不公网/云部署。发布规则改为1.x起稳定主/次版本vX.Y.0（X>=1）各发布一次GitHub Release；0.x/补丁/预发布不发。此规则替代仅vN.0.0；不自动升版本/建标签/安装/npm/市场发布。",
-    "用户本轮批准简洁开发流程与0.8.2补丁交付：局部改动定向测试，公共/高风险/未知改动及大版本全量；合并按实际代码变化决定检查，等同已测内容不机械重跑。纯记录快路、单轮一次构建、浏览器与行为证据共用一次执行；保留差异审查/真实证据/Git权限/官方包与发布安全。仅源码与安装包，不建标签/Release/市场npm/自动安装；取代此前一律提交后和集成后全量重测的表述。",
-    "用户明确批准0.8.3：默认收起侧栏，取消切换按钮，鼠标悬停/键盘聚焦展开且覆盖不挤正文，触屏紧凑导航；行为文档提升一级页面。另要求核查同步PI-Desktop插件市场，本次可在源码/官方包/检查通过后提交0.8.3市场更新，公开性已说明；不改长期发布策略，不自动安装/建标签/GitHub Release/npm，不覆盖待审版本或自动重试未知写入。",
-    "2026-10-19用户批准Git图交互/性能优化并要求后续自动识别大更新：本轮修正升0.8.4，小更新不提交PI市场；后续已批准产品更新按真实行为/契约自动判级并升版本，修复/性能/交互patch，新增完整能力minor，不兼容改动按SemVer。大更新完整检查/官方包/main双OS CI通过后当前Agent自动核对版本/待审并提交市场一次，无需重复询问；此规则取代旧禁止自动升版/市场及仅0.8.3单次授权限制。仍不覆盖待审/已用版本、未知写入不重试、不安装/npm/建标签，日常build/CI不直接发布；旧市场approved待运营状态与原总体阻塞保留。",
-    "2026-10-26用户明确修正：插件/浏览器仅查看工作看板、项目架构、Git和项目文档，删除项目操作、网页看板/设计写入与独立行为文档页；操作在原AI CLI/应用执行。此规则取代旧网页操作和行为页要求，不新增Agent确认基线权限，原核心/Agent接口与安全测试保留。Docs为当前功能/架构依据，Notes仅按需简史；每轮自主判断文档影响，大改最小更新相关Docs，小改只补必要一句，无实质变化不写，不重写无关文档。",
-    "用户批准Windows首版本独立桌面窗口＋浏览器双入口，Tauri系统WebView复用现有本地网页/核心。允许新增desktop源码、锁定构建依赖与桌面产物构建；一个实例/活动项目，项目选择、在浏览器打开、切换先关闭旧服务和退出清理。仅127.0.0.1，保留凭据/确认/修订/路径保护，不开放远程native IPC，不控制外部Agent，不开机自启/自动更新/安装/升版本/建标签/发布。内存/句柄/子进程和循环切换需实际测试，不承诺固定内存；生成target/gen仅在desktop局部忽略，安装包在build不提交大二进制。"
+    "人面向 docs/ 开发，Agent 同轮最小更新受影响 docs/（单篇≤100行，构建自动同步 plugin/docs/）；notes/ 仅按需记 1–4 行简史，无实质变化不写。功能按文档实现并通过实际测试即完成，不设独立二次验收。",
+    "统一浏览器工作台仅监听 127.0.0.1 且严格只读（看板、架构、Git、文档）；开发、项目操作与可选 Architecture Copilot 草案保存在原宿主会话完成，不开放网页写入、远程控制或自动基线确认。",
+    "同时兼容 Antigravity/CLI（本地 stdio MCP + 可移植 Skills + 工作区 AGENTS.md）与 PI-Desktop（薄宿主连接器 + 轻量启动入口 ui.panel/ui.view）。内置 SSH/ssh2 已按批准移除；GitHub 权威协作仅保留本地工作区与已绑定 GitHub 分支交互，故障绝不静默降级。",
+    "局部改动定向测，公共/高风险/版本改动跑一次完整检查，合并按实际变化补测；修改经受管 Git 留痕，禁止自动 stash/reset/强推或绕过确认/修订/锁守卫。保留已忽略的 .pi/ 与 changes/archive/redesign-governance-panel/，保留未合并工作区与发布追溯。",
+    "历史秘密扫描保持启用；唯一获批测试夹具例外为 blob d2c45515b924a1f69d92ef00b771e77b7318bbfe 的两条合成令牌，真实凭据、私钥与敏感路径一律拦截。",
+    "产品更新按 SemVer 判级升版（纯记录不升版）；PI-Desktop 官方 .piplug 须在 PI-Desktop 内由 PluginCheck/PluginPack 生成，禁止脚本自制；1.x 起稳定 vX.Y.0 标签由人创建触发单次 GitHub Release，不自动发 npm 或静默安装。"
   ],
-  "current": "0.10.3只读工作台已交付：产品569e9d3、夹具修复bd7f571，main86b41a8双OS CI40728860705全部通过；官方113文件包不变。Docs/Notes原则已落实，无市场/安装。原总体阻塞保留。",
+  "current": "0.11.0 面向文档精简与双宿主兼容已完成：移除内置 SSH/ssh2（解除原市场 eval 动态执行阻塞），保留本地与 GitHub 权威协作，精简 AGENTS.md 与 STATE.json，补齐 Antigravity 与 PI-Desktop 双宿主配置并完成全量检查。",
   "next": [],
   "blocked": [
-    "本轮按需帮助桌面/手机明暗4图已通过Browser目视；原用户项目全部页面/物理触屏的整体视觉验收仍未完成",
-    "MCP无插件安装/更新接口，不自动安装；原真实宿主完整交互/换行指纹/一次启动接续检查保留",
-    "0.9.0源码/官方包/main双OS CI已交付；市场单次提交被平台规则拒绝remote-ssh.ts:6 eval动态执行，版本未创建，不重试或绕过。需平台处理或另行批准兼容方案；0.8.3现已published。"
+    "0.11.0 源码已移除 ssh2 动态执行并通过全量检查与 mcp-skills 包验证；plugin/dist/ 的 0.11.0 官方 .piplug 待在 PI-Desktop 内执行 PluginCheck/PluginPack 生成后再提交市场（当前保留可用 0.10.3 包）",
+    "隔离浏览器与真实 MCP SDK 回归已通过；PI-Desktop 安装后真实宿主完整交互与物理触屏目视验收仍未完成"
   ],
   "followUp": null,
   "change": "changes/active/project-board-release",
