@@ -50,7 +50,10 @@ function createContextHelp(source, topic) {
         trigger.setAttribute('aria-expanded', 'true');
         source.showPopover();
         const edge = 12, gap = 8, r = trigger.getBoundingClientRect(), box = source.getBoundingClientRect();
-        const x = Math.max(edge, Math.min(innerWidth - box.width - edge, r.left + r.width / 2 - box.width / 2));
+        const nav = innerWidth > 900 ? document.querySelector('.workspace-nav') : null;
+        const navRight = nav && !nav.contains(trigger) ? nav.getBoundingClientRect().right + gap : edge;
+        const minLeft = navRight + box.width <= innerWidth - edge ? Math.max(edge, navRight) : edge;
+        const x = Math.max(minLeft, Math.min(innerWidth - box.width - edge, r.left + r.width / 2 - box.width / 2));
         const below = r.bottom + gap;
         const y = below + box.height <= innerHeight - edge ? below : Math.max(edge, r.top - gap - box.height);
         source.style.left = `${x}px`;

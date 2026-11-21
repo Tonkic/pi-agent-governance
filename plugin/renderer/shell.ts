@@ -21,11 +21,18 @@ function renderWorkbenchSummary(loading = false) {
   const items = projectSnapshot?.board && !projectSnapshot.boardError ? projectSnapshot.board.items : null;
   const counts = items ? boardStages.map(stage => items.filter(item => effectiveStage(item) === stage).length) : null;
   const total = items?.length;
+  const impactCount = items?.filter(item => item.architectureImpact === 'affects').length;
   const percent = counts && total ? Math.round(counts[2] / total * 100) : counts ? 0 : null;
   for (const [id, value] of [
     ['summary-total', total], ['summary-doing', counts?.[1]], ['summary-done', counts?.[2]], ['summary-active-count', counts?.[1]], ['summary-complete-count', counts?.[2]],
-    ['summary-impact', items?.filter(item => item.architectureImpact === 'affects').length], ['summary-todo', counts?.[0]]
+    ['summary-impact', impactCount], ['summary-todo', counts?.[0]]
   ]) text(id, value == null ? '—' : String(value));
+  for (const [id, ratio] of [
+    ['spark-total', total ? 1 : 0],
+    ['spark-doing', total ? (counts?.[1] ?? 0) / total : 0],
+    ['spark-done', total ? (counts?.[2] ?? 0) / total : 0],
+    ['spark-impact', total ? (impactCount ?? 0) / total : 0]
+  ] as Array<[string, number]>) $(id)?.style.setProperty('--spark', String(Math.max(0, Math.min(1, ratio))));
   text('summary-percent', percent == null ? '—' : `${percent}%`);
   $('summary-ring').style.setProperty('--completion', String(percent ?? 0));
   $('summary-ring').dataset.available = String(percent !== null);

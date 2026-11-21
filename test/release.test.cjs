@@ -19,10 +19,10 @@ test('only exact stable vX.Y.0 tags X>=1 qualify; 0.x/patch/prerelease/build/lea
   assert.throws(() => decision('v1.1.0', '1.2.0'), /mismatch/);
   for (const [key, value] of [['enabled', false], ['rule', 'stable-major-tag-only'], ['allowSupersede', true], ['npmPublish', true], ['marketplacePublish', true], ['autoInstall', true], ['createTags', true], ['repository', 'other/repo']]) assert.throws(() => validatePolicy({ ...policy, [key]: value }), /approval/);
 });
-test('approved 0.12.0 4-folder doc layout and workbench UI upgrade keep GitHub tag policy and forbid unattended installation', () => {
-  assert.equal(require('../package.json').version, '0.12.0');
-  assert.equal(decision('v0.12.0', '0.12.0').publish, false);
-  assert.equal(decision(undefined, '0.12.0').publish, false);
+test('approved 0.12.1 Microsoft-style docs and workbench visual/motion upgrade keep GitHub tag policy and forbid unattended installation', () => {
+  assert.equal(require('../package.json').version, '0.12.1');
+  assert.equal(decision('v0.12.1', '0.12.1').publish, false);
+  assert.equal(decision(undefined, '0.12.1').publish, false);
   for (const key of ['npmPublish', 'marketplacePublish', 'autoInstall', 'createTags']) assert.equal(policy[key], false);
 });
 test('immutable full SHA tag must be on main ancestry; no implicit tag creation', () => {

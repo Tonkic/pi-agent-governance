@@ -1,7 +1,7 @@
 <!-- Generated from docs/ by scripts/build-docs.cjs. Do not edit. -->
 # GitHub 交付 / Checked delivery
 
-GitHub Release 仅由稳定主/次版本标签 `vX.Y.0`（X≥1，Y≥0）各创建一次，标签由人创建（策略 `stable-major-minor-tag-only`）。当前 **0.12.0** 将项目文档物理重构为 `start / guides / reference / ops` 四目录，升级前端视觉、分类标题文档阅读器与 `0.12.0` 真实源码架构图；`0.x` 标签不触发 GitHub Release。
+GitHub Release 仅由稳定主/次版本标签 `vX.Y.0`（X≥1，Y≥0）各创建一次，标签由人创建（策略 `stable-major-minor-tag-only`）。当前 **0.12.1** 对齐 Microsoft 文档写作标准并升级工作台视觉交互、数据微图与过渡动效，属于交互与文档补丁更新，不触发市场或 GitHub Release。
 
 已批准产品更新按真实行为与契约判级升版：修复/交互/性能为 `patch`（不提交市场）；新增能力或 `0.x` 契约调整升 `minor`。大更新在完整检查、PI 官方包（于 PI-Desktop 执行 `PluginPack`）及 `main` 双 OS CI 通过后可核对版本并提交一次市场；未知写入不重试，不覆盖待审/已用版本，不自动安装、发 npm 或建标签。
 

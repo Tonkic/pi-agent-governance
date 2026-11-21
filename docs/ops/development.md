@@ -36,11 +36,9 @@ npm run check -- --base BASE_FULL_SHA --head HEAD_FULL_SHA
 | entry | 仅PI轻量页HTML/CSS/JS及其浏览器用例；入口单元和浏览器回归 |
 | full | 共享renderer、后端、安全、依赖、版本、包、检查脚本/CI、未知文件：类型、一次构建、全部测试及行为/浏览器 |
 
-映射固定在 `scripts/check-plan.cjs`，不是智能依赖分析。自动范围取完整差异，改名两端均检查；缺基准/浅历史/异常一律full。显式scope仅用于已确认影响范围的本地开发，不等于完整交付证据。可直接运行构建后的某个测试进一步缩小迭代范围。
-
-普通CI只监听main push、PR和手动执行：记录/文档/已知局部跑Linux，公共/未知跑Linux＋Windows；手动运行始终full。记录不安装依赖，其他范围使用npm下载缓存，需浏览器时才安装Chromium。`--ci`在构建后核对生成文件无差异；任一失败立即停止。大版本发布另强制双系统full，不因版本号小就免掉公共风险检查。
-
-`npm test`兼容执行全部非浏览器测试，`npm run test:browser`执行完整浏览器及行为证据，`npm run check:behaviors`可单独检查行为。三者各自独立会构建；需要组合时只运行一次 `check --full`，不要串起来。局部检查不会刷新“全量行为通过”状态。
+- **范围映射**：固定在 `scripts/check-plan.cjs`；自动范围取完整差异并检查重命名两端，缺基准或异常一律回退 `full`。
+- **CI 分级**：`records`/`docs`/局部范围跑 Linux，公共改动跑 Linux + Windows，`--ci` 校验生成文件零差异。
+- **避免重复构建**：需要组合单元与浏览器检查时，直接运行一次 `npm run check -- --full`，勿串联 `npm test` 与 `test:browser`。
 
 ## 目录
 

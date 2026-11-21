@@ -1,98 +1,64 @@
-# Agent Governance / Agent 项目治理
-
-Community plugin ID: `io.github.tonkic.agent-governance`. Repository handoff, project board, source-backed architecture and isolated Git collaboration. English and Simplified Chinese UI. See [installation and publishing](../ops/publishing.md) before replacing an older `pi.agent-governance` installation.
-
-旧 ID 迁移前停用旧实例并保留 STATE 和 `.governance/`；见 [安装与发布](../ops/publishing.md)。
-
 # Governance 工具用法
 
-为当前仓库保存可接手的任务状态，并在验证后关闭任务。PI 注册名为 `governance`，宿主可能添加命名空间前缀。文件访问使用原生 Node fs；Git 操作通过 execFile 执行。不是全局 Agent 拦截器。
-
-## 源码与构建
-
-源码和测试使用 TypeScript；构建生成 `plugin/runtime/` 和清单，CLI/测试位于忽略的 `build/`。安装包说明由仓库 `docs/` 生成，不手改。完整构建方法见 [开发](../ops/development.md)。
-
-```powershell
-# 公共/高风险/未知改动使用完整入口；局部与记录范围见开发文档
-npm run check -- --full
-```
-
-TypeScript 是开发依赖，不会进入插件运行时；PluginCheck 和 PluginPack 仍由 PI-Desktop 的插件工具负责生成 `.piplug` 安装包。
-
-Git 分支/worktree、范围检查、提交验证、集成及恢复，见 [Git 协作](../guides/git.md)。写入型委派前先 git_create 分配工作区；插件不自动启动子代理。
-
-## 可视化面板
-
-所有宿主使用同一浏览器工作台。PI的Alt+空格启动器和右侧工作面板插件列表提供同一轻量入口（ui.panel/ui.view），只看连接状态并显式打开浏览器。Ctrl+Shift+P命令governance.open直接打开；原会话工具governance_ui需确认。shell.openExternal仅生成链接，desktop.control仅核实调用身份。详见 [浏览器入口](../start/web-console.md)。
-
-面板展示目标、检查条件、范围、进度、阻塞和Git记录。未初始化可补缺失入口；待命可开始获批任务；活动任务可更新进度。安全写入确认与版本守卫保留，修改进度使旧技术验证失效。
-
-工作台三栏为待办/进行中/已完成。依据分层功能文档实现并测试，通过即可完成，没有独立验收阶段。居中详情、草稿保护和可选架构/文档维护见 [项目接口](project.md)、[文档开发](../guides/doc-driven.md)。
-
-点击刷新同步外部修改；未保存表单需再次点击刷新才会丢弃。Git 不可用不妨碍任务状态操作。直接打开 renderer/index.html 为静态预览，不能操作项目。确认、owner 和测试证据仍是调用方声明，不是身份认证或安全沙箱。
+保存当前仓库的任务状态，跟踪执行进度，并在检查通过后验证归档。社区插件 ID：`io.github.tonkic.agent-governance`（从旧 ID `pi.agent-governance` 升级见 [产物与安装](../ops/publishing.md)）。
 
 ## 接手与执行
 
-依次调用，每段 JSON 是一个独立请求：
+每次调用传入一个独立 JSON 对象：
 
-```json
-{"action":"init"}
-```
+1. **初始化项目**（仅补齐缺失的 `AGENTS.md`、`README.md`、`STATE.json`，不覆盖已有文件）：
+   ```json
+   {"action":"init"}
+   ```
+2. **读取当前状态**：先读 `README.md`，再查询状态：
+   ```json
+   {"action":"status"}
+   ```
+   - 有活动任务：按 `current` / `next` 继续执行。
+   - 无活动任务但有获批 `followUp`：调用 `{"action":"start"}` 启动。
+   - 两者皆无：等待人工指令，不自行发明需求。
+3. **启动人工批准的新任务**：
+   ```json
+   {"action":"start","id":"cache-fix","goal":"修正缓存一致性","criteria":["等价性测试通过"],"scope":["src/cache/"],"constraints":["不改变公共接口"]}
+   ```
+4. **更新执行进度**（修改进度会自动使旧验证记录失效）：
+   ```json
+   {"action":"progress","current":"实现完成，待测试","next":["运行等价性测试"],"blocked":[]}
+   ```
 
-init 仅补齐 AGENTS.md、README.md、STATE.json，已有文件不覆盖。之后先读取 README，并调用：
+## 人工编辑 STATE.json
 
-```json
-{"action":"status"}
-```
+人工可直接编辑 `goal`、`criteria`、`scope`、`constraints`、`current`、`next`、`blocked`（编辑前暂停正在运行的工具操作，勿手改 `task`/`change`/`verification` 内部字段）。
 
-有活动任务就按 current/next 继续；无活动任务但有已批准的 followUp，调用 `{"action":"start"}`；两者都没有则等待人工，不新增目标。
-
-人工批准新任务后可调用：
-
-```json
-{"action":"start","id":"cache-fix","goal":"修正缓存一致性","criteria":["等价性测试通过"],"scope":["缓存模块"],"constraints":["不改变公共接口"]}
-```
-
-STATE 是任务定义的唯一来源。不生成空模板。当前说明写入 docs/，简短变更和踩坑写入 notes/；机器任务记录仍保存在 changes/。
-
-```json
-{"action":"progress","current":"实现完成，待测试","next":["运行等价性测试"],"blocked":[]}
-```
-
-## 人工更新 State
-
-可编辑 goal、criteria、scope、constraints、current、next、blocked。不要修改 task/change 等身份字段或伪造 verification/gate。修改目标后先 status，再重新验证。
-
-`next` 是当前任务的执行步骤；`followUp` 是当前任务结束后的已批准任务，格式如下；没有任务就设为 null：
+如需预设下一项已批准任务，在 `STATE.json` 中写入 `followUp`（无后续任务设为 `null`，任务 ID 不可重用）：
 
 ```json
 {"id":"approved-next","goal":"人工批准的目标","criteria":["测试条件"],"scope":[],"constraints":[]}
 ```
 
-将此对象写入 STATE.json 的 followUp 字段，关闭时会保留。可以在 idle 状态设置 followUp，无需聊天历史。任务 ID 不可重复使用。人工编辑时暂停正在运行的工具操作，避免竞争。
-
 ## 验证与关闭
 
-先实际测试、检查diff并更新必要用法，再记录技术检查结果；verify/close用于保留结果和归档，不是额外人工验收：
+完成实际测试、审查差异并同步更新相关 `docs/` 后，登记验证并关闭归档（不设额外二次人工验收）：
 
-```json
-{"action":"verify","passed":true,"accepted":[true],"evidence":"实际命令、结果及日志位置","diffReview":"实际审查范围与结论","files":["README.md"]}
-```
+1. **登记技术检查结果**（`accepted` 与 `criteria` 一一对应，`files` 填写最多 100 个真实变更文本文件）：
+   ```json
+   {"action":"verify","passed":true,"accepted":[true],"evidence":"实际测试命令与结果","diffReview":"差异审查范围与结论","files":["README.md"]}
+   ```
+2. **关闭任务并归档**（`knowledge` 必填，说明已更新哪篇文档或为何无需更新）：
+   ```json
+   {"action":"close","knowledge":"已同步更新 docs/guides/cache.md 用法；无额外踩坑。"}
+   ```
 
-files 替换成真实变更文件；accepted 与 criteria 一一对应。README、AGENTS 和 context 读过的文件会加入验证指纹。总共最多 100 个现存文本文件，不支持删除文件证据。验证后改动受检文件会阻止关闭；改动任务意图会使验证失效。
+关闭后自动归档至 `changes/archive/<id>/closure.json`，并保留预设的 `followUp`。验证后若受检文件或任务意图再次变化，系统会阻止直接 `close`，须重新验证。
 
-```json
-{"action":"close","knowledge":"已更新 README 的用法；没有需要保留的额外经验。"}
-```
+## 可选操作与行数预算
 
-knowledge 必须说明已更新的使用文档，或说明为什么无需更新。无需固定五问，也不强制新增 Notes。关闭后保存 closure.json 到 changes/archive，State 保留 followUp；没有 followUp 则明确等待人工。
+- **`context`**：按需读取上下文文件（`layer` 为 `docs`/`contract`/`notes`/`source`，非 `docs` 层附 `reason`；单次最多 10 文件、40,000 字符）。
+- **`route`**：根据 `files`、`modules`、`architecture` 等特征给出模型档位建议（仅供参考，不自动切换宿主模型）。
+- **`gate`**：兼容旧版五问知识门禁接口。
+- **文档行数上限**：`AGENTS.md` ≤60 行、`README.md` ≤150 行、`docs/reference/architecture.md` ≤200 行、其余 `docs/` 专题 ≤100 行。
 
-## 可选操作
+## 相关指南与限制
 
-- `context`：传 layer、files；非 docs 层附 reason。可跳过层级直接读取相关 source。Docs/Contract 使用 README、AGENTS 或 docs/；Notes 使用 notes/。每次最多 10 文件、40000 字符，单文件最多 1 MiB。
-- `route`：传 features（files、modules、research、architecture 等），仅建议模型档位，不切换模型。
-- `gate`：兼容旧流程，传 delta 和 behavior/contract/stableFact/pitfall/decision 五类 decisions，各含 changed、reason，changed=true 时含文档 path；之后可不带 knowledge 调用 close。
-
-受检文档预算：AGENTS 60 行、README 150 行、overview 100 行、architecture 200 行、其他 docs 文件 100 行。Docs 只保留用途、用法和必要限制；Notes 可选。
-
-工具不会验证证据真实性或知识语义，不会发现所有漏报文件。写前比较是尽力冲突检测，不是恶意并发写入的隔离保证。旧版验证记录需要重新 verify；旧文档和临时材料保留，不自动迁移或删除。中断后以相同请求重试 close；锁或状态冲突须检查后人工恢复。
+- 浏览器只读工作台打开方式见 [浏览器工作台](../start/web-console.md)；看板与架构数据操作见 [项目接口](project.md)；分支与 worktree 管理见 [Git 协作](../guides/git.md)。
+- 测试证据与确认标记由调用方如实声明；文件锁用于防止常规误覆盖，不充当恶意并发沙箱。
