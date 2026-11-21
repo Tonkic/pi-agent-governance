@@ -520,6 +520,7 @@ function renderBoard() {
     column.className = 'board-column';
     column.dataset.stage = stage;
     const all = data.board.items.filter((item) => effectiveStage(item) === stage);
+    column.style.setProperty('--column-share', String(data.board.items.length ? all.length / data.board.items.length : 0));
     const matched = (stage === 'done' ? completedItems(all) : all).filter(matches);
     const items = stage === 'done' && !searchQuery ? matched.slice(0, 5) : matched;
     const header = document.createElement('header');
@@ -536,6 +537,7 @@ function renderBoard() {
       summary.textContent = t('recentCompleted', items.length, all.length);
       history.type = 'button';
       history.id = 'completed-history-open';
+      history.className = 'completed-open-btn';
       history.textContent = t('viewAllCompleted', all.length);
       history.setAttribute('aria-haspopup', 'dialog');
       history.addEventListener('click', () => openCompletedHistory(history));
@@ -543,8 +545,10 @@ function renderBoard() {
     }
     for (const item of items) {
       const card = document.createElement('article');
+      const itemStage = effectiveStage(item);
       card.className = 'workitem';
       card.dataset.workitem = item.id;
+      card.dataset.itemStage = itemStage;
       card.dataset.blocked = String(!!item.blocker);
       card.tabIndex = 0;
       card.draggable = false;
@@ -558,16 +562,30 @@ function renderBoard() {
       const meta = document.createElement('div');
       meta.className = 'item-meta';
       const status = document.createElement('span');
-      status.textContent = item.blocker ? t('blocked') : boardLabels[effectiveStage(item)];
-      meta.append(status);
-      card.append(title);
-      if (item.description) card.append(content);
-      card.append(meta);
+      status.className = 'item-stage-badge';
+      status.textContent = item.blocker ? t('blocked') : boardLabels[itemStage];
+      const badges = document.createElement('div');
+      badges.className = 'item-badges';
+      if (Array.isArray(item.criteria) && item.criteria.length > 0) {
+        const checkPill = document.createElement('span');
+        checkPill.className = 'item-check-pill';
+        checkPill.setAttribute('aria-hidden', 'true');
+        checkPill.textContent = `✓ ${item.criteria.length}`;
+        badges.append(checkPill);
+      }
       const tag = document.createElement('span');
       tag.className = 'architecture-tag';
       tag.dataset.impact = item.architectureImpact || 'unassessed';
       tag.textContent = t(impactLabel(item.architectureImpact));
-      card.append(tag);
+      const arrow = document.createElement('span');
+      arrow.className = 'item-arrow';
+      arrow.setAttribute('aria-hidden', 'true');
+      arrow.textContent = '→';
+      badges.append(tag, arrow);
+      meta.append(status, badges);
+      card.append(title);
+      if (item.description) card.append(content);
+      card.append(meta);
       card.addEventListener('click', (event) => {
         if ((event.target as Element).closest('button')) return;
         void openItem(item.id, false, card);

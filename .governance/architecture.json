@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "title": "0.12.0 双宿主六边形架构 · 接入层、核心上下文与分类工作台",
+  "title": "0.12.1 双宿主六边形架构 · 接入层、核心上下文与可视化工作台",
   "source": "通过 architecture_sources 读取并核对 12 份核心入口 TS 源码（双宿主连接器、本地只读工作台服务、任务/看板/设计内核、GitHub 权威协作及四页分类阅读前端）。六个职责节点与八条有向边仅表达已核实的直接调用与只读通道。",
   "nodes": [
     {
@@ -111,8 +111,8 @@
     "plugin/design.ts": "bf34a02058f83b05fec69440834fa86d2de089847f8a3860f9ee3ffa58a436e0",
     "plugin/collaboration.ts": "8f7bab3644a84ed3b397cb7f5a0ba59e15dd98000af47c8bcf3017112215a24b",
     "plugin/documents.ts": "9ba614c5d0a8eec0e59a1b68b28b9166707c459bfd56c984758a4987d3b80d0b",
-    "plugin/renderer/shell.ts": "5de453394af381ef0f29b5df51a5f77da2981449c44a87ee04aa53428b66a9c3",
-    "plugin/renderer/documents.ts": "1bdb3fc6b7dd5a28494d59b036c375ff24301c2bba5fef0f1c88f1a7524d4fb0"
+    "plugin/renderer/shell.ts": "e777e6a6c280e161f269b56e73ad793f6346514ac98c2c5316052dfc0a134fe7",
+    "plugin/renderer/documents.ts": "2a36e4a8cb642a1570eee577b3611450125c2e09b05547151eb068031c3d56f8"
   },
-  "updatedAt": "2026-11-21T09:23:09.865Z"
+  "updatedAt": "2026-11-21T10:38:32.231Z"
 }

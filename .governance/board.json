@@ -20,6 +20,22 @@
       "gitTaskId": null
     },
     {
+      "id": "ms-docs-visual-motion-0121",
+      "title": "Microsoft 风格文档精炼与工作台可视化动效升级 · 0.12.1",
+      "description": "全面对齐 Microsoft Writing Style Guide（结论先行、短句、列表/表格扫读，消除密集说明墙与学术分类术语）；放大全站操作按钮触感并引入分段胶囊控件、统计占比微柱图、卡片状态徽标、架构流向虚线动效及阅读进度条/滚动目录追踪。",
+      "blocker": "",
+      "stage": "done",
+      "taskId": "project-board-release",
+      "criteria": [
+        "README与docs全目录对齐Microsoft写作风格，百行预算、死链与生成同步检查通过",
+        "全站按钮尺寸、微图可视化、卡片信息减负与prefers-reduced-motion无障碍动效通过全部浏览器回归",
+        "刷新0.12.1源码指纹并通过全量单元与浏览器检查"
+      ],
+      "architectureImpact": "none",
+      "gitTaskId": "ms-docs-visual-motion-0121",
+      "completedAt": "2026-11-21T10:40:00.000Z"
+    },
+    {
       "id": "ui-docs-architecture-0120",
       "title": "四目录意图文档架构、前端美化与 0.12.0 源码架构图",
       "description": "按方案B将 docs/ 物理重构为 start/guides/reference/ops 四类人类易读子目录；升级全站明暗视觉层次、项目文档分组标题目录、四象限快速选读卡与历史归档折叠；同步更新 0.12.0 真实双宿主源码架构图。",

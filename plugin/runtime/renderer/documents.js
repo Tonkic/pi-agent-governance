@@ -91,9 +91,12 @@
     const larger = id(el('button', 'A+'), 'documents-larger');
     const size = el('output', '18', 'reader-size');
     size.setAttribute('aria-live', 'polite');
+    const sizeGroup = el('span', '', 'reader-size-group');
+    sizeGroup.setAttribute('role', 'group');
+    sizeGroup.append(smaller, size, larger);
     const focus = id(el('button'), 'documents-focus');
     focus.setAttribute('aria-pressed', 'false');
-    head.append(badge, refresh, smaller, size, larger, focus, safety);
+    head.append(badge, refresh, sizeGroup, focus, safety);
     const layout = el('div', '', 'reader-layout');
     const library = el('details', '', 'reader-library');
     const libraryTitle = el('summary');
@@ -108,6 +111,10 @@
     const files = id(el('div', '', 'reader-files'), 'documents-files');
     library.append(libraryTitle, label, count, files);
     const reading = el('div', '', 'reader-reading');
+    const progressBar = el('div', '', 'reader-progress');
+    progressBar.setAttribute('aria-hidden', 'true');
+    const progressFill = id(el('i'), 'documents-progress');
+    progressBar.append(progressFill);
     const status = id(el('p', '', 'reader-status'), 'documents-status');
     status.setAttribute('role', 'status');
     const path = id(el('p', '', 'reader-path'), 'documents-path');
@@ -119,7 +126,7 @@
     const tocTitle = el('summary');
     const toc = id(el('nav'), 'documents-toc');
     contents.append(tocTitle, toc);
-    reading.append(path, status, overview, body);
+    reading.append(progressBar, path, status, overview, body);
     layout.append(library, reading, contents);
     host.append(layout);
     document.getElementById('action-panel').append(head);
@@ -221,31 +228,63 @@
         status.classList.toggle('reader-error', readMessage === w().error);
         path.hidden = !path.textContent;
     }
+    function updateReadingScroll() {
+        if (!hasBody || !active()) {
+            progressBar.hidden = true;
+            progressFill.style.setProperty('--reading-progress', '0');
+            return;
+        }
+        progressBar.hidden = false;
+        const rect = reading.getBoundingClientRect();
+        const scrollable = Math.max(1, rect.height - window.innerHeight * 0.65);
+        const ratio = Math.max(0.04, Math.min(1, (window.innerHeight * 0.28 - rect.top) / scrollable));
+        progressFill.style.setProperty('--reading-progress', String(ratio));
+        const tocButtons = Array.from(toc.querySelectorAll('button'));
+        if (!tocButtons.length)
+            return;
+        let activeIdx = 0;
+        const entriesList = [...headingTargets.values()];
+        for (let i = 0; i < Math.min(entriesList.length, tocButtons.length); i++) {
+            if (entriesList[i].getBoundingClientRect().top <= 140)
+                activeIdx = i;
+        }
+        tocButtons.forEach((btn, idx) => {
+            if (idx === activeIdx)
+                btn.dataset.current = 'true';
+            else
+                delete btn.dataset.current;
+        });
+    }
     function renderOverview(grouped) {
         const show = loaded && !hasBody && !readMessage && entries.length > 0;
         overview.hidden = !show;
+        updateReadingScroll();
         if (!show) {
             overview.replaceChildren();
             return;
         }
-        const lead = el('p', w().mapLead, 'reader-overview-lead');
         const grid = el('div', '', 'reader-overview-grid');
         for (const group of grouped.filter(g => g.key !== 'archive' && g.items.length)) {
             const section = el('section', '', 'reader-overview-section');
+            section.dataset.group = group.key;
             const header = el('div', '', 'reader-overview-head');
             header.append(el('strong', group.label), el('span', String(group.items.length), 'reader-group-badge'));
             const list = el('div', '', 'reader-overview-cards');
             for (const item of group.items.slice(0, 6)) {
                 const card = el('button', '', 'reader-overview-card');
                 card.type = 'button';
-                card.append(el('strong', docTitle(item.path), 'reader-card-title'), el('small', item.path, 'reader-card-path'));
+                const copyBox = el('span', '', 'reader-card-copy');
+                copyBox.append(el('strong', docTitle(item.path), 'reader-card-title'), el('small', item.path, 'reader-card-path'));
+                const arrow = el('span', '→', 'reader-card-arrow');
+                arrow.setAttribute('aria-hidden', 'true');
+                card.append(copyBox, arrow);
                 card.addEventListener('click', () => { void read(item.path, true); });
                 list.append(card);
             }
             section.append(header, list);
             grid.append(section);
         }
-        overview.replaceChildren(lead, grid);
+        overview.replaceChildren(grid);
     }
     function makeFileButton(item) {
         const button = el('button', '', 'reader-file');
@@ -292,6 +331,7 @@
                 continue;
             }
             const section = el('div', '', 'reader-group');
+            section.dataset.group = group.key;
             if (!query || grouped.length > 1) {
                 const heading = el('div', '', 'reader-group-head');
                 heading.append(el('span', group.label), el('span', String(group.items.length), 'reader-group-badge'));
@@ -766,6 +806,7 @@
     }
     refresh.addEventListener('click', () => { void reload(); });
     search.addEventListener('input', renderList);
+    window.addEventListener('scroll', updateReadingScroll, { passive: true });
     window.addEventListener('hashchange', context);
     window.addEventListener('documents-context', context);
     window.addEventListener('documents-reset', reset);

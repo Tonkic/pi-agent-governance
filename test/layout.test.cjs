@@ -34,18 +34,18 @@ test('compiled JavaScript is separated and runtime exactly matches compiler outp
   for (const [, src] of html.matchAll(/<script src="([^"]+)"/g))
     assert.ok(fs.existsSync(path.resolve(root, 'plugin/renderer', src)), src);
 });
-test('0.12.0 package, lock and generated plugin identify the 4-folder doc layout and upgraded workbench UI', () => {
+test('0.12.1 package, lock and generated plugin identify the Microsoft style docs and visual/motion workbench UI', () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json')));
   const lock = JSON.parse(fs.readFileSync(path.join(root, 'package-lock.json')));
   const manifest = JSON.parse(fs.readFileSync(path.join(root, 'plugin/manifest.json')));
-  assert.equal(pkg.version, '0.12.0');
+  assert.equal(pkg.version, '0.12.1');
   assert.equal(lock.version, pkg.version); assert.equal(lock.packages[''].version, pkg.version);
   assert.equal(manifest.version, pkg.version);
   assert.equal(manifest.id, 'io.github.tonkic.agent-governance');
   assert.deepEqual(lock.packages[''].dependencies, pkg.dependencies);
   assert.equal(pkg.devDependencies?.ssh2, undefined);
   for (const removed of ['plugin/remote-ssh.ts', 'plugin/SSH-LICENSES.md', 'docs/remote.md', 'plugin/docs/remote.md', 'docs/mcp.md', 'plugin/docs/mcp.md', 'scripts/build-ssh.cjs']) assert.equal(fs.existsSync(path.join(root, removed)), false);
-  for (const doc of ['README.md', 'docs/ops/releasing.md', 'docs/ops/publishing.md']) assert.match(fs.readFileSync(path.join(root, doc), 'utf8'), /0\.12\.0/);
+  for (const doc of ['README.md', 'docs/ops/releasing.md', 'docs/ops/publishing.md']) assert.match(fs.readFileSync(path.join(root, doc), 'utf8'), /0\.12\.1/);
 });
 test('compiled CLI runs from the repository without adjacent JS dependencies', () => {
   const result = JSON.parse(
