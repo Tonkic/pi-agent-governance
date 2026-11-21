@@ -5,7 +5,7 @@ exports.main = main;
 const { collaborate } = require('./collaboration');
 async function main(args = process.argv.slice(2)) {
     if (args.length === 1 && args[0] === '--help') {
-        console.log('collaboration --workspace ABSOLUTE_DIRECTORY --action authority|bind|inspect|read|publish|reconcile. JSON and GitHub token use stdin only. See docs/collaboration.md.');
+        console.log('collaboration --workspace ABSOLUTE_DIRECTORY --action authority|bind|inspect|read|publish|reconcile. JSON and GitHub token use stdin only. See docs/guides/collaboration.md.');
         return;
     }
     let workspace, action;

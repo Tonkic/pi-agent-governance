@@ -41,10 +41,10 @@
     "历史秘密扫描保持启用；唯一获批测试夹具例外为 blob d2c45515b924a1f69d92ef00b771e77b7318bbfe 的两条合成令牌，真实凭据、私钥与敏感路径一律拦截。",
     "产品更新按 SemVer 判级升版（纯记录不升版）；PI-Desktop 官方 .piplug 须在 PI-Desktop 内由 PluginCheck/PluginPack 生成，禁止脚本自制；1.x 起稳定 vX.Y.0 标签由人创建触发单次 GitHub Release，不自动发 npm 或静默安装。"
   ],
-  "current": "0.11.0 面向文档精简与双宿主兼容已完成：移除内置 SSH/ssh2（解除原市场 eval 动态执行阻塞），保留本地与 GitHub 权威协作，精简 AGENTS.md 与 STATE.json，补齐 Antigravity 与 PI-Desktop 双宿主配置并完成全量检查。",
+  "current": "0.12.0 四目录文档架构与前端工作台升级已完成：docs/ 物理拆分为 start/guides/reference/ops 四类意图目录，升级全站视觉层次、项目文档分组标题目录与四象限选读面板，并同步重建 0.12.0 双宿主源码架构图。",
   "next": [],
   "blocked": [
-    "0.11.0 源码已移除 ssh2 动态执行并通过全量检查与 mcp-skills 包验证；plugin/dist/ 的 0.11.0 官方 .piplug 待在 PI-Desktop 内执行 PluginCheck/PluginPack 生成后再提交市场（当前保留可用 0.10.3 包）",
+    "0.12.0 源码已完成全量检查与 mcp-skills 包验证；plugin/dist/ 的 0.12.0 官方 .piplug 待在 PI-Desktop 内执行 PluginCheck/PluginPack 生成后再提交市场（当前保留可用 0.10.3 包）",
     "隔离浏览器与真实 MCP SDK 回归已通过；PI-Desktop 安装后真实宿主完整交互与物理触屏目视验收仍未完成"
   ],
   "followUp": null,

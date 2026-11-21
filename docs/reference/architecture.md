@@ -40,7 +40,7 @@ MCP 资源/提示、宿主 Skill → skills/architecture-copilot/
 GitHub 权威协作 CLI → collaboration.ts (.remote-local/github.json) → 临时隔离 bare 仓库
 ```
 
-PI 工具通过可信 `sessionId` 核实本地项目；MCP 固定绑定显式 `--workspace`（如 Antigravity/Codex/Pi）或 `--host claude-code` 启动环境，见 [MCP](mcp.md)。HTTP 仅监听 `127.0.0.1`，校验精确 `Host`/`Origin`/随机凭据，拒绝一切写入，见 [工作台](web-console.md)。
+PI 工具通过可信 `sessionId` 核实本地项目；MCP 固定绑定显式 `--workspace`（如 Antigravity/Codex/Pi）或 `--host claude-code` 启动环境，见 [MCP](../start/mcp.md)。HTTP 仅监听 `127.0.0.1`，校验精确 `Host`/`Origin`/随机凭据，拒绝一切写入，见 [工作台](../start/web-console.md)。
 
 ## 数据位置
 
@@ -55,4 +55,4 @@ PI 工具通过可信 `sessionId` 核实本地项目；MCP 固定绑定显式 `-
 
 ## 限制
 
-仅用于可信本地仓库；文件锁与路径限制不充当恶意并发沙箱。开发闭环见 [分层文档](doc-driven.md)，构建见 [开发](development.md)，接口见 [治理](governance.md)、[项目](project.md)、[Git](git.md)。
+仅用于可信本地仓库；文件锁与路径限制不充当恶意并发沙箱。开发闭环见 [分层文档](../guides/doc-driven.md)，构建见 [开发](../ops/development.md)，接口见 [治理](governance.md)、[项目](project.md)、[Git](../guides/git.md)。

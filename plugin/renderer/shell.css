@@ -26,13 +26,13 @@
 .search-field:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
 .search-field input:focus-visible { outline: 0; }
 .workbench-metrics { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)) minmax(300px,1.8fr); gap: var(--space-4); margin: 0 0 var(--space-6); }
-.summary-metric { --metric-tone: var(--accent); position: relative; min-width: 0; padding: 20px; display: grid; grid-template-columns: 1fr auto; align-content: center; gap: 12px 8px; background: var(--surface); border: 1px solid color-mix(in srgb,var(--line) 65%,transparent); border-radius: var(--radius-lg); box-shadow: var(--card-shadow); }
+.summary-metric { --metric-tone: var(--accent); position: relative; min-width: 0; padding: 20px; display: grid; grid-template-columns: 1fr auto; align-content: center; gap: 12px 8px; background: linear-gradient(180deg, color-mix(in srgb, var(--metric-tone) 4%, var(--surface)), var(--surface) 56%); border: 1px solid color-mix(in srgb,var(--line) 72%,transparent); border-radius: var(--radius-lg); box-shadow: var(--card-shadow); }
 .metric-doing { --metric-tone: var(--progress); } .metric-done { --metric-tone: var(--success); } .metric-impact { --metric-tone: var(--waiting); }
-.metric-icon { display: grid; place-items: center; grid-column: 2; grid-row: 1 / span 2; width: 38px; height: 38px; border-radius: 12px; background: color-mix(in srgb,var(--metric-tone) 10%,var(--surface)); color: var(--metric-tone); }
+.metric-icon { display: grid; place-items: center; grid-column: 2; grid-row: 1 / span 2; width: 40px; height: 40px; border-radius: 12px; background: color-mix(in srgb,var(--metric-tone) 12%,var(--surface)); border: 1px solid color-mix(in srgb,var(--metric-tone) 18%,transparent); color: var(--metric-tone); }
 .metric-icon svg { width: 21px; height: 21px; }
-.metric-label { color: var(--muted); font-size: var(--size-caption); line-height: 1.4; }
-.summary-metric strong { grid-column: 1; font-size: 32px; line-height: 1; font-weight: 650; letter-spacing: -.04em; font-variant-numeric: tabular-nums; color: var(--text); }
-.progress-card { display: flex; align-items: center; justify-content: center; gap: 20px; min-width: 0; padding: 16px 20px; border-radius: var(--radius-lg); background: var(--surface); border: 1px solid color-mix(in srgb,var(--accent) 18%,var(--line)); box-shadow: var(--card-shadow); }
+.metric-label { color: var(--muted); font-size: var(--size-caption); font-weight: 500; line-height: 1.4; }
+.summary-metric strong { grid-column: 1; font-size: 32px; line-height: 1; font-weight: 680; letter-spacing: -.04em; font-variant-numeric: tabular-nums; color: var(--text); }
+.progress-card { display: flex; align-items: center; justify-content: center; gap: 20px; min-width: 0; padding: 16px 20px; border-radius: var(--radius-lg); background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 6%, var(--surface)), var(--surface) 64%); border: 1px solid color-mix(in srgb,var(--accent) 22%,var(--line)); box-shadow: var(--card-shadow); }
 .completion-ring { --completion: 0; position: relative; flex-shrink: 0; display: grid; place-items: center; width: 104px; height: 104px; }
 .completion-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); fill: none; stroke-width: 7; }
 .ring-track { stroke: var(--subtle); } .ring-fill { stroke: var(--accent); stroke-linecap: round; stroke-dasharray: var(--completion) 100; }

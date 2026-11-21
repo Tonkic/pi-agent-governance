@@ -1,11 +1,10 @@
-<!-- Generated from docs/ by scripts/build-docs.cjs. Do not edit. -->
 # 更新项目文档
 
 每轮在原 AI 宿主会话（Antigravity、PI-Desktop、Codex、Claude Code 等）判断实际代码或契约变化是否影响文档，与代码修改同轮完成；插件浏览器工作台只负责阅读。
 
 ## 写入范围
 
-- `docs/`：当前功能、用法、架构与约束的唯一依据；开发和架构分析先读相关 Docs，不从旧 Notes 推断现状。
+- `docs/`：当前功能、用法、架构与约束的唯一依据，按人类阅读意图归入 `start/`（快速开始）、`guides/`（协作流程）、`reference/`（架构与接口参考）、`ops/`（构建与发布）或业务域子目录；不平铺堆砌文件，也不从旧 Notes 推断现状。
 - `notes/`：只在需要追溯时于 `notes/changes.md` 简记变化、结果或踩坑（通常 1–4 行）；不是日常必读，不重复 Docs、聊天或测试日志。
 - 根 `README.md`、`AGENTS.md`：只保留必要入口、索引与核心约束，具体细则归口到对应 `docs/*.md`。
 
@@ -22,7 +21,7 @@
 
 ## 渐进式披露与行数预算
 
-1. [文档索引](README.md) 按问题路由专题，人和 Agent 都不必顺序通读。
+1. [文档索引](../README.md) 按问题路由专题，人和 Agent 都不必顺序通读。
 2. 专题开头直接给结论与常用操作，后面放具名的参数、规则与限制小节。
 3. 严格控制篇幅：`AGENTS.md` ≤60 行、根 `README.md` ≤150 行、`docs/` 普通专题 ≤100 行。超长时按独立子问题拆分并互链，不堆空话或模板。
 
@@ -34,4 +33,4 @@
 npm run check -- --scope docs
 ```
 
-构建脚本自动将 `docs/` 同步生成到 `plugin/README.md` 与 `plugin/docs/`（禁止手改 `plugin/docs/`），并自动校验全仓相对链接、标题锚点和百行上限。上下文边界见 [原会话执行](project.md#可选项目agent操作)，开发闭环见 [文档开发](doc-driven.md)。
+构建脚本自动将 `docs/` 同步生成到 `plugin/README.md` 与 `plugin/docs/`（禁止手改 `plugin/docs/`），并自动校验全仓相对链接、标题锚点和百行上限。上下文边界见 [原会话执行](../reference/project.md#可选项目agent操作)，开发闭环见 [文档开发](doc-driven.md)。

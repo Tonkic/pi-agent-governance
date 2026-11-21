@@ -1,4 +1,4 @@
-/* Design contract: restrained hierarchy, a bounded scale, semantic light/dark colors. */
+/* Design contract: restrained hierarchy, a bounded scale, refined semantic light/dark surfaces. */
 :root {
   color-scheme: light;
   --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
@@ -6,18 +6,18 @@
   --size-caption: 12px; --size-small: 13px; --size-body: 14px; --size-label: 16px; --size-title: 28px;
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px; --space-12: 48px;
   --radius-sm: 8px; --radius-md: 12px; --radius-lg: 18px;
-  --bg: #f5f6fa; --surface: #ffffff; --subtle: #eceff5; --sidebar: #ffffff;
-  --text: #252b37; --muted: #626c7c; --line: #dce1e8;
-  --accent: #5049bf; --accent-contrast: #ffffff; --error: #b6314e; --success: #23765b; --progress: #5264ce; --waiting: #9b712c;
+  --bg: #f4f6fb; --surface: #ffffff; --subtle: #eef1f7; --sidebar: #ffffff;
+  --text: #181d27; --muted: #535d6e; --line: #dde2ec;
+  --accent: #4640de; --accent-contrast: #ffffff; --error: #be2949; --success: #1b7a5c; --progress: #435ad0; --waiting: #9a6c22;
   --selected: color-mix(in srgb, var(--accent) 9%, var(--surface));
-  --glass: var(--surface); --card-shadow: 0 2px 4px #172c4c04, 0 6px 16px #172c4c05; --overlay-shadow: 0 16px 48px #111c3030;
+  --glass: var(--surface); --card-shadow: 0 1px 2px #1018280a, 0 6px 18px #1018280c; --overlay-shadow: 0 20px 52px #0f172a2e;
 }
 :root[data-base='dark'] {
   color-scheme: dark;
-  --bg: #141721; --surface: #202532; --subtle: #191e2a; --sidebar: #191d28;
-  --text: #e9edf4; --muted: #a5aebd; --line: #39424f;
-  --accent: #b6b1ff; --accent-contrast: #201a48; --error: #ff9caa; --success: #79d5b0; --progress: #9caeff; --waiting: #d5b077;
-  --card-shadow: 0 1px 3px #0002; --overlay-shadow: 0 16px 48px #0006;
+  --bg: #0f121a; --surface: #181d29; --subtle: #131722; --sidebar: #141824;
+  --text: #edf1f8; --muted: #9ea8ba; --line: #2d3546;
+  --accent: #a6a3ff; --accent-contrast: #17143b; --error: #ff98a7; --success: #6fd9b2; --progress: #94a9ff; --waiting: #dfb776;
+  --card-shadow: 0 1px 3px #00000040, 0 6px 16px #00000028; --overlay-shadow: 0 20px 52px #00000078;
 }
 :root[data-palette='host'] { --bg: #fff; --surface: #f9f9f9; --subtle: #f3f3f3; --sidebar: #f3f3f3; --text: #1a1c1f; --muted: #5d5d5d; --line: #ddd; --accent: #1a1c1f; --accent-contrast: #fff; }
 :root[data-palette='host'][data-base='dark'] { --bg: #181818; --surface: #212121; --subtle: #282828; --sidebar: #131313; --text: #fff; --muted: #afafaf; --line: #383838; --accent: #fff; --accent-contrast: #181818; }

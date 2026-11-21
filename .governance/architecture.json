@@ -1,94 +1,118 @@
 {
   "version": 1,
-  "title": "核心架构 · 接入、治理与项目操作",
-  "source": "阅读 STATE/README、docs/architecture.md 与 plugin/PROJECT.md，随后通过 architecture_sources 完整读取并核对六份非敏感 TS 源码。五个节点按职责分组；边仅表示已核对的直接调用、动作分派或注入 Governance 对象的方法调用，不表示运行时事件或业务先后。依据入口 onLoad/onPanelInvoke、Governance.run、ProjectData.run/snapshot、GitGovernance.run 和 operationInvoke。未检查渲染器、工具参数定义、CLI、构建产物及测试；不是完整依赖图、运行时监控或安全审计，也未执行真实宿主会话操作。指纹绑定当前磁盘内容（含换行），本次重建不证明跨 CRLF/LF 切换问题已修复。",
+  "title": "0.12.0 双宿主六边形架构 · 接入层、核心上下文与分类工作台",
+  "source": "通过 architecture_sources 读取并核对 12 份核心入口 TS 源码（双宿主连接器、本地只读工作台服务、任务/看板/设计内核、GitHub 权威协作及四页分类阅读前端）。六个职责节点与八条有向边仅表达已核实的直接调用与只读通道。",
   "nodes": [
     {
-      "id": "host",
-      "title": "宿主接入与面板守卫",
-      "description": "main.ts 注册工具与命令，按当前工作区构造治理内核，将普通面板通道交给 panelInvoke、项目操作通道交给 operationInvoke。panel.ts 限定写入动作和字段，检查显式确认，向内核传递状态或项目修订；面板验收固定为 human。此节点不包含渲染器。",
+      "id": "connectors",
+      "title": "双宿主连接层 (MCP & PI)",
+      "description": "mcp/server.ts 为 Antigravity/Codex/Claude/Pi 提供本地 stdio 工具与 Skill 资源；plugin/main.ts 绑定 PI-Desktop 会话与轻量入口，共用治理核心与工作台控制器。",
       "files": [
-        "plugin/main.ts",
+        "mcp/server.ts",
+        "plugin/main.ts"
+      ]
+    },
+    {
+      "id": "workbench",
+      "title": "本地只读工作台服务",
+      "description": "workbench.ts 管理单项目服务生命周期与切换回收；browser.ts 与 panel.ts 提供 127.0.0.1 会话鉴权、页面租约与严格只读 API 白名单，拒绝一切网页写入。",
+      "files": [
+        "plugin/workbench.ts",
+        "plugin/browser.ts",
         "plugin/panel.ts"
       ]
     },
     {
-      "id": "governance",
-      "title": "任务治理内核",
-      "description": "Governance 管理 STATE 的任务、进度、验证和归档；提供受限路径读取、临时文件重命名写入及文件锁。run 将项目动作分派给 ProjectData，将 git_ 动作分派给 GitGovernance。验证记录绑定任务意图与文件指纹；测试证据由调用方提供。",
+      "id": "governance-core",
+      "title": "任务治理与文档预算内核",
+      "description": "core.ts 管理 STATE.json 任务状态机、行数预算、验证指纹、归档与独占文件锁，并向看板、架构设计与受管 Git 上下文分派写入操作。",
       "files": [
         "plugin/core.ts"
       ]
     },
     {
-      "id": "project",
-      "title": "看板与源码架构",
-      "description": "ProjectData 保存 board.json 和 architecture.json，快照修订绑定工作区、STATE 与两份项目数据。验证工作项阶段、验收内容指纹、图端点和源码指纹；写前再次比较数据与 STATE。通过构造参数 g 复用内核的锁、状态与安全文件操作；不独立认证测试或依赖语义。",
+      "id": "project-design",
+      "title": "看板、源码图与架构设计",
+      "description": "project.ts 维护三栏工作项、完成历史与源码指纹图；design.ts 管理可选架构草案、受管 ASCII 解析与确认基线历史。",
       "files": [
-        "plugin/project.ts"
+        "plugin/project.ts",
+        "plugin/design.ts"
       ]
     },
     {
-      "id": "git",
-      "title": "受管 Git 协作",
-      "description": "GitGovernance 使用独立 Git common directory 登记表与操作锁，管理 worktree、允许路径、差异快照和提交验证。提交要求已审查快照，验证绑定当前提交；集成仅面向受管协调任务。不依赖注入的 Governance 对象，也不自动启动宿主 Agent 或推送。",
+      "id": "git-collab",
+      "title": "GitHub 权威协作与受管 Git",
+      "description": "collaboration.ts 绑定 GitHub 权威分支，在隔离 bare 仓库读取权威文档并推送独立协作分支；受管 Git 通过 core.ts 分派独立 worktree 与提交验证。",
       "files": [
-        "plugin/git.ts"
+        "plugin/collaboration.ts"
       ]
     },
     {
-      "id": "operations",
-      "title": "显式 Agent 操作",
-      "description": "operationInvoke 检查 desktop.control 可用性、固定操作目录、用户确认及活动任务/修订，通过公开宿主接口创建分析、架构或工作项验收会话。使用治理锁保存 operations.json，复核创建后的任务与工作区；未知提交不重放，取消限本地记录的会话。会话结束不等于验收通过，提示约束不是工具沙箱。",
+      "id": "reader-ui",
+      "title": "四页壳层与分类文档阅读器",
+      "description": "documents.ts 安全扫描根说明与四目录 docs/、notes/；renderer/shell.ts 与 documents.ts 呈现共享壳层、分组标题目录、四象限选读卡与历史归档折叠。",
       "files": [
-        "plugin/operations.ts"
+        "plugin/documents.ts",
+        "plugin/renderer/shell.ts",
+        "plugin/renderer/documents.ts"
       ]
     }
   ],
   "edges": [
     {
-      "from": "host",
-      "to": "governance",
-      "label": "工具 execute / panelInvoke → Governance.run、locked"
+      "from": "connectors",
+      "to": "governance-core",
+      "label": "governance 工具 → Governance.run"
     },
     {
-      "from": "host",
-      "to": "operations",
-      "label": "onPanelInvoke 的 governance.operation → operationInvoke"
+      "from": "connectors",
+      "to": "workbench",
+      "label": "governance_ui / 命令 → BrowserWorkbench"
     },
     {
-      "from": "governance",
-      "to": "project",
-      "label": "项目动作 → new ProjectData(this).run"
+      "from": "workbench",
+      "to": "governance-core",
+      "label": "只读快照查询 → panelInvoke → Governance"
     },
     {
-      "from": "project",
-      "to": "governance",
-      "label": "注入 g → locked、state、safe、read/write；Git登记查询经 g.run"
+      "from": "workbench",
+      "to": "project-design",
+      "label": "只读看板/源码图/设计快照"
     },
     {
-      "from": "governance",
-      "to": "git",
-      "label": "git_ 动作 → new GitGovernance(root).run"
+      "from": "workbench",
+      "to": "reader-ui",
+      "label": "托管静态资产与只读文档接口"
     },
     {
-      "from": "operations",
-      "to": "governance",
-      "label": "构造 Governance → 状态、锁、文件操作与创建后复核"
+      "from": "governance-core",
+      "to": "project-design",
+      "label": "委托 ProjectData / ArchitectureDesign"
     },
     {
-      "from": "operations",
-      "to": "project",
-      "label": "启动前 new ProjectData(g).snapshot 核对项目修订"
+      "from": "governance-core",
+      "to": "git-collab",
+      "label": "受管版本与权威协作边界"
+    },
+    {
+      "from": "git-collab",
+      "to": "reader-ui",
+      "label": "未绑定时本地权威文档读取 → documents"
     }
   ],
   "fingerprints": {
-    "plugin/main.ts": "b4536f4b353542e8d5651f25d394f700c6186c5bfaccdc07e4e4bd7a6188626c",
-    "plugin/panel.ts": "671289d010efdae7ef7fa7251abd9584abcbcea248dd62cf5627ff673a449286",
-    "plugin/core.ts": "f7e66110ffc381e5f7f58844c1a9f3cd5c10d456d8d0192b764b7bc0b643c53c",
-    "plugin/project.ts": "747d9e2df4e2b8a1ff8852d04a901453523b1661c22c440701f0ee18529ad5da",
-    "plugin/git.ts": "acd31e0dbc1c3b5bedd72eb2bd9cd5f84605d36779627622f2ada44850093218",
-    "plugin/operations.ts": "bce548106914ec421afba93bd383bfee394002363f79b4150c9da768a08ad40a"
+    "mcp/server.ts": "f73fba1057f1ae1a60b022037da87b08cadf5a346ec31e81d608a90f1ea65613",
+    "plugin/main.ts": "1a396389e795ca213f79195dc79fcedab34534ee49a582d58178b0f4bd787f7c",
+    "plugin/workbench.ts": "bb35fc969327084cb30b141c4afc839685abca58922d8b4b0ee63352220de5ee",
+    "plugin/browser.ts": "64a2a2e756b5dc9446cbd992115c5dfabbf088cee2e6dbab2ba6bbeb6ed5cc42",
+    "plugin/panel.ts": "045e8f94fd0dc248040085a7b76a206ba9ccb243e365d9329fd29e3e03b861ce",
+    "plugin/core.ts": "a1b5dcb2088d0ba3786c233ffec9e0404423d92c9057be5ecdd261d4c039d498",
+    "plugin/project.ts": "fdd5d73c34c807be514672b3d9becb329bb38f43381e9910aac2fdde6e552e2c",
+    "plugin/design.ts": "bf34a02058f83b05fec69440834fa86d2de089847f8a3860f9ee3ffa58a436e0",
+    "plugin/collaboration.ts": "8f7bab3644a84ed3b397cb7f5a0ba59e15dd98000af47c8bcf3017112215a24b",
+    "plugin/documents.ts": "9ba614c5d0a8eec0e59a1b68b28b9166707c459bfd56c984758a4987d3b80d0b",
+    "plugin/renderer/shell.ts": "5de453394af381ef0f29b5df51a5f77da2981449c44a87ee04aa53428b66a9c3",
+    "plugin/renderer/documents.ts": "1bdb3fc6b7dd5a28494d59b036c375ff24301c2bba5fef0f1c88f1a7524d4fb0"
   },
-  "updatedAt": "2026-10-08T19:00:16.061Z"
+  "updatedAt": "2026-11-21T09:23:09.865Z"
 }

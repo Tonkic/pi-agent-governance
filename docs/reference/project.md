@@ -40,9 +40,9 @@ PI的governance和governance_ui工具用可信ctx.sessionId、有界session/get�
 
 MCP使用显式绑定项目或Claude官方启动项目；Codex Hook只读注入当前状态，不动态重绑普通MCP。不把roots/最近聊天当活动项目，不读私有数据库、凭据或transcript。切换项目需重建正确的MCP连接。
 
-共用governance_ui只接受open/close/status及confirmed；open/close需明确用户意图后confirmed:true，不接受路径或URL。同项目复用服务，切换/卸载/断开/页面租约到期回收，只返回安全origin和状态，不向聊天输出私有链接。详情见 [浏览器工作台](web-console.md)。
+共用governance_ui只接受open/close/status及confirmed；open/close需明确用户意图后confirmed:true，不接受路径或URL。同项目复用服务，切换/卸载/断开/页面租约到期回收，只返回安全origin和状态，不向聊天输出私有链接。详情见 [浏览器工作台](../start/web-console.md)。
 
-分层文档开发见 [功能开发](doc-driven.md)；架构共创仅在需要开发方向或图时使用，见 [可选架构设计](architecture-design.md)。
+分层文档开发见 [功能开发](../guides/doc-driven.md)；架构共创仅在需要开发方向或图时使用，见 [可选架构设计](architecture-design.md)。
 
 ## 可选源码架构
 

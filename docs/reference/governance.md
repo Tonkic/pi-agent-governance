@@ -1,9 +1,8 @@
-<!-- Generated from docs/ by scripts/build-docs.cjs. Do not edit. -->
 # Agent Governance / Agent 项目治理
 
-Community plugin ID: `io.github.tonkic.agent-governance`. Repository handoff, project board, source-backed architecture and isolated Git collaboration. English and Simplified Chinese UI. See [installation and publishing](publishing.md) before replacing an older `pi.agent-governance` installation.
+Community plugin ID: `io.github.tonkic.agent-governance`. Repository handoff, project board, source-backed architecture and isolated Git collaboration. English and Simplified Chinese UI. See [installation and publishing](../ops/publishing.md) before replacing an older `pi.agent-governance` installation.
 
-旧 ID 迁移前停用旧实例并保留 STATE 和 `.governance/`；见 [安装与发布](publishing.md)。
+旧 ID 迁移前停用旧实例并保留 STATE 和 `.governance/`；见 [安装与发布](../ops/publishing.md)。
 
 # Governance 工具用法
 
@@ -11,7 +10,7 @@ Community plugin ID: `io.github.tonkic.agent-governance`. Repository handoff, pr
 
 ## 源码与构建
 
-源码和测试使用 TypeScript；构建生成 `plugin/runtime/` 和清单，CLI/测试位于忽略的 `build/`。安装包说明由仓库 `docs/` 生成，不手改。完整构建方法见 [开发](development.md)。
+源码和测试使用 TypeScript；构建生成 `plugin/runtime/` 和清单，CLI/测试位于忽略的 `build/`。安装包说明由仓库 `docs/` 生成，不手改。完整构建方法见 [开发](../ops/development.md)。
 
 ```powershell
 # 公共/高风险/未知改动使用完整入口；局部与记录范围见开发文档
@@ -20,15 +19,15 @@ npm run check -- --full
 
 TypeScript 是开发依赖，不会进入插件运行时；PluginCheck 和 PluginPack 仍由 PI-Desktop 的插件工具负责生成 `.piplug` 安装包。
 
-Git 分支/worktree、范围检查、提交验证、集成及恢复，见 [Git 协作](git.md)。写入型委派前先 git_create 分配工作区；插件不自动启动子代理。
+Git 分支/worktree、范围检查、提交验证、集成及恢复，见 [Git 协作](../guides/git.md)。写入型委派前先 git_create 分配工作区；插件不自动启动子代理。
 
 ## 可视化面板
 
-所有宿主使用同一浏览器工作台。PI的Alt+空格启动器和右侧工作面板插件列表提供同一轻量入口（ui.panel/ui.view），只看连接状态并显式打开浏览器。Ctrl+Shift+P命令governance.open直接打开；原会话工具governance_ui需确认。shell.openExternal仅生成链接，desktop.control仅核实调用身份。详见 [浏览器入口](web-console.md)。
+所有宿主使用同一浏览器工作台。PI的Alt+空格启动器和右侧工作面板插件列表提供同一轻量入口（ui.panel/ui.view），只看连接状态并显式打开浏览器。Ctrl+Shift+P命令governance.open直接打开；原会话工具governance_ui需确认。shell.openExternal仅生成链接，desktop.control仅核实调用身份。详见 [浏览器入口](../start/web-console.md)。
 
 面板展示目标、检查条件、范围、进度、阻塞和Git记录。未初始化可补缺失入口；待命可开始获批任务；活动任务可更新进度。安全写入确认与版本守卫保留，修改进度使旧技术验证失效。
 
-工作台三栏为待办/进行中/已完成。依据分层功能文档实现并测试，通过即可完成，没有独立验收阶段。居中详情、草稿保护和可选架构/文档维护见 [项目接口](project.md)、[文档开发](doc-driven.md)。
+工作台三栏为待办/进行中/已完成。依据分层功能文档实现并测试，通过即可完成，没有独立验收阶段。居中详情、草稿保护和可选架构/文档维护见 [项目接口](project.md)、[文档开发](../guides/doc-driven.md)。
 
 点击刷新同步外部修改；未保存表单需再次点击刷新才会丢弃。Git 不可用不妨碍任务状态操作。直接打开 renderer/index.html 为静态预览，不能操作项目。确认、owner 和测试证据仍是调用方声明，不是身份认证或安全沙箱。
 
