@@ -155,8 +155,8 @@ test('real downloadable MCP target installs production-only lock and serves tool
   const { safeFile } = require('../scripts/release-safety.cjs');
   const buildRoot = await fs.mkdtemp(path.join(process.env.PI_SCRATCH_DIR || os.tmpdir(), 'mcp-source-'));
   t.after(() => fs.rm(buildRoot, { recursive: true, force: true }));
-  await fs.mkdir(path.join(buildRoot, 'plugin/docs'), { recursive: true });
-  for (const file of ['package.json', 'package-lock.json', 'build/mcp/server.js', 'plugin/docs/collaboration.md', ...hostFiles, ...consoleFiles, ...sharedModules.map(n => `build/plugin/${n}.js`), ...skillFiles.map(n => `plugin/skills/architecture-copilot/${n}`), ...['antigravity.json', 'codex.toml', 'claude-code.json', 'pi.json'].map(n => `mcp/clients/${n}`)]) {
+  await fs.mkdir(path.join(buildRoot, 'plugin/docs/guides'), { recursive: true });
+  for (const file of ['package.json', 'package-lock.json', 'build/mcp/server.js', 'plugin/docs/guides/collaboration.md', ...hostFiles, ...consoleFiles, ...sharedModules.map(n => `build/plugin/${n}.js`), ...skillFiles.map(n => `plugin/skills/architecture-copilot/${n}`), ...['antigravity.json', 'codex.toml', 'claude-code.json', 'pi.json'].map(n => `mcp/clients/${n}`)]) {
     const dest = safeFile(buildRoot, file);
     await fs.mkdir(path.dirname(dest), { recursive: true });
     await fs.copyFile(path.join(repo, file), dest);

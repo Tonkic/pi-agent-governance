@@ -34,18 +34,18 @@ test('compiled JavaScript is separated and runtime exactly matches compiler outp
   for (const [, src] of html.matchAll(/<script src="([^"]+)"/g))
     assert.ok(fs.existsSync(path.resolve(root, 'plugin/renderer', src)), src);
 });
-test('0.11.0 package, lock and generated plugin identify the slimmed readonly workbench without bundled SSH', () => {
+test('0.12.0 package, lock and generated plugin identify the 4-folder doc layout and upgraded workbench UI', () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json')));
   const lock = JSON.parse(fs.readFileSync(path.join(root, 'package-lock.json')));
   const manifest = JSON.parse(fs.readFileSync(path.join(root, 'plugin/manifest.json')));
-  assert.equal(pkg.version, '0.11.0');
+  assert.equal(pkg.version, '0.12.0');
   assert.equal(lock.version, pkg.version); assert.equal(lock.packages[''].version, pkg.version);
   assert.equal(manifest.version, pkg.version);
   assert.equal(manifest.id, 'io.github.tonkic.agent-governance');
   assert.deepEqual(lock.packages[''].dependencies, pkg.dependencies);
   assert.equal(pkg.devDependencies?.ssh2, undefined);
-  for (const removed of ['plugin/remote-ssh.ts', 'plugin/SSH-LICENSES.md', 'docs/remote.md', 'plugin/docs/remote.md', 'scripts/build-ssh.cjs']) assert.equal(fs.existsSync(path.join(root, removed)), false);
-  for (const doc of ['README.md', 'docs/releasing.md', 'docs/publishing.md']) assert.match(fs.readFileSync(path.join(root, doc), 'utf8'), /0\.11\.0/);
+  for (const removed of ['plugin/remote-ssh.ts', 'plugin/SSH-LICENSES.md', 'docs/remote.md', 'plugin/docs/remote.md', 'docs/mcp.md', 'plugin/docs/mcp.md', 'scripts/build-ssh.cjs']) assert.equal(fs.existsSync(path.join(root, removed)), false);
+  for (const doc of ['README.md', 'docs/ops/releasing.md', 'docs/ops/publishing.md']) assert.match(fs.readFileSync(path.join(root, doc), 'utf8'), /0\.12\.0/);
 });
 test('compiled CLI runs from the repository without adjacent JS dependencies', () => {
   const result = JSON.parse(
@@ -101,7 +101,7 @@ test('package documentation is generated from canonical concise docs and include
     render(fs.readFileSync(path.join(root, 'docs/README.md'), 'utf8'), true)
   );
   assert.match(
-    fs.readFileSync(path.join(root, 'plugin/docs/ui-sources.md'), 'utf8'),
+    fs.readFileSync(path.join(root, 'plugin/docs/ops/ui-sources.md'), 'utf8'),
     /MIT License/
   );
   const { piFiles } = require('../scripts/build-distributions.cjs');

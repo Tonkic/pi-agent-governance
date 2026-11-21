@@ -1,8 +1,9 @@
+<!-- Generated from docs/ by scripts/build-docs.cjs. Do not edit. -->
 # 产物与安装 / Distributions
 
-支持**通用 MCP＋Skills＋本地 Web 工作台包**（兼容 **Antigravity**、Codex、Claude Code、Pi）与 **PI-Desktop 官方 `.piplug` 安装包**。当前版本 **0.11.0** 移除低频内置 SSH/`ssh2` 运行时（消除 `0.9.0` 市场审核的 `eval` 动态执行阻塞），确立「人面向 `docs/` 开发、Agent 同步维护 `docs/`」闭环，同时保持双宿主完整兼容；见 [交付规则](releasing.md)。
+支持**通用 MCP＋Skills＋本地 Web 工作台包**（兼容 **Antigravity**、Codex、Claude Code、Pi）与 **PI-Desktop 官方 `.piplug` 安装包**。当前版本 **0.12.0** 采用四目录人类友好文档布局（`start/`、`guides/`、`reference/`、`ops/`），升级前端视觉与分组标题文档阅读器，同时保持双宿主完整兼容；见 [交付规则](releasing.md)。
 
-插件与通用包均内置本地只读浏览器服务和界面，日常使用无需克隆本源码仓库。GitHub 协作绑定与推送日志仅保存在忽略的 `.remote-local/`，不进入任何分发包；见 [权威协作](collaboration.md)。
+插件与通用包均内置本地只读浏览器服务和界面，日常使用无需克隆本源码仓库。GitHub 协作绑定与推送日志仅保存在忽略的 `.remote-local/`，不进入任何分发包；见 [权威协作](../guides/collaboration.md)。
 
 ## 构建目标
 
@@ -32,7 +33,7 @@ npm run build:distributions
 1. 校验 `SHA256SUMS`，解压到可信目录（需 Node.js 22+ 与 Git），在 `package/` 下运行 `npm ci --omit=dev --ignore-scripts`。
 2. 按 `mcp/clients/` 示例将 `node`、`build/mcp/server.js` 和项目绝对路径合并到宿主配置（Antigravity 合并至 `mcp_config.json`，并自动读取项目 `AGENTS.md`）。
 3. 可选将 `plugin/skills/architecture-copilot/` 复制到宿主支持的技能目录。
-4. 在原会话请求调用 `governance_ui`（`action: "open", confirmed: true`）打开只读浏览器工作台；详细配置见 [MCP与Skill](mcp.md)。
+4. 在原会话请求调用 `governance_ui`（`action: "open", confirmed: true`）打开只读浏览器工作台；详细配置见 [MCP与Skill](../start/mcp.md)。
 
 ## PI-Desktop 官方包检查
 
@@ -45,4 +46,4 @@ Community ID：`io.github.tonkic.agent-governance`；源码仓库：`Tonkic/pi-a
 ## 安装与更新边界
 
 - PI-Desktop 用户在插件页手动安装/更新并确认权限（`ui.panel`/`ui.view` 仅用于轻量打开入口，`shell.openExternal` 仅打开本地私有工作台链接），不自动静默安装。旧 ID `pi.agent-governance` 升级前先备份 `STATE.json` 与 `.governance/` 并停用旧插件。
-- `0.11.0` 已从源码和清单彻底移除 `ssh2` 动态 `eval` 依赖；待在 PI-Desktop 用官方 `PluginPack` 生成 `0.11.0` 包并同步 `main` CI 后，可按正常规则核对并提交一次市场。
+- `0.11.0+` 已从源码和清单彻底移除 `ssh2` 动态 `eval` 依赖；待在 PI-Desktop 用官方 `PluginPack` 生成 `0.12.0` 包并同步 `main` CI 后，可按正常规则核对并提交一次市场。

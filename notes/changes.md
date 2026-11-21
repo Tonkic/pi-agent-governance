@@ -277,3 +277,8 @@
 - 移除低频内置SSH（`remote-*`与`ssh2`），GitHub权威协作收敛为本地↔GitHub分支交互，解除原PI市场`eval`阻塞。
 - 精简`AGENTS.md`与`STATE.json`叠加历史约束，固化“人面向`docs/`提需求、Agent同轮实现并同步维护`docs/`”闭环。
 - 补齐`mcp/clients/antigravity.json`与双宿主说明，同时兼容Antigravity/CLI（stdio MCP）与PI-Desktop（官方`PluginPack`）。
+
+## 0.12.0 — 四目录意图文档与前端阅读体验升级
+- 按方案B将`docs/`物理拆分为`start/`、`guides/`、`reference/`、`ops/`四目录，结合轻量限界上下文指导人类3秒定位文档。
+- 升级全站明暗视觉质感与文档阅读器：左栏分组显示可读标题与路径、默认折叠`notes/archive/`、支持标题/路径双搜索并新增四象限选读总览卡。
+- 重建`0.12.0`真实双宿主六边形源码架构图（`.governance/architecture.json`）并核对SHA-256指纹。

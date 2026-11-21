@@ -3,8 +3,74 @@
 (() => {
     const host = document.getElementById('documents-section');
     const words = {
-        en: { title: 'Project documents', library: 'Document library', hint: 'Read-only · root guides, docs/ and notes/ Markdown. Listed internal documents and headings can be opened here; external links, images and HTML stay text.', refresh: 'Refresh documents', search: 'Search filenames', choose: 'Select a document to read', empty: 'No matching Markdown documents', waiting: 'Connect to a project first', loading: 'Reading…', contents: 'On this page', noHeadings: 'No headings', missingHeading: 'Heading not found in the loaded document.', offline: 'Offline · loaded text remains available. Reconnect and refresh to read files.', error: 'Could not read documents. Refresh to try again.', count: 'documents', limited: 'List is limited: at most 500 files, 4000 entries, depth 8, 256 KiB per file. Some files may be omitted.', plain: 'Document complexity limit: shown as plain text to keep the reader responsive.', cached: 'Loaded snapshot · refresh to read external changes', read: 'Read-only' },
-        zh: { title: '项目文档', library: '文档库', hint: '只读 · 根目录说明及 docs/、notes/ 中的 Markdown。已列出的内部文档和标题可在此跳转；外部链接、图片和 HTML 仅显示文本。', refresh: '刷新文档', search: '搜索文件名', choose: '选择一篇文档开始阅读', empty: '没有匹配的 Markdown 文档', waiting: '请先连接项目', loading: '正在读取…', contents: '本页目录', noHeadings: '暂无标题', missingHeading: '未找到所链接的文档标题。', offline: '离线 · 已加载正文仍可阅读。恢复连接后刷新以读取文件。', error: '文档读取失败，请刷新重试。', count: '篇文档', limited: '列表有限额：最多 500 个文件、扫描 4000 个条目、8 层目录、每文件 256 KiB；部分文件可能未列出。', plain: '文档复杂度达到限额，已采用纯文本显示以保持流畅。', cached: '已加载快照 · 外部修改后请刷新', read: '只读' }
+        en: {
+            title: 'Project documents', library: 'Document library',
+            hint: 'Read-only · root guides, docs/ (start, guides, reference, ops or domain folders) and notes/ Markdown. Listed internal documents and headings can be opened here; external links, images and HTML stay text.',
+            refresh: 'Refresh documents', search: 'Search titles or paths',
+            choose: 'Choose a topic below or from the left directory',
+            empty: 'No matching Markdown documents', waiting: 'Connect to a project first', loading: 'Reading…',
+            contents: 'On this page', noHeadings: 'No headings', missingHeading: 'Heading not found in the loaded document.',
+            offline: 'Offline · loaded text remains available. Reconnect and refresh to read files.',
+            error: 'Could not read documents. Refresh to try again.', count: 'documents',
+            limited: 'List is limited: at most 500 files, 4000 entries, depth 8, 256 KiB per file. Some files may be omitted.',
+            plain: 'Document complexity limit: shown as plain text to keep the reader responsive.',
+            cached: 'Loaded snapshot · refresh to read external changes', read: 'Read-only',
+            mapLead: 'Browse by intent — start in 3 minutes, follow daily collaboration workflows, or look up technical references.',
+            showArchive: 'Show archived notes', hideArchive: 'Hide archived notes',
+            groups: {
+                overview: 'Overview & Entry', start: '1 · Getting Started', guides: '2 · Collaboration Workflows',
+                reference: '3 · Architecture & API', ops: '4 · Build & Delivery', docs: 'Project Topics',
+                notes: 'Change Notes', archive: 'Historical Archive'
+            },
+            titles: {
+                'README.md': 'Project overview', 'AGENTS.md': 'Agent workflow rules', 'CHANGELOG.md': 'Changelog',
+                'CONTRIBUTING.md': 'Contributing', 'LICENSE.md': 'License',
+                'docs/README.md': 'Documentation index',
+                'docs/start/mcp.md': 'MCP & host setup', 'docs/start/web-console.md': 'Browser workbench',
+                'docs/guides/doc-driven.md': 'Doc-driven development', 'docs/guides/documentation.md': 'Maintaining project docs',
+                'docs/guides/git.md': 'Managed Git workflow', 'docs/guides/collaboration.md': 'GitHub authority collaboration',
+                'docs/reference/architecture.md': 'System architecture', 'docs/reference/governance.md': 'Governance state API',
+                'docs/reference/project.md': 'Board & source graph API', 'docs/reference/architecture-design.md': 'Optional architecture design',
+                'docs/reference/behavior-workspace.md': 'Workspace isolation rules',
+                'docs/ops/development.md': 'Local build & checks', 'docs/ops/publishing.md': 'Distributions & PI package',
+                'docs/ops/releasing.md': 'Checked GitHub delivery', 'docs/ops/ui-sources.md': 'UI sources & licenses',
+                'notes/README.md': 'Notes index', 'notes/changes.md': 'Release change log'
+            }
+        },
+        zh: {
+            title: '项目文档', library: '文档目录',
+            hint: '只读 · 按意图组织根说明、docs/（快速开始、协作工作流、架构参考、开发交付或业务域）与 notes/。内部文档和标题可直接跳转；外部链接、图片和 HTML 仅显示文本。',
+            refresh: '刷新文档', search: '搜索标题或文件名',
+            choose: '按下方四象限意图选读，或从左侧目录切换专题',
+            empty: '没有匹配的 Markdown 文档', waiting: '请先连接项目', loading: '正在读取…',
+            contents: '本页目录', noHeadings: '暂无标题', missingHeading: '未找到所链接的文档标题。',
+            offline: '离线 · 已加载正文仍可阅读。恢复连接后刷新以读取文件。',
+            error: '文档读取失败，请刷新重试。', count: '篇文档',
+            limited: '列表有限额：最多 500 个文件、扫描 4000 个条目、8 层目录、每文件 256 KiB；部分文件可能未列出。',
+            plain: '文档复杂度达到限额，已采用纯文本显示以保持流畅。',
+            cached: '已加载快照 · 外部修改后请刷新', read: '只读',
+            mapLead: '按阅读目的分区——新接入看「快速开始」，日常提需求看「协作工作流」，查字段与源码入口看「架构与参考」。',
+            showArchive: '展开历史归档', hideArchive: '收起历史归档',
+            groups: {
+                overview: '项目入口 · Overview', start: '1 · 快速开始', guides: '2 · 协作工作流',
+                reference: '3 · 架构与参考', ops: '4 · 开发与交付', docs: '业务专题',
+                notes: '变更简史 · Notes', archive: '历史归档 · Archive'
+            },
+            titles: {
+                'README.md': '项目总览与快速上手', 'AGENTS.md': 'Agent 入口与执行红线', 'CHANGELOG.md': '更新日志',
+                'CONTRIBUTING.md': '贡献说明', 'LICENSE.md': '开源许可',
+                'docs/README.md': '文档总索引（按问题路由）',
+                'docs/start/mcp.md': 'MCP 与多宿主接入配置', 'docs/start/web-console.md': '只读浏览器工作台用法',
+                'docs/guides/doc-driven.md': '面向文档的功能开发闭环', 'docs/guides/documentation.md': 'Agent 同步维护文档规则',
+                'docs/guides/git.md': '受管 Git 分支与提交', 'docs/guides/collaboration.md': 'GitHub 权威分支协作',
+                'docs/reference/architecture.md': '系统架构与代码入口', 'docs/reference/governance.md': '任务治理状态机接口',
+                'docs/reference/project.md': '三栏看板与源码图接口', 'docs/reference/architecture-design.md': '可选架构设计与 ASCII 基线',
+                'docs/reference/behavior-workspace.md': '项目切换与只读隔离契约',
+                'docs/ops/development.md': '本地构建与定向检查命令', 'docs/ops/publishing.md': '双宿主分发包与安装校验',
+                'docs/ops/releasing.md': 'GitHub 交付与版本核对', 'docs/ops/ui-sources.md': 'UI 设计来源与 MIT 许可',
+                'notes/README.md': '历史记录索引', 'notes/changes.md': '历次版本变更摘要'
+            }
+        }
     };
     const w = () => words[locale === 'zh-CN' ? 'zh' : 'en'];
     const el = (tag, text = '', className = '') => {
@@ -45,13 +111,15 @@
     const status = id(el('p', '', 'reader-status'), 'documents-status');
     status.setAttribute('role', 'status');
     const path = id(el('p', '', 'reader-path'), 'documents-path');
+    const overview = id(el('div', '', 'reader-overview'), 'documents-overview');
+    overview.hidden = true;
     const body = id(el('article', '', 'reader-prose'), 'documents-body');
     body.tabIndex = -1;
     const contents = el('details', '', 'reader-contents');
     const tocTitle = el('summary');
     const toc = id(el('nav'), 'documents-toc');
     contents.append(tocTitle, toc);
-    reading.append(path, status, body);
+    reading.append(path, status, overview, body);
     layout.append(library, reading, contents);
     host.append(layout);
     document.getElementById('action-panel').append(head);
@@ -68,45 +136,181 @@
     smaller.addEventListener('click', () => resizeText(-1));
     larger.addEventListener('click', () => resizeText(1));
     focus.addEventListener('click', () => { const on = focus.getAttribute('aria-pressed') !== 'true'; focus.setAttribute('aria-pressed', String(on)); host.classList.toggle('reader-focused', on); });
-    let root = null, epoch = -1, sequence = 0, listing = false, readingFile = false;
+    let root = null, epoch = -1, sequence = 0, listing = false, readingFile = false, archiveOpen = false;
     let entries = [], selected = '', loaded = false, truncated = false;
     let listMessage = '', readMessage = '', hasBody = false, attempted = false;
     const headingTargets = new Map();
+    const learnedTitles = new Map();
     const active = () => location.hash === '#documents-section';
     const owns = (owner, project, request) => owner === workspaceEpoch && owner === epoch && project === root && request === sequence;
     const current = (owner, project, request) => owns(owner, project, request) && snapshot?.workspace === root;
+    const priorityOrder = ['README.md', 'docs/README.md', 'AGENTS.md',
+        'docs/start/mcp.md', 'docs/start/web-console.md',
+        'docs/guides/doc-driven.md', 'docs/guides/documentation.md', 'docs/guides/git.md', 'docs/guides/collaboration.md',
+        'docs/reference/architecture.md', 'docs/reference/governance.md', 'docs/reference/project.md', 'docs/reference/architecture-design.md', 'docs/reference/behavior-workspace.md',
+        'docs/ops/development.md', 'docs/ops/releasing.md', 'docs/ops/publishing.md', 'docs/ops/ui-sources.md',
+        'notes/README.md', 'notes/changes.md'];
+    function docTitle(filePath) {
+        const learned = learnedTitles.get(filePath);
+        if (learned && learned.length <= 80)
+            return learned;
+        const known = w().titles[filePath];
+        if (known)
+            return known;
+        const base = filePath.split('/').pop()?.replace(/\.md$/i, '') || filePath;
+        if (base.toLowerCase() === 'readme') {
+            const parent = filePath.split('/').slice(-2, -1)[0];
+            return parent ? `${parent} README` : 'README';
+        }
+        const clean = base.replace(/[-_]+/g, ' ').trim();
+        return /^[a-z]/.test(clean) ? clean[0].toUpperCase() + clean.slice(1) : clean;
+    }
+    function docGroup(filePath) {
+        const g = w().groups;
+        if (!filePath.includes('/') || filePath === 'docs/README.md')
+            return { key: 'overview', label: g.overview, order: 0 };
+        if (filePath.startsWith('docs/start/'))
+            return { key: 'start', label: g.start, order: 1 };
+        if (filePath.startsWith('docs/guides/'))
+            return { key: 'guides', label: g.guides, order: 2 };
+        if (filePath.startsWith('docs/reference/'))
+            return { key: 'reference', label: g.reference, order: 3 };
+        if (filePath.startsWith('docs/ops/'))
+            return { key: 'ops', label: g.ops, order: 4 };
+        if (filePath.startsWith('docs/')) {
+            const parts = filePath.split('/');
+            if (parts.length >= 3)
+                return { key: `domain:${parts[1]}`, label: `${g.docs} · ${parts[1]}`, order: 5 };
+            return { key: 'docs', label: g.docs, order: 5 };
+        }
+        if (filePath.startsWith('notes/archive/'))
+            return { key: 'archive', label: g.archive, order: 7 };
+        return { key: 'notes', label: g.notes, order: 6 };
+    }
+    function matchesQuery(item, query) {
+        if (!query)
+            return true;
+        return item.path.toLocaleLowerCase().includes(query) || docTitle(item.path).toLocaleLowerCase().includes(query);
+    }
+    function sortGroupItems(items) {
+        return [...items].sort((a, b) => {
+            const ia = priorityOrder.indexOf(a.path), ib = priorityOrder.indexOf(b.path);
+            if (ia >= 0 && ib >= 0)
+                return ia - ib;
+            if (ia >= 0)
+                return -1;
+            if (ib >= 0)
+                return 1;
+            return a.path < b.path ? -1 : a.path > b.path ? 1 : 0;
+        });
+    }
     function controls() {
+        const disabled = !navigator.onLine || !snapshot || busy || listing;
         refresh.disabled = !root || !snapshot || busy || listing || readingFile || !navigator.onLine;
         smaller.disabled = busy || fontSize <= 16;
         larger.disabled = busy || fontSize >= 20;
         search.disabled = !loaded; // Local filtering and TOC are usable offline and while writes are busy.
-        files.querySelectorAll('button').forEach(button => { button.disabled = !navigator.onLine || !snapshot || busy || listing; });
+        files.querySelectorAll('button.reader-file').forEach(button => { button.disabled = disabled; });
+        overview.querySelectorAll('button.reader-overview-card').forEach(button => { button.disabled = disabled; });
         toc.querySelectorAll('button').forEach(button => { button.disabled = false; });
     }
     function messages() {
+        const query = search.value.trim().toLocaleLowerCase();
         status.textContent = !navigator.onLine ? w().offline : readMessage || (hasBody ? w().cached : w().choose);
-        count.textContent = listMessage || `${entries.filter(item => item.path.toLocaleLowerCase().includes(search.value.toLocaleLowerCase().trim())).length} / ${entries.length} ${w().count}${truncated ? ' · ' + w().limited : ''}`;
+        count.textContent = listMessage || `${entries.filter(item => matchesQuery(item, query)).length} / ${entries.length} ${w().count}${truncated ? ' · ' + w().limited : ''}`;
         status.classList.toggle('reader-error', readMessage === w().error);
+        path.hidden = !path.textContent;
+    }
+    function renderOverview(grouped) {
+        const show = loaded && !hasBody && !readMessage && entries.length > 0;
+        overview.hidden = !show;
+        if (!show) {
+            overview.replaceChildren();
+            return;
+        }
+        const lead = el('p', w().mapLead, 'reader-overview-lead');
+        const grid = el('div', '', 'reader-overview-grid');
+        for (const group of grouped.filter(g => g.key !== 'archive' && g.items.length)) {
+            const section = el('section', '', 'reader-overview-section');
+            const header = el('div', '', 'reader-overview-head');
+            header.append(el('strong', group.label), el('span', String(group.items.length), 'reader-group-badge'));
+            const list = el('div', '', 'reader-overview-cards');
+            for (const item of group.items.slice(0, 6)) {
+                const card = el('button', '', 'reader-overview-card');
+                card.type = 'button';
+                card.append(el('strong', docTitle(item.path), 'reader-card-title'), el('small', item.path, 'reader-card-path'));
+                card.addEventListener('click', () => { void read(item.path, true); });
+                list.append(card);
+            }
+            section.append(header, list);
+            grid.append(section);
+        }
+        overview.replaceChildren(lead, grid);
+    }
+    function makeFileButton(item) {
+        const button = el('button', '', 'reader-file');
+        button.type = 'button';
+        button.dataset.document = item.path;
+        button.setAttribute('aria-pressed', String(item.path === selected));
+        const main = el('span', docTitle(item.path), 'reader-file-title');
+        const sub = el('span', '', 'reader-file-meta');
+        sub.append(el('span', item.path, 'reader-file-path'), el('small', `${Math.ceil(item.bytes / 1024)} KiB`));
+        button.append(main, sub);
+        button.addEventListener('click', () => { void read(item.path, true); });
+        return button;
     }
     function renderList() {
         const focused = document.activeElement?.dataset.document;
         const query = search.value.trim().toLocaleLowerCase();
-        const matching = entries.filter(item => item.path.toLocaleLowerCase().includes(query));
-        files.replaceChildren(...matching.map(item => {
-            const button = el('button', '', 'reader-file');
-            button.type = 'button';
-            button.dataset.document = item.path;
-            button.setAttribute('aria-pressed', String(item.path === selected));
-            button.append(el('span', item.path), el('small', `${Math.ceil(item.bytes / 1024)} KiB`));
-            button.addEventListener('click', () => { void read(item.path, true); });
-            return button;
-        }));
+        const matching = entries.filter(item => matchesQuery(item, query));
+        const buckets = new Map();
+        for (const item of matching) {
+            const info = docGroup(item.path);
+            let bucket = buckets.get(info.key);
+            if (!bucket) {
+                bucket = { ...info, items: [] };
+                buckets.set(info.key, bucket);
+            }
+            bucket.items.push(item);
+        }
+        const grouped = [...buckets.values()].sort((a, b) => a.order - b.order || (a.label < b.label ? -1 : 1)).map(b => ({ ...b, items: sortGroupItems(b.items) }));
+        const nodes = [];
+        for (const group of grouped) {
+            if (group.key === 'archive' && !query && !selected.startsWith('notes/archive/')) {
+                const wrap = el('div', '', 'reader-group reader-group-archive');
+                const toggle = el('button', '', 'reader-archive-toggle');
+                toggle.type = 'button';
+                toggle.setAttribute('aria-expanded', String(archiveOpen));
+                toggle.append(el('span', `${archiveOpen ? '▾ ' : '▸ '}${archiveOpen ? w().hideArchive : w().showArchive}`), el('span', String(group.items.length), 'reader-group-badge'));
+                const archiveBox = el('div', '', 'reader-group-items');
+                archiveBox.hidden = !archiveOpen;
+                for (const item of group.items)
+                    archiveBox.append(makeFileButton(item));
+                toggle.addEventListener('click', () => { archiveOpen = !archiveOpen; renderList(); });
+                wrap.append(toggle, archiveBox);
+                nodes.push(wrap);
+                continue;
+            }
+            const section = el('div', '', 'reader-group');
+            if (!query || grouped.length > 1) {
+                const heading = el('div', '', 'reader-group-head');
+                heading.append(el('span', group.label), el('span', String(group.items.length), 'reader-group-badge'));
+                section.append(heading);
+            }
+            const list = el('div', '', 'reader-group-items');
+            for (const item of group.items)
+                list.append(makeFileButton(item));
+            section.append(list);
+            nodes.push(section);
+        }
+        files.replaceChildren(...nodes);
         if (!matching.length)
             files.append(el('p', loaded ? w().empty : w().waiting, 'muted'));
+        renderOverview(grouped);
         messages();
         controls();
         if (focused)
-            Array.from(files.querySelectorAll('button')).find(button => button.dataset.document === focused)?.focus({ preventScroll: true });
+            Array.from(files.querySelectorAll('button.reader-file')).find(button => button.dataset.document === focused)?.focus({ preventScroll: true });
     }
     function reset() {
         sequence++;
@@ -114,13 +318,16 @@
         root = null;
         entries = [];
         selected = '';
-        loaded = truncated = hasBody = listing = readingFile = false;
+        loaded = truncated = hasBody = listing = readingFile = archiveOpen = false;
         headingTargets.clear();
+        learnedTitles.clear();
         listMessage = readMessage = '';
         attempted = false;
         search.value = '';
         body.replaceChildren();
         toc.replaceChildren();
+        overview.replaceChildren();
+        overview.hidden = true;
         path.textContent = '';
         host.setAttribute('aria-busy', 'false');
         body.setAttribute('aria-busy', 'false');
@@ -186,7 +393,7 @@
             return;
         }
         // One shared node budget covers blocks, table cells, inline spans, text and TOC.
-        let tokens = 4000, headings = 0;
+        let tokens = 4000, headings = 0, firstH1 = '';
         const make = (tag, value = '', cls = '') => { if ((tokens -= 2) < 0)
             throw Error('Reader budget'); const node = el(tag, value, cls); if (tag === 'pre')
             node.tabIndex = 0; return node; };
@@ -281,6 +488,8 @@
             inline(h, value);
             h.tabIndex = -1;
             body.append(h);
+            if (level === 1 && !firstH1 && h.textContent)
+                firstH1 = h.textContent.trim();
             const slug = (h.textContent || '').toLocaleLowerCase().replace(/[^\p{L}\p{N}\p{M}_\-\s]/gu, '').replace(/\s/g, '-');
             let key = slug, duplicate = 0;
             while (headingTargets.has(key))
@@ -421,6 +630,8 @@
             }
             if (!headings)
                 toc.append(make('p', w().noHeadings, 'muted'));
+            if (firstH1 && !w().titles[sourceFile] && firstH1.length <= 80)
+                learnedTitles.set(sourceFile, firstH1);
         }
         catch {
             plain();
@@ -449,6 +660,7 @@
             renderMarkdown(result.content);
             hasBody = true;
             readMessage = '';
+            renderList();
             if (moveFocus && active()) {
                 if (narrow())
                     library.open = contents.open = false;
@@ -468,6 +680,7 @@
                 if (readMessage === w().loading)
                     readMessage = w().error;
                 body.setAttribute('aria-busy', 'false');
+                renderOverview([]);
                 messages();
                 controls();
             }

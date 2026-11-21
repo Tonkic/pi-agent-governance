@@ -69,6 +69,6 @@ npm run check -- --base BASE_FULL_SHA --head HEAD_FULL_SHA
 
 ## 交付与接续
 
-按 [交付流程](releasing.md) 审查提交、同步 `main`/GitHub。源码、文档生成、全量单元/浏览器检查与 `mcp-skills` 分发包在 Antigravity、CLI 与 PI-Desktop 中完全通用；仅 `plugin/dist/*.piplug` 需在 PI-Desktop 内使用官方 `PluginCheck`/`PluginPack` 更新，不用脚本自制包。证据来源和合并复用规则见 [Git协作](git.md)。
+按 [交付流程](releasing.md) 审查提交、同步 `main`/GitHub。源码、文档生成、全量单元/浏览器检查与 `mcp-skills` 分发包在 Antigravity、CLI 与 PI-Desktop 中完全通用；仅 `plugin/dist/*.piplug` 需在 PI-Desktop 内使用官方 `PluginCheck`/`PluginPack` 更新，不用脚本自制包。证据来源和合并复用规则见 [Git协作](../guides/git.md)。
 
 在 Antigravity 或 CLI 会话可直接说“继续当前获批待办”，PI-Desktop 也可运行手动任务“接续项目：已批准待办”：均读取 `AGENTS.md`/`STATE.json`/看板，连续处理获批范围，完成/真实阻塞/需新授权时停止，不设后台定时唤醒或递归建会话。

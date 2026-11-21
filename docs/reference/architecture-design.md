@@ -1,4 +1,3 @@
-<!-- Generated from docs/ by scripts/build-docs.cjs. Do not edit. -->
 # 可选项目架构设计
 
 只有需要明确架构方向、讨论关键取舍或查看架构图时才使用Architecture Copilot。普通功能开发直接按分层文档实现与测试，不要求先设计架构。已确定的设计保持稳定，普通更新不重画；显式架构修订才形成新基线。设计基线确认不是开发后的验收。
@@ -36,7 +35,7 @@
 
 区块用governance:architecture-ascii:start/end标记及text围栏包裹，只能有一份完整区块。旧`Nodes`语法仍可读；没有区块的旧记录只读生成ASCII再转换，不改文件/确认指纹。兼容旧调用时首次由nodes/edges初始化区块；此后编辑ASCII。切换版本使用各版ASCII；确认基线仍需人工审阅，不能直接修改已确认记录。
 
-关联检查只证明列出的隔离浏览器场景，不代表真实宿主、模型对话质量或整个设计的正确性。见 [文档驱动开发](doc-driven.md)。
+关联检查只证明列出的隔离浏览器场景，不代表真实宿主、模型对话质量或整个设计的正确性。见 [文档驱动开发](../guides/doc-driven.md)。
 
 ## 设计不是源码现状
 
@@ -49,7 +48,7 @@
 
 独立数据保存在 `.governance/architecture-design.json`，包含当前草案和追加的确认历史。读取缺省项目不创建文件；损坏记录保留并报错，不能覆盖“恢复默认”。
 
-Agent工具仍只开放 `architecture_design_snapshot`、`architecture_design_begin`、`architecture_design_save`；保存需明确发起草案，携带expectedRevision及expectedDraft。浏览器仅允许snapshot，已撤下确认/放弃入口；未新增Agent/MCP确认动作，不能自行宣称基线已确认。底层原确认守卫与历史兼容保留。配置见[MCP与Skill](mcp.md)。
+Agent工具仍只开放 `architecture_design_snapshot`、`architecture_design_begin`、`architecture_design_save`；保存需明确发起草案，携带expectedRevision及expectedDraft。浏览器仅允许snapshot，已撤下确认/放弃入口；未新增Agent/MCP确认动作，不能自行宣称基线已确认。底层原确认守卫与历史兼容保留。配置见[MCP与Skill](../start/mcp.md)。
 
 proposal包含title、可读document、nodes和edges；每节点id/title/description/files，关系from/to/label。通常3–5个核心职责，一张图一个层级，箭头说明实际设计含义。files可为空，不要求未来代码已经存在，不代表源码验证。
 

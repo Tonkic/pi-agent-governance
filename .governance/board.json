@@ -20,6 +20,22 @@
       "gitTaskId": null
     },
     {
+      "id": "ui-docs-architecture-0120",
+      "title": "四目录意图文档架构、前端美化与 0.12.0 源码架构图",
+      "description": "按方案B将 docs/ 物理重构为 start/guides/reference/ops 四类人类易读子目录；升级全站明暗视觉层次、项目文档分组标题目录、四象限快速选读卡与历史归档折叠；同步更新 0.12.0 真实双宿主源码架构图。",
+      "blocker": "",
+      "stage": "done",
+      "taskId": "project-board-release",
+      "criteria": [
+        "docs物理迁移为四类子目录且全仓链接、生成plugin/docs与行为绑定检查通过",
+        "前端视觉美化与项目文档分组标题导航、总览卡片、归档折叠交互通过全部浏览器回归",
+        "重建0.12.0真实源码架构图指纹并通过全量单元与浏览器检查"
+      ],
+      "architectureImpact": "affects",
+      "gitTaskId": "ui-docs-architecture-0120",
+      "completedAt": "2026-11-21T09:21:00.000Z"
+    },
+    {
       "id": "doc-driven-slim-0110",
       "title": "面向文档工作流精简、移除内置SSH与双宿主兼容 · 0.11.0",
       "description": "按用户批准移除内置SSH/ssh2（解除原市场eval动态执行阻塞），GitHub权威协作仅保留本地与GitHub分支交互；精简AGENTS.md与STATE.json历史叠加约束，固化人管docs与Agent同轮维护docs闭环；新增antigravity.json并兼容Antigravity与PI-Desktop双宿主。",

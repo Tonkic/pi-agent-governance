@@ -259,7 +259,7 @@ class Governance {
                     ? 150
                     : p === 'docs/overview.md'
                         ? 100
-                        : p === 'docs/architecture.md'
+                        : p === 'docs/architecture.md' || p === 'docs/reference/architecture.md'
                             ? 200
                             : p.startsWith('docs/')
                                 ? 100

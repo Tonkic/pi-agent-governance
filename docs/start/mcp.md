@@ -1,4 +1,3 @@
-<!-- Generated from docs/ by scripts/build-docs.cjs. Do not edit. -->
 # MCP 与可移植 Skill
 
 Antigravity、PI-Desktop、Codex、Claude Code 与 Pi 共用 [同一个只读浏览器工作台](web-console.md)；本地 stdio MCP 和 PI 连接器复用同一治理核心及 `STATE.json`/看板/源码图/设计数据，不新增数据库。开发、模型调用与文档维护留在原宿主会话。
@@ -41,8 +40,8 @@ node build/mcp/server.js --workspace D:/projects/example
 - `tools/list` 返回 `governance`（完整治理、看板、源码图、设计草案与受管 Git schema）和 `governance_ui`（`open`/`close`/`status`，打开与关闭需 `confirmed: true`）。
 - 写项目数据先取 `project_snapshot.revision`；写架构草案先取 `architecture_design_snapshot.revision` 与明确发起的 `draftId`。
 - `resources/list` 与 `prompts/list`（`architecture-analysis`、`architecture-design`）提供固定只读的 Architecture Copilot 正文、来源、MIT 许可与参考资料；读取提示不调用模型、不授予写入权限。
-- 源码现状图与设计草案严格分开；普通功能直接按 [文档开发](doc-driven.md) 实现与测试，不强制先做架构设计。
+- 源码现状图与设计草案严格分开；普通功能直接按 [文档开发](../guides/doc-driven.md) 实现与测试，不强制先做架构设计。
 
 ## 安全与排错
 
-MCP 客户端负责呈现工具权限与确认；请勿向不可信 Agent 开放写入工具。参数不符返回协议错误，核心门禁拒绝时返回 `isError: true` 且不回显敏感路径。遇到拒绝先重读 `status` 与最新 snapshot，核对范围、锁与 `revision`，不盲目重试。构建与双宿主交付见 [交付](releasing.md)、[安装与发布](publishing.md)。
+MCP 客户端负责呈现工具权限与确认；请勿向不可信 Agent 开放写入工具。参数不符返回协议错误，核心门禁拒绝时返回 `isError: true` 且不回显敏感路径。遇到拒绝先重读 `status` 与最新 snapshot，核对范围、锁与 `revision`，不盲目重试。构建与双宿主交付见 [交付](../ops/releasing.md)、[安装与发布](../ops/publishing.md)。

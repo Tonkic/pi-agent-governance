@@ -1,14 +1,14 @@
 <!-- Generated from docs/ by scripts/build-docs.cjs. Do not edit. -->
 # GitHub 交付 / Checked delivery
 
-GitHub Release 仅由稳定主/次版本标签 `vX.Y.0`（X≥1，Y≥0）各创建一次，标签由人创建（策略 `stable-major-minor-tag-only`）。当前 **0.11.0** 按用户批准移除内置 SSH/`ssh2`（解除原 PI 市场 `eval` 阻塞）、精简面向文档工作流并补齐 Antigravity 与 PI-Desktop 双宿主兼容；`0.x` 标签不触发 GitHub Release。
+GitHub Release 仅由稳定主/次版本标签 `vX.Y.0`（X≥1，Y≥0）各创建一次，标签由人创建（策略 `stable-major-minor-tag-only`）。当前 **0.12.0** 将项目文档物理重构为 `start / guides / reference / ops` 四目录，升级前端视觉、分类标题文档阅读器与 `0.12.0` 真实源码架构图；`0.x` 标签不触发 GitHub Release。
 
 已批准产品更新按真实行为与契约判级升版：修复/交互/性能为 `patch`（不提交市场）；新增能力或 `0.x` 契约调整升 `minor`。大更新在完整检查、PI 官方包（于 PI-Desktop 执行 `PluginPack`）及 `main` 双 OS CI 通过后可核对版本并提交一次市场；未知写入不重试，不覆盖待审/已用版本，不自动安装、发 npm 或建标签。
 
 ## 开发与源码交付
 
-1. 先读 `STATE.json`/`README.md` 并查 `status`/`git_status`；小任务在单一协调 worktree 直接实现，写入委派按 [Git协作](git.md) 分配独立 worktree。
-2. 按影响同步维护 `docs/`（见 [文档维护](documentation.md)），并按 [开发范围](development.md#检查命令) 运行检查；公共/包/依赖改动跑一次 `npm run check -- --full`。
+1. 先读 `STATE.json`/`README.md` 并查 `status`/`git_status`；小任务在单一协调 worktree 直接实现，写入委派按 [Git协作](../guides/git.md) 分配独立 worktree。
+2. 按影响同步维护 `docs/`（见 [文档维护](../guides/documentation.md)），并按 [开发范围](development.md#检查命令) 运行检查；公共/包/依赖改动跑一次 `npm run check -- --full`。
 3. 审查 `git_diff` → `git_commit` → `git_verify`；提交或无变化合并不机械重跑测试，冲突解决或新增改动补测受影响部分。纯记录更新走 `records` 快路，不升版。
 4. Antigravity 与 CLI 环境可直接完成全部源码、文档生成、全量测试与 `mcp-skills` 打包校验；涉及 `plugin/` 内容更新时，PI-Desktop `.piplug` 在 PI-Desktop 内由官方 `PluginCheck`/`PluginPack` 更新后再执行双目标发布校验。
 
