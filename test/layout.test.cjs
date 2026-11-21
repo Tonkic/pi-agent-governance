@@ -6,7 +6,7 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const root = path.resolve(__dirname, '..');
 test('compiled JavaScript is separated and runtime exactly matches compiler output', () => {
-  const sources = ['main', 'core', 'git', 'panel', 'project', 'tool', 'operations', 'behaviors', 'documents', 'design', 'browser', 'browser-open', 'workbench', 'workbench-tool', 'entry-bridge', 'git-history'];
+  const sources = ['main', 'core', 'git', 'panel', 'project', 'tool', 'operations', 'behaviors', 'documents', 'design', 'browser', 'browser-open', 'workbench', 'workbench-tool', 'entry-bridge', 'git-history', 'collaboration', 'collaboration-program', 'collaboration-cli'];
   const renderer = ['i18n', 'help', 'graph-model', 'graph', 'shell', 'panel', 'design', 'documents', 'git-history'];
   for (const file of [
     ...sources.map((f) => `${f}.js`),
@@ -34,16 +34,18 @@ test('compiled JavaScript is separated and runtime exactly matches compiler outp
   for (const [, src] of html.matchAll(/<script src="([^"]+)"/g))
     assert.ok(fs.existsSync(path.resolve(root, 'plugin/renderer', src)), src);
 });
-test('0.10.3 package, lock and generated plugin identify the same readonly workbench', () => {
+test('0.11.0 package, lock and generated plugin identify the slimmed readonly workbench without bundled SSH', () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json')));
   const lock = JSON.parse(fs.readFileSync(path.join(root, 'package-lock.json')));
   const manifest = JSON.parse(fs.readFileSync(path.join(root, 'plugin/manifest.json')));
-  assert.equal(pkg.version, '0.10.3');
+  assert.equal(pkg.version, '0.11.0');
   assert.equal(lock.version, pkg.version); assert.equal(lock.packages[''].version, pkg.version);
   assert.equal(manifest.version, pkg.version);
   assert.equal(manifest.id, 'io.github.tonkic.agent-governance');
   assert.deepEqual(lock.packages[''].dependencies, pkg.dependencies);
-  for (const doc of ['README.md', 'docs/releasing.md', 'docs/publishing.md']) assert.match(fs.readFileSync(path.join(root, doc), 'utf8'), /0\.10\.3/);
+  assert.equal(pkg.devDependencies?.ssh2, undefined);
+  for (const removed of ['plugin/remote-ssh.ts', 'plugin/SSH-LICENSES.md', 'docs/remote.md', 'plugin/docs/remote.md', 'scripts/build-ssh.cjs']) assert.equal(fs.existsSync(path.join(root, removed)), false);
+  for (const doc of ['README.md', 'docs/releasing.md', 'docs/publishing.md']) assert.match(fs.readFileSync(path.join(root, doc), 'utf8'), /0\.11\.0/);
 });
 test('compiled CLI runs from the repository without adjacent JS dependencies', () => {
   const result = JSON.parse(

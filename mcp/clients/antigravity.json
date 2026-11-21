@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "governance": {
+      "command": "C:/Program Files/nodejs/node.exe",
+      "args": ["C:/tools/agent-governance/build/mcp/server.js", "--workspace", "D:/projects/example"]
+    }
+  }
+}

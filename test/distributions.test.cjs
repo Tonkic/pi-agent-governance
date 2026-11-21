@@ -31,10 +31,9 @@ function fixture(t) {
   put('.gitignore', 'build/\n.pi/\n.governance/\n.secrets/\nSTATE.json\nnode_modules/\nunpack/\n');
   for (const name of piFiles) put(`plugin/${name}`, name === 'manifest.json' ? JSON.stringify({ id: 'io.github.tonkic.agent-governance', version: pkg.version, permissions: ['ui.panel'], fs: { read: true } }) : `fixture ${name}\n`);
   for (const name of sharedModules) put(`build/plugin/${name}.js`, `exports.fixture = 'shared';\n`);
-  put('build/plugin/ssh-runtime.js.LEGAL.txt', 'fixture bundled SSH licenses\n');
   put('build/mcp/server.js', "#!/usr/bin/env node\nconsole.log(require('../../package.json').version + ' ' + require('../plugin/core').fixture);\n");
   for (const name of [...consoleFiles, ...hostFiles]) if (!fs.existsSync(path.join(root, name))) put(name, `fixture ${name}\n`);
-  for (const name of ['codex.toml', 'claude-code.json', 'pi.json']) put(`mcp/clients/${name}`, name.endsWith('.json') ? '{}' : '# fixture');
+  for (const name of ['antigravity.json', 'codex.toml', 'claude-code.json', 'pi.json']) put(`mcp/clients/${name}`, name.endsWith('.json') ? '{}' : '# fixture');
   for (const name of ['.pi/local', '.governance/private', '.secrets/never-read.token', 'STATE.json', 'node_modules/private/index.js']) put(name, 'private fixture must not be packed');
   const artifact = `plugin/dist/io.github.tonkic.agent-governance-${pkg.version}.piplug`;
   const archive = () => zip(piFiles.map(name => [name, fs.readFileSync(path.join(root, 'plugin', name))]));
@@ -62,7 +61,7 @@ test('fixture builds both artifacts, deterministic manifest, valid install lock 
   const unpack = path.join(f.root, 'unpack'); fs.mkdirSync(unpack);
   const names = untar(files.find(a => a.name.endsWith('.tgz')).bytes, unpack);
   for (const name of names) assert.doesNotMatch(name, /(?:^|\/)(?:node_modules|\.pi|\.governance|\.secrets|\.remote-local|STATE.json|evidence|test)(?:\/|$)/);
-  assert.deepEqual(names.filter(n => n.startsWith('build/plugin/')).sort(), [...sharedModules.map(n => `build/plugin/${n}.js`), 'build/plugin/ssh-runtime.js.LEGAL.txt'].sort());
+  assert.deepEqual(names.filter(n => n.startsWith('build/plugin/')).sort(), sharedModules.map(n => `build/plugin/${n}.js`).sort());
   for (const name of skillFiles) assert.ok(names.includes(`plugin/skills/architecture-copilot/${name}`));
   const metadata = JSON.parse(fs.readFileSync(path.join(unpack, 'package.json')));
   assert.equal(metadata.bin['agent-governance-mcp'], 'build/mcp/server.js'); assert.deepEqual(metadata.dependencies, f.pkg.dependencies); assert.equal(metadata.scripts, undefined);

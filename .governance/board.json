@@ -20,6 +20,22 @@
       "gitTaskId": null
     },
     {
+      "id": "doc-driven-slim-0110",
+      "title": "面向文档工作流精简、移除内置SSH与双宿主兼容 · 0.11.0",
+      "description": "按用户批准移除内置SSH/ssh2（解除原市场eval动态执行阻塞），GitHub权威协作仅保留本地与GitHub分支交互；精简AGENTS.md与STATE.json历史叠加约束，固化人管docs与Agent同轮维护docs闭环；新增antigravity.json并兼容Antigravity与PI-Desktop双宿主。",
+      "blocker": "",
+      "stage": "done",
+      "taskId": "project-board-release",
+      "criteria": [
+        "移除内置SSH与ssh2且本地与GitHub权威协作回归通过",
+        "精简AGENTS.md与STATE.json并同步更新docs，同时兼容Antigravity与PI-Desktop",
+        "0.11.0一次构建、单元与浏览器回归通过并如实记录官方piplug边界"
+      ],
+      "architectureImpact": "affects",
+      "gitTaskId": "doc-driven-slim-0110",
+      "completedAt": "2026-11-21T07:42:00.000Z"
+    },
+    {
       "id": "readonly-workbench",
       "title": "只读工作台与精简文档职责",
       "description": "操作留AI宿主；移除网页写入与独立行为页；Docs当前事实、Notes按需历史，每轮判断最小更新。",
@@ -415,14 +431,14 @@
     {
       "id": "ssh-portable-090",
       "title": "目录内可迁移SSH与远端优先备份 · 0.9.0",
-      "description": "源码/官方0.9.0包/GitHub完成，main3219978双OS CI39746714903各280测试/279截图/10行为通过；加密迁移与真实SSH故障回归通过。市场单次提交明确拒绝eval动态执行，0.9.0未创建，不重试/绕过；待平台处理或另行批准兼容方案。",
-      "blocker": "插件市场拒绝remote-ssh.ts:6 dynamic or remote code execution: eval()；源码与手动包可用，市场交付未完成。",
-      "stage": "doing",
+      "description": "0.9.0源码与双OS CI曾交付，因ssh2含eval动态执行被插件市场拒绝；2026-11-21用户明确批准0.11.0移除低频内置SSH与ssh2，仅保留本地与GitHub权威协作，本项历史阻塞已由0.11.0精简方案取代关闭。",
+      "blocker": "",
+      "stage": "done",
       "taskId": "project-board-release",
       "criteria": [],
       "architectureImpact": "affects",
       "gitTaskId": null,
-      "completedAt": null
+      "completedAt": "2026-11-21T07:42:00.000Z"
     },
     {
       "id": "host-theme-adaptation",

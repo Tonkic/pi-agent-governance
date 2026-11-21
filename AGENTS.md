@@ -1,20 +1,7 @@
 # Agent 入口
 
-1. 先读 STATE.json 和 README.md；用 governance status 获取有效状态。
-2. 有活动任务就继续 current/next；无活动任务但有已批准 followUp 则 start；都没有就等待人工，不发明需求。
-3. STATE 是当前任务唯一来源。人决定目标、范围、验收；Agent 在范围内实现、检查和修复。
-4. 按问题读取 docs/README.md 中的专题。docs/ 是当前功能与架构依据；notes/ 仅按需追溯，不是日常必读。TS 是修改入口，runtime/build/安装包说明是产物。
-5. 进度变化写回 current/next/blocked。写入前重读状态，不能覆盖人工的新意图。
-6. 每轮对话按实际影响判断文档归属：重要功能/架构/用法变化最小更新对应Docs，小改只补必要一句；有追溯价值才在Notes简记1–4行，无实质变化不写。结论在前，不重复聊天/日志，不大改无关专题；细则见 docs/documentation.md。
-7. 小改定向测，公共/高风险/未知改动和大版本全量；按 docs/development.md 选择检查范围。小任务默认直接做，一轮只构建一次；浏览器与行为证据共用执行。实际运行选定检查、审查diff并更新必要用法，verify后close；有总体阻塞不能close。
-8. 插件变更用 PluginCheck/PluginPack 更新安装包。参数与流程见 docs/development.md、docs/publishing.md。
-9. 所有修改通过 Git 留痕。先检查工作区；写入型子任务用 git_create 分配独立分支/worktree，明确 cwd 和 allowedPaths 后再委派。只读审查不必分支。
-10. 用 git_status 接手已有 Git 子任务；State 管总体目标，Git 登记表管任务工作区。共享 STATE/AGENTS 由协调 Agent 修改。
-11. 提交前审查git_diff；git_verify绑定当前HEAD并如实记录测试来源。提交/合并不自动触发全量：核对已测内容与最终内容，无变化不重跑；冲突解决、并行组合或其他变化只补测受影响范围。worker只合入协调分支，集成后重新登记验证，不能冒充新SHA已执行。main合并/推送须授权；禁止stash/reset/强推/丢弃用户改动。
-12. Git 功能不自动启动宿主子代理；写入委派必须使用返回的 worktree。具体操作见 docs/git.md。
-13. 已批准产品更新自动按docs/releasing.md评估语义影响并升版本：修复/交互/性能小更新patch且不市场，新增能力minor/不兼容按SemVer，完整检查/官方包/main CI通过后Agent自动提交一次市场；不覆盖待审/已用版本，未知写入不重试。纯记录不升版/全测。审查提交后正常同步GitHub；1.x稳定vX.Y.0标签由Actions各建一次Release，标签仍由人创建。不自动npm/安装，保留追溯/未合并工作，不绕过保护；只清理已合并且无活动工作区占用的临时分支。
-14. 受管工作区创建被用户改动阻塞时，保留文件并报告，不通过stash/reset/删除绕过，不伪造受管验证。既有未跟踪目录不是本次交付内容。仍有总体验收阻塞不能close；同一任务的检查结果更新既有记录，不为每次测试新建文档。
-15. 本项目已批准一次启动后连续接续待办：每个回合先核实STATE和看板，完成一项后重读并处理下一可执行项，不等待重复“继续”。只能执行当前授权范围；没有活动任务/获批followUp、工作完成、真实外部阻塞或新授权需求时停止。宿主手动自动化入口见docs/development.md，不自行增加定时任务或递归创建对话。
-16. 如项目上下文要求远端工作，按docs/remote.md从.remote-local连接配置发现入口与实际目录；不打印/提交凭据，不改系统SSH或凭据库。先核对指纹/远端目录及最新状态，远端先写、本地仅备份；unknown必须先核实再显式resolve，禁止自动重试或把离线快照当本地真实验证。
-17. 权威文档先按docs/collaboration.md解析：显式绑定GitHub分支优先；只有未绑定才使用明确SSH项目或本地。已绑定后网络/权限/分支失败不降级。GitHub模式下本地和SSH都是草稿工作副本，先读权威SHA/文档，按正常受管Git检查提交，再推独立分支/PR；不自动同步覆盖、合并main或重复未知push。普通浏览器仍是当前副本视图；共享STATE只由单一协调者调度。
-18. 插件/浏览器仅查看项目、看板、架构、Git与Docs；项目操作、设计保存及检查在原AI CLI/应用执行。不要恢复网页写入或独立行为文档入口；不新增Agent自行确认基线权限，测试与原接口保留。
+1. **状态与授权**：先读 [STATE.json](STATE.json) 和 [README.md](README.md)，调用 `governance` 的 `status`（若绑定了 GitHub 权威分支，先按 [权威协作](docs/collaboration.md) 读取权威版本）。有活动任务就接续 `current`/`next`；无活动任务但有获批 `followUp` 则 `start`；都没有就等待人工，不发明需求。写回进度前重读状态，不覆盖人工新意图。
+2. **人面向文档开发，Agent 同步维护文档**：`docs/` 是当前功能、架构与用法的唯一依据；先从 [文档索引](docs/README.md) 按问题读取对应专题，`notes/` 仅按需追溯历史。修改以 TS 源码为准，不手改构建产物。每轮按实际影响同步维护文档：功能/架构/接口变化最小更新对应 `docs/*.md`（单篇≤100行），踩坑或重要取舍仅在 `notes/changes.md` 记 1–4 行，无实质变化不写；见 [文档开发](docs/doc-driven.md)、[文档维护](docs/documentation.md)。
+3. **只读工作台与双宿主兼容**：浏览器工作台仅查看工作看板、项目架构、Git 与项目文档；开发、项目操作和架构草案留在原宿主（Antigravity、PI-Desktop、Codex、Claude Code、Pi）会话执行，不恢复网页写入或独立行为页，不新增 Agent 自行确认基线权限。Antigravity 等宿主通过本地 stdio MCP 与可移植 Skills 接入，PI-Desktop 适配器共用同一核心；见 [MCP与Skill](docs/mcp.md)。
+4. **定向检查与受管 Git**：小改跑局部 `--scope`，公共/高风险/未知及版本交付跑一次 `npm run check -- --full`；提交或无变化合并不机械重跑，只补测受影响部分，见 [开发](docs/development.md)。所有修改通过 Git 留痕：先 `git_status`，写入型委派必须先 `git_create` 独立 worktree 并显式传入 `cwd` 与 `allowedPaths`；提交前审 `git_diff`，如实绑定 HEAD 登记 `git_verify`。worker 只合入协调分支；main 合并/推送须授权，禁止自动 stash/reset/强推/丢弃用户改动，见 [Git协作](docs/git.md)。
+5. **连续接续与交付边界**：获批启动后每个回合核实 `STATE` 与看板，完成一项后继续下一可执行项，直至完成、无后续项、真实外部阻塞或需新授权；不自建定时任务或递归会话。产品更新按 [交付规则](docs/releasing.md) 评估 SemVer 升版，纯记录不升版；PI-Desktop 插件源码/文档变更须在 PI-Desktop 内用官方 `PluginCheck`/`PluginPack` 更新 `plugin/dist/`（见 [产物与安装](docs/publishing.md)），不用脚本自制 `.piplug`，不自动发 npm 或静默安装。仍有总体阻塞时不能 `close`。

@@ -272,3 +272,8 @@
 - 删除项目操作、看板/设计网页写入和独立行为文档页；四页只读，操作留在原AI客户端。
 - Docs为当前功能/架构依据，Notes只留按需简史；每轮评估影响，最小更新，不强制记录。
 - 本地完整检查299通过、0失败/跳过，11关联场景及浏览器回归通过；真实宿主/物理触屏和旧市场拒绝不冒充已解决。
+
+## 0.11.0 — 面向文档精简与双宿主兼容
+- 移除低频内置SSH（`remote-*`与`ssh2`），GitHub权威协作收敛为本地↔GitHub分支交互，解除原PI市场`eval`阻塞。
+- 精简`AGENTS.md`与`STATE.json`叠加历史约束，固化“人面向`docs/`提需求、Agent同轮实现并同步维护`docs/`”闭环。
+- 补齐`mcp/clients/antigravity.json`与双宿主说明，同时兼容Antigravity/CLI（stdio MCP）与PI-Desktop（官方`PluginPack`）。
