@@ -22,7 +22,7 @@ node build/mcp/server.js --workspace D:/projects/example
 
 | 客户端 | 示例 | 合并位置 |
 | --- | --- | --- |
-| Antigravity | `antigravity.json` | `~/.gemini/antigravity/mcp_config.json` 的 `mcpServers`（工作区 `AGENTS.md` 自动作为规则生效） |
+| Antigravity | `antigravity.json` | `~/.gemini/config/mcp_config.json` 的 `mcpServers`（工作区 `AGENTS.md` 自动作为规则生效） |
 | Codex | `codex.toml` | `~/.codex/config.toml` 的 `mcp_servers` |
 | Claude Code | `claude-code.json` | 项目 `.mcp.json` 的 `mcpServers` |
 | Pi | `pi.json` | `.pi/mcp.json` 或 `~/.pi/agent/mcp.json` 的 `mcpServers` |
